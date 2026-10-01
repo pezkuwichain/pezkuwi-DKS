@@ -524,6 +524,7 @@ parameter_types! {
 	// enough that a test can tell "not yet" from "now", short enough to step over.
 	pub const ProposalVotingDelay: u64 = 5;
 	pub const NominationPeriod: u64 = 35;
+	pub const MaxAppointedRewsenbir: u32 = 2;
 	pub const CandidacyPeriod: u64 = 10;
 	pub const CampaignPeriod: u64 = 20;
 	pub const ElectoralDistricts: u32 = 10;
@@ -800,6 +801,7 @@ impl pezpallet_welati::Config for Test {
 	type ElectionPeriod = ElectionPeriod;
 	type ProposalVotingDelay = ProposalVotingDelay;
 	type NominationPeriod = NominationPeriod;
+	type MaxAppointedRewsenbir = MaxAppointedRewsenbir;
 	type CandidacyPeriod = CandidacyPeriod;
 	type CampaignPeriod = CampaignPeriod;
 	type ElectoralDistricts = ElectoralDistricts;

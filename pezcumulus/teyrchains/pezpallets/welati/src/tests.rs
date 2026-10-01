@@ -7,7 +7,7 @@ use crate::{
 	mock::{
 		add_parliament_member, endorsed_by, install_prime_minister, last_event, make_citizen,
 		run_to_block, seat_president, sent_xcm, AirdropCeiling, ExtBuilder, LargeAirdropDelay,
-		RuntimeEvent, RuntimeOrigin, System, Test, Welati,
+		MaxAppointedRewsenbir, RuntimeEvent, RuntimeOrigin, System, Test, Welati,
 	},
 	types::*,
 	ActiveProposals, AirdropProposals, Error, Event as WelatiEvent, GovernmentPosition,
@@ -354,6 +354,125 @@ fn approve_appointment_works() {
 		));
 
 		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0,));
+	});
+}
+
+/// Seat an education minister the way the register records any portfolio.
+fn seat_education_minister(who: u64) {
+	make_citizen(who);
+	assert_ok!(pezpallet_tiki::Pezpallet::<Test>::internal_grant_role(&who, Tiki::WezireBelaw));
+}
+
+/// The nominee must already be a citizen: making them one inside the call would write storage
+/// and defeat the `assert_noop!` around a refused nomination.
+fn nominate_rewsenbir(by: u64, who: u64) -> DispatchResult {
+	Welati::nominate_official(
+		RuntimeOrigin::signed(by),
+		who,
+		OfficialRole::Rewsenbîr,
+		b"Taught for twenty years".to_vec().try_into().unwrap(),
+	)
+}
+
+/// Rewsenbîr is the education system's title, so its minister proposes the name: not the
+/// President, who approves it, and not whichever minister happens to ask.
+#[test]
+fn only_the_education_minister_nominates_a_rewsenbir() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+		let finance = 30u64;
+		make_citizen(finance);
+		assert_ok!(pezpallet_tiki::Pezpallet::<Test>::internal_grant_role(
+			&finance,
+			Tiki::WezireDarayiye
+		));
+		let education = 32u64;
+		seat_education_minister(education);
+		let nominee = 31u64;
+		make_citizen(nominee);
+
+		assert_noop!(
+			nominate_rewsenbir(SEROK, nominee),
+			Error::<Test>::OnlyTheEducationMinisterNominatesRewsenbir
+		);
+		assert_noop!(
+			nominate_rewsenbir(finance, nominee),
+			Error::<Test>::OnlyTheEducationMinisterNominatesRewsenbir
+		);
+
+		assert_ok!(nominate_rewsenbir(education, nominee));
+		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0));
+		assert!(pezpallet_tiki::Pezpallet::<Test>::has_tiki(&nominee, &Tiki::Rewsenbîr));
+		assert_eq!(crate::AppointedRewsenbirCount::<Test>::get(), 1);
+	});
+}
+
+/// A President who also held the education portfolio would be both parties to the title.
+#[test]
+fn the_president_cannot_approve_a_rewsenbir_he_nominated() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+		seat_education_minister(SEROK);
+		let nominee = 31u64;
+		make_citizen(nominee);
+
+		assert_ok!(nominate_rewsenbir(SEROK, nominee));
+		assert_noop!(
+			Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0),
+			Error::<Test>::CannotApproveOwnNomination
+		);
+		assert!(!pezpallet_tiki::Pezpallet::<Test>::has_tiki(&nominee, &Tiki::Rewsenbîr));
+	});
+}
+
+/// The cap is spent when the title is granted. Nominations can outnumber the places left, so
+/// the grant is where it binds; the nomination check only saves a doomed process.
+#[test]
+fn appointed_rewsenbir_stop_at_the_cap() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+		let education = 32u64;
+		seat_education_minister(education);
+		assert_eq!(
+			MaxAppointedRewsenbir::get(),
+			2,
+			"the nominations below are written for a cap of two"
+		);
+
+		for nominee in [31u64, 33, 34, 35] {
+			make_citizen(nominee);
+		}
+		for nominee in [31u64, 33, 34] {
+			assert_ok!(nominate_rewsenbir(education, nominee));
+		}
+		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0));
+		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 1));
+		assert_noop!(
+			Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 2),
+			Error::<Test>::AppointedRewsenbirLimitReached
+		);
+		assert!(!pezpallet_tiki::Pezpallet::<Test>::has_tiki(&34, &Tiki::Rewsenbîr));
+		assert_noop!(
+			nominate_rewsenbir(education, 35),
+			Error::<Test>::AppointedRewsenbirLimitReached
+		);
+	});
+}
+
+/// If the legislature puts the title under its confirmation, the cap follows it there.
+#[test]
+fn the_cap_also_counts_a_rewsenbir_the_house_confirms() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+		let education = 32u64;
+		seat_education_minister(education);
+		crate::ConfirmationRequired::<Test>::insert(OfficialRole::Rewsenbîr, true);
+		make_citizen(31);
+
+		assert_ok!(nominate_rewsenbir(education, 31));
+		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+		assert!(pezpallet_tiki::Pezpallet::<Test>::has_tiki(&31, &Tiki::Rewsenbîr));
+		assert_eq!(crate::AppointedRewsenbirCount::<Test>::get(), 1);
 	});
 }
 

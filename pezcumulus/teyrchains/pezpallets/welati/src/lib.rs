@@ -452,6 +452,14 @@ pub mod pezpallet {
 		/// which on this chain was fourteen.
 		#[pezpallet::constant]
 		type NominationPeriod: Get<BlockNumberFor<Self>>;
+		/// How many Rewsenbîr may ever be appointed rather than earned.
+		///
+		/// The title is earned through `perwerde`, and that path needs graduated teachers to
+		/// ratify courses -- which a new state does not have. Appointment is the bootstrap, and
+		/// like the honorary teachers the cap is what keeps a bootstrap from becoming a
+		/// standing power to hand out standing. Counted over the chain's life, not per term.
+		#[pezpallet::constant]
+		type MaxAppointedRewsenbir: Get<u32>;
 		#[pezpallet::constant]
 		type CandidacyPeriod: Get<BlockNumberFor<Self>>;
 		#[pezpallet::constant]
@@ -1055,6 +1063,13 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type NextAppointmentId<T: Config> = StorageValue<_, u32, ValueQuery>;
 
+	/// How many Rewsenbîr have been appointed, against `MaxAppointedRewsenbir`.
+	///
+	/// Never decremented: a title that is later taken away still spent its place under the
+	/// cap, so removing and reappointing cannot turn a fixed number into an unlimited one.
+	#[pezpallet::storage]
+	pub type AppointedRewsenbirCount<T: Config> = StorageValue<_, u32, ValueQuery>;
+
 	// --- COLLECTIVE DECISION STORAGE ---
 
 	/// Storage holding active proposals
@@ -1642,6 +1657,12 @@ pub mod pezpallet {
 		EndorsementNotGiven,
 		/// Voting on this proposal has not opened, or has closed.
 		OutsideVotingWindow,
+		/// Only the Minister of Education nominates a Rewsenbîr.
+		OnlyTheEducationMinisterNominatesRewsenbir,
+		/// Every Rewsenbîr the cap allows has already been appointed.
+		AppointedRewsenbirLimitReached,
+		/// The approver nominated this appointee; an appointment has two parties.
+		CannotApproveOwnNomination,
 	}
 
 	#[pezpallet::hooks]
@@ -3738,6 +3759,20 @@ pub mod pezpallet {
 			// President -- who may nominate and, below, approve -- appoints himself to any
 			// office in the civil service in two calls of his own.
 			ensure!(nominator != nominee, Error::<T>::CannotNominateSelf);
+			// Rewsenbîr is a title the education system confers. Appointing one is the
+			// bootstrap for the years before it has graduated anybody, so it is the education
+			// minister who proposes the name -- not any minister, and not the President, who
+			// approves it below and so would otherwise be both parties.
+			if role == OfficialRole::Rewsenbîr {
+				ensure!(
+					pezpallet_tiki::Pezpallet::<T>::has_tiki(&nominator, &Tiki::WezireBelaw),
+					Error::<T>::OnlyTheEducationMinisterNominatesRewsenbir
+				);
+				ensure!(
+					AppointedRewsenbirCount::<T>::get() < T::MaxAppointedRewsenbir::get(),
+					Error::<T>::AppointedRewsenbirLimitReached
+				);
+			}
 
 			// Only where the office genuinely has one seat. A state has many judges, many
 			// notaries and many teachers; treating every appointed post as single-holder
@@ -3845,6 +3880,15 @@ pub mod pezpallet {
 				Error::<T>::AppointmentAlreadyProcessed
 			);
 
+			// A President who also held the education portfolio would otherwise propose and
+			// approve the same title alone.
+			if process.position == OfficialRole::Rewsenbîr {
+				ensure!(
+					approver != process.nominating_minister,
+					Error::<T>::CannotApproveOwnNomination
+				);
+			}
+
 			// Re-validate that the role is still unfilled. Two competing
 			// AppointmentProcess entries (different nominees, same role) can both
 			// reach WaitingPresidentialApproval; without this check, approving a
@@ -3876,6 +3920,7 @@ pub mod pezpallet {
 			// Store updates
 			PendingNominations::<T>::insert(process.position, &process.nominee, nomination);
 			AppointmentProcesses::<T>::insert(process_id, process.clone());
+			Self::count_an_appointed_rewsenbir(&process.position)?;
 
 			// Seat them in the register everything else reads. Writing only to a map of
 			// this pallet's own left an appointed official holding no tiki at all: every
@@ -3932,6 +3977,7 @@ pub mod pezpallet {
 
 			PendingNominations::<T>::insert(process.position, &process.nominee, nomination);
 			AppointmentProcesses::<T>::insert(process_id, process.clone());
+			Self::count_an_appointed_rewsenbir(&process.position)?;
 			pezpallet_tiki::Pezpallet::<T>::internal_grant_role(&process.nominee, tiki)?;
 
 			Self::deposit_event(Event::AppointmentConfirmedByParliament {
@@ -5567,6 +5613,23 @@ impl<T: Config> Pezpallet<T> {
 	/// The legislature's answer where it has given one, the founding rule otherwise.
 	pub fn confirmation_is_required(role: &OfficialRole) -> bool {
 		ConfirmationRequired::<T>::get(role).unwrap_or_else(|| role.requires_parliament_approval())
+	}
+
+	/// Spend one place under `MaxAppointedRewsenbir`, at the moment the title is granted.
+	///
+	/// Checked here as well as at nomination because both bodies that can complete an
+	/// appointment end up here, and nominations can outnumber the places left.
+	fn count_an_appointed_rewsenbir(role: &OfficialRole) -> Result<(), Error<T>> {
+		if *role != OfficialRole::Rewsenbîr {
+			return Ok(());
+		}
+		let appointed = AppointedRewsenbirCount::<T>::get();
+		ensure!(
+			appointed < T::MaxAppointedRewsenbir::get(),
+			Error::<T>::AppointedRewsenbirLimitReached
+		);
+		AppointedRewsenbirCount::<T>::put(appointed.saturating_add(1));
+		Ok(())
 	}
 
 	pub fn is_parliament_member(who: &T::AccountId) -> bool {

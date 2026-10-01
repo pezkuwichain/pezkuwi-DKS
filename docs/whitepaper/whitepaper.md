@@ -309,6 +309,13 @@ Fifty-six exist. What matters is not the list but the four ways a tiki is obtain
 thresholds), and **appointed**. An office may never be granted by the same route that grants
 a community badge, and the code refuses it.
 
+One earned title has a second, narrower door. *Rewsenbîr* (scholar) is earned through five
+completed courses and published points, and that path needs graduated teachers to ratify
+courses — which a new state does not have. Until it does, a Rewsenbîr may also be appointed:
+the Minister of Education nominates, the President approves, the President may not approve a
+name he nominated himself, and no more than a hundred are ever appointed this way over the
+life of the chain. The appointed title carries the same standing as the earned one.
+
 ### 5.1 Serok — the President
 
 One seat, four years, elected by every citizen. To stand, a candidate needs an approved
@@ -379,8 +386,10 @@ powers that fill it.
 Elected members need a trust score of at least 275. Appointed members must already hold one
 of fourteen qualifying professional tikis — jurist, judge, prosecutor, engineer, cyber-security
 specialist, network operator, economist, accountant, planner, electoral officer, statistician,
-auditor, scholar, or cultural custodian. A president may choose, but only from people the
-register already recognises as qualified.
+auditor, scholar, or cultural custodian. A president may choose only from people the
+register already recognises as qualified. That is a record, not an independent check: most of
+these tikis are themselves granted by the executive, scholar included, so the requirement
+names the competence a seat needs rather than putting it beyond the President's reach.
 
 **There is no call to dismiss a member of the court.** The absence is the point: a court
 that can be removed by the powers it rules on is not a court, and nine years is longer than
