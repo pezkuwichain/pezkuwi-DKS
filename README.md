@@ -4,7 +4,7 @@
 
 # Pezkuwi DKS — Digital Kurdistan State
 
-**Sovereign blockchain infrastructure · maintained by Kurdistan Tech Institute**
+**Sovereign blockchain infrastructure · maintained by Dijital Kurdistan Tech Institute**
 
 [![check](https://github.com/pezkuwichain/pezkuwi-DKS/actions/workflows/check.yml/badge.svg)](https://github.com/pezkuwichain/pezkuwi-DKS/actions/workflows/check.yml)
 [![license](https://img.shields.io/badge/license-Apache--2.0%20%7C%20GPL--3.0-blue.svg)](#license--attribution)
@@ -325,7 +325,7 @@ The result does not depend on the machine or the user doing the build.
 ## License & Attribution
 
 The code in this repository is a derivative work based on
-[Polkadot SDK](https://github.com/paritytech/polkadot-sdk) (snapshot `stable2512`) by
+[Polkadot SDK](https://github.com/paritytech/polkadot-sdk) (snapshot `stable2512`, framework synchronized with `stable2606`) by
 [Parity Technologies (UK) Ltd.](https://www.parity.io), used under **Apache-2.0** and **GPL-3.0**.
 
 Individual crates are licensed under one of:
@@ -343,6 +343,6 @@ Brand heritage and visual identity: [`docs/BRAND_HERITAGE.md`](./docs/BRAND_HERI
 
 <div align="center">
 
-**Kurdistan Tech Institute** · *Sovereign infrastructure for stateless nations*
+**Dijital Kurdistan Tech Institute** · *Sovereign infrastructure for stateless nations*
 
 </div>

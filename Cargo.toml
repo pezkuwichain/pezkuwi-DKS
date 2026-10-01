@@ -1,6 +1,7 @@
 [workspace.package]
 authors = [
 	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
+	"Parity Technologies <admin@parity.io>",
 ]
 edition = "2021"
 version = "0.44.0"

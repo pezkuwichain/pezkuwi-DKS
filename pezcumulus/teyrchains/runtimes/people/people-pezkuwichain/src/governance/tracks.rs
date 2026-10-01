@@ -1,6 +1,6 @@
 // This file is part of PezkuwiChain.
 
-// Copyright (C) Dijital Kurdistan Tech Institute
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: Apache-2.0
 
 //! Tracks for the state register's referenda.
