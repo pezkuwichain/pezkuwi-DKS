@@ -104,8 +104,6 @@ use teyrchains_common::{
 };
 use xcm::{Version as XcmVersion, VersionedLocation};
 
-use zagros_runtime_constants::system_teyrchain::{ASSET_HUB_ID, BRIDGE_HUB_ID};
-
 /// The address format for describing accounts.
 pub type Address = MultiAddress<AccountId, ()>;
 
@@ -144,85 +142,15 @@ pub type UncheckedExtrinsic =
 	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// Migrations to apply on runtime upgrade.
+///
+/// Only the permanent ones remain. The one-off entries were removed with the genesis reset: each
+/// converted state that only the chain before the reset had, and a chain born from this
+/// runtime's genesis starts with every pallet at its in-code storage version and none of that
+/// state.
 pub type Migrations = (
-	pezpallet_collator_selection::migration::v2::MigrationToV2<Runtime>,
-	pezpallet_multisig::migrations::v1::MigrateToV1<Runtime>,
-	InitStorageVersions,
-	// unreleased
-	pezcumulus_pezpallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
-	pezcumulus_pezpallet_xcmp_queue::migration::v5::MigrateV4ToV5<Runtime>,
-	pezpallet_bridge_messages::migration::v1::MigrationToV1<
-		Runtime,
-		bridge_to_pezkuwichain_config::WithBridgeHubPezkuwichainMessagesInstance,
-	>,
-	bridge_to_pezkuwichain_config::migration::FixMessagesV1Migration<
-		Runtime,
-		bridge_to_pezkuwichain_config::WithBridgeHubPezkuwichainMessagesInstance,
-	>,
-	pezframe_support::migrations::RemoveStorage<
-		BridgePezkuwichainMessagesPalletName,
-		OutboundLanesCongestedSignalsKey,
-		RocksDbWeight,
-	>,
-	pezpallet_bridge_relayers::migration::v1::MigrationToV1<
-		Runtime,
-		bridge_common_config::BridgeRelayersInstance,
-		pezbp_messages::LegacyLaneId,
-	>,
-	pezpallet_bridge_relayers::migration::v2::MigrationToV2<
-		Runtime,
-		bridge_common_config::BridgeRelayersInstance,
-		pezbp_messages::LegacyLaneId,
-	>,
-	pezsnowbridge_pezpallet_system::migration::v0::InitializeOnUpgrade<
-		Runtime,
-		ConstU32<BRIDGE_HUB_ID>,
-		ConstU32<ASSET_HUB_ID>,
-	>,
-	pezsnowbridge_pezpallet_system::migration::FeePerGasMigrationV0ToV1<Runtime>,
-	bridge_to_ethereum_config::migrations::MigrationForXcmV5<Runtime>,
-	pezpallet_session::migrations::v1::MigrateV0ToV1<
-		Runtime,
-		pezpallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
-	>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	pezcumulus_pezpallet_aura_ext::migration::MigrateV0ToV1<Runtime>,
 );
-
-parameter_types! {
-	pub const BridgePezkuwichainMessagesPalletName: &'static str = "BridgePezkuwichainMessages";
-	pub const OutboundLanesCongestedSignalsKey: &'static str = "OutboundLanesCongestedSignals";
-}
-
-/// Migration to initialize storage versions for pallets added after genesis.
-///
-/// Ideally this would be done automatically (see
-/// <https://github.com/pezkuwichain/pezkuwi-DKS/issues/248>), but it probably won't be ready for some
-/// time and it's beneficial to get try-runtime-cli on-runtime-upgrade checks into the CI, so we're
-/// doing it manually.
-pub struct InitStorageVersions;
-
-impl pezframe_support::traits::OnRuntimeUpgrade for InitStorageVersions {
-	fn on_runtime_upgrade() -> Weight {
-		use pezframe_support::traits::{GetStorageVersion, StorageVersion};
-		use pezsp_runtime::traits::Saturating;
-
-		let mut writes = 0;
-
-		if PezkuwiXcm::on_chain_storage_version() == StorageVersion::new(0) {
-			PezkuwiXcm::in_code_storage_version().put::<PezkuwiXcm>();
-			writes.saturating_inc();
-		}
-
-		if Balances::on_chain_storage_version() == StorageVersion::new(0) {
-			Balances::in_code_storage_version().put::<Balances>();
-			writes.saturating_inc();
-		}
-
-		<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(2, writes)
-	}
-}
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive = pezframe_executive::Executive<

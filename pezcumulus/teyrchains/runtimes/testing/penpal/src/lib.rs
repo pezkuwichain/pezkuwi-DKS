@@ -182,14 +182,12 @@ impl EthExtra for EthExtraImpl {
 pub type UncheckedExtrinsic =
 	pezpallet_revive::evm::runtime::UncheckedExtrinsic<Address, Signature, EthExtraImpl>;
 
-pub type Migrations = (
-	pezpallet_balances::migration::MigrateToTrackInactive<Runtime, xcm_config::CheckingAccount>,
-	pezpallet_collator_selection::migration::v1::MigrateToV1<Runtime>,
-	pezpallet_session::migrations::v1::MigrateV0ToV1<
-		Runtime,
-		pezpallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
-	>,
-);
+/// Migrations to apply on runtime upgrade.
+///
+/// Empty. Penpal never carried a permanent migration, and its one-off entries were removed with
+/// the genesis reset: each converted state that only a chain from before it had, and a chain
+/// born from this runtime's genesis starts with every pallet at its in-code storage version.
+pub type Migrations = ();
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive = pezframe_executive::Executive<

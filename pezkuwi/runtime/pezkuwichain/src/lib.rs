@@ -74,7 +74,6 @@ use pezkuwi_runtime_teyrchains::{
 use pezkuwichain_runtime_constants::system_teyrchain::{
 	coretime::TIMESLICE_PERIOD, ASSET_HUB_ID, BROKER_ID, PEOPLE_ID,
 };
-use pezpallet_balances::WeightInfo;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_beefy::{
 	ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
@@ -1689,240 +1688,27 @@ pub type UncheckedSignaturePayload =
 
 /// All migrations that will run on the next runtime upgrade.
 ///
-/// This contains the combined migrations of the last 10 releases. It allows to skip runtime
-/// upgrades in case governance decides to do so. THE ORDER IS IMPORTANT.
-pub type Migrations = migrations::Unreleased;
+/// THE ORDER IS IMPORTANT: one-off migrations run before the permanent ones.
+pub type Migrations = (migrations::Unreleased, migrations::Permanent);
 
 /// The runtime migrations per release.
-#[allow(deprecated, missing_docs)]
 pub mod migrations {
 	use super::*;
 
-	use pezframe_support::traits::LockIdentifier;
-
-	parameter_types! {
-		pub const TreasuryPalletName: &'static str = "Treasury";
-	pub const CouncilPalletName: &'static str = "Council";
-	pub const DemocracyPalletName: &'static str = "Democracy";
-		pub const TechnicalCommitteePalletName: &'static str = "TechnicalCommittee";
-		pub const PhragmenElectionPalletName: &'static str = "PhragmenElection";
-		pub const TechnicalMembershipPalletName: &'static str = "TechnicalMembership";
-		pub const TipsPalletName: &'static str = "Tips";
-		pub const PhragmenElectionPalletId: LockIdentifier = *b"phrelect";
-		// Old staking ecosystem pallets (replaced by StakingAhClient + AH staking)
-		pub const StakingPalletName: &'static str = "Staking";
-		pub const FastUnstakePalletName: &'static str = "FastUnstake";
-		pub const VoterBagsListPalletName: &'static str = "VoterBagsList";
-		/// Weight for balance unreservations
-		pub BalanceUnreserveWeight: Weight = weights::pezpallet_balances_balances::WeightInfo::<Runtime>::force_unreserve();
-		pub BalanceTransferAllowDeath: Weight = weights::pezpallet_balances_balances::WeightInfo::<Runtime>::transfer_allow_death();
-	}
-
-	// Special Config for Gov V1 pallets, allowing us to run migrations for them without
-	// implementing their configs on [`Runtime`].
-	// NOTE: Gov1 migration configs removed - pezpallet-democracy, pezpallet-elections-phragmen,
-	// and pezpallet-tips are no longer part of this runtime (using pezpallet-welati for governance)
-
-	/// Releases `Balances::Holds` entries tagged with `RuntimeHoldReason` discriminant 9 — the
-	/// pallet index the old (pre-`StakingAhClient`) `pezpallet_staking` occupied on this runtime
-	/// before it was removed. Confirmed via live `state_getMetadata` against the currently-
-	/// deployed mainnet runtime that no pallet at index 9 exists any more (nothing in the
-	/// construct_runtime! pallet list uses index 9), so these entries are undecodable under any
-	/// `RuntimeHoldReason` value the current code can express — `pezpallet_staking` never released
-	/// them before its removal (a prior upgrade, predating this one). Found via the first live-
-	/// state `try-runtime on-runtime-upgrade --checks all` ever run against mainnet:
-	/// `try_decode_entire_state` failed post-upgrade on 25 accounts (~12.49M HEZ total, including
-	/// the Founder account) with "`Balances::Holds` key ... is undecodable". Left unfixed, any
-	/// production code path that decodes one of these accounts' full `Holds` value (not just
-	/// try-runtime's diagnostic) would hit the same trap.
-	///
-	/// This can't use the typed `Holds` API (decoding a value with an unknown discriminant is
-	/// exactly what fails) — it reads/writes the raw encoded bytes directly. Every currently-live
-	/// `RuntimeHoldReason` variant (`Session`, `Council`, `Preimage`, `XcmPallet`,
-	/// `StateTrieMigration`, confirmed via the same metadata query) has exactly one, unit (no
-	/// further data) inner variant, and empirically all 25 affected entries parse cleanly and
-	/// completely as repeated (1-byte outer discriminant, 1-byte inner discriminant, 16-byte LE
-	/// `u128` amount) triples with zero leftover bytes — so that fixed 18-byte stride is used to
-	/// walk each account's entry list. Non-stale entries (e.g. a live `Preimage` hold on the same
-	/// account) are kept byte-for-byte and rewritten unchanged; only discriminant-9 entries are
-	/// dropped.
-	///
-	/// The stale entry's recorded amount is *not* treated as gospel: checked live, most of the 25
-	/// accounts' actual `reserved` balance is far below (several exactly 0) what their stale entry
-	/// claims — the underlying funds were already correctly unreserved through normal channels at
-	/// some point (e.g. a user-driven unbond, before or independent of the old Staking pallet's
-	/// removal), and only the `Holds` bookkeeping record itself was left behind uncleaned. So this
-	/// only ever moves `min(reserved, claimed)` from `reserved` to `free` — never inventing balance
-	/// the ledger doesn't actually have — while always clearing the stale record regardless of how
-	/// much (if anything) turns out to back it, since the record itself is the decode-breaking
-	/// problem. Every case is logged (info for a clean full release, warn when reserved didn't
-	/// fully back the claim) so the full picture is auditable after the fact. An account's bytes
-	/// are left completely untouched (logged as a warning) only if they don't parse as a clean
-	/// multiple of the expected stride — which was not observed for any of the 25 live cases this
-	/// was written against.
-	pub struct ReleaseOrphanedStakingHolds;
-	impl pezframe_support::traits::OnRuntimeUpgrade for ReleaseOrphanedStakingHolds {
-		fn on_runtime_upgrade() -> Weight {
-			const STALE_DISCRIMINANT: u8 = 9;
-			const ENTRY_STRIDE: usize = 18; // 1 (outer) + 1 (inner) + 16 (u128 amount)
-
-			let mut reads_writes: u64 = 0;
-			let accounts: alloc::vec::Vec<AccountId> =
-				pezpallet_balances::Holds::<Runtime>::iter_keys().collect();
-			reads_writes = reads_writes.saturating_add(accounts.len() as u64);
-
-			for who in accounts {
-				let key = pezpallet_balances::Holds::<Runtime>::hashed_key_for(&who);
-				let Some(raw) = pezframe_support::storage::unhashed::get_raw(&key) else {
-					continue;
-				};
-
-				// Compact-encoded Vec/BoundedVec length prefix; only single-byte mode (len < 64)
-				// is expected here (these accounts hold at most a couple of entries).
-				let Some(&len_byte) = raw.first() else { continue };
-				if len_byte & 0b11 != 0 {
-					log::warn!("ReleaseOrphanedStakingHolds: unexpected multi-byte compact length for {:?}, skipping", who);
-					continue;
-				}
-				let count = (len_byte >> 2) as usize;
-				let body = &raw[1..];
-				if body.len() != count.saturating_mul(ENTRY_STRIDE) {
-					log::warn!(
-						"ReleaseOrphanedStakingHolds: {:?} body length {} doesn't match {} entries * {} bytes, skipping",
-						who, body.len(), count, ENTRY_STRIDE,
-					);
-					continue;
-				}
-
-				let mut kept = alloc::vec::Vec::with_capacity(count);
-				let mut claimed: Balance = 0;
-				let mut found_stale = false;
-				for chunk in body.chunks_exact(ENTRY_STRIDE) {
-					if chunk[0] == STALE_DISCRIMINANT {
-						found_stale = true;
-						let amount = Balance::from_le_bytes(
-							chunk[2..18].try_into().expect("chunk is exactly 18 bytes; qed"),
-						);
-						claimed = claimed.saturating_add(amount);
-					} else {
-						kept.push(chunk);
-					}
-				}
-				if !found_stale {
-					continue;
-				}
-
-				// `claimed` is the stale entry's recorded amount — a leftover bookkeeping claim
-				// from the old, removed Staking pallet. It is not necessarily still backed by
-				// real reserved balance: confirmed against live state, most of these 25 accounts
-				// show `reserved` far below what their stale entry claims, several at exactly 0,
-				// meaning the funds were already correctly unreserved through normal channels at
-				// some point (e.g. a user-driven unbond) and only the `Holds` record itself was
-				// left behind, uncleaned, by whatever removed the old pallet. So: only ever move
-				// what's actually, currently reserved — never invent balance the ledger doesn't
-				// have — but always clear the stale record itself, since that's the actual
-				// decode-breaking problem regardless of how much (if anything) backs it.
-				let reserved = pezframe_system::Account::<Runtime>::get(&who).data.reserved;
-				let released = claimed.min(reserved);
-				if released < claimed {
-					log::warn!(
-						"ReleaseOrphanedStakingHolds: {:?} reserved ({}) is less than its stale hold claim ({}); releasing only what's actually reserved and clearing the stale record regardless",
-						who, reserved, claimed,
-					);
-				}
-
-				if kept.is_empty() {
-					pezframe_support::storage::unhashed::kill(&key);
-				} else {
-					let mut new_raw = alloc::vec::Vec::with_capacity(1 + kept.len() * ENTRY_STRIDE);
-					new_raw.push(((kept.len() as u8) << 2) | 0b00);
-					for chunk in &kept {
-						new_raw.extend_from_slice(chunk);
-					}
-					pezframe_support::storage::unhashed::put_raw(&key, &new_raw);
-				}
-
-				pezframe_system::Account::<Runtime>::mutate(&who, |account| {
-					account.data.reserved = account.data.reserved.saturating_sub(released);
-					account.data.free = account.data.free.saturating_add(released);
-				});
-
-				log::info!(
-					"ReleaseOrphanedStakingHolds: released {} planck orphaned Staking hold for {:?}",
-					released, who,
-				);
-				reads_writes = reads_writes.saturating_add(3);
-			}
-
-			<Runtime as pezframe_system::Config>::DbWeight::get()
-				.reads_writes(reads_writes, reads_writes)
-		}
-	}
-
 	/// Unreleased migrations. Add new ones here:
-	pub type Unreleased = (
-		assigned_slots::migration::v1::MigrateToV1<Runtime>,
-		teyrchains_scheduler::migration::MigrateV3ToV4<Runtime>,
-		paras_registrar::migration::MigrateToV1<Runtime, ()>,
-		pezpallet_referenda::migration::v1::MigrateV0ToV1<Runtime, ()>,
-		// NOTE: Gov1 migration steps removed - pallets no longer in runtime
-		// Treasury and Council are retired: the treasury moved to the Asset Hub, and the
-		// council existed to reject its proposals. Their storage goes with them.
-		pezframe_support::migrations::RemovePallet<
-			TreasuryPalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
-		pezframe_support::migrations::RemovePallet<
-			CouncilPalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
-		// Releases ~12.49M HEZ of orphaned Balances::Holds left behind by the old (pre-
-		// StakingAhClient) pezpallet_staking's removal (see doc comment above).
-		ReleaseOrphanedStakingHolds,
-		// Delete all Gov v1 pezpallet storage key/values (still needed to clean up any leftover
-		// storage)
-		pezframe_support::migrations::RemovePallet<
-			DemocracyPalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
-		pezframe_support::migrations::RemovePallet<
-			TechnicalCommitteePalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
-		pezframe_support::migrations::RemovePallet<
-			PhragmenElectionPalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
-		pezframe_support::migrations::RemovePallet<
-			TechnicalMembershipPalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
-		pezframe_support::migrations::RemovePallet<
-			TipsPalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
-		pezpallet_grandpa::migrations::MigrateV4ToV5<Runtime>,
-		// migrates session storage item
-		pezpallet_session::migrations::v1::MigrateV0ToV1<
-			Runtime,
-			pezpallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
-		>,
-		// permanent
+	///
+	/// Emptied with the genesis reset. Every entry it held converted state that only the chain
+	/// before the reset had -- retired pallets' storage, storage versions older than the code's,
+	/// orphaned `Balances::Holds` -- and a chain born from this runtime's genesis starts with
+	/// every pallet at its in-code storage version and none of that state. Left in, the version
+	/// migrations would be no-ops and the rest would scan storage on every upgrade for nothing.
+	pub type Unreleased = ();
+
+	/// Migrations that stay in the runtime for good and run on every upgrade.
+	pub type Permanent = (
+		// Re-encodes stored XCM data (version notifiers, queries, remote lock users) whenever
+		// the latest XCM version moves; it is idempotent and must never be dropped.
 		pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-		teyrchains_inclusion::migration::MigrateToV1<Runtime>,
-		// Remove old staking ecosystem pallets (replaced by StakingAhClient + AH staking)
-		pezframe_support::migrations::RemovePallet<
-			StakingPalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
-		pezframe_support::migrations::RemovePallet<
-			FastUnstakePalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
-		pezframe_support::migrations::RemovePallet<
-			VoterBagsListPalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
 	);
 }
 

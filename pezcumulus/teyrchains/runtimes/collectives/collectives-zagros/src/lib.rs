@@ -50,7 +50,6 @@ extern crate alloc;
 pub use ambassador::pezpallet_ambassador_origins;
 
 use alloc::{vec, vec::Vec};
-use ambassador::AmbassadorCoreInstance;
 use impls::{AllianceProposalProvider, EqualOrGreatestRootCmp};
 use pezcumulus_pezpallet_teyrchain_system::RelayNumberMonotonicallyIncreases;
 use pezsp_api::impl_runtime_apis;
@@ -800,21 +799,14 @@ pub type UncheckedExtrinsic =
 	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 /// All migrations executed on runtime upgrade as a nested tuple of types implementing
 /// `OnRuntimeUpgrade`. Included migrations must be idempotent.
+///
+/// Only the permanent ones remain. The one-off entries were removed with the genesis reset: each
+/// converted state that only the chain before the reset had, and a chain born from this
+/// runtime's genesis starts with every pallet at its in-code storage version and none of that
+/// state.
 type Migrations = (
-	// unreleased
-	pezpallet_collator_selection::migration::v2::MigrationToV2<Runtime>,
-	// unreleased
-	pezcumulus_pezpallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
-	pezcumulus_pezpallet_xcmp_queue::migration::v5::MigrateV4ToV5<Runtime>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	// unreleased
-	pezpallet_core_fellowship::migration::MigrateV0ToV1<Runtime, AmbassadorCoreInstance>,
-	pezcumulus_pezpallet_aura_ext::migration::MigrateV0ToV1<Runtime>,
-	pezpallet_session::migrations::v1::MigrateV0ToV1<
-		Runtime,
-		pezpallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
-	>,
 );
 
 /// Executive: handles dispatch to the various modules.

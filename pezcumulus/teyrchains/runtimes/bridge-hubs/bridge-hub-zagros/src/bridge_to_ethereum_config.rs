@@ -468,39 +468,3 @@ mod tests {
 		);
 	}
 }
-
-pub(crate) mod migrations {
-	use pezframe_support::pezpallet_prelude::*;
-	use pezsnowbridge_core::TokenId;
-
-	#[pezframe_support::storage_alias]
-	pub type OldNativeToForeignId<T: pezsnowbridge_pezpallet_system::Config> = StorageMap<
-		pezsnowbridge_pezpallet_system::Pezpallet<T>,
-		Blake2_128Concat,
-		xcm::v4::Location,
-		TokenId,
-		OptionQuery,
-	>;
-
-	/// One shot migration for NetworkId::Zagros to NetworkId::ByGenesis(ZAGROS_GENESIS_HASH)
-	pub struct MigrationForXcmV5<T: pezsnowbridge_pezpallet_system::Config>(
-		core::marker::PhantomData<T>,
-	);
-	impl<T: pezsnowbridge_pezpallet_system::Config> pezframe_support::traits::OnRuntimeUpgrade
-		for MigrationForXcmV5<T>
-	{
-		fn on_runtime_upgrade() -> Weight {
-			let mut weight = T::DbWeight::get().reads(1);
-
-			let translate_zagros = |pre: xcm::v4::Location| -> Option<xcm::v5::Location> {
-				weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
-				Some(xcm::v5::Location::try_from(pre).expect("valid location"))
-			};
-			pezsnowbridge_pezpallet_system::ForeignToNativeId::<T>::translate_values(
-				translate_zagros,
-			);
-
-			weight
-		}
-	}
-}

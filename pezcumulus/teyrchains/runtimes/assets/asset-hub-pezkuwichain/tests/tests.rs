@@ -1237,10 +1237,9 @@ fn change_xcm_bridge_hub_ethereum_base_fee_by_governance_works() {
 #[test]
 fn location_conversion_works() {
 	// The expected accounts are derived, not chosen: `blake2_256` over the location's standard
-	// description. The Zagros ones therefore move with `ZAGROS_GENESIS_HASH`, which is still
-	// the launch placeholder of all zeroes -- when the real hash is set they all change, and
-	// this test is what will say so. Regenerate them from the failure output; do not hand-edit
-	// one and leave the rest.
+	// description. The Zagros ones therefore move with `ZAGROS_GENESIS_HASH` -- whenever Zagros's
+	// genesis is reset they all change, and this test is what will say so. Regenerate them from
+	// the failure output; do not hand-edit one and leave the rest.
 	// the purpose of hardcoded values is to catch an unintended location conversion logic change.
 	struct TestCase {
 		description: &'static str,
@@ -1365,7 +1364,7 @@ fn location_conversion_works() {
 		TestCase {
 			description: "Describe Zagros Location",
 			location: Location::new(2, [GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH))]),
-			expected_account_id_str: "5DmzfokodabuJQr5yMawZ18uC2S2Z88r29ExvgYM2r7LXF8Z",
+			expected_account_id_str: "5FM2txzU7iJML1axk9uV8dDBDcJwQr6rcfqooKQ8gfcL9aVZ",
 		},
 		TestCase {
 			description: "Describe Zagros AccountID",
@@ -1376,7 +1375,7 @@ fn location_conversion_works() {
 					AccountId32 { network: None, id: AccountId::from(ALICE).into() },
 				],
 			),
-			expected_account_id_str: "5CixjKRF2A7PLa3FYvQYnWPAPXuTx3mV184dzeK522DheHEG",
+			expected_account_id_str: "5CR6AD143tcr3mWo3gy9odndCMkataEAyRr8ozq7mw7RBnao",
 		},
 		TestCase {
 			description: "Describe Zagros AccountKey",
@@ -1387,7 +1386,7 @@ fn location_conversion_works() {
 					AccountKey20 { network: None, key: [0u8; 20] },
 				],
 			),
-			expected_account_id_str: "5GSBqXk1SMzH1ZknySHVdZscdUUoAd3X2pnFMcoFzHPuDZHn",
+			expected_account_id_str: "5GgvMmhn3yvi3oquu9k1aayQKp4CiYDCH9QCXvZUjdL3dRgY",
 		},
 		TestCase {
 			description: "Describe Zagros Treasury Plurality",
@@ -1398,7 +1397,7 @@ fn location_conversion_works() {
 					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
 				],
 			),
-			expected_account_id_str: "5ChNb2mGFthXxG4XSZeb66uSX51nAV3V9imzZXQzFwfR2Dh5",
+			expected_account_id_str: "5EKQcC1MVzKgYCPtkmLEtMnMwid2BepEMWcGjanbB97fpXn2",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain Location",
@@ -1406,7 +1405,7 @@ fn location_conversion_works() {
 				2,
 				[GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)), Teyrchain(1000)],
 			),
-			expected_account_id_str: "5HQZrSZUMA1yycLwvfHvUG2Br8r4fxHeJd3EGJ73oZdibtUn",
+			expected_account_id_str: "5HnFoiGEFS9mRWXxkqEquyqqMrEcXN6CqqfwbJLa434iC6GQ",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain AccountID",
@@ -1418,7 +1417,7 @@ fn location_conversion_works() {
 					AccountId32 { network: None, id: AccountId::from(ALICE).into() },
 				],
 			),
-			expected_account_id_str: "5GJAogPfMwgf4fsVAGdrMApGQtdoKyv6EgZrDWJ2TJNvpvEo",
+			expected_account_id_str: "5Fu3rSWcnDaEoYtXgttguiTzYKxiTUL1waYha1UHWhGTTs4G",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain AccountKey",
@@ -1430,7 +1429,7 @@ fn location_conversion_works() {
 					AccountKey20 { network: None, key: [0u8; 20] },
 				],
 			),
-			expected_account_id_str: "5DMuMx1vjQ9AF2FsbpaTRzcwX3FbYM5A6fVhqHiLEGHcgoA5",
+			expected_account_id_str: "5DSN99SbUA5K6V4uL5oXUsCyeApbwvvW8WxXaHtZrgFVgBzu",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain Treasury Plurality",
@@ -1442,7 +1441,7 @@ fn location_conversion_works() {
 					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
 				],
 			),
-			expected_account_id_str: "5Gc2jgiBmKExTFF87xLCcHiNJF2TkJrbr3pJaphpkda2dt3A",
+			expected_account_id_str: "5Cx3yvAbLmN2YWZSYAMjBbDzNTxRcEFVPk1j6yinNekVxgvc",
 		},
 		TestCase {
 			description: "Describe Zagros USDT Location",
@@ -1455,7 +1454,7 @@ fn location_conversion_works() {
 					GeneralIndex(1984),
 				],
 			),
-			expected_account_id_str: "5DAGSgLe8bWhKHH7zUHjgUn5CkEWh9TthkghjvWQiDxqdqMs",
+			expected_account_id_str: "5GDnEaP68nfrgNc8s1UJW9vVBEWLLx362BrZfaG66D43DCXb",
 		},
 	];
 
