@@ -56,10 +56,15 @@
 #
 # All sixteen execute against the mock (`cargo test --features runtime-benchmarks bench`).
 # This asks the reference host for the real numbers, both twins.
+#
+# 2026-10-03: the unsigned election miner now submits two pages instead of thirty-two
+# (`MinerPages`). `submit_unsigned` mines exactly that many pages, so its thirty-two-page
+# measurement -- 31 s and 12 MB against a 2 s block -- no longer describes the call and is
+# what `runtime_integrity_tests` refuses. Only this pallet's file depends on `MinerPages`.
 runs:
-  - runtime: people-pezkuwichain
-    pallet: pezpallet_welati
-    why: sixteen benchmarks, six of which have never produced a number
-  - runtime: people-zagros
-    pallet: pezpallet_welati
+  - runtime: asset-hub-pezkuwichain
+    pallet: pezpallet_election_provider_multi_block::unsigned
+    why: MinerPages 32 -> 2; the integrity test refuses the 32-page weight
+  - runtime: asset-hub-zagros
+    pallet: pezpallet_election_provider_multi_block::unsigned
     why: the twin, measured in the same run so the two cannot drift apart unnoticed
