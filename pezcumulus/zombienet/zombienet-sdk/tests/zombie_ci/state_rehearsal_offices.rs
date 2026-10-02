@@ -585,7 +585,7 @@ where
 // Reading People
 // ---------------------------------------------------------------------------------------
 
-async fn storage_value(
+pub(crate) async fn storage_value(
 	api: &OnlineClient<PezkuwiConfig>,
 	pallet: &str,
 	item: &str,
@@ -671,7 +671,7 @@ fn bounded_len<T>(c: scale_value::Composite<T>) -> usize {
 }
 
 /// Who holds an office, if anybody does.
-async fn tiki_holder(
+pub(crate) async fn tiki_holder(
 	people: &OnlineClient<PezkuwiConfig>,
 	tiki_variant: &str,
 ) -> Result<Option<Value>, anyhow::Error> {
@@ -684,7 +684,7 @@ async fn tiki_holder(
 /// Reads `Tiki::UserTikis`, which is the list the court's qualification check reads, and looks
 /// for the variant by name. Comparing rendered names rather than decoding the enum keeps this
 /// from carrying a copy of an index that the runtime is free to renumber.
-async fn has_tiki(
+pub(crate) async fn has_tiki(
 	people: &OnlineClient<PezkuwiConfig>,
 	who: &Keypair,
 	variant: &str,
@@ -709,12 +709,12 @@ async fn has_tiki(
 /// interchangeable: passing a `MultiAddress` where an `AccountId` belongs fails at encoding
 /// with "Cannot encode Str into type with ID 2", which reads like a string problem and is
 /// really a variant that the target type has no place for. Measured 2026-09-18, on four calls.
-fn multi_address(k: &Keypair) -> Value {
+pub(crate) fn multi_address(k: &Keypair) -> Value {
 	Value::unnamed_variant("Id", vec![Value::from_bytes(k.public_key().to_account_id().0)])
 }
 
 /// A bare `AccountId`: thirty-two bytes and no wrapper.
-fn raw_account(k: &Keypair) -> Value {
+pub(crate) fn raw_account(k: &Keypair) -> Value {
 	Value::from_bytes(k.public_key().to_account_id().0)
 }
 

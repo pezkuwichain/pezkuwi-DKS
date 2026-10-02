@@ -529,7 +529,12 @@ mod register_parameters {
 		use people_pezkuwichain_runtime::dynamic_params::qeyd;
 
 		new_test_ext().execute_with(|| {
-			assert_eq!(qeyd::VouchingWaitingPeriod::get(), DAYS);
+			// The same expression the default is written with: a rehearsal build compresses the
+			// wait on purpose, and asserting the production day there failed every such build.
+			assert_eq!(
+				qeyd::VouchingWaitingPeriod::get(),
+				pezkuwi_runtime_common::rehearsal_period!(1 * DAYS, DAYS)
+			);
 			assert_eq!(qeyd::InitialVouchingCapacity::get(), 5);
 			assert_eq!(qeyd::SettledVouchesPerPlace::get(), 3);
 			assert_eq!(qeyd::MaxVouchingCapacity::get(), 50);
