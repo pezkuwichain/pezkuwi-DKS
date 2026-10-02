@@ -245,117 +245,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	}
 
 	// ═══════════════════════════════════════════
-	// STEP 1.5: Fund sudo account on People via XCM (if needed)
-	// ═══════════════════════════════════════════
-	println!("\n=== STEP 1.5: Fund sudo account on People Chain ===");
-	let sudo_account_id = sudo_keypair.public_key().to_account_id();
-	let account_bytes: [u8; 32] = *sudo_account_id.as_ref();
-
-	// Check existing balance first
-	let balance_key = {
-		let mut key = Vec::new();
-		key.extend_from_slice(&pezsp_crypto_hashing::twox_128(b"System"));
-		key.extend_from_slice(&pezsp_crypto_hashing::twox_128(b"Account"));
-		// Blake2_128Concat hasher for account
-		let hash = pezsp_crypto_hashing::blake2_128(&account_bytes);
-		key.extend_from_slice(&hash);
-		key.extend_from_slice(&account_bytes);
-		key
-	};
-	let people_storage = people_api.storage().at_latest().await?;
-	let has_balance = match people_storage.fetch_raw(balance_key).await {
-		Ok(data) => !data.is_empty(),
-		Err(_) => false, // NoValueFound — account doesn't exist
-	};
-
-	if has_balance {
-		println!("  Sudo account already has funds on People Chain — skipping funding");
-	} else {
-		println!("  Sudo account has no funds — funding via XCM...");
-
-		// Encode Balances::force_set_balance(who, new_free)
-		// Balances pallet = 10, call_index = 8
-		let mut fund_call: Vec<u8> = Vec::new();
-		fund_call.push(10u8); // Balances pallet
-		fund_call.push(8u8); // force_set_balance
-		fund_call.push(0u8); // MultiAddress::Id variant
-		fund_call.extend_from_slice(&account_bytes);
-		// 10,000 HEZ = 10_000 * 10^12 (12 decimals, NOT 18)
-		// Generous amount to cover apply_authorized_upgrade fee (1.5MB extrinsic)
-		let amount: u128 = 10_000_000_000_000_000u128; // 10,000 HEZ
-		let amount_bytes = amount.to_le_bytes();
-		let significant = amount_bytes.iter().rposition(|&b| b != 0).map(|i| i + 1).unwrap_or(1);
-		let byte_len = significant.max(4);
-		fund_call.push(((byte_len as u8 - 4) << 2) | 0b11);
-		fund_call.extend_from_slice(&amount_bytes[..byte_len]);
-
-		let fund_dest = Value::unnamed_variant(
-			"V3",
-			vec![Value::named_composite([
-				("parents", Value::u128(0)),
-				(
-					"interior",
-					Value::unnamed_variant(
-						"X1",
-						vec![Value::unnamed_variant(
-							"Teyrchain",
-							vec![Value::u128(PEOPLE_PARA_ID)],
-						)],
-					),
-				),
-			])],
-		);
-
-		let fund_msg = Value::unnamed_variant(
-			"V3",
-			vec![Value::unnamed_composite(vec![
-				Value::named_variant(
-					"UnpaidExecution",
-					[
-						("weight_limit", Value::unnamed_variant("Unlimited", vec![])),
-						("check_origin", Value::unnamed_variant("None", vec![])),
-					],
-				),
-				Value::named_variant(
-					"Transact",
-					[
-						("origin_kind", Value::unnamed_variant("Superuser", vec![])),
-						(
-							"require_weight_at_most",
-							Value::named_composite([
-								("ref_time", Value::u128(5_000_000_000u128)),
-								("proof_size", Value::u128(500_000u128)),
-							]),
-						),
-						("call", Value::from_bytes(&fund_call)),
-					],
-				),
-			])],
-		);
-
-		let fund_xcm = pezkuwi_subxt::dynamic::tx("XcmPallet", "send", vec![fund_dest, fund_msg]);
-		let fund_sudo = pezkuwi_subxt::dynamic::tx("Sudo", "sudo", vec![fund_xcm.into_value()]);
-
-		let progress = rc_api
-			.tx()
-			.sign_and_submit_then_watch_default(&fund_sudo, &sudo_keypair)
-			.await?;
-		let events = progress.wait_for_finalized_success().await?;
-		let fund_sent = events
-			.iter()
-			.flatten()
-			.any(|e| e.pallet_name() == "XcmPallet" && e.variant_name() == "Sent");
-		if fund_sent {
-			println!("  [OK] Force set balance XCM sent");
-		} else {
-			println!("  [WARN] No XcmPallet::Sent event for funding");
-		}
-
-		println!("  Waiting 18s for DMP processing...");
-		tokio::time::sleep(std::time::Duration::from_secs(18)).await;
-	}
-
-	// ═══════════════════════════════════════════
 	// STEP 2: Enact upgrade on People directly
 	// ═══════════════════════════════════════════
 	println!("\n=== STEP 2: Apply authorized upgrade on People Chain ===");
@@ -367,10 +256,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 		vec![Value::from_bytes(&wasm_data)],
 	);
 
-	let progress = people_api
-		.tx()
-		.sign_and_submit_then_watch_default(&enact_call, &sudo_keypair)
-		.await?;
+	// Unsigned, so the submitter needs no balance here. `pezframe_system` validates an unsigned
+	// `apply_authorized_upgrade` against the hash authorised in step 1 and nothing else. This
+	// step used to sign with the sudo key and, when that account was empty on People, first sent
+	// a relay Superuser `Balances::force_set_balance` for 10,000 HEZ -- new tokens with nothing
+	// behind them, which breaks the supply both chains are audited against.
+	let progress = people_api.tx().create_unsigned(&enact_call)?.submit_and_watch().await?;
 	let events = progress.wait_for_finalized_success().await?;
 
 	let mut code_updated = false;

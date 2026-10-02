@@ -375,8 +375,9 @@ parameter_types! {
 	pub const MaxPointsPerCourse: u32 = 1000;
 	/// A course runs for at least three months and at most a year. Shorter would make it a
 	/// way of printing standing; longer and nobody would ever be held to closing it.
-	pub const MinCourseDuration: BlockNumber = 90 * DAYS;
-	pub const MaxCourseDuration: BlockNumber = 365 * DAYS;
+	// Compressed only in a rehearsal build, where a course has to close inside the run.
+	pub const MinCourseDuration: BlockNumber = rehearsal_period!(90 * DAYS, DAYS);
+	pub const MaxCourseDuration: BlockNumber = rehearsal_period!(365 * DAYS, DAYS);
 	/// Five teachers ratify a course's results.
 	pub const RatificationsRequired: u32 = 5;
 	/// How many teachers the minister may seed to get the examining boards started.
@@ -866,7 +867,9 @@ parameter_types! {
 	pub const TrustTikiWeight: u32 = 25;
 	pub const TrustStakingWeight: u32 = 20;
 	/// Update interval for trust scores (roughly 1 day in blocks)
-	pub const TrustUpdateInterval: BlockNumber = DAYS;
+	// The sweep is what applies a stake report that landed while the payroll held the roll
+	// still; a rehearsal has to see that sweep, so it runs every couple of blocks there.
+	pub const TrustUpdateInterval: BlockNumber = rehearsal_period!(DAYS, DAYS);
 	/// Maximum batch size for trust score updates
 	pub const TrustMaxBatchSize: u32 = 100;
 }
@@ -1034,7 +1037,10 @@ parameter_types! {
 	/// Maximum messages a citizen can send per era
 	pub const MessagingMaxMessagesPerEra: u32 = 50;
 	/// Era length: 3600 blocks = ~6 hours at 6s/block on People Chain
-	pub const MessagingEraLength: BlockNumber = 6 * HOURS;
+	// Not `rehearsal_period!`: six hours is a quarter of a day and would floor to two blocks,
+	// too short for a rehearsal to read the inbox it just wrote to.
+	pub const MessagingEraLength: BlockNumber =
+		pezkuwi_runtime_common::prod_or_fast!(6 * HOURS, 20);
 }
 
 impl pezpallet_messaging::Config for Runtime {
@@ -2422,6 +2428,9 @@ mod tests {
 			("PopulationCheckPeriod", WelatiPopulationCheckPeriod::get()),
 			("PezRewardsEpochLength", PezRewardsEpochLength::get()),
 			("PezRewardsClaimPeriod", PezRewardsClaimPeriod::get()),
+			("MinCourseDuration", MinCourseDuration::get()),
+			("MaxCourseDuration", MaxCourseDuration::get()),
+			("TrustUpdateInterval", TrustUpdateInterval::get()),
 		] {
 			if cfg!(feature = "fast-runtime") {
 				assert!(
@@ -2448,6 +2457,15 @@ mod tests {
 				"{name} is {period} blocks -- a term this short expires during a test and \
 				 empties every office it covers"
 			);
+		}
+
+		// Under a day even in production, so it cannot join the list above, whose production
+		// arm reads "under a day" as a leak. Pinned in both builds instead.
+		let era = MessagingEraLength::get();
+		if cfg!(feature = "fast-runtime") {
+			assert_eq!(era, 20, "MessagingEraLength under `fast-runtime` is {era} blocks, not 20");
+		} else {
+			assert_eq!(era, 6 * super::HOURS, "MessagingEraLength is {era} blocks, not six hours");
 		}
 	}
 

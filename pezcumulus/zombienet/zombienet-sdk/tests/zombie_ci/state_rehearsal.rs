@@ -24,7 +24,9 @@
 //! which is precisely what makes it worth rehearsing rather than asserting.
 //!
 //! The offices, the budget and the citizen's initiative are in `state_rehearsal_offices`, and
-//! build on the register this leaves behind.
+//! build on the register this leaves behind. The pallets none of that reaches -- `Perwerde`,
+//! `Referral`, `Messaging`, `TokenWrapper`, the appointed Rewsenbîr and the silence rule -- are
+//! in `state_rehearsal_pallets`, and run last on the same network.
 //!
 //! Two things it deliberately does not do. It never uses sudo: `Tiki::grant_honorary_citizenship`
 //! accepts Root and the relay reaches this chain as Root, so a hundred citizens could be
@@ -470,6 +472,61 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 			.await
 	{
 		failures.push(format!("initiative: {e}"));
+	}
+
+	// ---- the pallets the founding sequence never touches ---------------------------------
+	//
+	// Everything above exercises the register, the offices and the treasury paths. `Perwerde`,
+	// `Referral`, `Messaging` and `TokenWrapper` were reached by nothing, and neither were the
+	// appointed Rewsenbîr or the silence rule. They come last because they stand on what the
+	// stages above leave behind -- a Prime Minister to hand out the education portfolio, a
+	// register full of citizens to play the parts -- and their failures are collected the same
+	// way and for the same reason.
+	use super::state_rehearsal_pallets as pallets;
+
+	// First, because the education portfolio is moved twice here and must end with its own
+	// minister before the courses below are opened in that minister's name.
+	if let Err(e) = pallets::an_appointed_rewsenbir_takes_two_hands(&people, &bench, &cohort).await
+	{
+		failures.push(format!("rewsenbir: {e}"));
+	}
+
+	// The courses open now and close at the end: `MinCourseDuration` is the longest wait in
+	// this file, and the stages between run underneath it rather than after it.
+	let courses =
+		match pallets::the_ministry_seeds_a_board_and_opens_courses(&people, &bench, &cohort).await
+		{
+			Ok(c) => Some(c),
+			Err(e) => {
+				failures.push(format!("perwerde (opening): {e}"));
+				None
+			},
+		};
+
+	if let Err(e) =
+		pallets::the_referral_graph_is_recorded_and_an_invitation_settles(&people, &cohort).await
+	{
+		failures.push(format!("referral: {e}"));
+	}
+
+	if let Err(e) = pallets::a_citizen_writes_to_a_citizen(&relay, &people, &cohort).await {
+		failures.push(format!("messaging: {e}"));
+	}
+
+	if let Err(e) = pallets::hez_wraps_and_unwraps_one_for_one(&asset_hub).await {
+		failures.push(format!("token wrapper: {e}"));
+	}
+
+	if let Err(e) =
+		pallets::the_president_checks_in_and_cannot_be_called_silent(&people, &bench).await
+	{
+		failures.push(format!("silence rule (WP-19): {e}"));
+	}
+
+	if let Some(courses) = &courses {
+		if let Err(e) = pallets::the_board_ratifies_and_the_record_counts(&people, courses).await {
+			failures.push(format!("perwerde (closing): {e}"));
+		}
 	}
 
 	if !failures.is_empty() {

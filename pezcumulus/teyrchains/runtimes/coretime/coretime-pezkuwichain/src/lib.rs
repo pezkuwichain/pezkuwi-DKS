@@ -65,7 +65,7 @@ use pezsp_core::{crypto::KeyTypeId, OpaqueMetadata};
 pub use pezsp_runtime::BuildStorage;
 use pezsp_runtime::{
 	generic, impl_opaque_keys,
-	traits::{BlakeTwo256, Block as BlockT, BlockNumberProvider},
+	traits::{BlakeTwo256, Block as BlockT},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, DispatchError, MultiAddress, Perbill,
 };
@@ -125,21 +125,14 @@ pub type UncheckedExtrinsic =
 	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// Migrations to apply on runtime upgrade.
+///
+/// Only the permanent ones remain. The one-off entries were removed with the genesis reset: each
+/// converted state that only the chain before the reset had, and a chain born from this
+/// runtime's genesis starts with every pallet at its in-code storage version and none of that
+/// state.
 pub type Migrations = (
-	pezpallet_collator_selection::migration::v2::MigrationToV2<Runtime>,
-	pezcumulus_pezpallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
-	pezcumulus_pezpallet_xcmp_queue::migration::v5::MigrateV4ToV5<Runtime>,
-	pezpallet_broker::migration::MigrateV0ToV1<Runtime>,
-	pezpallet_broker::migration::MigrateV1ToV2<Runtime>,
-	pezpallet_broker::migration::MigrateV2ToV3<Runtime>,
-	pezpallet_broker::migration::MigrateV3ToV4<Runtime, BrokerMigrationV4BlockConversion>,
-	pezpallet_session::migrations::v1::MigrateV0ToV1<
-		Runtime,
-		pezpallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
-	>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	pezcumulus_pezpallet_aura_ext::migration::MigrateV0ToV1<Runtime>,
 );
 
 /// Executive: handles dispatch to the various modules.
@@ -616,25 +609,6 @@ impl pezpallet_sudo::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pezpallet_sudo::weights::BizinikiwiWeight<Runtime>;
-}
-
-pub struct BrokerMigrationV4BlockConversion;
-
-impl pezpallet_broker::migration::v4::BlockToRelayHeightConversion<Runtime>
-	for BrokerMigrationV4BlockConversion
-{
-	fn convert_block_number_to_relay_height(input_block_number: u32) -> u32 {
-		let relay_height = pezpallet_broker::RCBlockNumberProviderOf::<
-			<Runtime as pezpallet_broker::Config>::Coretime,
-		>::current_block_number();
-		let teyrchain_block_number = pezframe_system::Pezpallet::<Runtime>::block_number();
-		let offset = relay_height - teyrchain_block_number * 2;
-		offset + input_block_number * 2
-	}
-
-	fn convert_block_length_to_relay_length(input_block_length: u32) -> u32 {
-		input_block_length * 2
-	}
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

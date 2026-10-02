@@ -886,7 +886,7 @@ fn location_conversion_works() {
 		TestCase {
 			description: "Describe Zagros Location",
 			location: Location::new(2, [GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH))]),
-			expected_account_id_str: "5DmzfokodabuJQr5yMawZ18uC2S2Z88r29ExvgYM2r7LXF8Z",
+			expected_account_id_str: "5FM2txzU7iJML1axk9uV8dDBDcJwQr6rcfqooKQ8gfcL9aVZ",
 		},
 		TestCase {
 			description: "Describe Zagros AccountID",
@@ -897,7 +897,7 @@ fn location_conversion_works() {
 					Junction::AccountId32 { network: None, id: AccountId::from(Alice).into() },
 				],
 			),
-			expected_account_id_str: "5GGHRph8E7FHNgeQH4RodbvWPZCBPPxEyxkqi6LqGa9syYMz",
+			expected_account_id_str: "5EPsMU6aQZhdJcGFAAekxGFBqdjRWtS71ZCgGLxbz2e3pRrZ",
 		},
 		TestCase {
 			description: "Describe Zagros AccountKey",
@@ -908,7 +908,7 @@ fn location_conversion_works() {
 					AccountKey20 { network: None, key: [0u8; 20] },
 				],
 			),
-			expected_account_id_str: "5GSBqXk1SMzH1ZknySHVdZscdUUoAd3X2pnFMcoFzHPuDZHn",
+			expected_account_id_str: "5GgvMmhn3yvi3oquu9k1aayQKp4CiYDCH9QCXvZUjdL3dRgY",
 		},
 		TestCase {
 			description: "Describe Zagros Treasury Plurality",
@@ -919,7 +919,7 @@ fn location_conversion_works() {
 					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
 				],
 			),
-			expected_account_id_str: "5ChNb2mGFthXxG4XSZeb66uSX51nAV3V9imzZXQzFwfR2Dh5",
+			expected_account_id_str: "5EKQcC1MVzKgYCPtkmLEtMnMwid2BepEMWcGjanbB97fpXn2",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain Location",
@@ -927,7 +927,7 @@ fn location_conversion_works() {
 				2,
 				[GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)), Teyrchain(1000)],
 			),
-			expected_account_id_str: "5HQZrSZUMA1yycLwvfHvUG2Br8r4fxHeJd3EGJ73oZdibtUn",
+			expected_account_id_str: "5HnFoiGEFS9mRWXxkqEquyqqMrEcXN6CqqfwbJLa434iC6GQ",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain AccountID",
@@ -939,7 +939,7 @@ fn location_conversion_works() {
 					Junction::AccountId32 { network: None, id: AccountId::from(Alice).into() },
 				],
 			),
-			expected_account_id_str: "5Gc6Xd3MC1Uvu5nM9uD6RX6itvjzWYrUdWievVKZLzUstS9g",
+			expected_account_id_str: "5EJDfGRDTEZBwNbTdSruH5wMv86emqdZM4tuE7ZobD6PFTEY",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain AccountKey",
@@ -951,7 +951,7 @@ fn location_conversion_works() {
 					AccountKey20 { network: None, key: [0u8; 20] },
 				],
 			),
-			expected_account_id_str: "5DMuMx1vjQ9AF2FsbpaTRzcwX3FbYM5A6fVhqHiLEGHcgoA5",
+			expected_account_id_str: "5DSN99SbUA5K6V4uL5oXUsCyeApbwvvW8WxXaHtZrgFVgBzu",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain Treasury Plurality",
@@ -963,7 +963,7 @@ fn location_conversion_works() {
 					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
 				],
 			),
-			expected_account_id_str: "5Gc2jgiBmKExTFF87xLCcHiNJF2TkJrbr3pJaphpkda2dt3A",
+			expected_account_id_str: "5Cx3yvAbLmN2YWZSYAMjBbDzNTxRcEFVPk1j6yinNekVxgvc",
 		},
 		TestCase {
 			description: "Describe Zagros USDT Location",
@@ -976,16 +976,13 @@ fn location_conversion_works() {
 					GeneralIndex(1984),
 				],
 			),
-			expected_account_id_str: "5DAGSgLe8bWhKHH7zUHjgUn5CkEWh9TthkghjvWQiDxqdqMs",
+			expected_account_id_str: "5GDnEaP68nfrgNc8s1UJW9vVBEWLLx362BrZfaG66D43DCXb",
 		},
 	];
 
-	// Every "Describe Zagros ..." account below is derived from `ZAGROS_GENESIS_HASH`, which is
-	// still `[0; 32]`: Zagros was torn down and its hash comes into existence with the new chain
-	// spec. These nine were regenerated against the placeholder because the alternative -- a red
-	// nobody can fix -- reads as noise and gets skimmed. **Fill the hash in and regenerate these
-	// in the same commit**, or the first thing the new network does is fail its own conversion
-	// test. The values are read straight out of the failure: the test prints what it computed.
+	// Every "Describe Zagros ..." account above is derived from `ZAGROS_GENESIS_HASH`, so they
+	// move together whenever Zagros's genesis is reset. Regenerate all nine in the commit that
+	// changes the hash, from the failure output -- the test prints what it computed for each.
 
 	ExtBuilder::<Runtime>::default()
 		.with_collators(collator_session_keys().collators())
@@ -993,6 +990,9 @@ fn location_conversion_works() {
 		.with_para_id(1000.into())
 		.build()
 		.execute_with(|| {
+			// Collected rather than asserted one at a time, as in the Asset Hub twin of this
+			// test: when one derived expectation is stale the rest usually are too.
+			let mut wrong = Vec::new();
 			for tc in test_cases {
 				let expected = AccountId::from_string(tc.expected_account_id_str)
 					.expect("Invalid AccountId string");
@@ -1003,8 +1003,16 @@ fn location_conversion_works() {
 				>::convert_location(tc.location.into())
 				.unwrap();
 
-				assert_eq!(got, expected, "{}", tc.description);
+				if got != expected {
+					wrong.push(format!(
+						"{}: expected {}, derived {}",
+						tc.description,
+						tc.expected_account_id_str,
+						got.to_ss58check()
+					));
+				}
 			}
+			assert!(wrong.is_empty(), "location conversions disagree:\n{}", wrong.join("\n"));
 		});
 }
 

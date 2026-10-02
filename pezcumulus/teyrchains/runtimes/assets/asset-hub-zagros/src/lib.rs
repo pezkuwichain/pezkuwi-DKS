@@ -56,7 +56,7 @@ use pezsp_api::impl_runtime_apis;
 use pezsp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use pezsp_runtime::{
 	generic, impl_opaque_keys,
-	traits::{AccountIdConversion, BlakeTwo256, Block as BlockT, Saturating, Verify},
+	traits::{AccountIdConversion, BlakeTwo256, Block as BlockT, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedU128, Permill, Perquintill,
 };
@@ -149,7 +149,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("asset-hub-zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("asset-hub-zagros"),
 	authoring_version: 1,
-	spec_version: 1_020_015,
+	spec_version: 1_020_016,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 16,
@@ -1962,109 +1962,17 @@ pub type TxExtension = pezcumulus_pezpallet_weight_reclaim::StorageWeightReclaim
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
 	pezpallet_revive::evm::runtime::UncheckedExtrinsic<Address, Signature, EthExtraImpl>;
-/// One-time migration to fix ActiveEra.start which was set to 0 at genesis.
-/// Without this, the first era's duration would be calculated as (now - 0) = ~56 years,
-/// though MaxEraDuration caps it to 6 hours. This migration sets it to the current timestamp
-/// so the first era duration is calculated correctly from the upgrade moment.
-pub struct FixActiveEraStart;
-impl pezframe_support::traits::OnRuntimeUpgrade for FixActiveEraStart {
-	fn on_runtime_upgrade() -> Weight {
-		let now_ms = pezpallet_timestamp::Now::<Runtime>::get();
-		if now_ms > 0 {
-			pezpallet_staking_async::ActiveEra::<Runtime>::mutate(|era| {
-				if let Some(ref mut info) = era {
-					info.start = Some(now_ms);
-					log::info!(
-						target: "runtime::staking",
-						"FixActiveEraStart: Set ActiveEra.start to {}",
-						now_ms,
-					);
-				}
-			});
-		}
-		<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(2, 1)
-	}
-}
 
 /// Migrations to apply on runtime upgrade.
+///
+/// Only the permanent ones remain. The one-off entries were removed with the genesis reset: each
+/// converted state that only the chain before the reset had, and a chain born from this
+/// runtime's genesis starts with every pallet at its in-code storage version and none of that
+/// state.
 pub type Migrations = (
-	FixActiveEraStart,
-	InitStorageVersions,
-	// unreleased
-	pezcumulus_pezpallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
-	pezcumulus_pezpallet_xcmp_queue::migration::v5::MigrateV4ToV5<Runtime>,
-	pezpallet_collator_selection::migration::v2::MigrationToV2<Runtime>,
-	pezframe_support::migrations::RemovePallet<StateTrieMigrationName, RocksDbWeight>,
-	// unreleased
-	pezpallet_assets::migration::next_asset_id::SetNextAssetId<
-		ConstU32<50_000_000>,
-		Runtime,
-		TrustBackedAssetsInstance,
-	>,
-	pezpallet_session::migrations::v1::MigrateV0ToV1<
-		Runtime,
-		pezpallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
-	>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	pezcumulus_pezpallet_aura_ext::migration::MigrateV0ToV1<Runtime>,
 );
-
-parameter_types! {
-	pub const StateTrieMigrationName: &'static str = "StateTrieMigration";
-}
-
-/// Migration to initialize storage versions for pallets added after genesis.
-///
-/// This is now done automatically (see <https://github.com/pezkuwichain/pezkuwi-DKS/issues/248>),
-/// but some pallets had made it in and had storage set in them for this teyrchain before it was
-/// merged.
-pub struct InitStorageVersions;
-
-impl pezframe_support::traits::OnRuntimeUpgrade for InitStorageVersions {
-	fn on_runtime_upgrade() -> Weight {
-		use pezframe_support::traits::{GetStorageVersion, StorageVersion};
-
-		let mut writes = 0;
-
-		if PezkuwiXcm::on_chain_storage_version() == StorageVersion::new(0) {
-			PezkuwiXcm::in_code_storage_version().put::<PezkuwiXcm>();
-			writes.saturating_inc();
-		}
-
-		if Multisig::on_chain_storage_version() == StorageVersion::new(0) {
-			Multisig::in_code_storage_version().put::<Multisig>();
-			writes.saturating_inc();
-		}
-
-		if Assets::on_chain_storage_version() == StorageVersion::new(0) {
-			Assets::in_code_storage_version().put::<Assets>();
-			writes.saturating_inc();
-		}
-
-		if Uniques::on_chain_storage_version() == StorageVersion::new(0) {
-			Uniques::in_code_storage_version().put::<Uniques>();
-			writes.saturating_inc();
-		}
-
-		if Nfts::on_chain_storage_version() == StorageVersion::new(0) {
-			Nfts::in_code_storage_version().put::<Nfts>();
-			writes.saturating_inc();
-		}
-
-		if ForeignAssets::on_chain_storage_version() == StorageVersion::new(0) {
-			ForeignAssets::in_code_storage_version().put::<ForeignAssets>();
-			writes.saturating_inc();
-		}
-
-		if PoolAssets::on_chain_storage_version() == StorageVersion::new(0) {
-			PoolAssets::in_code_storage_version().put::<PoolAssets>();
-			writes.saturating_inc();
-		}
-
-		<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(7, writes)
-	}
-}
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive = pezframe_executive::Executive<

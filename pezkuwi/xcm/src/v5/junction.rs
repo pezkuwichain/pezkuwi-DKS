@@ -106,9 +106,11 @@ pub enum Junction {
 
 /// The genesis hash of the Zagros test network. Used to identify it.
 ///
-/// Read from the live chain on 2026-09-16 (`chain_getBlockHash[0]` against all three Zagros
-/// endpoints). It was `[0; 32]` while the network was being rebuilt, and Westend's hash before
-/// that -- a real foreign network's identity, plausible enough that nothing questioned it.
+/// Read from the live chain after its relaunch on 2026-09-25 (`chain_getBlockHash[0]`). The
+/// previous value, `481070f2…`, belonged to the network launched on 2026-09-12 and died with
+/// it. Before that the constant was `[0; 32]` while the network was being rebuilt, and Westend's
+/// hash before that -- a real foreign network's identity, plausible enough that nothing
+/// questioned it.
 ///
 /// This constant is a fixed point and the order it is filled in matters. The genesis hash is
 /// the hash of the genesis header, whose state root covers `:code` -- so writing the hash into
@@ -118,7 +120,7 @@ pub enum Junction {
 /// leaves the genesis block untouched. Rebuilding Zagros's spec from this runtime would make
 /// the value stale again, and that is not a defect to fix but the property to respect.
 pub const ZAGROS_GENESIS_HASH: [u8; 32] =
-	hex!["481070f2d0f4cd33c2bed6e92bdaa48baf878af0677a384777b6400e9c2902af"];
+	hex!["1b0b4727bbb5e44ed587d1056b4ad537ffb330034509a58866a088d77e792cd5"];
 
 /// The genesis hash of the Pezkuwichain network. Used to identify it.
 ///

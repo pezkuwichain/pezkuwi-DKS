@@ -128,18 +128,14 @@ pub type UncheckedExtrinsic =
 	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// Migrations to apply on runtime upgrade.
+///
+/// Only the permanent ones remain. The one-off entries were removed with the genesis reset: each
+/// converted state that only the chain before the reset had, and a chain born from this
+/// runtime's genesis starts with every pallet at its in-code storage version and none of that
+/// state.
 pub type Migrations = (
-	pezpallet_collator_selection::migration::v2::MigrationToV2<Runtime>,
-	pezcumulus_pezpallet_xcmp_queue::migration::v5::MigrateV4ToV5<Runtime>,
-	pezpallet_session::migrations::v1::MigrateV0ToV1<
-		Runtime,
-		pezpallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
-	>,
-	// Populate TikiHolder from UserTikis for unique roles (Serok, etc.)
-	pezpallet_tiki::migrations::v2::MigrateToV2<Runtime>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	pezcumulus_pezpallet_aura_ext::migration::MigrateV0ToV1<Runtime>,
 );
 
 /// Executive: handles dispatch to the various modules.
@@ -717,8 +713,10 @@ parameter_types! {
 
 impl pezpallet_migrations::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	// None: the identity v1 -> v2 lazy migration that sat here only acts when the pallet's
+	// on-chain storage version is 1, and a chain born from this runtime's genesis starts at 2.
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type Migrations = pezpallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>;
+	type Migrations = ();
 	// Benchmarks need mocked migrations to guarantee that they succeed.
 	#[cfg(feature = "runtime-benchmarks")]
 	type Migrations = pezpallet_migrations::mock_helpers::MockedMigrations;
