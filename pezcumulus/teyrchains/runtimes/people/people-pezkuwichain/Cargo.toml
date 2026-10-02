@@ -90,6 +90,7 @@ pezsp-staking = { workspace = true }
 pezsp-storage = { workspace = true }
 pezsp-transaction-pool = { workspace = true }
 pezsp-version = { workspace = true }
+pezsp-weights = { workspace = true }
 
 # Pezkuwi
 pezkuwi-runtime-common = { workspace = true }
@@ -215,6 +216,7 @@ std = [
 	"pezsp-storage/std",
 	"pezsp-transaction-pool/std",
 	"pezsp-version/std",
+	"pezsp-weights/std",
 	"scale-info/std",
 	"serde",
 	"serde_json/std",

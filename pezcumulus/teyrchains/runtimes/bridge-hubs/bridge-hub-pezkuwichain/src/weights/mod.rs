@@ -52,8 +52,8 @@ pub mod pezsnowbridge_pezpallet_system;
 pub mod rocksdb_weights;
 pub mod xcm;
 
-pub use block_weights::constants::BlockExecutionWeight;
-pub use extrinsic_weights::constants::ExtrinsicBaseWeight;
+pub use block_weights::BlockExecutionWeight;
+pub use extrinsic_weights::ExtrinsicBaseWeight;
 pub use rocksdb_weights::constants::RocksDbWeight;
 
 use crate::Runtime;

@@ -59,6 +59,6 @@ pub mod pezpallet_xcm_bridge_hub_router;
 pub mod rocksdb_weights;
 pub mod xcm;
 
-pub use block_weights::constants::BlockExecutionWeight;
-pub use extrinsic_weights::constants::ExtrinsicBaseWeight;
+pub use block_weights::BlockExecutionWeight;
+pub use extrinsic_weights::ExtrinsicBaseWeight;
 pub use rocksdb_weights::constants::RocksDbWeight;
