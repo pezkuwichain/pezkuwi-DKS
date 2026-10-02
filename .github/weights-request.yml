@@ -59,12 +59,9 @@
 #
 # 2026-10-03: the unsigned election miner now submits two pages instead of thirty-two
 # (`MinerPages`). `submit_unsigned` mines exactly that many pages, so its thirty-two-page
-# measurement -- 31 s and 12 MB against a 2 s block -- no longer describes the call and is
+# measurement -- 12 MB of proof against the 10 MiB `MAX_POV_SIZE` -- no longer describes the call and is
 # what `runtime_integrity_tests` refuses. Only this pallet's file depends on `MinerPages`.
-runs:
-  - runtime: asset-hub-pezkuwichain
-    pallet: pezpallet_election_provider_multi_block::unsigned
-    why: MinerPages 32 -> 2; the integrity test refuses the 32-page weight
-  - runtime: asset-hub-zagros
-    pallet: pezpallet_election_provider_multi_block::unsigned
-    why: the twin, measured in the same run so the two cannot drift apart unnoticed
+#
+# Measured the same day (run 37067510936, reference box): two pages cost 6.6 ms and 417 KB of
+# proof, inside the block on both twins. The files are in the tree, so the list is empty again.
+runs: []
