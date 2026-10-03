@@ -19,7 +19,7 @@ use pezsc_service::ChainType;
 
 pub fn asset_hub_zagros_development_config() -> GenericChainSpec {
 	let mut properties = pezsc_chain_spec::Properties::new();
-	properties.insert("tokenSymbol".into(), "ZGR".into());
+	properties.insert("tokenSymbol".into(), "HEZ".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 
 	GenericChainSpec::builder(
@@ -36,7 +36,7 @@ pub fn asset_hub_zagros_development_config() -> GenericChainSpec {
 
 pub fn asset_hub_zagros_local_config() -> GenericChainSpec {
 	let mut properties = pezsc_chain_spec::Properties::new();
-	properties.insert("tokenSymbol".into(), "ZGR".into());
+	properties.insert("tokenSymbol".into(), "HEZ".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 
 	GenericChainSpec::builder(
@@ -53,7 +53,7 @@ pub fn asset_hub_zagros_local_config() -> GenericChainSpec {
 
 pub fn asset_hub_zagros_config() -> GenericChainSpec {
 	let mut properties = pezsc_chain_spec::Properties::new();
-	properties.insert("tokenSymbol".into(), "ZGR".into());
+	properties.insert("tokenSymbol".into(), "HEZ".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 
 	GenericChainSpec::builder(

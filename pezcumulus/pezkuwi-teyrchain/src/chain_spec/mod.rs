@@ -54,25 +54,10 @@ pub(crate) struct ChainSpecLoader;
 impl LoadSpec for ChainSpecLoader {
 	fn load_spec(&self, id: &str) -> Result<Box<dyn ChainSpec>, String> {
 		Ok(match id {
-			"tick" => Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/tick.json")[..],
-			)?),
-			"trick" => Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/trick.json")[..],
-			)?),
-			"track" => Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/track.json")[..],
-			)?),
-
-			// -- Asset Hub Pezkuwi
-			"asset-hub-pezkuwi" => Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/asset-hub-pezkuwi.json")[..],
-			)?),
-
-			// -- Asset Hub Dicle
-			"asset-hub-dicle" => Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/asset-hub-dicle.json")[..],
-			)?),
+			// Only chains that have been launched carry an embedded spec, and each one is the
+			// file its live nodes run (Serok, 2026-10-03). The specs this binary used to embed
+			// for other networks -- Pezkuwi, Dicle, tick/trick/track -- carried someone else's
+			// genesis behind our boot-node names.
 
 			// -- Asset Hub Pezkuwichain
 			"asset-hub-pezkuwichain-dev" => {
@@ -99,19 +84,16 @@ impl LoadSpec for ChainSpecLoader {
 				&include_bytes!("../../chain-specs/asset-hub-zagros.json")[..],
 			)?),
 
-			// -- Pezkuwi Collectives
-			"collectives-pezkuwi" => Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/collectives-pezkuwi.json")[..],
-			)?),
-
 			// -- Zagros Collectives
 			"collectives-zagros-dev" => {
 				Box::new(collectives::collectives_zagros_development_config())
 			},
 			"collectives-zagros-local" => Box::new(collectives::collectives_zagros_local_config()),
-			"collectives-zagros" => Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/collectives-zagros.json")[..],
-			)?),
+			"collectives-zagros" => {
+				return Err("collectives-zagros: not launched yet, so no spec of it is embedded; \
+				            pass the launched chain's spec as a file"
+					.into())
+			},
 
 			// -- BridgeHub
 			bridge_like_id

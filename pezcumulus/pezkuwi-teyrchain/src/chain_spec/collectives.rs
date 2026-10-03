@@ -21,7 +21,7 @@ use pezsc_service::ChainType;
 pub fn collectives_zagros_development_config() -> GenericChainSpec {
 	let mut properties = pezsc_chain_spec::Properties::new();
 	properties.insert("ss58Format".into(), 42.into());
-	properties.insert("tokenSymbol".into(), "ZGR".into());
+	properties.insert("tokenSymbol".into(), "HEZ".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 
 	GenericChainSpec::builder(
@@ -42,7 +42,7 @@ pub fn collectives_zagros_development_config() -> GenericChainSpec {
 pub fn collectives_zagros_local_config() -> GenericChainSpec {
 	let mut properties = pezsc_chain_spec::Properties::new();
 	properties.insert("ss58Format".into(), 42.into());
-	properties.insert("tokenSymbol".into(), "ZGR".into());
+	properties.insert("tokenSymbol".into(), "HEZ".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 
 	GenericChainSpec::builder(

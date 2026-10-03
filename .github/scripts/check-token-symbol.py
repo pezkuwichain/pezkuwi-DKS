@@ -29,15 +29,35 @@ WANT_SYMBOL = "HEZ"
 WANT_DECIMALS = 12
 
 
+# Every directory a chain spec is kept in, not only the one first written down. Until
+# 2026-10-03 this read `pezcumulus/teyrchains/chain-specs` alone, while the specs the binaries
+# embed live in the other two -- and those still said `ZGR` for the relay and all five Zagros
+# teyrchains, months after the reference copies were corrected. A gate is as wide as the paths
+# it reads.
+SPEC_DIRS = (
+    "pezcumulus/teyrchains/chain-specs",
+    "pezcumulus/pezkuwi-teyrchain/chain-specs",
+    "pezkuwi/node/service/chain-specs",
+)
+
+
+def specs():
+    # No exceptions. Only launched chains carry a spec in this tree (Serok, 2026-10-03), and
+    # every one of them is ours and names HEZ; a spec for any other network does not belong
+    # here, so it should fail this gate rather than be skipped by it.
+    for d in SPEC_DIRS:
+        yield from sorted((REPO / d).glob("*.json"))
+
+
 def main():
     verbose = "--verbose" in sys.argv
     bad, checked = [], 0
 
-    for spec in sorted((REPO / "pezcumulus" / "teyrchains" / "chain-specs").glob("*.json")):
+    for spec in specs():
         try:
             doc = json.loads(spec.read_text())
         except Exception as e:
-            bad.append(f"  {spec.name}: unreadable ({e})")
+            bad.append(f"  {spec.relative_to(REPO)}: unreadable ({e})")
             continue
         # Not every file here is a chain spec; one is a bare list of genesis values. A file
         # that is not a spec makes no claim about the symbol and is not this gate's business.
@@ -49,10 +69,10 @@ def main():
             continue          # a spec that states no symbol claims nothing
         checked += 1
         if sym != WANT_SYMBOL or dec != WANT_DECIMALS:
-            bad.append(f"  {spec.name}: tokenSymbol={sym!r} tokenDecimals={dec} "
+            bad.append(f"  {spec.relative_to(REPO)}: tokenSymbol={sym!r} tokenDecimals={dec} "
                        f"(want {WANT_SYMBOL!r}/{WANT_DECIMALS})")
         elif verbose:
-            print(f"  ok    {spec.name}")
+            print(f"  ok    {spec.relative_to(REPO)}")
 
     # The workflow builds the published specs, and its properties are a command-line string --
     # so the file the chain actually launches from is only as right as this line.
