@@ -84,8 +84,11 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 			.with_default_command("pezkuwi")
 			.with_default_image(images.pezkuwi())
 			.with_validator(|n| n.with_name("validator-0"));
-		(1..TEYRCHAINS.len())
-			.fold(r, |r, i| r.with_validator(|n| n.with_name(format!("validator-{i}"))))
+		(1..TEYRCHAINS.len()).fold(r, |r, i| {
+			// `with_name` takes a `Copy` name, so a `&str` borrowed for the call, not a `String`.
+			let name = format!("validator-{i}");
+			r.with_validator(|n| n.with_name(name.as_str()))
+		})
 	});
 
 	for (id, chain, collator) in TEYRCHAINS {
