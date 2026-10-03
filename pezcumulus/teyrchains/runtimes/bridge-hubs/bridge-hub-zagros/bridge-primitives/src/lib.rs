@@ -24,8 +24,21 @@ use pezbp_messages::*;
 use pezbp_runtime::{
 	decl_bridge_finality_runtime_apis, decl_bridge_messages_runtime_apis, Chain, ChainId, Teyrchain,
 };
-use pezframe_support::dispatch::DispatchClass;
+use pezframe_support::{
+	dispatch::DispatchClass, parameter_types, weights::constants::WEIGHT_REF_TIME_PER_NANOS,
+};
 use pezsp_runtime::StateVersion;
+
+parameter_types! {
+	/// Weight limit of this hub's blocks, built from the base weights its runtime measured
+	/// (`src/weights/block_weights.rs`, `src/weights/extrinsic_weights.rs`). Shadows the generic
+	/// one re-exported above. When the overhead is re-measured these two numbers move with it:
+	/// `ensure_bridge_integrity` compares this with the runtime and goes red until they do.
+	pub BlockWeightsForAsyncBacking: limits::BlockWeights = block_weights_for_async_backing(
+		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(829_620), 3_144),
+		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(249_177), 474),
+	);
+}
 
 /// BridgeHubZagros teyrchain.
 #[derive(Debug)]

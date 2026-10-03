@@ -27,8 +27,21 @@ use pezbp_runtime::{
 };
 use pezframe_support::{
 	dispatch::DispatchClass,
+	parameter_types,
 	pezsp_runtime::{MultiAddress, MultiSigner, StateVersion},
+	weights::constants::WEIGHT_REF_TIME_PER_NANOS,
 };
+
+parameter_types! {
+	/// Weight limit of this hub's blocks, built from the base weights its runtime measured
+	/// (`src/weights/block_weights.rs`, `src/weights/extrinsic_weights.rs`). Shadows the generic
+	/// one re-exported above. When the overhead is re-measured these two numbers move with it:
+	/// `ensure_bridge_integrity` compares this with the runtime and goes red until they do.
+	pub BlockWeightsForAsyncBacking: limits::BlockWeights = block_weights_for_async_backing(
+		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(1_123_407), 3_386),
+		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(223_242), 603),
+	);
+}
 
 /// BridgeHubPezkuwichain teyrchain.
 #[derive(Debug)]
