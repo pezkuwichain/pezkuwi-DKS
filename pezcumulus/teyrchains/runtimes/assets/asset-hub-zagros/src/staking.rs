@@ -178,7 +178,12 @@ parameter_types! {
 	pub MinerTxPriority: TransactionPriority = TransactionPriority::max_value() / 2;
 	/// Try and run the OCW miner 4 times during the unsigned phase.
 	pub OffchainRepeat: BlockNumber = UnsignedPhase::get() / 4;
-	pub storage MinerPages: u32 = 32;
+	/// Pages the offchain miner puts in its one unsigned transaction. The `submit_unsigned`
+	/// benchmark mines exactly this many pages. At 32 it measured 12 MB of proof against the
+	/// 10 MiB `MAX_POV_SIZE` -- the unsigned phase could never land a solution; at 2 it is
+	/// 417 KB.
+	/// Upstream's Asset Hub uses 2; the signed phase covers the pages the miner leaves out.
+	pub storage MinerPages: u32 = 2;
 }
 
 impl multi_block::unsigned::Config for Runtime {

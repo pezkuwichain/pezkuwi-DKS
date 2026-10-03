@@ -15,8 +15,8 @@
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.1
-//! DATE: 2026-08-28 (Y/M/D)
-//! HOSTNAME: `vmi3519825`, CPU: `AMD EPYC Processor (with IBPB)`
+//! DATE: 2026-09-27 (Y/M/D)
+//! HOSTNAME: `vmi3220280`, CPU: `AMD EPYC Processor (with IBPB)`
 //!
 //! SHORT-NAME: `extrinsic`, LONG-NAME: `ExtrinsicBase`, RUNTIME: `pezkuwichain`
 //! WARMUPS: `10`, REPEAT: `100`
@@ -24,18 +24,12 @@
 //! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./target/production/pezframe-omni-bencher
+//   /home/runner/.cargo/bin/pezframe-omni-bencher
 //   v1
 //   benchmark
 //   overhead
 //   --runtime
 //   target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
-//   --genesis-builder
-//   runtime
-//   --genesis-builder-preset
-//   development
-//   --wasm-execution
-//   compiled
 //   --weight-path
 //   ./pezkuwi/runtime/pezkuwichain/constants/src/weights/
 //   --header
@@ -53,17 +47,17 @@ parameter_types! {
 	/// Calculated by multiplying the *Average* with `1.0` and adding `0`.
 	///
 	/// Stats nanoseconds:
-	///   Min, Max: 191_975, 300_900
-	///   Average:  223_020
-	///   Median:   217_950
-	///   Std-Dev:  20488.02
+	///   Min, Max: 185_982, 315_245
+	///   Average:  223_783
+	///   Median:   218_576
+	///   Std-Dev:  23456.71
 	///
 	/// Percentiles nanoseconds:
-	///   99th: 291_014
-	///   95th: 270_295
-	///   75th: 227_617
+	///   99th: 312_477
+	///   95th: 259_733
+	///   75th: 237_001
 	pub const ExtrinsicBaseWeight: Weight =
-		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(223_020), 0);
+		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(223_783), 0);
 }
 
 #[cfg(test)]

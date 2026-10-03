@@ -15,8 +15,8 @@
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.1
-//! DATE: 2026-08-28 (Y/M/D)
-//! HOSTNAME: `vmi3519825`, CPU: `AMD EPYC Processor (with IBPB)`
+//! DATE: 2026-09-27 (Y/M/D)
+//! HOSTNAME: `vmi3220280`, CPU: `AMD EPYC Processor (with IBPB)`
 //!
 //! SHORT-NAME: `block`, LONG-NAME: `BlockExecution`, RUNTIME: `zagros`
 //! WARMUPS: `10`, REPEAT: `100`
@@ -24,18 +24,12 @@
 //! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./target/production/pezframe-omni-bencher
+//   /home/runner/.cargo/bin/pezframe-omni-bencher
 //   v1
 //   benchmark
 //   overhead
 //   --runtime
 //   target/production/wbuild/zagros-runtime/zagros_runtime.wasm
-//   --genesis-builder
-//   runtime
-//   --genesis-builder-preset
-//   development
-//   --wasm-execution
-//   compiled
 //   --weight-path
 //   ./pezkuwi/runtime/zagros/constants/src/weights/
 //   --header
@@ -53,17 +47,17 @@ parameter_types! {
 	/// Calculated by multiplying the *Average* with `1.0` and adding `0`.
 	///
 	/// Stats nanoseconds:
-	///   Min, Max: 970_128, 3_768_821
-	///   Average:  1_484_657
-	///   Median:   1_335_138
-	///   Std-Dev:  433080.98
+	///   Min, Max: 887_455, 1_742_289
+	///   Average:  1_144_427
+	///   Median:   1_138_273
+	///   Std-Dev:  91423.09
 	///
 	/// Percentiles nanoseconds:
-	///   99th: 3_448_595
-	///   95th: 2_220_657
-	///   75th: 1_608_417
+	///   99th: 1_331_273
+	///   95th: 1_245_714
+	///   75th: 1_179_792
 	pub const BlockExecutionWeight: Weight =
-		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(1_484_657), 0);
+		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(1_144_427), 0);
 }
 
 #[cfg(test)]

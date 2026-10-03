@@ -256,12 +256,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 		vec![Value::from_bytes(&wasm_data)],
 	);
 
-	// Unsigned, so the submitter needs no balance here. `pezframe_system` validates an unsigned
-	// `apply_authorized_upgrade` against the hash authorised in step 1 and nothing else. This
-	// step used to sign with the sudo key and, when that account was empty on People, first sent
-	// a relay Superuser `Balances::force_set_balance` for 10,000 HEZ -- new tokens with nothing
-	// behind them, which breaks the supply both chains are audited against.
-	let progress = people_api.tx().create_unsigned(&enact_call)?.submit_and_watch().await?;
+	// Signed when the submitter already holds HEZ here, unsigned otherwise; never funded by minting.
+	//
+	// Unsigned needs no balance: `pezframe_system` validates it against the hash authorised in step
+	// 1 and nothing else. But an unsigned call has the same hash every time, so once a pool has
+	// seen it in a block the relay did not include, the pool keeps it banned and every retry is
+	// refused as "temporarily banned". A signed call carries a nonce and a fresh hash. Fund the
+	// account with a real teleport first (relay -> People) when a retry is needed. This step used to
+	// mint 10,000 HEZ with a relay Superuser `force_set_balance` instead, which breaks the supply
+	// both chains are audited against.
+	let submitter = sudo_keypair.public_key().to_account_id();
+	let submitter_bytes: [u8; 32] = *submitter.as_ref();
+	let account_key = {
+		let mut key = Vec::new();
+		key.extend_from_slice(&pezsp_crypto_hashing::twox_128(b"System"));
+		key.extend_from_slice(&pezsp_crypto_hashing::twox_128(b"Account"));
+		key.extend_from_slice(&pezsp_crypto_hashing::blake2_128(&submitter_bytes));
+		key.extend_from_slice(&submitter_bytes);
+		key
+	};
+	let funded = match people_api.storage().at_latest().await?.fetch_raw(account_key).await {
+		Ok(data) => !data.is_empty(),
+		Err(_) => false,
+	};
+	let progress = if funded {
+		println!("  Submitter holds HEZ here -- signing");
+		people_api
+			.tx()
+			.sign_and_submit_then_watch_default(&enact_call, &sudo_keypair)
+			.await?
+	} else {
+		println!("  Submitter holds nothing here -- unsigned");
+		people_api.tx().create_unsigned(&enact_call)?.submit_and_watch().await?
+	};
 	let events = progress.wait_for_finalized_success().await?;
 
 	let mut code_updated = false;

@@ -56,10 +56,12 @@
 #
 # All sixteen execute against the mock (`cargo test --features runtime-benchmarks bench`).
 # This asks the reference host for the real numbers, both twins.
-runs:
-  - runtime: people-pezkuwichain
-    pallet: pezpallet_welati
-    why: sixteen benchmarks, six of which have never produced a number
-  - runtime: people-zagros
-    pallet: pezpallet_welati
-    why: the twin, measured in the same run so the two cannot drift apart unnoticed
+#
+# 2026-10-03: the unsigned election miner now submits two pages instead of thirty-two
+# (`MinerPages`). `submit_unsigned` mines exactly that many pages, so its thirty-two-page
+# measurement -- 12 MB of proof against the 10 MiB `MAX_POV_SIZE` -- no longer describes the call and is
+# what `runtime_integrity_tests` refuses. Only this pallet's file depends on `MinerPages`.
+#
+# Measured the same day (run 37067510936, reference box): two pages cost 6.6 ms and 417 KB of
+# proof, inside the block on both twins. The files are in the tree, so the list is empty again.
+runs: []
