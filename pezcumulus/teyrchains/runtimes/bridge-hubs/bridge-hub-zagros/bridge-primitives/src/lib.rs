@@ -119,11 +119,11 @@ pezframe_support::parameter_types! {
 
 	/// Transaction fee that is paid at the Zagros BridgeHub for delivering single inbound message.
 	/// (calculated by test `BridgeHubZagros::can_calculate_fee_for_standalone_message_delivery_transaction` + `33%`)
-	pub const BridgeHubZagrosBaseDeliveryFeeInWnds: u128 = 295_185_160;
+	pub const BridgeHubZagrosBaseDeliveryFeeInWnds: u128 = 296_678_607;
 
 	/// Transaction fee that is paid at the Zagros BridgeHub for delivering single outbound message confirmation.
 	/// (calculated by test `BridgeHubZagros::can_calculate_fee_for_standalone_message_confirmation_transaction` + `33%`)
-	pub const BridgeHubZagrosBaseConfirmationFeeInWnds: u128 = 54_052_251;
+	pub const BridgeHubZagrosBaseConfirmationFeeInWnds: u128 = 55_545_699;
 }
 
 /// Wrapper over `BridgeHubZagros`'s `RuntimeCall` that can be used without a runtime.
