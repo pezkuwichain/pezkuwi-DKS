@@ -209,6 +209,15 @@ threads-required = 'num-cpus'
 slow-timeout = { period = "60s", terminate-after = 45 }
 retries = 0
 
+# Ten nodes at once -- five validators and a collator for each of the five Zagros
+# teyrchains -- so it takes the whole runner, like the rehearsal stages. Thirty relay blocks of
+# throughput after a network that size comes up is minutes, not the twenty a stage gets.
+[[profile.default.overrides]]
+filter = 'test(/zagros_runs_every_system_chain/)'
+threads-required = 'num-cpus'
+slow-timeout = { period = "60s", terminate-after = 20 }
+retries = 0
+
 [[profile.default.overrides]]
 filter = 'test(/state_rehearsal/)'
 threads-required = 'num-cpus'
