@@ -14,19 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use pezkuwi_omni_node_lib::chain_spec::GenericChainSpec;
 use pezsc_chain_spec::{ChainSpec, ChainType};
 use std::str::FromStr;
 
 /// Collects all supported BridgeHub configurations
 #[derive(Debug, PartialEq)]
 pub enum BridgeHubRuntimeType {
-	Dicle,
-	DicleLocal,
-
-	Pezkuwi,
-	PezkuwiLocal,
-
+	// The live ids stay even though no live spec is embedded: `LegacyRuntime::from_id` parses
+	// a running node's chain id into this type, so a launched hub started from its own spec
+	// file would not start if its id were missing here.
 	Pezkuwichain,
 	PezkuwichainLocal,
 	// used by benchmarks
@@ -43,10 +39,6 @@ impl FromStr for BridgeHubRuntimeType {
 
 	fn from_str(value: &str) -> Result<Self, Self::Err> {
 		match value {
-			pezkuwi::BRIDGE_HUB_PEZKUWI => Ok(BridgeHubRuntimeType::Pezkuwi),
-			pezkuwi::BRIDGE_HUB_PEZKUWI_LOCAL => Ok(BridgeHubRuntimeType::PezkuwiLocal),
-			dicle::BRIDGE_HUB_DICLE => Ok(BridgeHubRuntimeType::Dicle),
-			dicle::BRIDGE_HUB_DICLE_LOCAL => Ok(BridgeHubRuntimeType::DicleLocal),
 			zagros::BRIDGE_HUB_ZAGROS => Ok(BridgeHubRuntimeType::Zagros),
 			zagros::BRIDGE_HUB_ZAGROS_LOCAL => Ok(BridgeHubRuntimeType::ZagrosLocal),
 			zagros::BRIDGE_HUB_ZAGROS_DEVELOPMENT => Ok(BridgeHubRuntimeType::ZagrosDevelopment),
@@ -67,15 +59,9 @@ impl BridgeHubRuntimeType {
 
 	pub fn load_config(&self) -> Result<Box<dyn ChainSpec>, String> {
 		match self {
-			BridgeHubRuntimeType::Pezkuwi => Ok(Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/bridge-hub-pezkuwi.json")[..],
-			)?)),
-			BridgeHubRuntimeType::Dicle => Ok(Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/bridge-hub-dicle.json")[..],
-			)?)),
-			BridgeHubRuntimeType::Zagros => Ok(Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/bridge-hub-zagros.json")[..],
-			)?)),
+			BridgeHubRuntimeType::Zagros | BridgeHubRuntimeType::Pezkuwichain => {
+				Err(std::format!("{self:?}: not launched: neither network runs this chain yet, so no spec of it is embedded. Zagros takes it first and Pezkuwichain after it; pass the launched chain's spec as a file"))
+			},
 			BridgeHubRuntimeType::ZagrosLocal => Ok(Box::new(zagros::local_config(
 				zagros::BRIDGE_HUB_ZAGROS_LOCAL,
 				"Zagros BridgeHub Local",
@@ -88,9 +74,6 @@ impl BridgeHubRuntimeType {
 				"zagros-dev",
 				ChainType::Development,
 			))),
-			BridgeHubRuntimeType::Pezkuwichain => Ok(Box::new(GenericChainSpec::from_json_bytes(
-				&include_bytes!("../../chain-specs/bridge-hub-pezkuwichain.json")[..],
-			)?)),
 			BridgeHubRuntimeType::PezkuwichainLocal => Ok(Box::new(pezkuwichain::local_config(
 				pezkuwichain::BRIDGE_HUB_PEZKUWICHAIN_LOCAL,
 				"Pezkuwichain BridgeHub Local",
@@ -107,7 +90,6 @@ impl BridgeHubRuntimeType {
 					ChainType::Development,
 				)))
 			},
-			other => Err(std::format!("No default config present for {:?}", other)),
 		}
 	}
 }
@@ -166,12 +148,6 @@ pub mod pezkuwichain {
 	}
 }
 
-/// Sub-module for Dicle setup
-pub mod dicle {
-	pub(crate) const BRIDGE_HUB_DICLE: &str = "bridge-hub-dicle";
-	pub(crate) const BRIDGE_HUB_DICLE_LOCAL: &str = "bridge-hub-dicle-local";
-}
-
 /// Sub-module for Zagros setup.
 pub mod zagros {
 	use super::ChainType;
@@ -188,7 +164,7 @@ pub mod zagros {
 		chain_type: ChainType,
 	) -> GenericChainSpec {
 		let mut properties = pezsc_chain_spec::Properties::new();
-		properties.insert("tokenSymbol".into(), "ZGR".into());
+		properties.insert("tokenSymbol".into(), "HEZ".into());
 		properties.insert("tokenDecimals".into(), 12.into());
 
 		GenericChainSpec::builder(
@@ -207,10 +183,4 @@ pub mod zagros {
 		.with_properties(properties)
 		.build()
 	}
-}
-
-/// Sub-module for Pezkuwi setup
-pub mod pezkuwi {
-	pub(crate) const BRIDGE_HUB_PEZKUWI: &str = "bridge-hub-pezkuwi";
-	pub(crate) const BRIDGE_HUB_PEZKUWI_LOCAL: &str = "bridge-hub-pezkuwi-local";
 }

@@ -131,11 +131,24 @@ async fn submit(
 	tx: &DynamicPayload,
 	signer: &Keypair,
 ) -> Result<(), String> {
-	let progress = api
-		.tx()
-		.sign_and_submit_then_watch_default(tx, signer)
-		.await
-		.map_err(|e| format!("the submission itself failed: {e}"))?;
+	let progress = match api.tx().sign_and_submit_then_watch_default(tx, signer).await {
+		Ok(progress) => progress,
+		// A pool refusal reads "Invalid Transaction (1010)" and nothing else in `{e}`; the
+		// reason -- fees, a stale nonce, an extension -- is in the error's data, and the
+		// signer's balance and nonce settle most of them. Both are written out, because the
+		// alternative is a guess and a cycle costs an hour and a half.
+		Err(e) => {
+			let account = storage_value(api, "System", "Account", vec![account_key(signer)])
+				.await
+				.ok()
+				.flatten()
+				.map(|v| format!("{v}"))
+				.unwrap_or_else(|| "no account".into());
+			return Err(format!(
+				"the submission itself failed: {e}; detail: {e:?}; the signer's account: {account}"
+			));
+		},
+	};
 	progress
 		.wait_for_finalized_success()
 		.await
@@ -1281,6 +1294,26 @@ pub(crate) async fn a_citizen_writes_to_a_citizen(
 	.await?;
 
 	let ciphertext: Vec<u8> = (0u8..48).collect();
+	// Start on a fresh era. `acknowledge_messages` clears the current era's inbox only -- an
+	// earlier era's is left to the purge, by design -- so a send in one era and an
+	// acknowledgement in the next leaves the message where this stage looks for it. The first
+	// run with these stages did exactly that: an era is twenty blocks in a rehearsal build, and
+	// a send, a read and an acknowledgement each wait for finality.
+	let turned_from = number_at(people, "Messaging", "CurrentEra", Vec::new()).await?;
+	let mut fresh = false;
+	for _ in 0..(era_length as u64 * 2 * 6 / 2) {
+		if number_at(people, "Messaging", "CurrentEra", Vec::new()).await? != turned_from {
+			fresh = true;
+			break;
+		}
+		tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+	}
+	if !fresh {
+		return Err(anyhow!(
+			"the messaging era did not turn from {turned_from} in two era lengths ({era_length} \
+			 blocks each) -- the era clock is not running"
+		));
+	}
 	let era = number_at(people, "Messaging", "CurrentEra", Vec::new()).await?;
 	let sent_before =
 		number_at(people, "Messaging", "SendCount", vec![Value::u128(era), account_key(&sender)])
@@ -1341,6 +1374,14 @@ pub(crate) async fn a_citizen_writes_to_a_citizen(
 	.await?
 	.map(list_items)
 	.unwrap_or_default();
+	let era_at_ack = number_at(people, "Messaging", "CurrentEra", Vec::new()).await?;
+	if era_at_ack != era {
+		return Err(anyhow!(
+			"the era turned ({era} -> {era_at_ack}) before the acknowledgement, which clears the \
+			 current era only, so whether it cleared the message cannot be read; rerun -- an era \
+			 is {era_length} blocks"
+		));
+	}
 	if !left.is_empty() {
 		return Err(anyhow!(
 			"the recipient acknowledged and {} messages remain -- \"zero trace\" is the pallet's \

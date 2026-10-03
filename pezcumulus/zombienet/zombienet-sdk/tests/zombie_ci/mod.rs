@@ -17,3 +17,4 @@ mod statement_store;
 mod statement_store_bench;
 mod sync_blocks;
 mod teyrchain_extrinsic_get_finalized;
+mod zagros_full;
