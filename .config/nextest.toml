@@ -179,10 +179,16 @@ test-group = 'serial-integration'
 # full and a chain that is actually producing. Run 21 took forty-nine minutes before the
 # initiative stage joined it, which left five minutes of margin under a sixty-minute cap --
 # not enough to tell a slow run from a stuck one.
+#
+# Raised to two hours on 2026-10-03, when the custom-pallet stages joined the same network.
+# Run 37058746004 measured it: the register full at 29 minutes, the offices through the
+# initiative done at 58, Rewsenbîr, Perwerde's opening and Referral at 74 -- each logging
+# progress, none stuck -- and the cap ended it one minute into Messaging, with Messaging,
+# TokenWrapper, WP-19 and Perwerde's closing still to run at roughly five minutes each.
 [[profile.default.overrides]]
 filter = 'test(/the_register_fills/)'
 threads-required = 'num-cpus'
-slow-timeout = { period = "60s", terminate-after = 75 }
+slow-timeout = { period = "60s", terminate-after = 120 }
 retries = 0
 
 # The governance-track stage is sized by the tracks, not by a guess.
