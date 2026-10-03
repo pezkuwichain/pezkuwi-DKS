@@ -4086,6 +4086,7 @@ name = "coretime-zagros-runtime"
 version = "0.1.0"
 dependencies = [
  "bizinikiwi-wasm-builder",
+ "hex-literal",
  "parity-scale-codec",
  "pezcumulus-pezpallet-aura-ext",
  "pezcumulus-pezpallet-session-benchmarking",

@@ -17,8 +17,10 @@
 
 use crate::*;
 use alloc::{vec, vec::Vec};
+use hex_literal::hex;
 use pezcumulus_primitives_core::ParaId;
 use pezframe_support::build_struct_json_patch;
+use pezsp_core::crypto::UncheckedInto;
 use pezsp_genesis_builder::PresetId;
 use pezsp_keyring::Sr25519Keyring;
 use testnet_teyrchains_constants::zagros::xcm_version::SAFE_XCM_VERSION;
@@ -76,12 +78,23 @@ pub fn get_preset(id: &pezsp_genesis_builder::PresetId) -> Option<pezsp_std::vec
 		// the live Pezkuwichain bridge hub ended up with 1,152,921 HEZ -- `1u128 << 60`, held
 		// by a migration account inherited from the fork base rather than chosen here.
 		PRESET_GENESIS => collectives_zagros_genesis(
-			// Alice and Bob as collators, deliberately: Zagros is a testnet whose sudo is Alice
-			// for the same reason. Producing blocks is not a privileged switch; Pezkuwichain
-			// names real collators.
+			// The two collators from the Zagros key set, derived from its master phrase at the
+			// paths shown (res/genesis/zagros/zagros-wallets.json). Not Alice and Bob: the live
+			// Zagros is keyed from its own phrase -- sudo included -- and so are its Asset Hub
+			// and People collators.
 			vec![
-				(Sr25519Keyring::Alice.to_account_id(), Sr25519Keyring::Alice.public().into()),
-				(Sr25519Keyring::Bob.to_account_id(), Sr25519Keyring::Bob.public().into()),
+				// Zagros collectives collator 1 (5F7L2aazLZcfamTVU1LytSGYWM95yxwfJmcyH2CcGeEj6cfd), `//zagros//collator//collectives//1`
+				(
+					hex!("86b4f405846dc1eb627ae0fb5cf30d8161e2a3014c7091027efacfd7bc87ce7b").into(),
+					hex!("86b4f405846dc1eb627ae0fb5cf30d8161e2a3014c7091027efacfd7bc87ce7b")
+						.unchecked_into(),
+				),
+				// Zagros collectives collator 2 (5CSD1x61jgCUkG3YDzMVEXtAP95R9sPAyr5EsvmC8ka8ta1u), `//zagros//collator//collectives//2`
+				(
+					hex!("1066509dd0747b60d12ec05b87f751250a23b674fee7f16b483eca4082e7366f").into(),
+					hex!("1066509dd0747b60d12ec05b87f751250a23b674fee7f16b483eca4082e7366f")
+						.unchecked_into(),
+				),
 			],
 			// No endowed accounts: a launched chain funds nobody here. Test accounts are
 			// funded after launch by teleport, which is the path mainnet uses.
@@ -125,4 +138,24 @@ pub fn preset_names() -> Vec<PresetId> {
 		PresetId::from(pezsp_genesis_builder::DEV_RUNTIME_PRESET),
 		PresetId::from(pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET),
 	]
+}
+
+/// The launch preset names its own collators, and no development key anywhere. Zagros is
+/// keyed from its own master phrase; a keyring account in a launched genesis is a key every
+/// developer holds, sitting in a seat this chain gave it.
+#[test]
+fn the_launch_preset_names_no_keyring_account() {
+	let raw = get_preset(&PresetId::from(preset_names::PRESET_GENESIS))
+		.expect("the genesis preset exists");
+	let text = core::str::from_utf8(&raw).expect("the preset is utf-8 json");
+	for key in Sr25519Keyring::iter() {
+		let ss58 = key.to_account_id().to_string();
+		assert!(!text.contains(&ss58), "the launch preset names {key:?} ({ss58})");
+	}
+
+	let g: serde_json::Value = serde_json::from_str(text).expect("valid json");
+	let invulnerables = g["collatorSelection"]["invulnerables"]
+		.as_array()
+		.expect("the preset sets the invulnerables");
+	assert_eq!(invulnerables.len(), 2, "two collators, one per box");
 }
