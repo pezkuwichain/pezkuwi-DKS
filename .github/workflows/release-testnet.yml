@@ -98,6 +98,10 @@ jobs:
           - zagros-runtime
           - asset-hub-zagros-runtime
           - people-zagros-runtime
+          # Zagros runs every system chain Pezkuwichain will take on (Serok, 2026-10-03).
+          - pezbridge-hub-zagros-runtime
+          - coretime-zagros-runtime
+          - collectives-zagros-runtime
     steps:
       - uses: actions/checkout@v7
         with:
@@ -351,6 +355,21 @@ jobs:
               "ss58Format=42,tokenDecimals=12,tokenSymbol=HEZ" \
               -p 1004 -c zagros
 
+          gen pezbridge-hub-zagros-runtime.compact.compressed.wasm \
+              "Zagros BridgeHub" bridge-hub-zagros \
+              "ss58Format=42,tokenDecimals=12,tokenSymbol=HEZ" \
+              -p 1002 -c zagros
+
+          gen coretime-zagros-runtime.compact.compressed.wasm \
+              "Zagros Coretime" coretime-zagros \
+              "ss58Format=42,tokenDecimals=12,tokenSymbol=HEZ" \
+              -p 1005 -c zagros
+
+          gen collectives-zagros-runtime.compact.compressed.wasm \
+              "Zagros Collectives" collectives-zagros \
+              "ss58Format=42,tokenDecimals=12,tokenSymbol=HEZ" \
+              -p 1001 -c zagros
+
       - name: Assert the specs do not inherit the mainnet identity
         run: |
           set -euo pipefail
@@ -363,6 +382,9 @@ jobs:
               "zagros":           ("Zagros",            None,   None),
               "asset-hub-zagros": ("Zagros Asset Hub",  1000,   "zagros"),
               "people-zagros":    ("Zagros People",     1004,   "zagros"),
+              "bridge-hub-zagros": ("Zagros BridgeHub",  1002,   "zagros"),
+              "coretime-zagros":  ("Zagros Coretime",   1005,   "zagros"),
+              "collectives-zagros": ("Zagros Collectives", 1001, "zagros"),
           }
           bad = []
           for cid, (name, para, relay) in expected.items():
