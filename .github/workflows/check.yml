@@ -228,9 +228,12 @@ jobs:
       # These are the tests that answer questions a type cannot: whether a message from a
       # sibling is refused, whether a body that should be able to authorise an upgrade can, and
       # whether the two ballot boxes count separate electorates.
+      # `--no-fail-fast`: without it the first red test binary stops the job and every runtime
+      # after it goes unmeasured, so one run reported Asset Hub and the next one Bridge Hub --
+      # about an hour each for what one run can say at once (2026-10-03).
       - name: Run the runtime integration tests
         run: |
-          SKIP_WASM_BUILD=1 cargo test --locked \
+          SKIP_WASM_BUILD=1 cargo test --locked --no-fail-fast \
             -p asset-hub-pezkuwichain-runtime \
             -p asset-hub-zagros-runtime \
             -p people-pezkuwichain-runtime \
