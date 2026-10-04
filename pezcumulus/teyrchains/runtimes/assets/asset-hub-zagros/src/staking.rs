@@ -391,17 +391,55 @@ impl pezpallet_staking_async_rc_client::Config for Runtime {
 	type KeyDeposit = ConstU128<{ 10 * UNITS }>;
 	type WeightInfo = ();
 	type RelayChainOrigin = EnsureRoot<AccountId>;
-	type AHStakingInterface = Staking;
+	type AHStakingInterface = RelayReportsAreWork;
 	type SendToRelayChain = StakingXcmToRelayChain;
 	type MaxValidatorSetRetries = ConstU32<64>;
 }
 
-/// Forwards session events to both CollatorSelection (collator management) and
-/// Staking pallet (era management) via local SessionReport generation.
+/// What a relay session report is to this chain: a record of the work its validators did.
 ///
-/// This is needed because `pezpallet_staking_async` expects `SessionReport` messages from
-/// the relay chain's `ah_client` pallet, which is not yet active. This wrapper generates
-/// local session reports from AH's own session rotation events.
+/// The relay sends a report every session, with the era points of the validators that
+/// validated. `staking-async` would also end a session with it and, with an activation
+/// timestamp, start an era. This chain's era clock is its own (`StakingSessionManager`): the
+/// validator set comes from People, so the relay's activation never names an era of ours, and
+/// the relay's session numbers are not ours. Two writers to one clock is how an era is skipped
+/// or never starts. So the report is taken for its points and nothing else.
+pub struct RelayReportsAreWork;
+impl rc_client::AHStakingInterface for RelayReportsAreWork {
+	type AccountId = AccountId;
+	type MaxValidatorSet = <Staking as rc_client::AHStakingInterface>::MaxValidatorSet;
+
+	fn on_relay_session_report(report: rc_client::SessionReport<AccountId>) -> Weight {
+		let weight =
+			<Staking as rc_client::AHStakingInterface>::weigh_on_relay_session_report(&report);
+		Staking::note_era_points(report.validator_points);
+		weight
+	}
+	fn weigh_on_relay_session_report(report: &rc_client::SessionReport<AccountId>) -> Weight {
+		<Staking as rc_client::AHStakingInterface>::weigh_on_relay_session_report(report)
+	}
+	fn on_new_offences(
+		slash_session: SessionIndex,
+		offences: Vec<rc_client::Offence<AccountId>>,
+	) -> Weight {
+		<Staking as rc_client::AHStakingInterface>::on_new_offences(slash_session, offences)
+	}
+	fn weigh_on_new_offences(offence_count: u32) -> Weight {
+		<Staking as rc_client::AHStakingInterface>::weigh_on_new_offences(offence_count)
+	}
+	fn active_era_start_session_index() -> SessionIndex {
+		<Staking as rc_client::AHStakingInterface>::active_era_start_session_index()
+	}
+	fn is_validator(who: &AccountId) -> bool {
+		<Staking as rc_client::AHStakingInterface>::is_validator(who)
+	}
+}
+
+/// Forwards session events to CollatorSelection and turns the staking era clock.
+///
+/// This chain's sessions are the only clock of its eras: the relay's reports arrive too (measured
+/// live: `LastSessionReportEndingIndex` 200 against this chain's session 13 on 2026-10-04), but
+/// they only record work (`RelayReportsAreWork`). An era is `SessionsPerEra` of these sessions.
 pub struct StakingSessionManager;
 
 impl pezpallet_session::SessionManager<AccountId> for StakingSessionManager {
@@ -427,17 +465,10 @@ impl pezpallet_session::SessionManager<AccountId> for StakingSessionManager {
 			None
 		};
 
-		// Equal reward points for all validators
-		let validator_points: Vec<(AccountId, u32)> =
-			pezpallet_staking_async::Validators::<Runtime>::iter_keys()
-				.map(|v| (v, 20u32))
-				.collect();
-
-		let report = rc_client::SessionReport::new_terminal(
-			end_index,
-			validator_points,
-			activation_timestamp,
-		);
+		// Points come from the relay's reports (`RelayReportsAreWork`); this report only turns
+		// the clock. It used to give every validator here an equal 20, which counted nothing.
+		let report =
+			rc_client::SessionReport::new_terminal(end_index, Vec::new(), activation_timestamp);
 
 		let _ = <Staking as rc_client::AHStakingInterface>::on_relay_session_report(report);
 	}

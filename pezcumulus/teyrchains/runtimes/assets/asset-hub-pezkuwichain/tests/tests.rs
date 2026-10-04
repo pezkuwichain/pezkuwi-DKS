@@ -1804,3 +1804,49 @@ mod hez_parameters {
 		});
 	}
 }
+
+/// A relay session report is work, and never turns this chain's era clock.
+///
+/// Under two writers a relay report -- numbered with the relay's sessions, carrying the relay's
+/// activation -- would end a session here and could start or skip an era. Measured live on
+/// 2026-10-04: relay session 200 against this chain's 13. Spec C1.
+#[test]
+fn a_relay_session_report_is_work_and_never_turns_the_era_clock() {
+	use asset_hub_pezkuwichain_runtime::staking::RelayReportsAreWork;
+	use pezpallet_staking_async_rc_client::{AHStakingInterface, SessionReport};
+	ExtBuilder::<Runtime>::default()
+		.with_collators(vec![AccountId::from(ALICE)])
+		.with_session_keys(vec![(
+			AccountId::from(ALICE),
+			AccountId::from(ALICE),
+			SessionKeys { aura: AuraId::from(pezsp_core::sr25519::Public::from_raw(ALICE)) },
+		)])
+		.build()
+		.execute_with(|| {
+			// Every real genesis has an active era (staking's genesis build puts era 0); this
+			// builder does not run it, and points for no active era are dropped.
+			pezpallet_staking_async::ActiveEra::<Runtime>::put(
+				pezpallet_staking_async::ActiveEraInfo { index: 0, start: Some(0) },
+			);
+			let active = pezpallet_staking_async::ActiveEra::<Runtime>::get();
+			let current = pezpallet_staking_async::CurrentEra::<Runtime>::get();
+			let bonded = pezpallet_staking_async::BondedEras::<Runtime>::get();
+			let era = active.as_ref().map(|a| a.index).unwrap_or(0);
+			let before = pezpallet_staking_async::ErasRewardPoints::<Runtime>::get(era).total;
+
+			let report = SessionReport::new_terminal(
+				200,
+				vec![(AccountId::from(ALICE), 40)],
+				Some((1_700_000_000_000, 7)),
+			);
+			RelayReportsAreWork::on_relay_session_report(report);
+
+			assert_eq!(
+				pezpallet_staking_async::ErasRewardPoints::<Runtime>::get(era).total,
+				before + 40
+			);
+			assert_eq!(pezpallet_staking_async::ActiveEra::<Runtime>::get(), active);
+			assert_eq!(pezpallet_staking_async::CurrentEra::<Runtime>::get(), current);
+			assert_eq!(pezpallet_staking_async::BondedEras::<Runtime>::get(), bonded);
+		});
+}
