@@ -123,6 +123,10 @@ const _: () = assert!(
 /// - `founding_office`: Holder of `Tiki::Serok`, funded here for its calls on this chain
 /// - `foreign_assets`: Foreign assets to create at genesis
 /// - `foreign_assets_endowed_accounts`: Initial balances for foreign assets
+/// The stake stratum's seats on the committee (§9: 3 of 27). The Asset Hub's own election ranks
+/// that stratum and nothing else -- the committee itself comes from People.
+const STAKE_STRATUM_SEATS: u32 = 3;
+
 fn asset_hub_pezkuwichain_genesis(
 	invulnerables: Vec<(AccountId, AuraId)>,
 	endowed_accounts: Vec<AccountId>,
@@ -243,10 +247,13 @@ fn asset_hub_pezkuwichain_genesis(
 				.collect(),
 		},
 		pezkuwi_xcm: PezkuwiXcmConfig { safe_xcm_version: Some(SAFE_XCM_VERSION) },
-		// Prevent automatic election before validators are staked.
-		// After staking setup, trigger manually with force_new_era().
 		staking: StakingConfig {
-			force_era: pezpallet_staking_async::Forcing::ForceNone,
+			// The era clock runs from genesis. `ForceNone` here, with "trigger manually with
+			// force_new_era()" in a comment, left the live Zagros at era 0 for weeks: nothing
+			// was ever minted. Spec res/specs/2026-10-04-hez-emission-design.md, C1.
+			force_era: pezpallet_staking_async::Forcing::NotForcing,
+			// The stake stratum's seats (§9: 3 of 27) -- the size of this chain's own election.
+			validator_count: STAKE_STRATUM_SEATS,
 			// Synthetic stakers, for the presets that ask for them. The multi-block election
 			// benchmarks assert that a snapshot page is FULL -- `TargetSnapshotPerBlock` is
 			// `MaxValidatorSet`, i.e. 1000 -- and a genesis with no stakers makes that
@@ -719,4 +726,30 @@ mod genesis_ledger {
 			"PEZ genesis must mint exactly five billion"
 		);
 	}
+}
+
+/// Every preset starts the era clock and elects someone.
+///
+/// `ForceNone` here, with "trigger manually with force_new_era()" in a comment, left the live
+/// Zagros at era 0 for weeks after its relaunch: no era ended, so nothing was minted. A preset
+/// that elects nobody stalls the same way. Spec res/specs/2026-10-04-hez-emission-design.md, C1.
+#[test]
+fn every_preset_starts_the_era_clock() {
+	// The dev and local presets read runtime storage parameters, so they need externalities.
+	pezsp_io::TestExternalities::default().execute_with(|| {
+		for preset in preset_names() {
+			let raw = get_preset(&preset).expect("listed preset exists");
+			let g: serde_json::Value = serde_json::from_slice(&raw).expect("valid json");
+			let staking = &g["staking"];
+			assert_ne!(
+				staking["forceEra"],
+				serde_json::json!("ForceNone"),
+				"preset {preset:?} starts with ForceNone: no era is ever planned, nothing is minted"
+			);
+			assert!(
+				staking["validatorCount"].as_u64().unwrap_or(0) > 0,
+				"preset {preset:?} elects no validators: the first era never activates"
+			);
+		}
+	});
 }
