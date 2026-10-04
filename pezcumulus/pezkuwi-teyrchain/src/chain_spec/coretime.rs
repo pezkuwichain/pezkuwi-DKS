@@ -21,9 +21,9 @@ use std::{borrow::Cow, str::FromStr};
 /// Collects all supported Coretime configurations.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum CoretimeRuntimeType {
-	// Live. The id stays though no live spec is embedded: `LegacyRuntime::from_id` parses a
-	// running node's chain id into this type, so a launched chain started from its own spec
-	// file would not start if its id were missing here.
+	// Live. Both ids stay: `LegacyRuntime::from_id` parses a running node's chain id into this
+	// type. Zagros runs its coretime chain since 2026-10-04 and embeds the live spec;
+	// Pezkuwichain takes one after Zagros has.
 	Pezkuwichain,
 	// Local
 	PezkuwichainLocal,
@@ -89,8 +89,11 @@ impl CoretimeRuntimeType {
 
 	pub fn load_config(&self) -> Result<Box<dyn ChainSpec>, String> {
 		match self {
-			CoretimeRuntimeType::Pezkuwichain | CoretimeRuntimeType::Zagros => {
-				Err(std::format!("{self:?}: not launched: neither network runs this chain yet, so no spec of it is embedded. Zagros takes it first and Pezkuwichain after it; pass the launched chain's spec as a file"))
+			CoretimeRuntimeType::Zagros => Ok(Box::new(GenericChainSpec::from_json_bytes(
+				&include_bytes!("../../chain-specs/coretime-zagros.json")[..],
+			)?)),
+			CoretimeRuntimeType::Pezkuwichain => {
+				Err(std::format!("{self:?}: not launched: Pezkuwichain takes this chain after Zagros has run it, so no spec of it is embedded yet; pass the launched chain's spec as a file"))
 			},
 			CoretimeRuntimeType::PezkuwichainLocal => {
 				Ok(Box::new(pezkuwichain::local_config(*self, "pezkuwichain-local")))
