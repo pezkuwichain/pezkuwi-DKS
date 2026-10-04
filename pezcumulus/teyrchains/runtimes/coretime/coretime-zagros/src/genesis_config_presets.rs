@@ -66,6 +66,10 @@ mod preset_names {
 }
 
 pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
+	// Without this the `PRESET_GENESIS` arm below is not the constant but a binding that matches
+	// every id: from 2026-09-01 until 2026-10-04 every preset of this runtime, `local` and `dev`
+	// included, was the launch preset, and only a compiler warning said so.
+	use preset_names::*;
 	let patch = match id.as_ref() {
 		// The preset a real Zagros launch uses. Endows nobody, which is what upstream's own live
 		// system-parachain specs do -- measured from the raw genesis in `chain-specs/`: bridge
@@ -159,4 +163,20 @@ fn the_launch_preset_names_no_keyring_account() {
 		.as_array()
 		.expect("the preset sets the invulnerables");
 	assert_eq!(invulnerables.len(), 2, "two collators, one per box");
+}
+
+/// Each preset is its own. The launch arm once matched every id, because its name was a binding
+/// rather than the constant, so `local` and `dev` silently were the launch preset.
+#[test]
+fn the_presets_are_distinct_and_local_is_a_testnet() {
+	let genesis =
+		get_preset(&PresetId::from(preset_names::PRESET_GENESIS)).expect("genesis exists");
+	let local = get_preset(&PresetId::from(pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET))
+		.expect("local exists");
+	assert_ne!(genesis, local, "the local preset is the launch preset");
+	let alice = Sr25519Keyring::Alice.to_account_id().to_string();
+	assert!(
+		core::str::from_utf8(&local).expect("utf-8").contains(&alice),
+		"the local preset should name Alice as a collator"
+	);
 }
