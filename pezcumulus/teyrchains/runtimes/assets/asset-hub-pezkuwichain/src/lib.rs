@@ -896,7 +896,10 @@ parameter_types! {
 }
 
 parameter_types! {
-	pub const Period: u32 = prod_or_fast!(6 * HOURS, 20);
+	// One hour, the relay's session length: an era is `SessionsPerEra` sessions and `EraPayout`
+	// is capped at `MaxEraDuration`, which is six relay hours. Six-hour sessions made a 36-hour
+	// era paid for six, a sixth of the set inflation. Collator rotation follows; it is cheap.
+	pub const Period: u32 = prod_or_fast!(1 * HOURS, 20);
 	pub const Offset: u32 = 0;
 }
 

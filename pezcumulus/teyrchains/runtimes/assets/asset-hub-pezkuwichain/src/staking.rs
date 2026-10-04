@@ -780,3 +780,25 @@ where
 		UncheckedExtrinsic::new_bare(call)
 	}
 }
+
+#[cfg(all(test, not(feature = "fast-runtime")))]
+mod era_length {
+	use super::*;
+
+	/// An era is `SessionsPerEra` of this chain's sessions, and `EraPayout` mints for at most
+	/// `MaxEraDuration`. If the era is longer than the cap, every era is paid for the cap and the
+	/// rest of the year is never minted: with 6-hour sessions an era was 36 hours against a
+	/// 6-hour cap, one sixth of the inflation the economy is set for.
+	#[test]
+	fn an_era_is_exactly_as_long_as_the_payout_cap() {
+		// This chain's own block time: `Period` counts its blocks, not the relay's.
+		let block_ms = crate::MILLISECS_PER_BLOCK;
+		let era_ms = crate::Period::get() as u64 * SessionsPerEra::get() as u64 * block_ms;
+		assert_eq!(
+			era_ms,
+			MaxEraDuration::get(),
+			"era {era_ms} ms, payout cap {} ms",
+			MaxEraDuration::get()
+		);
+	}
+}
