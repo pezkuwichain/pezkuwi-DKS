@@ -218,6 +218,14 @@ threads-required = 'num-cpus'
 slow-timeout = { period = "60s", terminate-after = 20 }
 retries = 0
 
+# The Asset Hub's era clock: several eras of a fast runtime, and a stopped clock never reaches
+# era 1. Above the general rehearsal override because nextest takes the first match.
+[[profile.default.overrides]]
+filter = 'test(/ah_era_advances_and_issuance_grows/)'
+threads-required = 'num-cpus'
+slow-timeout = { period = "60s", terminate-after = 40 }
+retries = 0
+
 [[profile.default.overrides]]
 filter = 'test(/state_rehearsal/)'
 threads-required = 'num-cpus'
