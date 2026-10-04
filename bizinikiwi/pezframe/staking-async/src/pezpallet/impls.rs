@@ -799,6 +799,16 @@ impl<T: Config> Pezpallet<T> {
 		Ok(())
 	}
 
+	/// Record the work validators did in the active era, without ending a session.
+	///
+	/// A relay session report both carries era points and ends a session. On a chain whose era
+	/// clock is its own -- the Asset Hub, whose validator set comes from People and not from its
+	/// own election -- the two must be separable: the points are the only measure of who
+	/// validated, and the relay's session numbers are not this chain's.
+	pub fn note_era_points(points: impl IntoIterator<Item = (T::AccountId, u32)>) {
+		Eras::<T>::reward_active_era(points)
+	}
+
 	#[cfg(test)]
 	pub(crate) fn reward_by_ids(validators_points: impl IntoIterator<Item = (T::AccountId, u32)>) {
 		Eras::<T>::reward_active_era(validators_points)

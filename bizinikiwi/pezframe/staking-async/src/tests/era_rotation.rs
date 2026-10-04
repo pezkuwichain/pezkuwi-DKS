@@ -754,3 +754,26 @@ fn dap_era_with_zero_rewards_still_sets_guard() {
 		assert_eq!(DisableMintingGuard::<Test>::get(), Some(1));
 	});
 }
+
+#[test]
+fn noting_era_points_records_work_without_turning_the_clock() {
+	ExtBuilder::default().build_and_execute(|| {
+		let active = crate::ActiveEra::<T>::get();
+		let current = crate::CurrentEra::<T>::get();
+		let bonded = crate::BondedEras::<T>::get();
+		let before = crate::ErasRewardPoints::<T>::get(active_era());
+
+		Staking::note_era_points(vec![(11, 7), (21, 3)]);
+
+		let after = crate::ErasRewardPoints::<T>::get(active_era());
+		assert_eq!(after.total, before.total + 10);
+		assert_eq!(
+			after.individual.get(&11).copied().unwrap_or(0),
+			before.individual.get(&11).copied().unwrap_or(0) + 7
+		);
+		// The clock is untouched: recording work plans, starts and bonds no era.
+		assert_eq!(crate::ActiveEra::<T>::get(), active);
+		assert_eq!(crate::CurrentEra::<T>::get(), current);
+		assert_eq!(crate::BondedEras::<T>::get(), bonded);
+	});
+}
