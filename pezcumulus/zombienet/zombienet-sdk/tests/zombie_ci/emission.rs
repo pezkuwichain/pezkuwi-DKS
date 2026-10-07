@@ -70,20 +70,58 @@ fn id(k: &Keypair) -> Value {
 	Value::unnamed_variant("Id", vec![raw_account(k)])
 }
 
+type BlockHash = pezkuwi_zombienet_sdk::subxt::utils::H256;
+
+/// Submit, wait for finality, and return the block the extrinsic was included in.
 async fn must(
 	api: &OnlineClient<PezkuwiConfig>,
 	tx: &DynamicPayload,
 	signer: &Keypair,
 	what: &str,
-) -> Result<(), anyhow::Error> {
-	api.tx()
+) -> Result<BlockHash, anyhow::Error> {
+	let in_block = api
+		.tx()
 		.sign_and_submit_then_watch_default(tx, signer)
 		.await
 		.map_err(|e| anyhow!("{what}: submission failed: {e}"))?
-		.wait_for_finalized_success()
+		.wait_for_finalized()
 		.await
-		.map(|_| ())
-		.map_err(|e| anyhow!("{what}: {e}"))
+		.map_err(|e| anyhow!("{what}: {e}"))?;
+	in_block.wait_for_success().await.map_err(|e| anyhow!("{what}: {e}"))?;
+	Ok(in_block.block_hash())
+}
+
+/// `who`'s free balance in block `at`.
+async fn free_at(
+	api: &OnlineClient<PezkuwiConfig>,
+	who: Value,
+	at: BlockHash,
+) -> Result<u128, anyhow::Error> {
+	let addr = dynamic::storage::<Vec<Value>, Value>("System", "Account");
+	// Bound first: the fetch borrows from the storage client (as in `storage_value`).
+	let storage = api.storage().at(at);
+	let fetched = storage.try_fetch(addr, vec![who]).await?;
+	Ok(match fetched {
+		Some(v) => v
+			.decode()?
+			.at("data")
+			.and_then(|d| d.at("free"))
+			.and_then(|f| f.as_u128())
+			.unwrap_or(0),
+		None => 0,
+	})
+}
+
+/// The treasury's gain in exactly the block `at`, so nothing else minted to it in between --
+/// an era end, a fee -- can stand in for what the measured extrinsic paid it.
+async fn treasury_gain_in(
+	api: &OnlineClient<PezkuwiConfig>,
+	at: BlockHash,
+) -> Result<u128, anyhow::Error> {
+	let parent = api.blocks().at(at).await?.header().parent_hash;
+	Ok(free_at(api, treasury(), at)
+		.await?
+		.saturating_sub(free_at(api, treasury(), parent).await?))
 }
 
 async fn u128_at(
@@ -224,13 +262,12 @@ async fn ah_era_advances_and_issuance_grows() -> Result<(), anyhow::Error> {
 	}
 
 	// validator-1 has no nominator: its half goes to the treasury.
-	let (v1_before, treasury_before) =
-		(free(&ah, raw_account(&v1)).await?, free(&ah, treasury()).await?);
+	let v1_before = free(&ah, raw_account(&v1)).await?;
 	let payout = dynamic::tx("Staking", "payout_stakers", vec![raw_account(&v1), Value::u128(era)]);
-	must(&ah, &payout, &alice, "pay validator-1's era").await?;
+	let paid_in = must(&ah, &payout, &alice, "pay validator-1's era").await?;
 	let v1_got = free(&ah, raw_account(&v1)).await? - v1_before;
-	let treasury_got = free(&ah, treasury()).await?.saturating_sub(treasury_before);
-	if v1_got == 0 || treasury_got < v1_got.saturating_sub(2) {
+	let treasury_got = treasury_gain_in(&ah, paid_in).await?;
+	if v1_got == 0 || treasury_got.abs_diff(v1_got) > 2 {
 		return Err(anyhow!(
 			"validator-1 got {v1_got} and the treasury {treasury_got}: the nominators' half of a \
 			 validator with none did not reach the treasury"
@@ -268,6 +305,10 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 		.with_teyrchain(|p| {
 			p.with_id(ASSET_HUB_ID)
 				.with_chain("asset-hub-zagros-local")
+				// The local preset seeds a thousand synthetic validators with large bonds, which
+				// would outrank the two relay stashes for every seat; this network's election
+				// should have only them to choose from.
+				.with_genesis_overrides(json!({ "staking": { "devStakers": null } }))
 				.with_default_command("pezkuwi-teyrchain")
 				.with_default_image(images.pezcumulus())
 				.with_collator(|n| n.with_name("asset-hub-collator"))
