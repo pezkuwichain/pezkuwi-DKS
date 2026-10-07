@@ -65,7 +65,9 @@ pub mod pezpallet {
 	}
 
 	/// Bumped with every change to `Snapshot`'s encoding, so a migration has a version to key on.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
+	/// It starts at 1, not 0: 0 is a chain the pallet has not arrived on yet, and the Asset Hub
+	/// keys a one-off migration on that step (`StartTheEraClockWithKomite`).
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	#[pezpallet::pezpallet]
 	#[pezpallet::storage_version(STORAGE_VERSION)]

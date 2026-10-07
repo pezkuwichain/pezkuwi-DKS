@@ -127,7 +127,7 @@ const _: () = assert!(
 /// arrives; from then on `Komite` sets it to the committee members who validate here. The
 /// election seats no one -- the committee comes from People, every stratum drawn by lot -- it
 /// builds the exposures the payout and slashing read.
-const STAKE_STRATUM_SEATS: u32 = 3;
+pub const STAKE_STRATUM_SEATS: u32 = 3;
 
 /// The least a validator bonds here (spec K4). Below it `validate` is refused, so a seat
 /// without it has no exposure and its pay goes to the treasury.

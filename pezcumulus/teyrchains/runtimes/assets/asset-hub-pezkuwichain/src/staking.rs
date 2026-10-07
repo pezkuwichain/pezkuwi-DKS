@@ -392,6 +392,41 @@ impl pezsp_staking::StakerRewardCalculator<Balance> for FixedHalfSplit {
 	}
 }
 
+/// Starts the era clock of a chain launched with it stopped, as the upgrade that brings
+/// `Komite` lands.
+///
+/// The live Zagros went out with `ForceNone`, no validator count and no bond floor: no era was
+/// ever planned, so nothing was minted. The genesis presets were fixed; a running chain is not
+/// re-genesised, and a root call to fix it is a step someone has to remember. This does it in
+/// the same upgrade, and only once: it is keyed on `Komite`'s storage version going from 0 to
+/// 1, which happens exactly when that pallet first arrives -- a chain born with it starts at 1
+/// and never runs this. Each value is only filled in where it is unset, so a choice already
+/// made on chain is kept.
+pub type StartTheEraClockWithKomite = pezframe_support::migrations::VersionedMigration<
+	0,
+	1,
+	StartTheEraClock,
+	Komite,
+	<Runtime as pezframe_system::Config>::DbWeight,
+>;
+
+pub struct StartTheEraClock;
+impl pezframe_support::traits::UncheckedOnRuntimeUpgrade for StartTheEraClock {
+	fn on_runtime_upgrade() -> Weight {
+		use pezpallet_staking_async::{ForceEra, Forcing, MinValidatorBond, ValidatorCount};
+		if ForceEra::<Runtime>::get() == Forcing::ForceNone {
+			ForceEra::<Runtime>::put(Forcing::NotForcing);
+		}
+		if ValidatorCount::<Runtime>::get() == 0 {
+			ValidatorCount::<Runtime>::put(crate::genesis_config_presets::STAKE_STRATUM_SEATS);
+		}
+		if MinValidatorBond::<Runtime>::get() == 0 {
+			MinValidatorBond::<Runtime>::put(crate::genesis_config_presets::MIN_VALIDATOR_BOND);
+		}
+		<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(3, 3)
+	}
+}
+
 pub struct EraPayout;
 impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
 	/// Neither argument is read, and the names say so.
