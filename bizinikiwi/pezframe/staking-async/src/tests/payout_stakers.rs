@@ -1759,3 +1759,60 @@ fn legacy_payout_ignores_pot_account_existence() {
 		assert_eq!(minted, expected_stakers);
 	});
 }
+
+/// A validator with no nominators leaves the nominators' half of its reward owed to no one.
+/// That half is minted to the remainder rather than never minted at all.
+#[test]
+fn an_unowed_nominator_half_goes_to_the_remainder() {
+	ExtBuilder::default()
+		.legacy_reward_mode()
+		.nominate(false)
+		.half_split_rewards()
+		.build_and_execute(|| {
+			Staking::reward_by_ids(vec![(11, 1)]);
+			Session::roll_until_active_era(2);
+			let era_payout = ErasValidatorReward::<Test>::get(1).unwrap();
+			RewardRemainderUnbalanced::set(0);
+			let issuance = pezpallet_balances::TotalIssuance::<Test>::get();
+
+			assert_ok!(Staking::payout_stakers(RuntimeOrigin::signed(1337), 11, 1));
+
+			assert_eq!(RewardRemainderUnbalanced::get(), era_payout / 2);
+			// The mock's remainder handler counts the credit and drops it, so issuance shows
+			// only the validator's half; a runtime deposits the remainder to the treasury.
+			assert_eq!(
+				pezpallet_balances::TotalIssuance::<Test>::get() - issuance,
+				era_payout - era_payout / 2
+			);
+		});
+}
+
+/// Each exposure page pays only its own nominators, so each owes only its part of the
+/// nominators' half: across pages the remainder gets the rounding dust, not a half per page.
+#[test]
+fn a_paged_exposure_does_not_mint_the_nominator_half_twice() {
+	ExtBuilder::default()
+		.legacy_reward_mode()
+		.nominate(false)
+		.half_split_rewards()
+		.exposures_page_size(1)
+		.build_and_execute(|| {
+			bond_nominator(201, 500, vec![11]);
+			bond_nominator(202, 700, vec![11]);
+			Session::roll_until_active_era(2);
+			assert_eq!(ErasStakersOverview::<Test>::get(2, 11).unwrap().page_count, 2);
+
+			Staking::reward_by_ids(vec![(11, 1)]);
+			Session::roll_until_active_era(3);
+			let era_payout = ErasValidatorReward::<Test>::get(2).unwrap();
+			RewardRemainderUnbalanced::set(0);
+			let issuance = pezpallet_balances::TotalIssuance::<Test>::get();
+
+			assert_ok!(Staking::payout_stakers_by_page(RuntimeOrigin::signed(1337), 11, 2, 0));
+			assert_ok!(Staking::payout_stakers_by_page(RuntimeOrigin::signed(1337), 11, 2, 1));
+
+			let minted = pezpallet_balances::TotalIssuance::<Test>::get() - issuance;
+			assert!(RewardRemainderUnbalanced::get() <= 2, "{}", RewardRemainderUnbalanced::get());
+			assert!(era_payout - minted <= 2, "minted {minted} of {era_payout}");
+		});
+}

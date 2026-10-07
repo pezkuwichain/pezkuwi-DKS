@@ -534,6 +534,7 @@ impl<T: Config> Pezpallet<T> {
 		}
 
 		let total_nominator_stake = exposure.total().saturating_sub(overview_own);
+		let mut paid_to_nominators: BalanceOf<T> = Zero::zero();
 		for nominator in exposure.others().iter() {
 			let nominator_exposure_part =
 				Perbill::from_rational(nominator.value, total_nominator_stake);
@@ -543,6 +544,7 @@ impl<T: Config> Pezpallet<T> {
 			if let Some((imbalance, dest)) =
 				Self::make_payout_legacy(era, &nominator.who, nominator_reward)
 			{
+				paid_to_nominators = paid_to_nominators.saturating_add(imbalance.peek());
 				nominator_payout_count.saturating_inc();
 				Self::deposit_event(Event::<T>::Rewarded {
 					stash: nominator.who.clone(),
@@ -551,6 +553,25 @@ impl<T: Config> Pezpallet<T> {
 				});
 				total_imbalance.subsume(imbalance);
 			}
+		}
+
+		// What this page owed its nominators and did not pay -- there were none, or a share's
+		// rounding, or a payee that takes nothing -- is minted to the remainder rather than never
+		// minted at all. Each page pays only its own nominators, so it owes only its part.
+		let page_nominator_stake: BalanceOf<T> = exposure
+			.others()
+			.iter()
+			.fold(Zero::zero(), |acc: BalanceOf<T>, n| acc.saturating_add(n.value));
+		let owed = if total_nominator_stake.is_zero() {
+			// No nominators at all: a single page, owing the whole of their part.
+			total_nominator_payout
+		} else {
+			Perbill::from_rational(page_nominator_stake, total_nominator_stake)
+				.mul_floor(total_nominator_payout)
+		};
+		let unpaid = owed.saturating_sub(paid_to_nominators);
+		if !unpaid.is_zero() {
+			T::RewardRemainder::on_unbalanced(asset::issue::<T>(unpaid));
 		}
 
 		T::Reward::on_unbalanced(total_imbalance);
