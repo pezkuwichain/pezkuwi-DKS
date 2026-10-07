@@ -86,6 +86,18 @@ pub mod pezpallet {
 	}
 
 	/// The latest committee People sent, or nothing before the first message.
+	impl<T: Config> Snapshot<T> {
+		/// `who`'s trust in thousandths of this snapshot's highest, or `None` if not a member.
+		/// For callers that read the snapshot once and weigh many accounts by it.
+		pub fn trust_permille(&self, who: &T::AccountId) -> Option<u32> {
+			let (_, trust) = self.members.iter().find(|(m, _)| m == who)?;
+			if self.max_trust == 0 {
+				return Some(0);
+			}
+			Some(Perbill::from_rational(*trust, self.max_trust).mul_floor(1000u32))
+		}
+	}
+
 	#[pezpallet::storage]
 	pub type Committee<T: Config> = StorageValue<_, Snapshot<T>, OptionQuery>;
 
@@ -131,12 +143,7 @@ pub mod pezpallet {
 		/// `who`'s trust in thousandths of the committee's highest: the highest is 1000, a trust
 		/// of zero is 0. `None` if `who` is not in the held committee, or nothing is held.
 		pub fn trust_permille(who: &T::AccountId) -> Option<u32> {
-			let s = Committee::<T>::get()?;
-			let (_, trust) = s.members.iter().find(|(m, _)| m == who)?;
-			if s.max_trust == 0 {
-				return Some(0);
-			}
-			Some(Perbill::from_rational(*trust, s.max_trust).mul_floor(1000u32))
+			Committee::<T>::get()?.trust_permille(who)
 		}
 
 		pub fn is_member(who: &T::AccountId) -> bool {

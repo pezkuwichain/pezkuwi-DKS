@@ -2506,9 +2506,11 @@ fn a_relay_session_report_is_work_and_never_turns_the_era_clock() {
 				)
 			);
 
+			// Recorded weighed by trust, in thousandths; with no committee snapshot every account
+			// weighs the full thousand.
 			assert_eq!(
 				pezpallet_staking_async::ErasRewardPoints::<Runtime>::get(era).total,
-				before + 40
+				before + 40 * 1000
 			);
 			assert_eq!(pezpallet_staking_async::ActiveEra::<Runtime>::get(), active);
 			assert_eq!(pezpallet_staking_async::CurrentEra::<Runtime>::get(), current);
@@ -2634,5 +2636,49 @@ fn the_era_waits_for_its_election_but_not_past_the_payout_cap() {
 		assert_eq!(active(), Some(1), "an era started early with its election unfinished");
 		StakingSessionManager::end_session(5 + cap - 1);
 		assert_eq!(active(), Some(2), "an unfinished election held the era past the payout cap");
+	});
+}
+
+/// Work is weighed by trust: each point the relay reports is multiplied by the member's trust in
+/// thousandths of the committee's highest. An account People did not seat keeps full weight: it
+/// has no exposure, so its share goes to the treasury at era end instead of being spread over
+/// the committee.
+#[test]
+fn work_is_weighed_by_trust_and_outsiders_are_kept_for_the_treasury() {
+	use pezpallet_staking_async_rc_client::SessionReport;
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		pezpallet_staking_async::ActiveEra::<Runtime>::put(
+			pezpallet_staking_async::ActiveEraInfo { index: 0, start: Some(0) },
+		);
+		let (hi, lo, out) =
+			(AccountId::from([1u8; 32]), AccountId::from([2u8; 32]), AccountId::from([3u8; 32]));
+		let seated = pezframe_support::BoundedVec::try_from(vec![
+			(hi.clone(), 200u128),
+			(lo.clone(), 100u128),
+		])
+		.unwrap();
+		let people: asset_hub_zagros_runtime::RuntimeOrigin = pezpallet_xcm::Origin::Xcm(
+			testnet_teyrchains_constants::zagros::locations::PeopleLocation::get(),
+		)
+		.into();
+		pezframe_support::assert_ok!(asset_hub_zagros_runtime::Komite::set_committee(
+			people, 1, seated
+		));
+		let report = SessionReport::new_terminal(
+			200,
+			vec![(hi.clone(), 10), (lo.clone(), 10), (out.clone(), 10)],
+			None,
+		);
+		// Through rc-client, the way the relay's report arrives.
+		pezframe_support::assert_ok!(
+			asset_hub_zagros_runtime::StakingRcClient::relay_session_report(
+				RuntimeOrigin::root(),
+				report
+			)
+		);
+		let p = pezpallet_staking_async::ErasRewardPoints::<Runtime>::get(0);
+		assert_eq!(p.individual.get(&hi).copied(), Some(10 * 1000));
+		assert_eq!(p.individual.get(&lo).copied(), Some(10 * 500));
+		assert_eq!(p.individual.get(&out).copied(), Some(10 * 1000));
 	});
 }

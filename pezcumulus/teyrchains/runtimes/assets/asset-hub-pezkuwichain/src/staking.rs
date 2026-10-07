@@ -520,13 +520,27 @@ impl rc_client::AHStakingInterface for RelayReportsAreWork {
 	type MaxValidatorSet = <Staking as rc_client::AHStakingInterface>::MaxValidatorSet;
 
 	fn on_relay_session_report(report: rc_client::SessionReport<AccountId>) -> Weight {
-		let weight =
-			<Staking as rc_client::AHStakingInterface>::weigh_on_relay_session_report(&report);
-		Staking::note_era_points(report.validator_points);
+		let weight = Self::weigh_on_relay_session_report(&report);
+		// Work weighed by trust, in thousandths of the committee's highest. An account People
+		// did not seat keeps full weight: it has no exposure, so its share goes to the treasury
+		// at era end rather than being spread over the committee.
+		let snapshot = pezpallet_komite::Committee::<Runtime>::get();
+		let weighed = report.validator_points.into_iter().map(|(who, points)| {
+			let permille = snapshot.as_ref().and_then(|s| s.trust_permille(&who)).unwrap_or(1000);
+			(who, points.saturating_mul(permille))
+		});
+		Staking::note_era_points(weighed);
 		weight
 	}
 	fn weigh_on_relay_session_report(report: &rc_client::SessionReport<AccountId>) -> Weight {
+		use codec::MaxEncodedLen;
+		// Plus the one read of the committee snapshot the points are weighed by.
 		<Staking as rc_client::AHStakingInterface>::weigh_on_relay_session_report(report)
+			.saturating_add(<Runtime as pezframe_system::Config>::DbWeight::get().reads(1))
+			.saturating_add(Weight::from_parts(
+				0,
+				pezpallet_komite::Snapshot::<Runtime>::max_encoded_len() as u64,
+			))
 	}
 	fn on_new_offences(
 		slash_session: SessionIndex,
