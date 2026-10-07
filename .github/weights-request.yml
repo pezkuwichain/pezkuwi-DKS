@@ -64,4 +64,14 @@
 #
 # Measured the same day (run 37067510936, reference box): two pages cost 6.6 ms and 417 KB of
 # proof, inside the block on both twins. The files are in the tree, so the list is empty again.
-runs: []
+#
+# 2026-10-08: `pezpallet_komite` is new on both Asset Hubs (index 71). Its one call,
+# `set_committee`, stores a committee of up to `MAX_COMMITTEE` (64) members; the recorded
+# weight is a placeholder sized above the work until this measures it.
+runs:
+  - runtime: asset-hub-pezkuwichain
+    pallet: pezpallet_komite
+    why: new pallet, placeholder weight
+  - runtime: asset-hub-zagros
+    pallet: pezpallet_komite
+    why: new pallet, placeholder weight
