@@ -6,7 +6,13 @@
 //! Measured on the live Zagros on 2026-10-04: the Asset Hub's `ActiveEra` had stayed at 0 since
 //! genesis, because the genesis preset set `ForceNone` and nothing ever started an era -- no
 //! inflation, no treasury share, no staking reward, for weeks, and nothing in CI asked. This
-//! asks: on a fresh local network, does the era advance and does `TotalIssuance` grow.
+//! asks: on a fresh local network, does the era advance, and does the ended era pay both shares.
+//!
+//! The two shares reach the chain differently, so they are measured apart. The treasury's is
+//! minted at the era's end, so `TotalIssuance` grows by it. The stakers' is only set aside in
+//! `ErasValidatorReward` and minted when a payout is claimed; with nobody claiming -- and, until
+//! the committee payout lands, no validator that earns it -- issuance never shows it. A test that
+//! read issuance alone would stay green with the stakers' share at zero.
 
 use anyhow::anyhow;
 use pezkuwi_zombienet_sdk::{
@@ -68,10 +74,23 @@ async fn ah_era_advances_and_issuance_grows() -> Result<(), anyhow::Error> {
 		.ok_or_else(|| anyhow!("no TotalIssuance on the Asset Hub"))?;
 	if issuance_now <= issuance_at_start {
 		return Err(anyhow!(
-			"the active era reached {era} but TotalIssuance did not grow ({issuance_at_start} -> {issuance_now}): an era ended without minting"
+			"the active era reached {era} but TotalIssuance did not grow ({issuance_at_start} -> {issuance_now}): the treasury's share was never minted"
 		));
 	}
-	log::info!("era {era}, issuance {issuance_at_start} -> {issuance_now}");
+	let ended = era - 1;
+	let stakers_share =
+		storage_value(&ah, "Staking", "ErasValidatorReward", vec![Value::u128(ended)])
+			.await?
+			.and_then(|v| v.as_u128())
+			.ok_or_else(|| anyhow!("era {ended} ended with no stakers' reward recorded"))?;
+	if stakers_share == 0 {
+		return Err(anyhow!(
+			"era {ended} set aside nothing for the stakers: only the treasury's share was paid"
+		));
+	}
+	log::info!(
+		"era {era}, issuance {issuance_at_start} -> {issuance_now} (treasury), stakers' share of era {ended}: {stakers_share}"
+	);
 	Ok(())
 }
 

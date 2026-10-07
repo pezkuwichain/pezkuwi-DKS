@@ -291,13 +291,13 @@ impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
 }
 
 parameter_types! {
-	// Six sessions in an era (6 hours).
+	// Six sessions per era; the era itself lasts five hours (see `era_length`).
 	pub const SessionsPerEra: SessionIndex = prod_or_fast!(6, 2);
 	/// Duration of a relay session in our blocks. Needs to be hardcoded per-runtime.
 	pub const RelaySessionDuration: BlockNumber = 1 * HOURS;
-	// 2 eras for unbonding (12 hours).
+	// 2 eras for unbonding (10 hours).
 	pub const BondingDuration: pezsp_staking::EraIndex = 2;
-	// 1 era in which slashes can be cancelled (6 hours).
+	// 1 era in which slashes can be cancelled (5 hours).
 	pub const SlashDeferDuration: pezsp_staking::EraIndex = 1;
 	pub const MaxControllersInDeprecationBatch: u32 = 751;
 	// alias for 16, which is the max nominations per nominator in the runtime.
