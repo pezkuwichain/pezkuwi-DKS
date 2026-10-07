@@ -37,7 +37,7 @@ mod mock;
 mod tests;
 
 use alloc::vec::Vec;
-use pezframe_support::{pezpallet_prelude::*, traits::Get};
+use pezframe_support::{pezpallet_prelude::*, traits::Get, BoundedBTreeSet};
 use pezframe_system::pezpallet_prelude::*;
 use pezkuwi_tnpos_primitives::{
 	invariant::{seat, InvariantError, Seating},
@@ -263,6 +263,13 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type MaxPoolSize: Get<u32>;
 
+		/// Who may report the validators bonded on the Asset Hub: the Asset Hub over XCM.
+		type BondOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// The most accounts one bond report names (`MAX_BONDED_REPORT`).
+		#[pezpallet::constant]
+		type MaxBonded: Get<u32>;
+
 		/// Makes an account eligible for a stratum during benchmarking.
 		///
 		/// Benchmarks run against a real runtime, whose scores arrive over XCM from another
@@ -368,9 +375,22 @@ pub mod pezpallet {
 	pub type InPoolSince<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
 
+	/// The accounts validating on the Asset Hub, as it last reported them -- each holding at
+	/// least the validator bond there. A candidacy needs one (spec C4). `None` until the first
+	/// report, and the gate is open until then: the era clock must not wait on a message.
+	#[pezpallet::storage]
+	pub type BondedOnAssetHub<T: Config> =
+		StorageValue<_, BoundedBTreeSet<T::AccountId, T::MaxBonded>, OptionQuery>;
+
+	/// The Asset Hub era the held bond report is for, so a late report cannot replace a newer.
+	#[pezpallet::storage]
+	pub type BondReportEra<T: Config> = StorageValue<_, u32, ValueQuery>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// The Asset Hub reported who is bonded there for its era `era`.
+		BondedNoted { era: u32, count: u32 },
 		/// A member joined `stratum`.
 		Joined { who: T::AccountId, stratum: StratumId },
 		/// A group failed in one session, large enough to be recorded against each of them.
@@ -422,6 +442,10 @@ pub mod pezpallet {
 
 	#[pezpallet::error]
 	pub enum Error<T> {
+		/// The account holds no validator bond on the Asset Hub, which a candidacy needs.
+		NotBondedOnAssetHub,
+		/// A bond report for an older Asset Hub era than the one held.
+		StaleBondReport,
 		AlreadyInPool,
 		NotInPool,
 		PoolFull,
@@ -775,6 +799,34 @@ pub mod pezpallet {
 			let count = bounded.len() as u32;
 			Strata::<T>::put(bounded);
 			Self::deposit_event(Event::StrataSet { count });
+			Ok(())
+		}
+
+		/// Record who is bonded on the Asset Hub, as it reports at the start of each of its eras.
+		///
+		/// A candidacy needs a validator's bond there (spec C4). This chain cannot read the
+		/// Asset Hub's state, so the Asset Hub says it: the accounts in its `Validators`, each of
+		/// whom bonded at least the floor to validate and cannot unbond below it while doing so.
+		#[pezpallet::call_index(11)]
+		#[pezpallet::weight(T::WeightInfo::note_bonded(bonded.len() as u32))]
+		pub fn note_bonded(
+			origin: OriginFor<T>,
+			era: u32,
+			bonded: BoundedVec<T::AccountId, T::MaxBonded>,
+		) -> DispatchResult {
+			T::BondOrigin::ensure_origin(origin)?;
+			if BondedOnAssetHub::<T>::exists() {
+				ensure!(era >= BondReportEra::<T>::get(), Error::<T>::StaleBondReport);
+			}
+			let set: BoundedBTreeSet<T::AccountId, T::MaxBonded> = bonded
+				.into_iter()
+				.collect::<alloc::collections::BTreeSet<_>>()
+				.try_into()
+				.map_err(|_| pezsp_runtime::DispatchError::Other("bounded by the same bound"))?;
+			let count = set.len() as u32;
+			BondedOnAssetHub::<T>::put(set);
+			BondReportEra::<T>::put(era);
+			Self::deposit_event(Event::BondedNoted { era, count });
 			Ok(())
 		}
 	}

@@ -433,6 +433,41 @@ impl pezframe_support::traits::UncheckedOnRuntimeUpgrade for StartTheEraClock {
 	}
 }
 
+/// `Tnpos`'s index in the People runtime and `note_bonded`'s call index in it, held at the other
+/// end by `the_bond_report_decodes_the_way_the_asset_hub_builds_it` in People's tests.
+const TNPOS_PALLET_INDEX: u8 = 83;
+const TNPOS_NOTE_BONDED: u8 = 11;
+
+/// Every validator here, sorted, as `Tnpos::note_bonded` on People.
+///
+/// `validate` needs `MinValidatorBond` bonded and a validator cannot unbond below it, so these
+/// are the accounts holding a validator's bond. Bounded at `MAX_BONDED_REPORT`, above People's
+/// pool bound, so every account the pool can hold can be named.
+pub fn bond_report_for_people(era: u32) -> Vec<u8> {
+	use codec::Encode;
+	let mut bonded: Vec<AccountId> = pezpallet_staking_async::Validators::<Runtime>::iter_keys()
+		.take(pezkuwi_tnpos_primitives::invariant::MAX_BONDED_REPORT as usize)
+		.collect();
+	bonded.sort();
+	(TNPOS_PALLET_INDEX, TNPOS_NOTE_BONDED, era, bonded).encode()
+}
+
+/// An unpaid `Transact` at People, spoken as this chain itself.
+fn send_to_people(call: Vec<u8>) -> Result<(), ()> {
+	let message = Xcm(alloc::vec![
+		UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+		// `Xcm`, so People sees this chain's location and `EnsureXcm<Equals<AssetHubLocation>>`
+		// lets it through.
+		Transact { origin_kind: OriginKind::Xcm, fallback_max_weight: None, call: call.into() },
+	]);
+	let (ticket, _) = <xcm_config::XcmRouter as SendXcm>::validate(
+		&mut Some(PeopleLocation::get()),
+		&mut Some(message),
+	)
+	.map_err(|_| ())?;
+	<xcm_config::XcmRouter as SendXcm>::deliver(ticket).map(|_| ()).map_err(|_| ())
+}
+
 pub struct EraPayout;
 impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
 	/// Neither argument is read, and the names say so.
@@ -751,6 +786,14 @@ impl pezpallet_session::SessionManager<AccountId> for StakingSessionManager {
 			pezpallet_staking_async::ActiveEra::<Runtime>::get().map_or(0, |e| e.index);
 		if active_now > active_era_idx {
 			Komite::note_era_activated();
+			// A candidacy on People needs a validator's bond here (spec C4); tell People who
+			// holds one. A lost report keeps People on the last one, so it is logged, not fatal.
+			if send_to_people(bond_report_for_people(active_now)).is_err() {
+				log::warn!(
+					target: "runtime::staking",
+					"the bond report for era {active_now} did not reach People",
+				);
+			}
 		}
 		if pezpallet_staking_async::CurrentEra::<Runtime>::get().unwrap_or(0) > current_era {
 			Komite::note_era_planned();

@@ -2230,3 +2230,23 @@ fn the_session_manager_freezes_the_committee_at_planning_and_activation() {
 		assert!(pezpallet_komite::ActiveCommittee::<Runtime>::get().is_none());
 	});
 }
+
+/// At each era's start this chain tells People who validates here -- each bonded at least the
+/// validator floor -- as `Tnpos::note_bonded` (83, 11, era, accounts): the bytes People's own
+/// test decodes. A candidacy there needs one (spec C4).
+#[test]
+fn the_bond_report_names_every_validator_here() {
+	use codec::Encode;
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		let (a, b) = (AccountId::from([2u8; 32]), AccountId::from([1u8; 32]));
+		for v in [&a, &b] {
+			pezpallet_staking_async::Validators::<Runtime>::insert(
+				v,
+				pezpallet_staking_async::ValidatorPrefs::default(),
+			);
+		}
+		let call = asset_hub_pezkuwichain_runtime::staking::bond_report_for_people(3);
+		// Sorted, so the same validators always make the same message.
+		assert_eq!(call, (83u8, 11u8, 3u32, vec![b, a]).encode());
+	});
+}

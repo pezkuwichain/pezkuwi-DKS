@@ -44,6 +44,7 @@ parameter_types! {
 	pub const MaxScoreAge: BlockNumber = 100;
 	pub const EraLength: BlockNumber = 50;
 	pub const MaxPoolSize: u32 = 2_000;
+	pub const MaxBonded: u32 = 2_000;
 }
 
 // Scores are set directly by tests. Nothing here reaches another chain: the real source is
@@ -272,6 +273,8 @@ impl pezpallet_tnpos::Config for Test {
 	type MaxScoreAge = MaxScoreAge;
 	type EraLength = EraLength;
 	type MaxPoolSize = MaxPoolSize;
+	type BondOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type MaxBonded = MaxBonded;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = BenchHelper;
 }

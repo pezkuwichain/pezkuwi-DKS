@@ -63,6 +63,10 @@ pub const fn min_eligible_for(id: crate::stratum::StratumId) -> u32 {
 /// allowed to fail.
 pub const MAX_COMMITTEE: u32 = 64;
 
+/// The most validators the Asset Hub reports as bonded in one message (spec C4). Above the
+/// pool's own bound, so every member the pool can hold can be named.
+pub const MAX_BONDED_REPORT: u32 = 1024;
+
 /// Why a configuration cannot be seated.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum InvariantError {

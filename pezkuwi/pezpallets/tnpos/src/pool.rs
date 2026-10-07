@@ -12,12 +12,20 @@
 use crate::*;
 
 impl<T: Config> Pezpallet<T> {
+	/// Whether `who` holds a validator bond on the Asset Hub, by its last report. True before
+	/// any report has arrived.
+	pub(crate) fn bonded_on_asset_hub(who: &T::AccountId) -> bool {
+		BondedOnAssetHub::<T>::get().map_or(true, |bonded| bonded.contains(who))
+	}
+
 	/// Whether `who` passes `stratum`'s gate right now.
 	///
 	/// `ScoreUnavailable` and `NotEligible` are distinct on purpose: the first says the
 	/// chain cannot see the account's standing, the second says it has seen it and the
 	/// answer is no. Collapsing them would let an outage read as a judgement.
 	pub(crate) fn eligible_for(who: &T::AccountId, stratum: StratumId) -> Result<(), Error<T>> {
+		// Every stratum, every time: at the door and at each draw (spec C4).
+		ensure!(Self::bonded_on_asset_hub(who), Error::<T>::NotBondedOnAssetHub);
 		let now = pezframe_system::Pezpallet::<T>::block_number();
 		let age = T::MaxScoreAge::get();
 		let fresh = |s: pezkuwi_tnpos_primitives::scores::ScoreSnapshot<BlockNumberFor<T>>| {

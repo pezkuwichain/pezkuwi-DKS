@@ -2175,6 +2175,9 @@ impl pezpallet_tnpos::Config for Runtime {
 	type MaxScoreAge = TnposMaxScoreAge;
 	type EraLength = TnposEraLength;
 	type MaxPoolSize = TnposMaxPoolSize;
+	// The Asset Hub reports who is bonded there; a candidacy needs a validator's bond (spec C4).
+	type BondOrigin = pezpallet_xcm::EnsureXcm<pezframe_support::traits::Equals<AssetHubLocation>>;
+	type MaxBonded = ConstU32<{ pezkuwi_tnpos_primitives::invariant::MAX_BONDED_REPORT }>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = TnposBenchmarkHelper;
 }
@@ -2383,6 +2386,23 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	/// The Asset Hub builds `note_bonded` by hand as (83, 11, era, accounts) -- it cannot name
+	/// this runtime's types. This pins the receiving end: if the pallet moves or the call
+	/// renumbers, this fails here instead of the report landing on whatever now sits there.
+	#[test]
+	fn the_bond_report_decodes_the_way_the_asset_hub_builds_it() {
+		use codec::{Decode, Encode};
+		let who = AccountId::from([5u8; 32]);
+		let bytes = (83u8, 11u8, 4u32, vec![who.clone()]).encode();
+		match crate::RuntimeCall::decode(&mut &bytes[..]).expect("decodes") {
+			crate::RuntimeCall::Tnpos(pezpallet_tnpos::Call::note_bonded { era, bonded }) => {
+				assert_eq!(era, 4);
+				assert_eq!(bonded.into_inner(), vec![who]);
+			},
+			other => panic!("83/11 decodes as {other:?}"),
+		}
+	}
 
 	/// The Asset Hub pays the committee by trust x work, and trust lives here, so each seating
 	/// carries each member's trust there. These are the bytes the Asset Hub's
