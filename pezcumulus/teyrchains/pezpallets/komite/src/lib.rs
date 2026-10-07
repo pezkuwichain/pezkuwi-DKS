@@ -24,6 +24,15 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+/// What else must follow when a committee is noted.
+pub trait OnCommittee<AccountId> {
+	fn on_committee(members: &[(AccountId, u128)]);
+}
+
+impl<AccountId> OnCommittee<AccountId> for () {
+	fn on_committee(_: &[(AccountId, u128)]) {}
+}
+
 /// An origin `CommitteeOrigin` accepts, for benchmarks.
 ///
 /// The runtime's origin is the People chain over XCM, and `EnsureXcm`'s own
@@ -48,6 +57,8 @@ pub mod pezpallet {
 		/// The largest committee TNPoS may seat.
 		#[pezpallet::constant]
 		type MaxMembers: Get<u32>;
+		/// Told of every committee noted, after it is stored.
+		type OnCommittee: super::OnCommittee<Self::AccountId>;
 		type WeightInfo: WeightInfo;
 		#[cfg(feature = "runtime-benchmarks")]
 		type BenchmarkHelper: super::BenchmarkSetup<Self::RuntimeOrigin>;
@@ -109,6 +120,7 @@ pub mod pezpallet {
 			}
 			let max_trust = members.iter().map(|(_, t)| *t).max().unwrap_or(0);
 			let count = members.len() as u32;
+			T::OnCommittee::on_committee(&members);
 			Committee::<T>::put(Snapshot { era, members, max_trust });
 			Self::deposit_event(Event::CommitteeNoted { era, members: count });
 			Ok(())

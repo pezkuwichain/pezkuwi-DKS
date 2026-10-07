@@ -1554,6 +1554,8 @@ impl pezpallet_komite::BenchmarkSetup<RuntimeOrigin> for KomiteBenchmarkSetup {
 impl pezpallet_komite::Config for Runtime {
 	// TNPoS seats the committee, and TNPoS lives on People.
 	type CommitteeOrigin = EnsureXcm<Equals<PeopleLocation>>;
+	// The election asks for as many winners as the committee has validators here.
+	type OnCommittee = staking::SetValidatorCountToSeatedValidators;
 	type MaxMembers = ConstU32<{ pezkuwi_tnpos_primitives::invariant::MAX_COMMITTEE }>;
 	type WeightInfo = weights::pezpallet_komite::WeightInfo<Runtime>;
 	#[cfg(feature = "runtime-benchmarks")]

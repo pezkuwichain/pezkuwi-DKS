@@ -2535,3 +2535,67 @@ fn the_committee_call_decodes_the_way_people_builds_it() {
 		other => panic!("71/0 decodes as {other:?}"),
 	}
 }
+
+/// The Asset Hub's election builds exposures only for the committee People seated, and asks for
+/// as many winners as that committee has validators here. Before People's first snapshot every
+/// validator is a target, so the era clock never waits on a message.
+#[test]
+fn the_election_targets_only_the_seated_committee() {
+	// Through staking's own `TargetList`, so the test measures what the election reads.
+	type CommitteeTargets = <Runtime as pezpallet_staking_async::Config>::TargetList;
+	use pezframe_election_provider_support::SortedListProvider;
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		let (a, b, c) =
+			(AccountId::from([1u8; 32]), AccountId::from([2u8; 32]), AccountId::from([3u8; 32]));
+		for v in [&a, &b, &c] {
+			pezpallet_staking_async::Validators::<Runtime>::insert(
+				v,
+				pezpallet_staking_async::ValidatorPrefs::default(),
+			);
+		}
+		let mut targets: Vec<_> = CommitteeTargets::iter().collect();
+		targets.sort();
+		assert_eq!(targets, vec![a.clone(), b.clone(), c.clone()]);
+
+		// Seated: a and b, who validate here, and one who has not yet.
+		let seated = pezframe_support::BoundedVec::try_from(vec![
+			(a.clone(), 10u128),
+			(b.clone(), 20u128),
+			(AccountId::from([9u8; 32]), 5u128),
+		])
+		.unwrap();
+		let people: asset_hub_zagros_runtime::RuntimeOrigin = pezpallet_xcm::Origin::Xcm(
+			testnet_teyrchains_constants::zagros::locations::PeopleLocation::get(),
+		)
+		.into();
+		pezframe_support::assert_ok!(asset_hub_zagros_runtime::Komite::set_committee(
+			people, 1, seated
+		));
+
+		let mut targets: Vec<_> = CommitteeTargets::iter().collect();
+		targets.sort();
+		assert_eq!(targets, vec![a.clone(), b.clone()]);
+		assert!(CommitteeTargets::contains(&a));
+		assert!(!CommitteeTargets::contains(&c));
+		// Two of the three seated validate here: ask the election for two.
+		assert_eq!(pezpallet_staking_async::ValidatorCount::<Runtime>::get(), 2);
+
+		// A committee none of whom validates here would leave the election no target and stop
+		// the era clock; the filter steps aside rather than starve it.
+		let strangers =
+			pezframe_support::BoundedVec::try_from(vec![(AccountId::from([8u8; 32]), 1u128)])
+				.unwrap();
+		let people: asset_hub_zagros_runtime::RuntimeOrigin = pezpallet_xcm::Origin::Xcm(
+			testnet_teyrchains_constants::zagros::locations::PeopleLocation::get(),
+		)
+		.into();
+		pezframe_support::assert_ok!(asset_hub_zagros_runtime::Komite::set_committee(
+			people, 2, strangers
+		));
+		let mut targets: Vec<_> = CommitteeTargets::iter().collect();
+		targets.sort();
+		assert_eq!(targets, vec![a, b, c]);
+		// And the count it last asked for stands, rather than asking for nobody.
+		assert_eq!(pezpallet_staking_async::ValidatorCount::<Runtime>::get(), 2);
+	});
+}

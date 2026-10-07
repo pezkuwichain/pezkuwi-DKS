@@ -30,6 +30,7 @@ parameter_types! {
 impl pezpallet_komite::Config for Test {
 	type CommitteeOrigin = EnsureRoot<u64>;
 	type MaxMembers = MaxMembers;
+	type OnCommittee = ();
 	type WeightInfo = ();
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = RootIsTheCommitteeOrigin;

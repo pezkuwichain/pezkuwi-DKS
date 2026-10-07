@@ -255,6 +255,111 @@ pub const MAX_INFLATION_RATE: Perbill = Perbill::from_percent(10);
 /// nothing.
 pub const HEZ_ISSUANCE_BASE: u128 = 200_000_000_000_000_000_000;
 
+/// The election's targets: the committee People seated, among those who validate here.
+///
+/// The Asset Hub runs its own election only to build the exposures -- who backs whom, and with
+/// how much -- that payout and slashing read. Who sits is People's to decide, so the targets are
+/// the validators in People's latest snapshot. The filter steps aside when there is nothing to
+/// filter by -- no snapshot yet (genesis, or People silent since launch), or a snapshot none of
+/// whose members validates here -- because an election with no target stops the era clock, and
+/// work by anyone outside the committee is paid to the treasury, not to them.
+///
+/// `count` is the whole validator set: staking reads it as an upper bound when it sizes the
+/// target snapshot, and `try_state` holds it equal to `Validators`' count.
+pub struct CommitteeTargets;
+type AllValidators = UseValidatorsMap<Runtime>;
+
+impl CommitteeTargets {
+	/// Whether the latest snapshot names at least one validator here.
+	fn filtering() -> bool {
+		pezpallet_komite::Committee::<Runtime>::get().map_or(false, |s| {
+			s.members
+				.iter()
+				.any(|(m, _)| pezpallet_staking_async::Validators::<Runtime>::contains_key(m))
+		})
+	}
+}
+
+impl pezframe_election_provider_support::SortedListProvider<AccountId> for CommitteeTargets {
+	type Error =
+		<AllValidators as pezframe_election_provider_support::SortedListProvider<AccountId>>::Error;
+	type Score =
+		<AllValidators as pezframe_election_provider_support::SortedListProvider<AccountId>>::Score;
+
+	fn iter() -> alloc::boxed::Box<dyn Iterator<Item = AccountId>> {
+		if !Self::filtering() {
+			return AllValidators::iter();
+		}
+		alloc::boxed::Box::new(AllValidators::iter().filter(|v| Komite::is_member(v)))
+	}
+	fn iter_from(
+		start: &AccountId,
+	) -> Result<alloc::boxed::Box<dyn Iterator<Item = AccountId>>, Self::Error> {
+		let all = AllValidators::iter_from(start)?;
+		if !Self::filtering() {
+			return Ok(all);
+		}
+		Ok(alloc::boxed::Box::new(all.filter(|v| Komite::is_member(v))))
+	}
+	fn lock() {
+		AllValidators::lock()
+	}
+	fn unlock() {
+		AllValidators::unlock()
+	}
+	fn count() -> u32 {
+		AllValidators::count()
+	}
+	fn contains(id: &AccountId) -> bool {
+		AllValidators::contains(id) && (!Self::filtering() || Komite::is_member(id))
+	}
+	fn on_insert(id: AccountId, score: Self::Score) -> Result<(), Self::Error> {
+		AllValidators::on_insert(id, score)
+	}
+	fn on_update(id: &AccountId, score: Self::Score) -> Result<(), Self::Error> {
+		AllValidators::on_update(id, score)
+	}
+	fn get_score(id: &AccountId) -> Result<Self::Score, Self::Error> {
+		AllValidators::get_score(id)
+	}
+	fn on_remove(id: &AccountId) -> Result<(), Self::Error> {
+		AllValidators::on_remove(id)
+	}
+	fn unsafe_regenerate(
+		all: impl IntoIterator<Item = AccountId>,
+		score_of: alloc::boxed::Box<dyn Fn(&AccountId) -> Option<Self::Score>>,
+	) -> u32 {
+		AllValidators::unsafe_regenerate(all, score_of)
+	}
+	fn unsafe_clear() {
+		AllValidators::unsafe_clear()
+	}
+	#[cfg(feature = "try-runtime")]
+	fn try_state() -> Result<(), pezsp_runtime::TryRuntimeError> {
+		AllValidators::try_state()
+	}
+	#[cfg(feature = "runtime-benchmarks")]
+	fn score_update_worst_case(who: &AccountId, is_increase: bool) -> Self::Score {
+		AllValidators::score_update_worst_case(who, is_increase)
+	}
+}
+
+/// Ask the election for as many winners as the committee has validators here, so a member who
+/// has not started validating cannot make the election fail for want of a target. A committee
+/// with none leaves the count it last asked for, as `CommitteeTargets` leaves the targets.
+pub struct SetValidatorCountToSeatedValidators;
+impl pezpallet_komite::OnCommittee<AccountId> for SetValidatorCountToSeatedValidators {
+	fn on_committee(members: &[(AccountId, u128)]) {
+		let here = members
+			.iter()
+			.filter(|(m, _)| pezpallet_staking_async::Validators::<Runtime>::contains_key(m))
+			.count() as u32;
+		if here > 0 {
+			pezpallet_staking_async::ValidatorCount::<Runtime>::put(here);
+		}
+	}
+}
+
 pub struct EraPayout;
 impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
 	/// Neither argument is read, and the names say so.
@@ -351,7 +456,7 @@ impl pezpallet_staking_async::Config for Runtime {
 	type MaxExposurePageSize = MaxExposurePageSize;
 	type ElectionProvider = MultiBlockElection;
 	type VoterList = VoterList;
-	type TargetList = UseValidatorsMap<Self>;
+	type TargetList = CommitteeTargets;
 	type MaxValidatorSet = MaxValidatorSet;
 	type NominationsQuota =
 		pezpallet_staking_async::FixedNominationsQuota<{ MaxNominations::get() }>;
