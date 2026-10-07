@@ -123,9 +123,15 @@ const _: () = assert!(
 /// - `founding_office`: Holder of `Tiki::Serok`, funded here for its calls on this chain
 /// - `foreign_assets`: Foreign assets to create at genesis
 /// - `foreign_assets_endowed_accounts`: Initial balances for foreign assets
-/// The stake stratum's seats on the committee (§9: 3 of 27). The Asset Hub's own election ranks
-/// that stratum and nothing else -- the committee itself comes from People.
+/// How many winners the Asset Hub's election asks for until People's first committee snapshot
+/// arrives; from then on `Komite` sets it to the committee members who validate here. The
+/// election seats no one -- the committee comes from People, every stratum drawn by lot -- it
+/// builds the exposures the payout and slashing read.
 const STAKE_STRATUM_SEATS: u32 = 3;
+
+/// The least a validator bonds here (spec K4). Below it `validate` is refused, so a seat
+/// without it has no exposure and its pay goes to the treasury.
+pub const MIN_VALIDATOR_BOND: Balance = 10_000 * UNITS;
 
 fn asset_hub_pezkuwichain_genesis(
 	invulnerables: Vec<(AccountId, AuraId)>,
@@ -252,8 +258,10 @@ fn asset_hub_pezkuwichain_genesis(
 			// force_new_era()" in a comment, left the live Zagros at era 0 for weeks: nothing
 			// was ever minted. Spec res/specs/2026-10-04-hez-emission-design.md, C1.
 			force_era: pezpallet_staking_async::Forcing::NotForcing,
-			// The stake stratum's seats (§9: 3 of 27) -- the size of this chain's own election.
+			// Until People's first committee snapshot sets it (see `STAKE_STRATUM_SEATS`).
 			validator_count: STAKE_STRATUM_SEATS,
+			// Spec K4: 10,000 HEZ bonded to validate, the condition for being paid.
+			min_validator_bond: MIN_VALIDATOR_BOND,
 			// Synthetic stakers, for the presets that ask for them. The multi-block election
 			// benchmarks assert that a snapshot page is FULL -- `TargetSnapshotPerBlock` is
 			// `MaxValidatorSet`, i.e. 1000 -- and a genesis with no stakers makes that
@@ -749,6 +757,12 @@ fn every_preset_starts_the_era_clock() {
 			assert!(
 				staking["validatorCount"].as_u64().unwrap_or(0) > 0,
 				"preset {preset:?} elects no validators: the first era never activates"
+			);
+			// Spec K4: 10,000 HEZ bonded to validate here, the condition for being paid.
+			assert_eq!(
+				staking["minValidatorBond"].as_u64(),
+				Some(10_000 * UNITS as u64),
+				"preset {preset:?} lets a validator in below the 10,000 HEZ bond"
 			);
 		}
 	});
