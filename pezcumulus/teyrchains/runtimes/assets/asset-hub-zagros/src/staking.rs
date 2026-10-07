@@ -510,6 +510,55 @@ impl pezpallet_staking_async_rc_client::Config for Runtime {
 /// the relay's session numbers are not ours. Two writers to one clock is how an era is skipped
 /// or never starts. So the report is taken for its points and nothing else.
 pub struct RelayReportsAreWork;
+/// How many relay sessions `RelaySessionEras` remembers: more than `BondingDuration` eras of
+/// `SessionsPerEra` sessions, the oldest offence staking would still act on.
+pub const RELAY_SESSION_HISTORY: u32 = 32;
+type RelaySessionBook =
+	BoundedVec<(SessionIndex, pezsp_staking::EraIndex), ConstU32<RELAY_SESSION_HISTORY>>;
+
+/// Each relay session the relay has reported, with the era of this chain it ended in.
+///
+/// The relay names an offence by its own session index, and staking finds an offence's era by
+/// comparing that index with the sessions its eras started at -- this chain's sessions, which
+/// the relay's do not count (relay 200 against 13 here, measured 2026-10-04). Every relay index
+/// is larger, so every offence landed in the active era and was charged against exposures that
+/// were not the offender's at the time. This book is what translates one into the other.
+#[pezframe_support::storage_alias]
+pub type RelaySessionEras = StorageValue<
+	RelayReportsAreWork,
+	RelaySessionBook,
+	pezframe_support::storage::types::ValueQuery,
+>;
+
+impl RelayReportsAreWork {
+	/// The session of this chain at which the era `relay_session` ended in started, which is
+	/// what staking maps back to that era. `None` if that is older than the book or than the
+	/// eras staking keeps: the offence can no longer be placed, and placing it in the wrong era
+	/// is worse than not at all.
+	///
+	/// A relay session not yet in the book is still running, so it is in the active era. (So
+	/// is every session while the book is empty, the hours right after it was introduced.)
+	fn session_here_of_relay_session(relay_session: SessionIndex) -> Option<SessionIndex> {
+		let book = RelaySessionEras::get();
+		// A session before the first one recorded ended in an era the book cannot name.
+		if book.first().is_some_and(|(first, _)| relay_session < *first) {
+			return None;
+		}
+		let era = match book.iter().find(|(ended, _)| *ended >= relay_session) {
+			Some((_, era)) => *era,
+			None => {
+				return Some(
+					<Staking as rc_client::AHStakingInterface>::active_era_start_session_index(),
+				)
+			},
+		};
+		pezpallet_staking_async::BondedEras::<Runtime>::get()
+			.iter()
+			.find(|(e, _)| *e == era)
+			.map(|(_, started)| *started)
+	}
+}
+
 impl rc_client::AHStakingInterface for RelayReportsAreWork {
 	type AccountId = AccountId;
 	type MaxValidatorSet = <Staking as rc_client::AHStakingInterface>::MaxValidatorSet;
@@ -525,26 +574,47 @@ impl rc_client::AHStakingInterface for RelayReportsAreWork {
 			(who, points.saturating_mul(permille))
 		});
 		Staking::note_era_points(weighed);
+		RelaySessionEras::mutate(|book| {
+			let era = pezpallet_staking_async::ActiveEra::<Runtime>::get().map_or(0, |e| e.index);
+			if book.is_full() {
+				book.remove(0);
+			}
+			let _ = book.try_push((report.end_index, era));
+		});
 		weight
 	}
 	fn weigh_on_relay_session_report(report: &rc_client::SessionReport<AccountId>) -> Weight {
 		use codec::MaxEncodedLen;
-		// Plus the one read of the committee snapshot the points are weighed by.
+		// Plus the committee snapshot the points are weighed by, and the session book.
 		<Staking as rc_client::AHStakingInterface>::weigh_on_relay_session_report(report)
-			.saturating_add(<Runtime as pezframe_system::Config>::DbWeight::get().reads(1))
+			.saturating_add(
+				<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(2, 1),
+			)
 			.saturating_add(Weight::from_parts(
 				0,
-				pezpallet_komite::Snapshot::<Runtime>::max_encoded_len() as u64,
+				pezpallet_komite::Snapshot::<Runtime>::max_encoded_len() as u64
+					+ <RelaySessionBook as MaxEncodedLen>::max_encoded_len() as u64,
 			))
 	}
 	fn on_new_offences(
 		slash_session: SessionIndex,
 		offences: Vec<rc_client::Offence<AccountId>>,
 	) -> Weight {
-		<Staking as rc_client::AHStakingInterface>::on_new_offences(slash_session, offences)
+		let Some(session) = Self::session_here_of_relay_session(slash_session) else {
+			log::warn!(
+				target: "runtime::staking",
+				"{} offence(s) in relay session {slash_session}, before any era this chain still \
+				 keeps; not charged",
+				offences.len(),
+			);
+			return <Runtime as pezframe_system::Config>::DbWeight::get().reads(2);
+		};
+		<Staking as rc_client::AHStakingInterface>::on_new_offences(session, offences)
+			.saturating_add(<Runtime as pezframe_system::Config>::DbWeight::get().reads(2))
 	}
 	fn weigh_on_new_offences(offence_count: u32) -> Weight {
 		<Staking as rc_client::AHStakingInterface>::weigh_on_new_offences(offence_count)
+			.saturating_add(<Runtime as pezframe_system::Config>::DbWeight::get().reads(2))
 	}
 	fn active_era_start_session_index() -> SessionIndex {
 		<Staking as rc_client::AHStakingInterface>::active_era_start_session_index()

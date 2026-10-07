@@ -2023,3 +2023,85 @@ fn work_is_weighed_by_trust_and_outsiders_are_kept_for_the_treasury() {
 		assert_eq!(p.individual.get(&out).copied(), Some(10 * 1000));
 	});
 }
+
+/// The relay names an offence by its own session index; this chain's eras are counted in its
+/// own sessions. An offence the relay places in a session that ended during an earlier era here
+/// belongs to that era, and must not be charged against the active era's exposures.
+#[test]
+fn a_relay_offence_lands_in_the_era_its_session_ran_in() {
+	use pezpallet_staking_async::{
+		ActiveEra, ActiveEraInfo, BondedEras, ErasStakersOverview, Event as StakingEvent,
+	};
+	use pezpallet_staking_async_rc_client::{AHStakingInterface, Offence, SessionReport};
+	type Work = <Runtime as pezpallet_staking_async_rc_client::Config>::AHStakingInterface;
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		pezframe_system::Pezpallet::<Runtime>::set_block_number(1);
+		let offender = AccountId::from([7u8; 32]);
+		for era in [0, 1] {
+			ErasStakersOverview::<Runtime>::insert(
+				era,
+				&offender,
+				pezsp_staking::PagedExposureMetadata {
+					total: 1_000,
+					own: 1_000,
+					nominator_count: 0,
+					page_count: 1,
+				},
+			);
+		}
+		// Relay session 198 ends in era 0 here; era 1 starts at this chain's session 5; relay
+		// session 199 ends in era 1.
+		ActiveEra::<Runtime>::put(ActiveEraInfo { index: 0, start: Some(0) });
+		BondedEras::<Runtime>::put(pezframe_support::BoundedVec::truncate_from(vec![(0, 0)]));
+		Work::on_relay_session_report(SessionReport::new_terminal(198, vec![], None));
+		ActiveEra::<Runtime>::put(ActiveEraInfo { index: 1, start: Some(1) });
+		BondedEras::<Runtime>::put(pezframe_support::BoundedVec::truncate_from(vec![
+			(0, 0),
+			(1, 5),
+		]));
+		Work::on_relay_session_report(SessionReport::new_terminal(199, vec![], None));
+
+		Work::on_new_offences(
+			198,
+			vec![Offence {
+				offender: offender.clone(),
+				reporters: vec![],
+				slash_fraction: pezsp_runtime::Perbill::from_percent(10),
+			}],
+		);
+
+		let eras: Vec<_> = pezframe_system::Pezpallet::<Runtime>::events()
+			.into_iter()
+			.filter_map(|r| match r.event {
+				RuntimeEvent::Staking(StakingEvent::OffenceReported { offence_era, .. }) => {
+					Some(("reported", offence_era))
+				},
+				RuntimeEvent::Staking(StakingEvent::OffenceTooOld { offence_era, .. }) => {
+					Some(("too old", offence_era))
+				},
+				_ => None,
+			})
+			.collect();
+		// Era 0 is past the slash deferral window, so the offence is refused as too old -- not
+		// charged to era 1.
+		assert_eq!(eras, vec![("too old", 0)]);
+
+		// A session older than anything the book recorded cannot be placed, and is not charged
+		// anywhere -- in particular not to the active era.
+		pezframe_system::Pezpallet::<Runtime>::reset_events();
+		Work::on_new_offences(
+			150,
+			vec![Offence {
+				offender,
+				reporters: vec![],
+				slash_fraction: pezsp_runtime::Perbill::from_percent(10),
+			}],
+		);
+		assert!(!pezframe_system::Pezpallet::<Runtime>::events().into_iter().any(|r| matches!(
+			r.event,
+			RuntimeEvent::Staking(
+				StakingEvent::OffenceReported { .. } | StakingEvent::OffenceTooOld { .. }
+			)
+		)));
+	});
+}
