@@ -982,6 +982,8 @@ impl<T: Config> Rotator<T> {
 		let max_staked_rewards = MaxStakedRewards::<T>::get().unwrap_or(Percent::from_percent(100));
 
 		let validator_payout = validator_payout.min(max_staked_rewards * total_payout);
+		let unclaimable = Self::take_unclaimable_points(ending_era.index, validator_payout);
+		let validator_payout = validator_payout.saturating_sub(unclaimable);
 		let remainder = total_payout.saturating_sub(validator_payout);
 
 		Pezpallet::<T>::deposit_event(Event::<T>::EraPaid {
@@ -992,6 +994,37 @@ impl<T: Config> Rotator<T> {
 
 		Eras::<T>::set_stakers_reward(ending_era.index, validator_payout);
 		T::RewardRemainder::on_unbalanced(asset::issue::<T>(remainder));
+	}
+
+	/// The part of `validator_payout` no payout can ever claim, removing the points behind it.
+	///
+	/// A payout needs an exposure, so points held by an account with none in `era` -- work by
+	/// someone the election did not back -- would leave their share sitting in
+	/// `ErasValidatorReward`, never minted. Those points leave the era here, so the shares that
+	/// can be claimed stay exact, and their share is returned for the remainder. An era with no
+	/// points at all has no one to pay, so all of it is returned.
+	fn take_unclaimable_points(era: EraIndex, validator_payout: BalanceOf<T>) -> BalanceOf<T> {
+		let mut points = ErasRewardPoints::<T>::get(era);
+		if points.total.is_zero() {
+			return validator_payout;
+		}
+		let outsiders: Vec<(T::AccountId, RewardPoint)> = points
+			.individual
+			.iter()
+			.filter(|(who, _)| !ErasStakersOverview::<T>::contains_key(era, *who))
+			.map(|(who, p)| (who.clone(), *p))
+			.collect();
+		let outside: RewardPoint = outsiders.iter().fold(0, |acc, (_, p)| acc.saturating_add(*p));
+		if outside.is_zero() {
+			return Zero::zero();
+		}
+		let share = Perbill::from_rational(outside, points.total).mul_floor(validator_payout);
+		for (who, _) in &outsiders {
+			points.individual.remove(who);
+		}
+		points.total = points.total.saturating_sub(outside);
+		ErasRewardPoints::<T>::insert(era, points);
+		share
 	}
 
 	/// DAP end-era: snapshot from general reward pots into era-specific pots.
