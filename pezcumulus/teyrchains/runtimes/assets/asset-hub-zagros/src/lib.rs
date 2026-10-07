@@ -917,9 +917,11 @@ parameter_types! {
 }
 
 parameter_types! {
-	// One hour, the relay's session length: an era is `SessionsPerEra` sessions and `EraPayout`
-	// is capped at `MaxEraDuration`, which is six relay hours. Six-hour sessions made a 36-hour
-	// era paid for six, a sixth of the set inflation. Collator rotation follows; it is cheap.
+	// One hour, the relay's session length. An era is `SessionsPerEra - PlanningEraOffset + 1`
+	// sessions (five) and `EraPayout` is capped at `MaxEraDuration`, six relay hours; six-hour
+	// sessions made a thirty-hour era paid for six, a fifth of the set inflation. `KickThreshold`
+	// is `Period` too, so a non-invulnerable candidate silent for an hour is kicked (none on the
+	// live Zagros on 2026-10-07).
 	pub const Period: u32 = prod_or_fast!(1 * HOURS, 20);
 	pub const Offset: u32 = 0;
 }

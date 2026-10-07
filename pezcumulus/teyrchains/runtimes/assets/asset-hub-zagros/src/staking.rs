@@ -439,7 +439,8 @@ impl rc_client::AHStakingInterface for RelayReportsAreWork {
 ///
 /// This chain's sessions are the only clock of its eras: the relay's reports arrive too (measured
 /// live: `LastSessionReportEndingIndex` 200 against this chain's session 13 on 2026-10-04), but
-/// they only record work (`RelayReportsAreWork`). An era is `SessionsPerEra` of these sessions.
+/// they only record work (`RelayReportsAreWork`). An era is `SessionsPerEra - PlanningEraOffset + 1`
+/// of these sessions (see `era_length`).
 pub struct StakingSessionManager;
 
 impl pezpallet_session::SessionManager<AccountId> for StakingSessionManager {
@@ -779,24 +780,37 @@ where
 	}
 }
 
-#[cfg(all(test, not(feature = "fast-runtime")))]
+#[cfg(test)]
 mod era_length {
 	use super::*;
+	use pezframe_support::traits::Get;
 
-	/// An era is `SessionsPerEra` of this chain's sessions, and `EraPayout` mints for at most
-	/// `MaxEraDuration`. If the era is longer than the cap, every era is paid for the cap and the
-	/// rest of the year is never minted: with 6-hour sessions an era was 36 hours against a
-	/// 6-hour cap, one sixth of the inflation the economy is set for.
+	/// An era never outlasts the payout it is minted for.
+	///
+	/// `EraPayout` mints for the era's elapsed time, capped at `MaxEraDuration`. An era is not
+	/// `SessionsPerEra` sessions: the next era is planned once `SessionsPerEra - PlanningEraOffset`
+	/// sessions have passed and activated at the following session end, so it lasts
+	/// `SessionsPerEra - PlanningEraOffset + 1` sessions (five hours in production, one session in a
+	/// fast runtime). If that ever exceeds the cap, every era is paid for the cap and the rest is
+	/// never minted -- with six-hour sessions it was a thirty-hour era paid for six, a fifth of the
+	/// set inflation.
 	#[test]
-	fn an_era_is_exactly_as_long_as_the_payout_cap() {
-		// This chain's own block time: `Period` counts its blocks, not the relay's.
-		let block_ms = crate::MILLISECS_PER_BLOCK;
-		let era_ms = crate::Period::get() as u64 * SessionsPerEra::get() as u64 * block_ms;
-		assert_eq!(
-			era_ms,
-			MaxEraDuration::get(),
-			"era {era_ms} ms, payout cap {} ms",
-			MaxEraDuration::get()
-		);
+	fn an_era_never_outlasts_the_payout_cap() {
+		// The planning offset reads the election's phase lengths, which are storage parameters.
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			let per_era = SessionsPerEra::get();
+			let offset = <<Runtime as pezpallet_staking_async::Config>::PlanningEraOffset as Get<
+				SessionIndex,
+			>>::get()
+			.min(per_era);
+			let era_sessions = (per_era - offset + 1) as u64;
+			// This chain's own block time: `Period` counts its blocks, not the relay's.
+			let era_ms = era_sessions * crate::Period::get() as u64 * crate::MILLISECS_PER_BLOCK;
+			assert!(
+				era_ms <= MaxEraDuration::get(),
+				"an era is {era_sessions} sessions, {era_ms} ms, past the payout cap of {} ms",
+				MaxEraDuration::get()
+			);
+		});
 	}
 }

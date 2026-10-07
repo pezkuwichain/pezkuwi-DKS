@@ -21,7 +21,7 @@ use super::state_rehearsal_offices::storage_value;
 use crate::utils::initialize_network;
 
 const ASSET_HUB_ID: u32 = 1000;
-/// Fast runtime: a session is 20 blocks and an era two sessions, plus the election phases.
+/// Fast runtime: a session is 20 blocks and, once planned, an era lasts one more session.
 /// Thirty minutes is several eras of headroom; a clock that is stopped never gets there.
 const ERA_WAIT_SECS: u64 = 1800;
 

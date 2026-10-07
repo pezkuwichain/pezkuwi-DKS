@@ -1812,8 +1812,7 @@ mod hez_parameters {
 /// 2026-10-04: relay session 200 against this chain's 13. Spec C1.
 #[test]
 fn a_relay_session_report_is_work_and_never_turns_the_era_clock() {
-	use asset_hub_pezkuwichain_runtime::staking::RelayReportsAreWork;
-	use pezpallet_staking_async_rc_client::{AHStakingInterface, SessionReport};
+	use pezpallet_staking_async_rc_client::SessionReport;
 	ExtBuilder::<Runtime>::default()
 		.with_collators(vec![AccountId::from(ALICE)])
 		.with_session_keys(vec![(
@@ -1839,7 +1838,14 @@ fn a_relay_session_report_is_work_and_never_turns_the_era_clock() {
 				vec![(AccountId::from(ALICE), 40)],
 				Some((1_700_000_000_000, 7)),
 			);
-			RelayReportsAreWork::on_relay_session_report(report);
+			// Through rc-client, the way the relay's XCM arrives, so the test pins the wiring
+			// (`type AHStakingInterface = RelayReportsAreWork`) and not only the wrapper's body.
+			pezframe_support::assert_ok!(
+				asset_hub_pezkuwichain_runtime::StakingRcClient::relay_session_report(
+					RuntimeOrigin::root(),
+					report,
+				)
+			);
 
 			assert_eq!(
 				pezpallet_staking_async::ErasRewardPoints::<Runtime>::get(era).total,
