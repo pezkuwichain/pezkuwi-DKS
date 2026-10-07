@@ -23,6 +23,8 @@ use pezkuwi_zombienet_sdk::{
 	NetworkConfig, NetworkConfigBuilder,
 };
 
+use serde_json::json;
+
 use super::state_rehearsal_offices::storage_value;
 use crate::utils::initialize_network;
 
@@ -99,6 +101,18 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 	NetworkConfigBuilder::new()
 		.with_relaychain(|r| {
 			r.with_chain("zagros-local")
+				// The preset's two configured cores come first and the Asset Hub, registered at
+				// genesis, opens its core after them -- behind a validator group two validators
+				// never fill, so it stopped at block 3 and no session ever ended (measured on
+				// the 2026-10-07 run: Asset Hub best #3, relay #306). With none configured its
+				// registration makes core 0, and one validator per group backs it.
+				.with_genesis_overrides(json!({
+					"configuration": {
+						"config": {
+							"scheduler_params": { "num_cores": 0, "max_validators_per_core": 1 }
+						}
+					}
+				}))
 				.with_default_command("pezkuwi")
 				.with_default_image(images.pezkuwi())
 				.with_validator(|n| n.with_name("validator-0"))
