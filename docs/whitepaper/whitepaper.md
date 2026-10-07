@@ -735,11 +735,12 @@ the committee the People chain seated. Each member's part is proportional to its
 the work the relay recorded for it that era, trust measured against the committee's highest.
 Inside a member's part the split is fixed by the protocol, not by the member: half to the
 validator, half to the nominators backing it in proportion to their bond, whatever commission
-the validator declared. Nothing is burned. The nominators' half of a validator that has none,
-the share of work done by anyone the committee did not seat, all of an era in which no work
-was recorded, and the rounding go to the treasury. A member is paid only if it has bonded at
-least ten thousand HEZ on the Asset Hub; without that bond it has no exposure there, and its
-part goes to the treasury too.
+the validator declared. What the protocol owes no one goes to the treasury rather than going
+unminted: the nominators' half of a validator that has none, the share of work done by anyone
+the committee did not seat, and all of an era in which no work was recorded. A reward that is
+owed but never claimed within the chain's history depth is not minted. A validator cannot
+start validating on the Asset Hub with less than ten thousand HEZ bonded, and a member without
+a stake there has no exposure, so its part goes to the treasury too.
 
 **What a fixed base means for a holder.** Because the rate applies to the fixed two hundred
 million rather than to circulating supply, emission does not compound: the same number of HEZ
