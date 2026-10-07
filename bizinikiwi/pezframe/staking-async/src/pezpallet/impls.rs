@@ -1226,9 +1226,16 @@ impl<T: Config> ElectionDataProvider for Pezpallet<T> {
 	type BlockNumber = BlockNumberFor<T>;
 	type MaxVotesPerVoter = MaxNominationsOf<T>;
 
+	/// `ValidatorCount`, but never more than the electable targets there are now.
+	///
+	/// An election asked for more winners than it has targets can never fill its seats, and a
+	/// multi-block election that cannot fill them never completes -- the era clock waits on it.
+	/// Where the count is set ahead of the snapshot, a validator chilling in between would do
+	/// exactly that, so the count asked for is read against the targets at snapshot time.
 	fn desired_targets() -> data_provider::Result<u32> {
-		Self::register_weight(T::DbWeight::get().reads(1));
-		Ok(ValidatorCount::<T>::get())
+		let targets = T::TargetList::iter().count() as u32;
+		Self::register_weight(T::DbWeight::get().reads(1 + targets as u64));
+		Ok(ValidatorCount::<T>::get().min(targets))
 	}
 
 	fn electing_voters(
