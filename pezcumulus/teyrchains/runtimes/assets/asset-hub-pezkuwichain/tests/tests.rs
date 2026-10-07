@@ -1847,11 +1847,10 @@ fn a_relay_session_report_is_work_and_never_turns_the_era_clock() {
 				)
 			);
 
-			// Recorded weighed by trust, in thousandths; with no committee snapshot every account
-			// weighs the full thousand.
+			// Weighed by trust; with no committee snapshot every account weighs in full.
 			assert_eq!(
 				pezpallet_staking_async::ErasRewardPoints::<Runtime>::get(era).total,
-				before + 40 * 1000
+				before + 40
 			);
 			assert_eq!(pezpallet_staking_async::ActiveEra::<Runtime>::get(), active);
 			assert_eq!(pezpallet_staking_async::CurrentEra::<Runtime>::get(), current);
@@ -1884,9 +1883,11 @@ fn the_committee_call_decodes_the_way_people_builds_it() {
 /// validator is a target, so the era clock never waits on a message.
 #[test]
 fn the_election_targets_only_the_seated_committee() {
-	// Through staking's own `TargetList`, so the test measures what the election reads.
+	// Through staking's own `TargetList` and the election's own data provider, so the test
+	// measures what the election reads.
 	type CommitteeTargets = <Runtime as pezpallet_staking_async::Config>::TargetList;
-	use pezframe_election_provider_support::SortedListProvider;
+	type ElectionData = <Runtime as pezpallet_election_provider_multi_block::Config>::DataProvider;
+	use pezframe_election_provider_support::{ElectionDataProvider, SortedListProvider};
 	ExtBuilder::<Runtime>::default().build().execute_with(|| {
 		let (a, b, c) =
 			(AccountId::from([1u8; 32]), AccountId::from([2u8; 32]), AccountId::from([3u8; 32]));
@@ -1896,50 +1897,55 @@ fn the_election_targets_only_the_seated_committee() {
 				pezpallet_staking_async::ValidatorPrefs::default(),
 			);
 		}
-		let mut targets: Vec<_> = CommitteeTargets::iter().collect();
-		targets.sort();
-		assert_eq!(targets, vec![a.clone(), b.clone(), c.clone()]);
+		let targets = || {
+			let mut t: Vec<_> = CommitteeTargets::iter().collect();
+			t.sort();
+			t
+		};
+		let people = || -> asset_hub_pezkuwichain_runtime::RuntimeOrigin {
+			pezpallet_xcm::Origin::Xcm(
+				testnet_teyrchains_constants::pezkuwichain::locations::PeopleLocation::get(),
+			)
+			.into()
+		};
+		assert_eq!(targets(), vec![a.clone(), b.clone(), c.clone()]);
 
-		// Seated: a and b, who validate here, and one who has not yet.
+		// Seated: a and b, who validate here, and one who has not started yet.
 		let seated = pezframe_support::BoundedVec::try_from(vec![
 			(a.clone(), 10u128),
 			(b.clone(), 20u128),
 			(AccountId::from([9u8; 32]), 5u128),
 		])
 		.unwrap();
-		let people: asset_hub_pezkuwichain_runtime::RuntimeOrigin = pezpallet_xcm::Origin::Xcm(
-			testnet_teyrchains_constants::pezkuwichain::locations::PeopleLocation::get(),
-		)
-		.into();
 		pezframe_support::assert_ok!(asset_hub_pezkuwichain_runtime::Komite::set_committee(
-			people, 1, seated
+			people(),
+			1,
+			seated
 		));
-
-		let mut targets: Vec<_> = CommitteeTargets::iter().collect();
-		targets.sort();
-		assert_eq!(targets, vec![a.clone(), b.clone()]);
+		assert_eq!(targets(), vec![a.clone(), b.clone()]);
 		assert!(CommitteeTargets::contains(&a));
 		assert!(!CommitteeTargets::contains(&c));
-		// Two of the three seated validate here: ask the election for two.
-		assert_eq!(pezpallet_staking_async::ValidatorCount::<Runtime>::get(), 2);
+		// The count asks for every seat; the election asks for as many as can be elected now.
+		assert_eq!(pezpallet_staking_async::ValidatorCount::<Runtime>::get(), 3);
+		assert_eq!(ElectionData::desired_targets(), Ok(2));
+
+		// A seated member stops validating before the snapshot: the election still completes.
+		pezpallet_staking_async::Validators::<Runtime>::remove(&b);
+		assert_eq!(ElectionData::desired_targets(), Ok(1));
 
 		// A committee none of whom validates here would leave the election no target and stop
-		// the era clock; the filter steps aside rather than starve it.
+		// the era clock; the filter steps aside rather than starve it, and the count stands.
 		let strangers =
 			pezframe_support::BoundedVec::try_from(vec![(AccountId::from([8u8; 32]), 1u128)])
 				.unwrap();
-		let people: asset_hub_pezkuwichain_runtime::RuntimeOrigin = pezpallet_xcm::Origin::Xcm(
-			testnet_teyrchains_constants::pezkuwichain::locations::PeopleLocation::get(),
-		)
-		.into();
 		pezframe_support::assert_ok!(asset_hub_pezkuwichain_runtime::Komite::set_committee(
-			people, 2, strangers
+			people(),
+			2,
+			strangers
 		));
-		let mut targets: Vec<_> = CommitteeTargets::iter().collect();
-		targets.sort();
-		assert_eq!(targets, vec![a, b, c]);
-		// And the count it last asked for stands, rather than asking for nobody.
-		assert_eq!(pezpallet_staking_async::ValidatorCount::<Runtime>::get(), 2);
+		assert_eq!(targets(), vec![a, c]);
+		assert_eq!(pezpallet_staking_async::ValidatorCount::<Runtime>::get(), 3);
+		assert_eq!(ElectionData::desired_targets(), Ok(2));
 	});
 }
 
@@ -2018,9 +2024,11 @@ fn work_is_weighed_by_trust_and_outsiders_are_kept_for_the_treasury() {
 			)
 		);
 		let p = pezpallet_staking_async::ErasRewardPoints::<Runtime>::get(0);
-		assert_eq!(p.individual.get(&hi).copied(), Some(10 * 1000));
-		assert_eq!(p.individual.get(&lo).copied(), Some(10 * 500));
-		assert_eq!(p.individual.get(&out).copied(), Some(10 * 1000));
+		// Points keep the relay's magnitude -- weighed, not multiplied -- so an era's total
+		// stays as far from `u32::MAX` as the relay's own.
+		assert_eq!(p.individual.get(&hi).copied(), Some(10));
+		assert_eq!(p.individual.get(&lo).copied(), Some(5));
+		assert_eq!(p.individual.get(&out).copied(), Some(10));
 	});
 }
 
@@ -2132,5 +2140,93 @@ fn the_komite_upgrade_starts_a_stopped_era_clock_once() {
 		ForceEra::<Runtime>::put(Forcing::ForceNone);
 		asset_hub_pezkuwichain_runtime::Migrations::on_runtime_upgrade();
 		assert_eq!(ForceEra::<Runtime>::get(), Forcing::ForceNone);
+	});
+}
+
+/// Work is weighed by the trust of the committee the active era was elected under, not by the
+/// latest snapshot: a member People removes mid-era still holds that era's exposure and keeps
+/// its own trust to the era's end, rather than jumping to full weight.
+#[test]
+fn work_is_weighed_by_the_committee_the_era_was_elected_under() {
+	use pezpallet_staking_async_rc_client::SessionReport;
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		pezpallet_staking_async::ActiveEra::<Runtime>::put(
+			pezpallet_staking_async::ActiveEraInfo { index: 0, start: Some(0) },
+		);
+		let (hi, lo) = (AccountId::from([1u8; 32]), AccountId::from([2u8; 32]));
+		let people = || -> asset_hub_pezkuwichain_runtime::RuntimeOrigin {
+			pezpallet_xcm::Origin::Xcm(
+				testnet_teyrchains_constants::pezkuwichain::locations::PeopleLocation::get(),
+			)
+			.into()
+		};
+		let elected = pezframe_support::BoundedVec::try_from(vec![
+			(hi.clone(), 200u128),
+			(lo.clone(), 100u128),
+		])
+		.unwrap();
+		pezframe_support::assert_ok!(asset_hub_pezkuwichain_runtime::Komite::set_committee(
+			people(),
+			1,
+			elected
+		));
+		asset_hub_pezkuwichain_runtime::Komite::note_era_planned();
+		asset_hub_pezkuwichain_runtime::Komite::note_era_activated();
+		// People seats a new committee without lo while era 0 is still running.
+		let next = pezframe_support::BoundedVec::try_from(vec![(hi.clone(), 100u128)]).unwrap();
+		pezframe_support::assert_ok!(asset_hub_pezkuwichain_runtime::Komite::set_committee(
+			people(),
+			2,
+			next
+		));
+		let report =
+			SessionReport::new_terminal(200, vec![(hi.clone(), 10), (lo.clone(), 10)], None);
+		pezframe_support::assert_ok!(
+			asset_hub_pezkuwichain_runtime::StakingRcClient::relay_session_report(
+				RuntimeOrigin::root(),
+				report
+			)
+		);
+		let p = pezpallet_staking_async::ErasRewardPoints::<Runtime>::get(0);
+		assert_eq!(p.individual.get(&hi).copied(), Some(10));
+		assert_eq!(p.individual.get(&lo).copied(), Some(5));
+	});
+}
+
+/// The session manager freezes the committee when an era's election is planned, and makes that
+/// copy the active era's when the era starts -- the copy work is weighed by.
+#[test]
+fn the_session_manager_freezes_the_committee_at_planning_and_activation() {
+	use asset_hub_pezkuwichain_runtime::staking::StakingSessionManager;
+	use pezpallet_session::SessionManager;
+	use pezpallet_staking_async::{ActiveEra, ActiveEraInfo, BondedEras, CurrentEra};
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		ActiveEra::<Runtime>::put(ActiveEraInfo { index: 0, start: Some(0) });
+		CurrentEra::<Runtime>::put(0);
+		BondedEras::<Runtime>::put(pezframe_support::BoundedVec::truncate_from(vec![(0, 0)]));
+		let seated =
+			pezframe_support::BoundedVec::try_from(vec![(AccountId::from([1u8; 32]), 7u128)])
+				.unwrap();
+		let people: asset_hub_pezkuwichain_runtime::RuntimeOrigin = pezpallet_xcm::Origin::Xcm(
+			testnet_teyrchains_constants::pezkuwichain::locations::PeopleLocation::get(),
+		)
+		.into();
+		pezframe_support::assert_ok!(asset_hub_pezkuwichain_runtime::Komite::set_committee(
+			people, 1, seated
+		));
+		let committee = pezpallet_komite::Committee::<Runtime>::get();
+
+		// End sessions until staking plans era 1.
+		let mut session = 0;
+		while CurrentEra::<Runtime>::get() == Some(0) && session < 20 {
+			StakingSessionManager::end_session(session);
+			session += 1;
+		}
+		assert_eq!(CurrentEra::<Runtime>::get(), Some(1), "era 1 was never planned");
+		assert_eq!(
+			pezpallet_komite::PlannedCommittee::<Runtime>::get().map(|s| s.era),
+			committee.map(|s| s.era)
+		);
+		assert!(pezpallet_komite::ActiveCommittee::<Runtime>::get().is_none());
 	});
 }

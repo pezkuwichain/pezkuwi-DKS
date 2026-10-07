@@ -103,6 +103,16 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type Committee<T: Config> = StorageValue<_, Snapshot<T>, OptionQuery>;
 
+	/// The committee as it stood when the election for the next era was planned: the one its
+	/// targets were drawn from.
+	#[pezpallet::storage]
+	pub type PlannedCommittee<T: Config> = StorageValue<_, Snapshot<T>, OptionQuery>;
+
+	/// The committee the active era was elected under. Work in the era is weighed by its trust,
+	/// so a member removed mid-era keeps its own weight to the era's end.
+	#[pezpallet::storage]
+	pub type ActiveCommittee<T: Config> = StorageValue<_, Snapshot<T>, OptionQuery>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -158,6 +168,28 @@ pub mod pezpallet {
 
 		pub fn has_snapshot() -> bool {
 			Committee::<T>::exists()
+		}
+
+		/// An era's election was planned: freeze the committee its targets come from.
+		pub fn note_era_planned() {
+			match Committee::<T>::get() {
+				Some(s) => PlannedCommittee::<T>::put(s),
+				None => PlannedCommittee::<T>::kill(),
+			}
+		}
+
+		/// The planned era started: the committee it was elected under is now the active one.
+		pub fn note_era_activated() {
+			match PlannedCommittee::<T>::take() {
+				Some(s) => ActiveCommittee::<T>::put(s),
+				None => ActiveCommittee::<T>::kill(),
+			}
+		}
+
+		/// The committee to weigh the active era's work by: the one it was elected under, or --
+		/// before any era has been elected under one -- the latest.
+		pub fn weighing_snapshot() -> Option<Snapshot<T>> {
+			ActiveCommittee::<T>::get().or_else(Committee::<T>::get)
 		}
 	}
 }

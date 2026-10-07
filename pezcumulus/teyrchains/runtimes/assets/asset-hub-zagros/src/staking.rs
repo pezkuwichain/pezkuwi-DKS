@@ -270,13 +270,16 @@ pub struct CommitteeTargets;
 type AllValidators = UseValidatorsMap<Runtime>;
 
 impl CommitteeTargets {
-	/// Whether the latest snapshot names at least one validator here.
-	fn filtering() -> bool {
-		pezpallet_komite::Committee::<Runtime>::get().map_or(false, |s| {
-			s.members
-				.iter()
-				.any(|(m, _)| pezpallet_staking_async::Validators::<Runtime>::contains_key(m))
-		})
+	/// The members to filter by, read once: `None` when there is nothing to filter by -- no
+	/// snapshot, or one naming no validator here.
+	fn seated() -> Option<alloc::collections::BTreeSet<AccountId>> {
+		let snapshot = pezpallet_komite::Committee::<Runtime>::get()?;
+		let seated: alloc::collections::BTreeSet<AccountId> =
+			snapshot.members.into_iter().map(|(m, _)| m).collect();
+		seated
+			.iter()
+			.any(|m| pezpallet_staking_async::Validators::<Runtime>::contains_key(m))
+			.then_some(seated)
 	}
 }
 
@@ -287,19 +290,21 @@ impl pezframe_election_provider_support::SortedListProvider<AccountId> for Commi
 		<AllValidators as pezframe_election_provider_support::SortedListProvider<AccountId>>::Score;
 
 	fn iter() -> alloc::boxed::Box<dyn Iterator<Item = AccountId>> {
-		if !Self::filtering() {
-			return AllValidators::iter();
+		match Self::seated() {
+			None => AllValidators::iter(),
+			Some(seated) => {
+				alloc::boxed::Box::new(AllValidators::iter().filter(move |v| seated.contains(v)))
+			},
 		}
-		alloc::boxed::Box::new(AllValidators::iter().filter(|v| Komite::is_member(v)))
 	}
 	fn iter_from(
 		start: &AccountId,
 	) -> Result<alloc::boxed::Box<dyn Iterator<Item = AccountId>>, Self::Error> {
 		let all = AllValidators::iter_from(start)?;
-		if !Self::filtering() {
-			return Ok(all);
-		}
-		Ok(alloc::boxed::Box::new(all.filter(|v| Komite::is_member(v))))
+		Ok(match Self::seated() {
+			None => all,
+			Some(seated) => alloc::boxed::Box::new(all.filter(move |v| seated.contains(v))),
+		})
 	}
 	fn lock() {
 		AllValidators::lock()
@@ -311,7 +316,7 @@ impl pezframe_election_provider_support::SortedListProvider<AccountId> for Commi
 		AllValidators::count()
 	}
 	fn contains(id: &AccountId) -> bool {
-		AllValidators::contains(id) && (!Self::filtering() || Komite::is_member(id))
+		AllValidators::contains(id) && Self::seated().map_or(true, |seated| seated.contains(id))
 	}
 	fn on_insert(id: AccountId, score: Self::Score) -> Result<(), Self::Error> {
 		AllValidators::on_insert(id, score)
@@ -344,18 +349,19 @@ impl pezframe_election_provider_support::SortedListProvider<AccountId> for Commi
 	}
 }
 
-/// Ask the election for as many winners as the committee has validators here, so a member who
-/// has not started validating cannot make the election fail for want of a target. A committee
-/// with none leaves the count it last asked for, as `CommitteeTargets` leaves the targets.
+/// Ask the election for every seat the committee has. How many it can actually elect -- the
+/// seated members validating here when the snapshot is taken -- is staking's `desired_targets`
+/// to say, so a member who stops validating cannot make the election fail and one who starts
+/// late can still be elected. A committee none of whom validates here leaves the count as it
+/// was, as `CommitteeTargets` leaves the targets.
 pub struct SetValidatorCountToSeatedValidators;
 impl pezpallet_komite::OnCommittee<AccountId> for SetValidatorCountToSeatedValidators {
 	fn on_committee(members: &[(AccountId, u128)]) {
-		let here = members
+		let any_here = members
 			.iter()
-			.filter(|(m, _)| pezpallet_staking_async::Validators::<Runtime>::contains_key(m))
-			.count() as u32;
-		if here > 0 {
-			pezpallet_staking_async::ValidatorCount::<Runtime>::put(here);
+			.any(|(m, _)| pezpallet_staking_async::Validators::<Runtime>::contains_key(m));
+		if any_here {
+			pezpallet_staking_async::ValidatorCount::<Runtime>::put(members.len() as u32);
 		}
 	}
 }
@@ -629,10 +635,15 @@ impl rc_client::AHStakingInterface for RelayReportsAreWork {
 		// Work weighed by trust, in thousandths of the committee's highest. An account People
 		// did not seat keeps full weight: it has no exposure, so its share goes to the treasury
 		// at era end rather than being spread over the committee.
-		let snapshot = pezpallet_komite::Committee::<Runtime>::get();
+		//
+		// The trust is the committee's the active era was elected under, so a member People
+		// removes mid-era keeps its own weight to the era's end. Points keep the relay's
+		// magnitude -- weighed, never multiplied up -- so an era's total stays as far from
+		// `u32::MAX` as the relay's own.
+		let snapshot = Komite::weighing_snapshot();
 		let weighed = report.validator_points.into_iter().map(|(who, points)| {
 			let permille = snapshot.as_ref().and_then(|s| s.trust_permille(&who)).unwrap_or(1000);
-			(who, points.saturating_mul(permille))
+			(who, (points as u64 * permille as u64 / 1000) as u32)
 		});
 		Staking::note_era_points(weighed);
 		RelaySessionEras::mutate(|book| {
@@ -646,14 +657,15 @@ impl rc_client::AHStakingInterface for RelayReportsAreWork {
 	}
 	fn weigh_on_relay_session_report(report: &rc_client::SessionReport<AccountId>) -> Weight {
 		use codec::MaxEncodedLen;
-		// Plus the committee snapshot the points are weighed by, and the session book.
+		// Plus the committee snapshots the points are weighed by (the active era's, or the
+		// latest), and the session book.
 		<Staking as rc_client::AHStakingInterface>::weigh_on_relay_session_report(report)
 			.saturating_add(
-				<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(2, 1),
+				<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(3, 1),
 			)
 			.saturating_add(Weight::from_parts(
 				0,
-				pezpallet_komite::Snapshot::<Runtime>::max_encoded_len() as u64
+				2 * pezpallet_komite::Snapshot::<Runtime>::max_encoded_len() as u64
 					+ <RelaySessionBook as MaxEncodedLen>::max_encoded_len() as u64,
 			))
 	}
@@ -726,6 +738,18 @@ impl pezpallet_session::SessionManager<AccountId> for StakingSessionManager {
 			rc_client::SessionReport::new_terminal(end_index, Vec::new(), activation_timestamp);
 
 		let _ = <Staking as rc_client::AHStakingInterface>::on_relay_session_report(report);
+
+		// Freeze the committee an era is elected under when its election is planned, and make
+		// that copy the active one when the era starts: the trust its work is weighed by. In
+		// one session end staking activates before it plans, so the hooks run in that order.
+		let active_now =
+			pezpallet_staking_async::ActiveEra::<Runtime>::get().map_or(0, |e| e.index);
+		if active_now > active_era_idx {
+			Komite::note_era_activated();
+		}
+		if pezpallet_staking_async::CurrentEra::<Runtime>::get().unwrap_or(0) > current_era {
+			Komite::note_era_planned();
+		}
 	}
 
 	fn start_session(start_index: u32) {
@@ -748,7 +772,10 @@ impl StakingSessionManager {
 	}
 
 	/// The active era, if a new one started at the session after `end_index`, would have run
-	/// `SessionsPerEra` sessions: `MaxEraDuration`, the longest an era is paid for.
+	/// `SessionsPerEra` sessions. In production that is `MaxEraDuration`, six one-hour sessions,
+	/// the longest an era is paid for. In a fast runtime sessions are twenty blocks, shorter
+	/// than an election, so this is the path every era takes there and the wait for delivery
+	/// is exercised only by the unit test.
 	fn era_reached_payout_cap(end_index: u32) -> bool {
 		let started = pezpallet_staking_async::BondedEras::<Runtime>::get()
 			.last()

@@ -70,3 +70,21 @@ fn before_any_message_there_is_no_snapshot() {
 		assert_eq!(Komite::trust_permille(&10), None);
 	});
 }
+
+#[test]
+fn work_is_weighed_by_the_committee_the_active_era_was_elected_under() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(Komite::set_committee(RuntimeOrigin::root(), 1, members(&[(10, 2), (11, 1)])));
+		// Before any era is elected under a committee, the latest one weighs.
+		assert_eq!(Komite::weighing_snapshot().map(|s| s.era), Some(1));
+		Komite::note_era_planned();
+		assert_ok!(Komite::set_committee(RuntimeOrigin::root(), 2, members(&[(12, 1)])));
+		Komite::note_era_activated();
+		// The era started was planned under committee 1, not the newer 2.
+		assert_eq!(Komite::weighing_snapshot().map(|s| s.era), Some(1));
+		assert!(crate::PlannedCommittee::<Test>::get().is_none());
+		Komite::note_era_planned();
+		Komite::note_era_activated();
+		assert_eq!(Komite::weighing_snapshot().map(|s| s.era), Some(2));
+	});
+}
