@@ -17,6 +17,7 @@ workspace = true
 codec = { features = ["derive"], workspace = true }
 enumflags2 = { workspace = true }
 hex-literal = { workspace = true }
+log = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 serde = { optional = true, features = [
 	"derive",
@@ -138,6 +139,7 @@ std = [
 	"bizinikiwi-wasm-builder?/std",
 	"codec/std",
 	"enumflags2/std",
+	"log/std",
 	"pezcumulus-pezpallet-aura-ext/std",
 	"pezcumulus-pezpallet-session-benchmarking/std",
 	"pezcumulus-pezpallet-teyrchain-system/std",
