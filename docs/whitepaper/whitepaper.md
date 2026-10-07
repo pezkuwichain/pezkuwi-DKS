@@ -730,6 +730,17 @@ percent goes to the treasury and the rest to those securing the chain. Only the 
 office on the People chain, may change the rate — never HEZ holders, and never by more than
 one percentage point at a time, no more often than every ninety days.
 
+**How the stakers' share is paid.** The eighty-five percent is one pot per era, shared among
+the committee the People chain seated. Each member's part is proportional to its trust times
+the work the relay recorded for it that era, trust measured against the committee's highest.
+Inside a member's part the split is fixed by the protocol, not by the member: half to the
+validator, half to the nominators backing it in proportion to their bond, whatever commission
+the validator declared. Nothing is burned. The nominators' half of a validator that has none,
+the share of work done by anyone the committee did not seat, all of an era in which no work
+was recorded, and the rounding go to the treasury. A member is paid only if it has bonded at
+least ten thousand HEZ on the Asset Hub; without that bond it has no exposure there, and its
+part goes to the treasury too.
+
 **What a fixed base means for a holder.** Because the rate applies to the fixed two hundred
 million rather than to circulating supply, emission does not compound: the same number of HEZ
 arrives every year, and the *effective* rate falls as the supply grows — about eight percent

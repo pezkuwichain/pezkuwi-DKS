@@ -26,8 +26,8 @@ impl<T: Config> Pezpallet<T> {
 
 		match stratum {
 			StratumId::Stake => {
-				// Rank inside this stratum is Phragmen's job on Asset Hub; the gate here is
-				// only that the account has a staking standing at all.
+				// The gate is only that the account has a staking standing at all; the
+				// stratum's seats are drawn by lot like every other's.
 				ensure!(fresh(T::Scores::staking_of(who))? > 0, Error::<T>::NotEligible);
 			},
 			StratumId::Perwerde => {

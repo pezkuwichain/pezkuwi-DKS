@@ -802,9 +802,10 @@ parameter_types! {
 /// relay every era. That is no longer who decides: the committee is drawn on the People chain
 /// by TNPoS, from nine strata whose scores are written there.
 ///
-/// The election still runs, and it still matters -- it is the stake stratum's internal
-/// ranking, three seats out of twenty-seven, and the exposure it builds is what slashing and
-/// the payout machinery read. What it no longer does is leave the chain.
+/// The election still runs, and it still matters: it builds, for the committee People seated
+/// (`CommitteeTargets`), the exposures that slashing and the payout machinery read. It seats
+/// no one -- every stratum, the stake stratum too, is drawn by lot on People. What it no
+/// longer does is leave the chain.
 ///
 /// This is dropped rather than the export being disabled, and the difference is the point:
 /// `rc_client`'s exporter is still live and still the one path to the relay. If both this and
