@@ -6,10 +6,7 @@
 use super::*;
 use alloc::vec::Vec;
 use pezframe_benchmarking::v2::*;
-use pezframe_support::{
-	traits::{EnsureOrigin, Get},
-	BoundedVec,
-};
+use pezframe_support::{traits::Get, BoundedVec};
 
 #[benchmarks]
 mod benchmarks {
@@ -17,8 +14,7 @@ mod benchmarks {
 
 	#[benchmark]
 	fn set_committee(m: Linear<1, { T::MaxMembers::get() }>) -> Result<(), BenchmarkError> {
-		let origin =
-			T::CommitteeOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
+		let origin = T::BenchmarkHelper::committee_origin();
 		let members: BoundedVec<_, T::MaxMembers> = (0..m)
 			.map(|i| (account::<T::AccountId>("member", i, 0), i as u128 + 1))
 			.collect::<Vec<_>>()

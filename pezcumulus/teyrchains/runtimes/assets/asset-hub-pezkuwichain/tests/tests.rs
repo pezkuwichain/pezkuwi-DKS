@@ -1856,3 +1856,23 @@ fn a_relay_session_report_is_work_and_never_turns_the_era_clock() {
 			assert_eq!(pezpallet_staking_async::BondedEras::<Runtime>::get(), bonded);
 		});
 }
+
+/// People builds `set_committee` by hand as (71, 0, era, members) -- it cannot name this
+/// runtime's types. This pins the receiving end: if the pallet moves or the call renumbers,
+/// this fails here instead of People's message landing on whatever now sits at 71.
+#[test]
+fn the_committee_call_decodes_the_way_people_builds_it() {
+	let who = AccountId::from(ALICE);
+	let bytes = (71u8, 0u8, 9u32, vec![(who.clone(), 42u128)]).encode();
+	let call =
+		asset_hub_pezkuwichain_runtime::RuntimeCall::decode(&mut &bytes[..]).expect("decodes");
+	match call {
+		asset_hub_pezkuwichain_runtime::RuntimeCall::Komite(
+			pezpallet_komite::Call::set_committee { era, members },
+		) => {
+			assert_eq!(era, 9);
+			assert_eq!(members.into_inner(), vec![(who, 42u128)]);
+		},
+		other => panic!("71/0 decodes as {other:?}"),
+	}
+}

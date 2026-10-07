@@ -24,6 +24,16 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+/// An origin `CommitteeOrigin` accepts, for benchmarks.
+///
+/// The runtime's origin is the People chain over XCM, and `EnsureXcm`'s own
+/// `try_successful_origin()` offers `Here`, which `Equals<PeopleLocation>` rightly refuses. Only
+/// the runtime knows People's location, so the runtime says it.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkSetup<RuntimeOrigin> {
+	fn committee_origin() -> RuntimeOrigin;
+}
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
@@ -39,6 +49,8 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type MaxMembers: Get<u32>;
 		type WeightInfo: WeightInfo;
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: super::BenchmarkSetup<Self::RuntimeOrigin>;
 	}
 
 	/// Bumped with every change to `Snapshot`'s encoding, so a migration has a version to key on.

@@ -31,6 +31,17 @@ impl pezpallet_komite::Config for Test {
 	type CommitteeOrigin = EnsureRoot<u64>;
 	type MaxMembers = MaxMembers;
 	type WeightInfo = ();
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = RootIsTheCommitteeOrigin;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct RootIsTheCommitteeOrigin;
+#[cfg(feature = "runtime-benchmarks")]
+impl crate::BenchmarkSetup<RuntimeOrigin> for RootIsTheCommitteeOrigin {
+	fn committee_origin() -> RuntimeOrigin {
+		RuntimeOrigin::root()
+	}
 }
 
 pub fn new_test_ext() -> pezsp_io::TestExternalities {

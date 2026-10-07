@@ -32,6 +32,7 @@ pezframe-system-benchmarking = { optional = true, workspace = true }
 pezframe-system-rpc-runtime-api = { workspace = true }
 pezframe-try-runtime = { optional = true, workspace = true }
 pezkuwi-primitives = { workspace = true }
+pezkuwi-tnpos-primitives = { workspace = true }
 pezpallet-asset-conversion = { workspace = true }
 pezpallet-asset-conversion-ops = { workspace = true }
 pezpallet-asset-conversion-tx-payment = { workspace = true }
@@ -48,6 +49,7 @@ pezpallet-child-bounties = { workspace = true }
 pezpallet-conviction-voting = { workspace = true }
 pezpallet-delegated-staking = { workspace = true }
 pezpallet-election-provider-multi-block = { workspace = true }
+pezpallet-komite = { workspace = true }
 pezpallet-message-queue = { workspace = true }
 pezpallet-migrations = { workspace = true }
 pezpallet-multisig = { workspace = true }
@@ -199,6 +201,7 @@ runtime-benchmarks = [
 	"pezpallet-conviction-voting/runtime-benchmarks",
 	"pezpallet-delegated-staking/runtime-benchmarks",
 	"pezpallet-election-provider-multi-block/runtime-benchmarks",
+	"pezpallet-komite/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
 	"pezpallet-migrations/runtime-benchmarks",
 	"pezpallet-multisig/runtime-benchmarks",
@@ -300,6 +303,7 @@ try-runtime = [
 	"pezpallet-conviction-voting/try-runtime",
 	"pezpallet-delegated-staking/try-runtime",
 	"pezpallet-election-provider-multi-block/try-runtime",
+	"pezpallet-komite/try-runtime",
 	"pezpallet-message-queue/try-runtime",
 	"pezpallet-migrations/try-runtime",
 	"pezpallet-multisig/try-runtime",
@@ -386,6 +390,7 @@ std = [
 	"pezkuwi-primitives/std",
 	"pezkuwi-runtime-common/std",
 	"pezkuwi-teyrchain-primitives/std",
+	"pezkuwi-tnpos-primitives/std",
 	"pezkuwichain-runtime-constants/std",
 	"pezpallet-asset-conversion-ops/std",
 	"pezpallet-asset-conversion-tx-payment/std",
@@ -404,6 +409,7 @@ std = [
 	"pezpallet-conviction-voting/std",
 	"pezpallet-delegated-staking/std",
 	"pezpallet-election-provider-multi-block/std",
+	"pezpallet-komite/std",
 	"pezpallet-message-queue/std",
 	"pezpallet-migrations/std",
 	"pezpallet-multisig/std",
