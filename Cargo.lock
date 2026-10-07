@@ -17580,6 +17580,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezpallet-komite"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "pezframe-benchmarking",
+ "pezframe-support",
+ "pezframe-system",
+ "pezsp-io",
+ "pezsp-runtime",
+ "scale-info",
+]
+
+[[package]]
 name = "pezpallet-lottery"
 version = "28.0.0"
 dependencies = [
