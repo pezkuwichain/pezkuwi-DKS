@@ -365,6 +365,33 @@ impl pezpallet_komite::OnCommittee<AccountId> for SetValidatorCountToSeatedValid
 	}
 }
 
+/// Each validator's share, split by the protocol: half to the validator, half to the nominators
+/// backing it, by bond. Commission is not consulted: with pay set by trust x work, a validator
+/// gains nothing by turning nominators away, and nominators choose by quality (Serok,
+/// 2026-10-04). The odd planck goes to the nominators' half, and whatever of that half is not
+/// paid -- a validator with no nominators -- is minted to the treasury.
+pub struct FixedHalfSplit;
+impl pezsp_staking::StakerRewardCalculator<Balance> for FixedHalfSplit {
+	fn calculate_validator_incentive_weight(self_stake: Balance) -> Balance {
+		<pezpallet_staking_async::reward::DefaultStakerRewardCalculator<Runtime> as
+			pezsp_staking::StakerRewardCalculator<Balance>>::calculate_validator_incentive_weight(
+			self_stake,
+		)
+	}
+	fn calculate_staker_reward(
+		total: Balance,
+		_commission: Perbill,
+		_own: Balance,
+		_exposure: Balance,
+	) -> pezsp_staking::StakerRewardResult<Balance> {
+		let validator_payout = total / 2;
+		pezsp_staking::StakerRewardResult {
+			validator_payout,
+			nominator_payout: total - validator_payout,
+		}
+	}
+}
+
 pub struct EraPayout;
 impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
 	/// Neither argument is read, and the names say so.
@@ -434,8 +461,7 @@ impl pezpallet_staking_async::Config for Runtime {
 	// Non-minting mode hands expired unclaimed rewards here; in minting mode they are never
 	// created, so there is nothing to route.
 	type UnclaimedRewardHandler = ();
-	type StakerRewardCalculator =
-		pezpallet_staking_async::reward::DefaultStakerRewardCalculator<Runtime>;
+	type StakerRewardCalculator = FixedHalfSplit;
 	type NominatorFastUnbondDuration = NominatorFastUnbondDuration;
 	type Filter = ();
 	type OldCurrency = Balances;
@@ -1030,5 +1056,24 @@ mod era_length {
 				MaxEraDuration::get()
 			);
 		});
+	}
+}
+
+#[cfg(test)]
+mod half_split {
+	use super::*;
+	use pezsp_staking::StakerRewardCalculator;
+	// The calculator staking is configured with, so the test measures the wiring too.
+	type Split = <Runtime as pezpallet_staking_async::Config>::StakerRewardCalculator;
+
+	/// Half to the validator, half to its nominators, whatever the commission or the stakes;
+	/// the odd planck goes to the nominators' half, whose unpaid part reaches the treasury.
+	#[test]
+	fn the_validator_takes_half_and_its_nominators_the_rest_whatever_the_commission() {
+		let r = Split::calculate_staker_reward(1001, Perbill::from_percent(100), 50, 1000);
+		assert_eq!(r.validator_payout, 500);
+		assert_eq!(r.nominator_payout, 501);
+		let r = Split::calculate_staker_reward(1000, Perbill::zero(), 1000, 1000);
+		assert_eq!((r.validator_payout, r.nominator_payout), (500, 500));
 	}
 }
