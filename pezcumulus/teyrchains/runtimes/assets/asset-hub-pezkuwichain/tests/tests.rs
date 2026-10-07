@@ -1940,3 +1940,40 @@ fn the_election_targets_only_the_seated_committee() {
 		assert_eq!(pezpallet_staking_async::ValidatorCount::<Runtime>::get(), 2);
 	});
 }
+
+/// An era starts once its election has been delivered, so its exposures are whole when it
+/// starts -- but never later than the payout cap: an era is paid for at most `MaxEraDuration`,
+/// `SessionsPerEra` sessions, and an election that will not finish must not stop the clock.
+#[test]
+fn the_era_waits_for_its_election_but_not_past_the_payout_cap() {
+	use asset_hub_pezkuwichain_runtime::staking::{SessionsPerEra, StakingSessionManager};
+	use pezpallet_session::SessionManager;
+	use pezpallet_staking_async::{
+		ActiveEra, ActiveEraInfo, BondedEras, CurrentEra, NextElectionPage,
+	};
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		let active = || ActiveEra::<Runtime>::get().map(|e| e.index);
+		ActiveEra::<Runtime>::put(ActiveEraInfo { index: 0, start: Some(0) });
+		BondedEras::<Runtime>::put(pezframe_support::BoundedVec::truncate_from(vec![(0, 0)]));
+
+		// Era 1 is planned and its election is still being fetched.
+		CurrentEra::<Runtime>::put(1);
+		NextElectionPage::<Runtime>::put(0);
+		StakingSessionManager::end_session(3);
+		assert_eq!(active(), Some(0), "an era started before its election was delivered");
+
+		// Delivered: the next session end starts it.
+		NextElectionPage::<Runtime>::kill();
+		StakingSessionManager::end_session(4);
+		assert_eq!(active(), Some(1));
+
+		// Era 2 planned, and its election never finishes. Era 1 started at session 5.
+		CurrentEra::<Runtime>::put(2);
+		NextElectionPage::<Runtime>::put(0);
+		let cap = SessionsPerEra::get();
+		StakingSessionManager::end_session(5 + cap - 2);
+		assert_eq!(active(), Some(1), "an era started early with its election unfinished");
+		StakingSessionManager::end_session(5 + cap - 1);
+		assert_eq!(active(), Some(2), "an unfinished election held the era past the payout cap");
+	});
+}

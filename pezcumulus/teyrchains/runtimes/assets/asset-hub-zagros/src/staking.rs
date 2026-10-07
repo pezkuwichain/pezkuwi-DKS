@@ -563,8 +563,12 @@ impl pezpallet_session::SessionManager<AccountId> for StakingSessionManager {
 			.map(|e| e.index)
 			.unwrap_or(0);
 
-		// Provide activation_timestamp when a planned era exists (CurrentEra > ActiveEra)
-		let activation_timestamp = if current_era > active_era_idx {
+		// Start a planned era once its election is delivered, so its exposures are whole when
+		// it starts -- or, if the election has not finished, once the active era has run for
+		// the payout cap, so an election that never finishes cannot stop the clock.
+		let activation_timestamp = if current_era > active_era_idx
+			&& (Self::election_delivered() || Self::era_reached_payout_cap(end_index))
+		{
 			let now_ms = pezpallet_timestamp::Now::<Runtime>::get();
 			Some((now_ms, current_era))
 		} else {
@@ -583,6 +587,29 @@ impl pezpallet_session::SessionManager<AccountId> for StakingSessionManager {
 		<CollatorSelection as pezpallet_session::SessionManager<AccountId>>::start_session(
 			start_index,
 		);
+	}
+}
+
+impl StakingSessionManager {
+	/// The planned era's election has finished and every page of it has been fetched.
+	///
+	/// The election provider is `Off` only before an election starts and after it is exported,
+	/// and one is started the moment an era is planned; `NextElectionPage` is `None` once the
+	/// last page is in. Together, with an era planned, they mean its exposures are all stored.
+	fn election_delivered() -> bool {
+		use pezframe_election_provider_support::ElectionProvider;
+		<<Runtime as pezpallet_staking_async::Config>::ElectionProvider as ElectionProvider>::status()
+			.is_err() && pezpallet_staking_async::NextElectionPage::<Runtime>::get().is_none()
+	}
+
+	/// The active era, if a new one started at the session after `end_index`, would have run
+	/// `SessionsPerEra` sessions: `MaxEraDuration`, the longest an era is paid for.
+	fn era_reached_payout_cap(end_index: u32) -> bool {
+		let started = pezpallet_staking_async::BondedEras::<Runtime>::get()
+			.last()
+			.map(|(_, session)| *session)
+			.unwrap_or(0);
+		(end_index + 1).saturating_sub(started) >= SessionsPerEra::get()
 	}
 }
 
