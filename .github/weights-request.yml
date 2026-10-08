@@ -71,10 +71,6 @@
 #
 # Asked twice: the first run (37798217660) could not build the development preset's genesis --
 # its synthetic validators bonded below the new 10,000 HEZ floor -- fixed in the commit before.
-runs:
-  - runtime: asset-hub-pezkuwichain
-    pallet: pezpallet_komite
-    why: new pallet, placeholder weight
-  - runtime: asset-hub-zagros
-    pallet: pezpallet_komite
-    why: new pallet, placeholder weight
+# Measured (run 37817572382): ~90 us plus ~11 us and one read per member, well above the
+# placeholder. The files are in the tree, so the list is empty again.
+runs: []

@@ -5,8 +5,9 @@
 
 //! Weights for `pezpallet_komite`.
 //!
-//! Placeholders sized above the work -- one read, one write, a vector of `m` members -- until
-//! the benchmark below is run on the reference machine and replaces them.
+//! The fallbacks, at the larger of the two Asset Hubs' measurements (weights run 37817572382,
+//! reference box, 2026-10-08): the snapshot written once, and each member checked against
+//! `Validators` for the count. The runtimes use their own measured files.
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -25,16 +26,18 @@ pub struct BizinikiwiWeight<T>(PhantomData<T>);
 impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	/// Storage: `Komite::Committee` (r:1 w:1)
 	fn set_committee(m: u32) -> Weight {
-		Weight::from_parts(10_000_000, 4_000)
-			.saturating_add(Weight::from_parts(50_000, 48).saturating_mul(m.into()))
-			.saturating_add(T::DbWeight::get().reads_writes(1, 1))
+		Weight::from_parts(95_871_486, 4_579)
+			.saturating_add(Weight::from_parts(11_008_655, 2_520).saturating_mul(m.into()))
+			.saturating_add(T::DbWeight::get().reads(1 + m as u64))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 }
 
 impl WeightInfo for () {
 	fn set_committee(m: u32) -> Weight {
-		Weight::from_parts(10_000_000, 4_000)
-			.saturating_add(Weight::from_parts(50_000, 48).saturating_mul(m.into()))
-			.saturating_add(RocksDbWeight::get().reads_writes(1, 1))
+		Weight::from_parts(95_871_486, 4_579)
+			.saturating_add(Weight::from_parts(11_008_655, 2_520).saturating_mul(m.into()))
+			.saturating_add(RocksDbWeight::get().reads(1 + m as u64))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
 }
