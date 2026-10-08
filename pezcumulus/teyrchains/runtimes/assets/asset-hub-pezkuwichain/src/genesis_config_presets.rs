@@ -149,6 +149,9 @@ fn asset_hub_pezkuwichain_genesis(
 	foreign_assets: Vec<(Location, AccountId, Balance)>,
 	foreign_assets_endowed_accounts: Vec<(Location, AccountId, Balance)>,
 	dev_stakers: Option<(u32, u32)>,
+	// The genesis validators' stashes (spec K5): each starts with `HEZ_GENESIS_VALIDATOR_STAKE`
+	// and bonds `HEZ_GENESIS_VALIDATOR_BOND` of it as a validator. Empty on dev and local.
+	genesis_validators: Vec<AccountId>,
 ) -> serde_json::Value {
 	// Verify total PEZ minted at genesis equals PEZ_TOTAL_SUPPLY (5 billion)
 	debug_assert_eq!(
@@ -202,9 +205,9 @@ fn asset_hub_pezkuwichain_genesis(
 	// is what the Zagros launch did on 2026-09-11: 10 HEZ left the relay and never arrived.
 	//
 	// The rule is `total supply - what this chain holds`, not a figure: the relay's preset
-	// writes the mirror of it, and the two must not be able to drift apart. Today it is
-	// 20,000,000 HEZ: the relay's share, plus the founding office's budget on People, minus
-	// the office's budget held here. The People chain is no longer empty -- it mints the one
+	// writes the mirror of it, and the two must not be able to drift apart. On the genesis
+	// preset today it is 19,703,000 HEZ: the relay's share, plus the founding office's budget on
+	// People, minus the office's budget and the genesis validators' stakes held here. The People chain is no longer empty -- it mints the one
 	// budget its register cannot be written without -- so "the relay's whole share" stopped
 	// being the right figure the day that landed, and the expression below is what keeps the
 	// two presets from drifting. It does not need to cover this chain's own pots: sending those
@@ -214,9 +217,12 @@ fn asset_hub_pezkuwichain_genesis(
 		Some(_) => pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING,
 		None => 0,
 	};
+	let validator_stake = pezkuwichain_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_STAKE;
+	let stakes_here: Balance = genesis_validators.len() as Balance * validator_stake;
 	let checking_account_seed: Balance = TOTAL_SUPPLY
 		- (AIRDROP_ALLOCATION + PRESALE_ALLOCATION + TREASURY_ALLOCATION)
-		- office_here;
+		- office_here
+		- stakes_here;
 	let checking_account: AccountId = crate::PezkuwiXcm::check_account();
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
@@ -229,6 +235,7 @@ fn asset_hub_pezkuwichain_genesis(
 				.chain(core::iter::once((presale_pot, PRESALE_ALLOCATION)))
 				.chain(core::iter::once((treasury_pot, TREASURY_ALLOCATION)))
 				.chain(founding_office.clone().map(|office| (office, office_here)))
+				.chain(genesis_validators.iter().cloned().map(|v| (v, validator_stake)))
 				.chain(core::iter::once((checking_account, checking_account_seed)))
 				.collect(),
 		},
@@ -270,6 +277,19 @@ fn asset_hub_pezkuwichain_genesis(
 			// weights at all. Only the dev and local presets set this; the real genesis is a
 			// deliberate design and does not get 25k invented nominators.
 			dev_stakers,
+			// The genesis validators, bonded at the validator floor and validating, so the
+			// first era can elect and pay them (spec K5).
+			stakers: genesis_validators
+				.iter()
+				.cloned()
+				.map(|v| {
+					(
+						v,
+						pezkuwichain_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_BOND,
+						pezpallet_staking_async::StakerStatus::Validator,
+					)
+				})
+				.collect(),
 			..Default::default()
 		},
 
@@ -413,6 +433,10 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				vec![],
 				vec![],
 				None,
+				pezkuwichain_runtime_constants::genesis::VALIDATOR_STASHES
+					.iter()
+					.map(|s| AccountId::from(*s))
+					.collect(),
 			)
 		},
 
@@ -458,6 +482,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 					),
 				],
 				Some((1000, 25_000)),
+				Vec::new(),
 			)
 		},
 
@@ -491,6 +516,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				vec![],
 				vec![],
 				Some((1000, 25_000)),
+				Vec::new(),
 			)
 		},
 
@@ -552,7 +578,9 @@ fn the_asset_hub_mints_exactly_its_share() {
 	let held = 40_000_000 * UNITS
 		+ 100_000_000 * UNITS
 		+ (40_000_000 * UNITS - pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING)
-		+ pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING;
+		+ pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING
+		// The genesis validators' stakes (spec K5), out of the founder's line on the relay.
+		+ pezkuwichain_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT;
 	let escrow = 200_000_000 * UNITS - held;
 
 	assert_eq!(
@@ -647,7 +675,8 @@ mod genesis_ledger {
 			("airdrop", &airdrop, 40_000_000 * UNITS),
 			("presale", &presale, 100_000_000 * UNITS),
 			("treasury", &treasury, 39_999_000 * UNITS),
-			("checking", &checking, 20_000_000 * UNITS),
+			// 297,000 less again: the genesis validators' stakes are held here too (spec K5).
+			("checking", &checking, 19_703_000 * UNITS),
 		] {
 			let addr = ss58(acc);
 			assert_eq!(
@@ -675,9 +704,22 @@ mod genesis_ledger {
 			[ss58(&airdrop), ss58(&presale), ss58(&treasury), ss58(&checking)]
 				.into_iter()
 				.collect();
+		// The genesis validators, each with its stake (spec K5).
+		let validators: alloc::collections::BTreeSet<String> =
+			pezkuwichain_runtime_constants::genesis::VALIDATOR_STASHES
+				.iter()
+				.map(|s| ss58(&AccountId::from(*s)))
+				.collect();
+		for v in &validators {
+			assert_eq!(
+				hez.get(v).copied(),
+				Some(pezkuwichain_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_STAKE),
+				"genesis validator {v} must start with its 11,000 HEZ"
+			);
+		}
 		let office = hez
 			.keys()
-			.find(|k| !pots.contains(*k))
+			.find(|k| !pots.contains(*k) && !validators.contains(*k))
 			.expect("the genesis mints the founding office's fee budget on this chain")
 			.clone();
 		assert_eq!(
@@ -690,7 +732,11 @@ mod genesis_ledger {
 			"the founding office must be a key -- a keyless account cannot sign the founding \
 			 calls it is the only origin for"
 		);
-		assert_eq!(hez.len(), 5, "the Asset Hub mints HEZ into five accounts and no sixth");
+		assert_eq!(
+			hez.len(),
+			5 + validators.len(),
+			"the Asset Hub mints HEZ into five accounts and the genesis validators, and no more"
+		);
 		assert_eq!(
 			hez.values().sum::<u128>(),
 			200_000_000 * UNITS,
@@ -766,4 +812,31 @@ fn every_preset_starts_the_era_clock() {
 			);
 		}
 	});
+}
+
+/// Each genesis validator starts bonded and validating here (spec K5): 10,000 of its 11,000 HEZ
+/// bonded -- the validator floor -- so it can be elected and paid from the first era.
+#[test]
+fn the_genesis_validators_start_bonded() {
+	let raw = get_preset(&PresetId::from(preset_names::PRESET_GENESIS))
+		.expect("the genesis preset exists");
+	let g: serde_json::Value = serde_json::from_slice(&raw).expect("valid json");
+	assert_eq!(
+		pezkuwichain_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_BOND,
+		MIN_VALIDATOR_BOND,
+		"the genesis bond is the validator floor"
+	);
+	let stakers = g["staking"]["stakers"].as_array().expect("the genesis preset lists stakers");
+	let want: alloc::vec::Vec<serde_json::Value> =
+		pezkuwichain_runtime_constants::genesis::VALIDATOR_STASHES
+			.iter()
+			.map(|s| {
+				serde_json::json!([
+					serde_json::to_value(AccountId::from(*s)).expect("an account id serialises"),
+					pezkuwichain_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_BOND,
+					"Validator"
+				])
+			})
+			.collect();
+	assert_eq!(stakers, &want);
 }
