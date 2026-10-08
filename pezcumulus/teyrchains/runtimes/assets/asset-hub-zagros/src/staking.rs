@@ -498,10 +498,16 @@ parameter_types! {
 	pub const SessionsPerEra: SessionIndex = prod_or_fast!(6, 2);
 	/// Duration of a relay session in our blocks. Needs to be hardcoded per-runtime.
 	pub const RelaySessionDuration: BlockNumber = 1 * HOURS;
-	// 2 eras for unbonding (10 hours).
-	pub const BondingDuration: pezsp_staking::EraIndex = 2;
-	// 1 era in which slashes can be cancelled (5 hours).
-	pub const SlashDeferDuration: pezsp_staking::EraIndex = 1;
+	// 4 eras for unbonding (20 hours): long enough that an offence can reach this chain and be
+	// slashed before the stake it is charged to has left.
+	pub const BondingDuration: pezsp_staking::EraIndex = 4;
+	// Slashes wait 2 eras (10 hours), and staking accepts offences from as far back as this
+	// leaves room for -- the active era and the one before. A relay offence can reach this chain
+	// a session or two after it happened, so with 1 every offence in an era's last sessions
+	// arrived "too old" and was never slashed: a validator could time misbehaviour to the end of
+	// an era and keep its stake (Serok, 2026-10-08). The wait is also the window in which a
+	// mistaken slash can be cancelled.
+	pub const SlashDeferDuration: pezsp_staking::EraIndex = 2;
 	pub const MaxControllersInDeprecationBatch: u32 = 751;
 	// alias for 16, which is the max nominations per nominator in the runtime.
 	pub const MaxNominations: u32 = <NposCompactSolution16 as pezframe_election_provider_support::NposSolution>::LIMIT as u32;

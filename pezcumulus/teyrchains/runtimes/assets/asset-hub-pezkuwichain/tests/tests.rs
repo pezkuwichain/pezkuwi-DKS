@@ -2045,7 +2045,7 @@ fn a_relay_offence_lands_in_the_era_its_session_ran_in() {
 	ExtBuilder::<Runtime>::default().build().execute_with(|| {
 		pezframe_system::Pezpallet::<Runtime>::set_block_number(1);
 		let offender = AccountId::from([7u8; 32]);
-		for era in [0, 1] {
+		for era in [0, 1, 2] {
 			ErasStakersOverview::<Runtime>::insert(
 				era,
 				&offender,
@@ -2057,60 +2057,47 @@ fn a_relay_offence_lands_in_the_era_its_session_ran_in() {
 				},
 			);
 		}
-		// Relay session 198 ends in era 0 here; era 1 starts at this chain's session 5; relay
-		// session 199 ends in era 1.
-		ActiveEra::<Runtime>::put(ActiveEraInfo { index: 0, start: Some(0) });
-		BondedEras::<Runtime>::put(pezframe_support::BoundedVec::truncate_from(vec![(0, 0)]));
-		Work::on_relay_session_report(SessionReport::new_terminal(198, vec![], None));
-		ActiveEra::<Runtime>::put(ActiveEraInfo { index: 1, start: Some(1) });
-		BondedEras::<Runtime>::put(pezframe_support::BoundedVec::truncate_from(vec![
-			(0, 0),
-			(1, 5),
-		]));
-		Work::on_relay_session_report(SessionReport::new_terminal(199, vec![], None));
+		// Relay sessions 198, 199 and 200 end in this chain's eras 0, 1 and 2, which start at
+		// this chain's sessions 0, 5 and 10.
+		let mut bonded = vec![];
+		for (era, session, relay) in [(0u32, 0u32, 198u32), (1, 5, 199), (2, 10, 200)] {
+			ActiveEra::<Runtime>::put(ActiveEraInfo { index: era, start: Some(era as u64) });
+			bonded.push((era, session));
+			BondedEras::<Runtime>::put(pezframe_support::BoundedVec::truncate_from(bonded.clone()));
+			Work::on_relay_session_report(SessionReport::new_terminal(relay, vec![], None));
+		}
+		let report = |session: u32| {
+			pezframe_system::Pezpallet::<Runtime>::reset_events();
+			Work::on_new_offences(
+				session,
+				vec![Offence {
+					offender: offender.clone(),
+					reporters: vec![],
+					slash_fraction: pezsp_runtime::Perbill::from_percent(10),
+				}],
+			);
+			pezframe_system::Pezpallet::<Runtime>::events()
+				.into_iter()
+				.filter_map(|r| match r.event {
+					RuntimeEvent::Staking(StakingEvent::OffenceReported {
+						offence_era, ..
+					}) => Some(("reported", offence_era)),
+					RuntimeEvent::Staking(StakingEvent::OffenceTooOld { offence_era, .. }) => {
+						Some(("too old", offence_era))
+					},
+					_ => None,
+				})
+				.collect::<Vec<_>>()
+		};
 
-		Work::on_new_offences(
-			198,
-			vec![Offence {
-				offender: offender.clone(),
-				reporters: vec![],
-				slash_fraction: pezsp_runtime::Perbill::from_percent(10),
-			}],
-		);
-
-		let eras: Vec<_> = pezframe_system::Pezpallet::<Runtime>::events()
-			.into_iter()
-			.filter_map(|r| match r.event {
-				RuntimeEvent::Staking(StakingEvent::OffenceReported { offence_era, .. }) => {
-					Some(("reported", offence_era))
-				},
-				RuntimeEvent::Staking(StakingEvent::OffenceTooOld { offence_era, .. }) => {
-					Some(("too old", offence_era))
-				},
-				_ => None,
-			})
-			.collect();
-		// Era 0 is past the slash deferral window, so the offence is refused as too old -- not
-		// charged to era 1.
-		assert_eq!(eras, vec![("too old", 0)]);
-
+		// An offence in the previous era is charged to that era, not the active one: it may
+		// reach this chain after the boundary, and the deferral leaves room for it.
+		assert_eq!(report(199), vec![("reported", 1)]);
+		// Two eras back is past the deferral window: refused as too old, not charged to era 2.
+		assert_eq!(report(198), vec![("too old", 0)]);
 		// A session older than anything the book recorded cannot be placed, and is not charged
 		// anywhere -- in particular not to the active era.
-		pezframe_system::Pezpallet::<Runtime>::reset_events();
-		Work::on_new_offences(
-			150,
-			vec![Offence {
-				offender,
-				reporters: vec![],
-				slash_fraction: pezsp_runtime::Perbill::from_percent(10),
-			}],
-		);
-		assert!(!pezframe_system::Pezpallet::<Runtime>::events().into_iter().any(|r| matches!(
-			r.event,
-			RuntimeEvent::Staking(
-				StakingEvent::OffenceReported { .. } | StakingEvent::OffenceTooOld { .. }
-			)
-		)));
+		assert_eq!(report(150), vec![]);
 	});
 }
 
