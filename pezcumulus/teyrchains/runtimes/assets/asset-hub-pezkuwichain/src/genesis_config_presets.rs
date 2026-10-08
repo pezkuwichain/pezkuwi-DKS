@@ -840,3 +840,41 @@ fn the_genesis_validators_start_bonded() {
 			.collect();
 	assert_eq!(stakers, &want);
 }
+
+/// Every preset's genesis actually builds -- not just parses.
+///
+/// The tests above read the preset JSON, and a JSON can say exactly what was meant and still
+/// fail to build: on 2026-10-08 the 10,000 HEZ validator floor reached the dev and local
+/// presets' synthetic validators, some bonded below it, `validate` refused them, and genesis
+/// panicked -- found by the weights run, which builds the development preset, while every test
+/// here was green. Built the way the node builds it: the preset patched over the defaults.
+#[test]
+fn every_preset_builds_its_genesis() {
+	fn merge(base: &mut serde_json::Value, patch: serde_json::Value) {
+		match (base, patch) {
+			(serde_json::Value::Object(b), serde_json::Value::Object(p)) => {
+				for (k, v) in p {
+					merge(b.entry(k).or_insert(serde_json::Value::Null), v);
+				}
+			},
+			(b, p) => *b = p,
+		}
+	}
+	for preset in preset_names() {
+		// The dev and local presets read runtime storage parameters, and genesis is built
+		// into storage: both need externalities.
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			let patch: serde_json::Value =
+				serde_json::from_slice(&get_preset(&preset).expect("listed preset exists"))
+					.expect("valid json");
+			let mut config =
+				serde_json::to_value(crate::RuntimeGenesisConfig::default()).expect("serialises");
+			merge(&mut config, patch);
+			let json = serde_json::to_vec(&config).expect("serialises");
+			pezframe_support::genesis_builder_helper::build_state::<crate::RuntimeGenesisConfig>(
+				json,
+			)
+			.unwrap_or_else(|e| panic!("preset {preset:?} does not build: {e}"));
+		});
+	}
+}
