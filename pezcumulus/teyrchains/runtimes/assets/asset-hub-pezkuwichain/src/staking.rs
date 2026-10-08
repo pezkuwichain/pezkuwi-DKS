@@ -28,8 +28,15 @@ use pezsp_runtime::{
 use xcm::latest::prelude::*;
 
 parameter_types! {
-	/// Number of election pages that we operate upon. 32 * 6s block = 192s = 3.2min snapshots
-	pub Pages: u32 = 32;
+	/// Number of election pages that we operate upon. 32 * 6s block = 192s = 3.2min snapshots.
+	///
+	/// A fast runtime's session is 20 blocks and its era two of them, and the whole election --
+	/// snapshot, signed and unsigned phases, export -- has to fit in that for an era to start
+	/// with exposures; at 32 pages it took about 150 blocks, so on every rehearsal network each
+	/// era started on the payout cap without one and nobody could be paid (measured on run
+	/// 37798342519: era 3 reached, no validator set ever exported). Four pages and short phases
+	/// bring it to about 22 blocks. Production is unchanged.
+	pub Pages: u32 = prod_or_fast!(32, 4);
 
 	/// Compatible with Pezkuwi, we allow up to 22_500 nominators to be considered for election
 	pub MaxElectingVoters: u32 = 22_500;
@@ -46,11 +53,11 @@ parameter_types! {
 	// 10 mins for each pages
 	pub storage SignedPhase: u32 = prod_or_fast!(
 		10 * MINUTES,
-		4 * MINUTES
+		4
 	);
 	pub storage UnsignedPhase: u32 = prod_or_fast!(
 		10 * MINUTES,
-		(1 * MINUTES)
+		5
 	);
 
 	/// validate up to 4 signed solution. Each solution.
