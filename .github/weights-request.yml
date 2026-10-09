@@ -72,5 +72,15 @@
 # Asked twice: the first run (37798217660) could not build the development preset's genesis --
 # its synthetic validators bonded below the new 10,000 HEZ floor -- fixed in the commit before.
 # Measured (run 37817572382): ~90 us plus ~11 us and one read per member, well above the
-# placeholder. The files are in the tree, so the list is empty again.
-runs: []
+# placeholder. The files are in the tree.
+#
+# 2026-10-09: `pezpallet_tnpos` on both People twins. `note_bonded` (the Asset Hub's bond report,
+# spec C4) has never been measured -- its weight is a ceiling -- and `seat_committee` now checks
+# every candidate against a full bond report, which its last measurement did not include.
+runs:
+  - runtime: people-pezkuwichain
+    pallet: pezpallet_tnpos
+    why: note_bonded never measured; seat_committee now reads the bond report
+  - runtime: people-zagros
+    pallet: pezpallet_tnpos
+    why: note_bonded never measured; seat_committee now reads the bond report
