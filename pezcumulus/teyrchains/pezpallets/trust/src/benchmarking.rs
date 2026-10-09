@@ -13,21 +13,18 @@ use pezframe_benchmarking::{v2::*, whitelisted_caller};
 use pezframe_system::RawOrigin;
 use pezsp_runtime::traits::Zero;
 
-// We don't use IdentityKycPallet directly - just mock the citizenship status
-// This simplifies benchmarks and avoids coupling with identity-kyc internals
-
 #[benchmarks]
 mod benchmarks {
 	use super::*;
 
-	/// Helper to setup a citizen for benchmarking
-	/// Instead of calling identity-kyc extrinsics, we mock the citizenship source
+	/// Make `account` a citizen the way the chain does: an approved KYC record, which is what
+	/// every runtime's `CitizenshipSource` reads. The People runtimes used to answer `true` here
+	/// under `runtime-benchmarks` instead, so the measured weight never paid for that read.
 	fn setup_citizen<T: Config>(account: &T::AccountId) {
-		// For benchmarks, we rely on the runtime's CitizenshipSource implementation
-		// The benchmark mock should configure CitizenshipSource to return true for whitelisted
-		// accounts This is typically done via TestCitizenshipProvider in mock.rs
-
-		// Initialize trust score storage for the account so update operations work
+		pezpallet_identity_kyc::KycStatuses::<T>::insert(
+			account,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
 		TrustScores::<T>::insert(account, T::Score::zero());
 	}
 

@@ -55,3 +55,15 @@ impl<AccountId> TrustScoreChecker<AccountId> for () {
 		0
 	}
 }
+
+/// Puts an account in the state messaging requires of a sender or recipient, for benchmarks:
+/// a citizen whose trust score clears `MinTrustScore`.
+///
+/// The benchmarks run the runtime's real `CitizenshipChecker` and `TrustScoreChecker`, so the
+/// measured weight includes the reads they make. The People runtimes used to swap both for
+/// constants under `runtime-benchmarks` (`true`, `100`), which measured a cheaper call than the
+/// one the chain runs.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkHelper<AccountId> {
+	fn make_citizen(who: &AccountId);
+}

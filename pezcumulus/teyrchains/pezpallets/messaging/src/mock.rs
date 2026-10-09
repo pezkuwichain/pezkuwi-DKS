@@ -34,11 +34,25 @@ impl pezpallet_balances::Config for Test {
 	type ExistentialDeposit = ConstU128<1>;
 }
 
-/// Mock citizenship checker — accounts 1-10 are citizens
+pezframe_support::parameter_types! {
+	/// Accounts the benchmarks have made citizens, on top of the fixed 1-10.
+	pub static BenchCitizens: alloc::vec::Vec<u64> = alloc::vec::Vec::new();
+}
+
+/// Mock citizenship checker — accounts 1-10 are citizens, and any the benchmarks made one
 pub struct MockCitizenshipChecker;
 impl crate::types::CitizenshipChecker<u64> for MockCitizenshipChecker {
 	fn is_citizen(who: &u64) -> bool {
-		*who >= 1 && *who <= 10
+		(*who >= 1 && *who <= 10) || BenchCitizens::get().contains(who)
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct MockBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl crate::types::BenchmarkHelper<u64> for MockBenchmarkHelper {
+	fn make_citizen(who: &u64) {
+		BenchCitizens::mutate(|c| c.push(*who));
 	}
 }
 
@@ -46,7 +60,7 @@ impl crate::types::CitizenshipChecker<u64> for MockCitizenshipChecker {
 pub struct MockTrustScoreChecker;
 impl crate::types::TrustScoreChecker<u64> for MockTrustScoreChecker {
 	fn trust_score_of(who: &u64) -> u32 {
-		if *who >= 1 && *who <= 10 {
+		if (*who >= 1 && *who <= 10) || BenchCitizens::get().contains(who) {
 			50
 		} else {
 			0
@@ -63,6 +77,8 @@ impl pezpallet_messaging::Config for Test {
 	type MaxInboxSize = ConstU32<50>;
 	type MaxMessagesPerEra = ConstU32<5>;
 	type EraLength = ConstU64<100>; // 100 blocks per era in tests
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = MockBenchmarkHelper;
 }
 
 /// Build test externalities

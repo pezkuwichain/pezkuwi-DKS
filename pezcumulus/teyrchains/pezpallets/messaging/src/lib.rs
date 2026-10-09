@@ -123,6 +123,11 @@ pub mod pezpallet {
 		/// Default: 3600 blocks (6 hours at 6s/block on People Chain).
 		#[pezpallet::constant]
 		type EraLength: Get<BlockNumberFor<Self>>;
+
+		/// Makes benchmark callers real citizens with enough trust; see
+		/// [`types::BenchmarkHelper`].
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::types::BenchmarkHelper<Self::AccountId>;
 	}
 
 	// ============= STORAGE =============

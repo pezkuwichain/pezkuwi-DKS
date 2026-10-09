@@ -83,4 +83,21 @@
 # Measured (run 37942860046): `note_bonded` ~30 us plus ~0.19 us per reported account, and
 # `seat_committee` now ~34 ms plus ~61 us per pool member -- a full pool is about a twelfth of
 # a block. The files are in the tree and the pallet's `()` impl copies them.
-runs: []
+#
+# 2026-10-10: `pezpallet_trust` and `pezpallet_messaging` on both People twins. Both runtimes
+# swapped the citizenship and trust checks for constants under `runtime-benchmarks` (`true`,
+# `true`, `100`), so the recorded weights never paid for the IdentityKyc and Trust reads the
+# real calls make. The stubs are gone; the benchmarks now make real citizens.
+runs:
+  - runtime: people-pezkuwichain
+    pallet: pezpallet_trust
+    why: citizenship check was a constant under runtime-benchmarks
+  - runtime: people-zagros
+    pallet: pezpallet_trust
+    why: citizenship check was a constant under runtime-benchmarks
+  - runtime: people-pezkuwichain
+    pallet: pezpallet_messaging
+    why: citizenship and trust checks were constants under runtime-benchmarks
+  - runtime: people-zagros
+    pallet: pezpallet_messaging
+    why: citizenship and trust checks were constants under runtime-benchmarks
