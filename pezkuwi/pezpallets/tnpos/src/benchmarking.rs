@@ -20,8 +20,8 @@ mod benchmarks {
 	#[benchmark]
 	fn join() {
 		let who = account::<T::AccountId>("member", 0, 0);
-		// Make the account eligible via the runtime's BenchmarkHelper.
-		// Meclis is gated on trust scores, which every runtime provides.
+		// Make the account eligible via the runtime's BenchmarkHelper: Meclis is a seat in
+		// the house, which the helper arranges.
 		T::BenchmarkHelper::make_eligible(&who, StratumId::Meclis);
 		#[extrinsic_call]
 		_(RawOrigin::Signed(who.clone()), StratumId::Meclis);
@@ -105,6 +105,19 @@ mod benchmarks {
 			PoolMembers::<T>::insert(&who, stratum);
 			StratumSize::<T>::mutate(stratum, |n| *n = n.saturating_add(1));
 		}
+		// The worst case for the bond gate: a full report naming every member. Each draw
+		// reads it once and checks every candidate against it.
+		let mut bonded: alloc::collections::BTreeSet<T::AccountId> =
+			(0..p).map(|i| account("member", i, 0)).collect();
+		let mut i = 0u32;
+		while (bonded.len() as u32) < T::MaxBonded::get() {
+			bonded.insert(account("bonded", i, 0));
+			i += 1;
+		}
+		BondedOnAssetHub::<T>::put(
+			BoundedBTreeSet::<T::AccountId, T::MaxBonded>::try_from(bonded)
+				.expect("bounded by MaxBonded; qed"),
+		);
 
 		// The seed carries the era it belongs to, and `select` refuses a mismatch.
 		let era = CurrentEra::<T>::get().saturating_add(1);
@@ -117,6 +130,29 @@ mod benchmarks {
 
 		// If this fails the benchmark measured a refusal, not a seating.
 		assert_eq!(CurrentCommittee::<T>::get().len() as u32, 9 * SEATS_PER_STRATUM);
+	}
+
+	/// A full report replacing a full report: the set is built from `n` accounts and written.
+	#[benchmark]
+	fn note_bonded(n: Linear<1, { T::MaxBonded::get() }>) -> Result<(), BenchmarkError> {
+		let held: BoundedBTreeSet<T::AccountId, T::MaxBonded> = (0..T::MaxBonded::get())
+			.map(|i| account::<T::AccountId>("held", i, 0))
+			.collect::<alloc::collections::BTreeSet<_>>()
+			.try_into()
+			.map_err(|_| BenchmarkError::Stop("held report too large"))?;
+		BondedOnAssetHub::<T>::put(held);
+		let bonded: BoundedVec<T::AccountId, T::MaxBonded> = (0..n)
+			.map(|i| account("bonded", i, 0))
+			.collect::<Vec<_>>()
+			.try_into()
+			.map_err(|_| BenchmarkError::Stop("report too large"))?;
+		let origin = T::BondBenchmarkHelper::bond_origin();
+
+		#[extrinsic_call]
+		_(origin as T::RuntimeOrigin, 1, bonded);
+
+		assert_eq!(BondedOnAssetHub::<T>::get().map(|s| s.len() as u32), Some(n));
+		Ok(())
 	}
 
 	#[benchmark]

@@ -2049,6 +2049,17 @@ pezsp_runtime::impl_opaque_keys! {
 #[cfg(feature = "runtime-benchmarks")]
 pub struct TnposBenchmarkHelper;
 
+/// The origin `Tnpos::note_bonded` accepts, for benchmarks: the Asset Hub, as `BondOrigin`
+/// requires.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct TnposBondBenchmarkSetup;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_tnpos::BondBenchmarkSetup<RuntimeOrigin> for TnposBondBenchmarkSetup {
+	fn bond_origin() -> RuntimeOrigin {
+		pezpallet_xcm::Origin::Xcm(AssetHubLocation::get()).into()
+	}
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
 	fn make_eligible(who: &AccountId, stratum: pezkuwi_tnpos_primitives::StratumId) {
@@ -2180,6 +2191,8 @@ impl pezpallet_tnpos::Config for Runtime {
 	type MaxBonded = ConstU32<{ pezkuwi_tnpos_primitives::invariant::MAX_BONDED_REPORT }>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = TnposBenchmarkHelper;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BondBenchmarkHelper = TnposBondBenchmarkSetup;
 }
 
 /// How a key registration reaches the relay's session pallet.

@@ -64,6 +64,16 @@ pub trait BenchmarkHelper<AccountId> {
 	fn make_eligible(who: &AccountId, stratum: StratumId);
 }
 
+/// An origin `BondOrigin` accepts, for benchmarks.
+///
+/// The runtime's origin is the Asset Hub over XCM, and `EnsureXcm`'s own
+/// `try_successful_origin()` offers `Here`, which `Equals<AssetHubLocation>` rightly refuses.
+/// Only the runtime knows the Asset Hub's location, so the runtime says it.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BondBenchmarkSetup<RuntimeOrigin> {
+	fn bond_origin() -> RuntimeOrigin;
+}
+
 /// Reports whether an account can actually serve: session drops keyless validators.
 ///
 /// `pezpallet_session::rotate_session` silently filters out any validator with no
@@ -269,6 +279,9 @@ pub mod pezpallet {
 		/// The most accounts one bond report names (`MAX_BONDED_REPORT`).
 		#[pezpallet::constant]
 		type MaxBonded: Get<u32>;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BondBenchmarkHelper: crate::BondBenchmarkSetup<Self::RuntimeOrigin>;
 
 		/// Makes an account eligible for a stratum during benchmarking.
 		///
