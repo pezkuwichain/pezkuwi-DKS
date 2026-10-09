@@ -123,6 +123,16 @@ const _: () = assert!(
 /// - `founding_office`: Holder of `Tiki::Serok`, funded here for its calls on this chain
 /// - `foreign_assets`: Foreign assets to create at genesis
 /// - `foreign_assets_endowed_accounts`: Initial balances for foreign assets
+/// How many winners the Asset Hub's election asks for until People's first committee snapshot
+/// arrives; from then on `Komite` sets it to the committee members who validate here. The
+/// election seats no one -- the committee comes from People, every stratum drawn by lot -- it
+/// builds the exposures the payout and slashing read.
+pub const STAKE_STRATUM_SEATS: u32 = 3;
+
+/// The least a validator bonds here (spec K4). Below it `validate` is refused, so a seat
+/// without it has no exposure and its pay goes to the treasury.
+pub const MIN_VALIDATOR_BOND: Balance = 10_000 * UNITS;
+
 fn asset_hub_pezkuwichain_genesis(
 	invulnerables: Vec<(AccountId, AuraId)>,
 	endowed_accounts: Vec<AccountId>,
@@ -139,6 +149,9 @@ fn asset_hub_pezkuwichain_genesis(
 	foreign_assets: Vec<(Location, AccountId, Balance)>,
 	foreign_assets_endowed_accounts: Vec<(Location, AccountId, Balance)>,
 	dev_stakers: Option<(u32, u32)>,
+	// The genesis validators' stashes (spec K5): each starts with `HEZ_GENESIS_VALIDATOR_STAKE`
+	// and bonds `HEZ_GENESIS_VALIDATOR_BOND` of it as a validator. Empty on dev and local.
+	genesis_validators: Vec<AccountId>,
 ) -> serde_json::Value {
 	// Verify total PEZ minted at genesis equals PEZ_TOTAL_SUPPLY (5 billion)
 	debug_assert_eq!(
@@ -192,9 +205,9 @@ fn asset_hub_pezkuwichain_genesis(
 	// is what the first launch did: 10 HEZ left the relay and never arrived.
 	//
 	// The rule is `total supply - what this chain holds`, not a figure: the relay's preset
-	// writes the mirror of it, and the two must not be able to drift apart. Today it is
-	// 20,000,000 HEZ: the relay's share, plus the founding office's budget on People, minus
-	// the office's budget held here. The People chain is no longer empty -- it mints the one
+	// writes the mirror of it, and the two must not be able to drift apart. On the genesis
+	// preset today it is 19,956,000 HEZ: the relay's share, plus the founding office's budget on
+	// People, minus the office's budget and the genesis validators' stakes held here. The People chain is no longer empty -- it mints the one
 	// budget its register cannot be written without -- so "the relay's whole share" stopped
 	// being the right figure the day that landed, and the expression below is what keeps the
 	// two presets from drifting. It does not need to cover this chain's own pots: sending those
@@ -204,9 +217,12 @@ fn asset_hub_pezkuwichain_genesis(
 		Some(_) => zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING,
 		None => 0,
 	};
+	let validator_stake = zagros_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_STAKE;
+	let stakes_here: Balance = genesis_validators.len() as Balance * validator_stake;
 	let checking_account_seed: Balance = TOTAL_SUPPLY
 		- (AIRDROP_ALLOCATION + PRESALE_ALLOCATION + TREASURY_ALLOCATION)
-		- office_here;
+		- office_here
+		- stakes_here;
 	let checking_account: AccountId = crate::PezkuwiXcm::check_account();
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
@@ -219,6 +235,7 @@ fn asset_hub_pezkuwichain_genesis(
 				.chain(core::iter::once((presale_pot, PRESALE_ALLOCATION)))
 				.chain(core::iter::once((treasury_pot, TREASURY_ALLOCATION)))
 				.chain(founding_office.clone().map(|office| (office, office_here)))
+				.chain(genesis_validators.iter().cloned().map(|v| (v, validator_stake)))
 				.chain(core::iter::once((checking_account, checking_account_seed)))
 				.collect(),
 		},
@@ -243,10 +260,15 @@ fn asset_hub_pezkuwichain_genesis(
 				.collect(),
 		},
 		pezkuwi_xcm: PezkuwiXcmConfig { safe_xcm_version: Some(SAFE_XCM_VERSION) },
-		// Prevent automatic election before validators are staked.
-		// After staking setup, trigger manually with force_new_era().
 		staking: StakingConfig {
-			force_era: pezpallet_staking_async::Forcing::ForceNone,
+			// The era clock runs from genesis. `ForceNone` here, with "trigger manually with
+			// force_new_era()" in a comment, left the live Zagros at era 0 for weeks: nothing
+			// was ever minted. Spec res/specs/2026-10-04-hez-emission-design.md, C1.
+			force_era: pezpallet_staking_async::Forcing::NotForcing,
+			// Until People's first committee snapshot sets it (see `STAKE_STRATUM_SEATS`).
+			validator_count: STAKE_STRATUM_SEATS,
+			// Spec K4: 10,000 HEZ bonded to validate, the condition for being paid.
+			min_validator_bond: MIN_VALIDATOR_BOND,
 			// Synthetic stakers, for the presets that ask for them. The multi-block election
 			// benchmarks assert that a snapshot page is FULL -- `TargetSnapshotPerBlock` is
 			// `MaxValidatorSet`, i.e. 1000 -- and a genesis with no stakers makes that
@@ -255,6 +277,19 @@ fn asset_hub_pezkuwichain_genesis(
 			// weights at all. Only the dev and local presets set this; the real genesis is a
 			// deliberate design and does not get 25k invented nominators.
 			dev_stakers,
+			// The genesis validators, bonded at the validator floor and validating, so the
+			// first era can elect and pay them (spec K5).
+			stakers: genesis_validators
+				.iter()
+				.cloned()
+				.map(|v| {
+					(
+						v,
+						zagros_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_BOND,
+						pezpallet_staking_async::StakerStatus::Validator,
+					)
+				})
+				.collect(),
 			..Default::default()
 		},
 
@@ -398,6 +433,10 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				vec![],
 				vec![],
 				None,
+				zagros_runtime_constants::genesis::VALIDATOR_STASHES
+					.iter()
+					.map(|s| AccountId::from(*s))
+					.collect(),
 			)
 		},
 
@@ -443,6 +482,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 					),
 				],
 				Some((1000, 25_000)),
+				Vec::new(),
 			)
 		},
 
@@ -476,6 +516,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				vec![],
 				vec![],
 				Some((1000, 25_000)),
+				Vec::new(),
 			)
 		},
 
@@ -535,7 +576,9 @@ fn the_asset_hub_mints_exactly_its_share() {
 	let held = 40_000_000 * UNITS
 		+ 100_000_000 * UNITS
 		+ (40_000_000 * UNITS - zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING)
-		+ zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING;
+		+ zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING
+		// The genesis validators' stakes (spec K5), out of the founder's line on the relay.
+		+ zagros_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT;
 	let escrow = 200_000_000 * UNITS - held;
 
 	assert_eq!(
@@ -636,7 +679,8 @@ mod genesis_ledger {
 			("airdrop", &airdrop, 40_000_000 * UNITS),
 			("presale", &presale, 100_000_000 * UNITS),
 			("treasury", &treasury, 39_999_000 * UNITS),
-			("checking", &checking, 20_000_000 * UNITS),
+			// 44,000 less again: the genesis validators' stakes are held here too (spec K5).
+			("checking", &checking, 19_956_000 * UNITS),
 		] {
 			let addr = ss58(acc);
 			assert_eq!(
@@ -664,9 +708,22 @@ mod genesis_ledger {
 			[ss58(&airdrop), ss58(&presale), ss58(&treasury), ss58(&checking)]
 				.into_iter()
 				.collect();
+		// The genesis validators, each with its stake (spec K5).
+		let validators: alloc::collections::BTreeSet<String> =
+			zagros_runtime_constants::genesis::VALIDATOR_STASHES
+				.iter()
+				.map(|s| ss58(&AccountId::from(*s)))
+				.collect();
+		for v in &validators {
+			assert_eq!(
+				hez.get(v).copied(),
+				Some(zagros_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_STAKE),
+				"genesis validator {v} must start with its 11,000 HEZ"
+			);
+		}
 		let office = hez
 			.keys()
-			.find(|k| !pots.contains(*k))
+			.find(|k| !pots.contains(*k) && !validators.contains(*k))
 			.expect("the genesis mints the founding office's fee budget on this chain")
 			.clone();
 		assert_eq!(
@@ -679,7 +736,11 @@ mod genesis_ledger {
 			"the founding office must be a key -- a keyless account cannot sign the founding \
 			 calls it is the only origin for"
 		);
-		assert_eq!(hez.len(), 5, "the Asset Hub mints HEZ into five accounts and no sixth");
+		assert_eq!(
+			hez.len(),
+			5 + validators.len(),
+			"the Asset Hub mints HEZ into five accounts and the genesis validators, and no more"
+		);
 		assert_eq!(
 			hez.values().sum::<u128>(),
 			200_000_000 * UNITS,
@@ -722,5 +783,102 @@ mod genesis_ledger {
 			5_000_000_000 * UNITS,
 			"PEZ genesis must mint exactly five billion"
 		);
+	}
+}
+
+/// Every preset starts the era clock and elects someone.
+///
+/// `ForceNone` here, with "trigger manually with force_new_era()" in a comment, left the live
+/// Zagros at era 0 for weeks after its relaunch: no era ended, so nothing was minted. A preset
+/// that elects nobody stalls the same way. Spec res/specs/2026-10-04-hez-emission-design.md, C1.
+#[test]
+fn every_preset_starts_the_era_clock() {
+	// The dev and local presets read runtime storage parameters, so they need externalities.
+	pezsp_io::TestExternalities::default().execute_with(|| {
+		for preset in preset_names() {
+			let raw = get_preset(&preset).expect("listed preset exists");
+			let g: serde_json::Value = serde_json::from_slice(&raw).expect("valid json");
+			let staking = &g["staking"];
+			assert_ne!(
+				staking["forceEra"],
+				serde_json::json!("ForceNone"),
+				"preset {preset:?} starts with ForceNone: no era is ever planned, nothing is minted"
+			);
+			assert!(
+				staking["validatorCount"].as_u64().unwrap_or(0) > 0,
+				"preset {preset:?} elects no validators: the first era never activates"
+			);
+			// Spec K4: 10,000 HEZ bonded to validate here, the condition for being paid.
+			assert_eq!(
+				staking["minValidatorBond"].as_u64(),
+				Some(10_000 * UNITS as u64),
+				"preset {preset:?} lets a validator in below the 10,000 HEZ bond"
+			);
+		}
+	});
+}
+
+/// Each genesis validator starts bonded and validating here (spec K5): 10,000 of its 11,000 HEZ
+/// bonded -- the validator floor -- so it can be elected and paid from the first era.
+#[test]
+fn the_genesis_validators_start_bonded() {
+	let raw = get_preset(&PresetId::from(preset_names::PRESET_GENESIS))
+		.expect("the genesis preset exists");
+	let g: serde_json::Value = serde_json::from_slice(&raw).expect("valid json");
+	assert_eq!(
+		zagros_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_BOND,
+		MIN_VALIDATOR_BOND,
+		"the genesis bond is the validator floor"
+	);
+	let stakers = g["staking"]["stakers"].as_array().expect("the genesis preset lists stakers");
+	let want: alloc::vec::Vec<serde_json::Value> =
+		zagros_runtime_constants::genesis::VALIDATOR_STASHES
+			.iter()
+			.map(|s| {
+				serde_json::json!([
+					serde_json::to_value(AccountId::from(*s)).expect("an account id serialises"),
+					zagros_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_BOND,
+					"Validator"
+				])
+			})
+			.collect();
+	assert_eq!(stakers, &want);
+}
+
+/// Every preset's genesis actually builds -- not just parses.
+///
+/// The tests above read the preset JSON, and a JSON can say exactly what was meant and still
+/// fail to build: on 2026-10-08 the 10,000 HEZ validator floor reached the dev and local
+/// presets' synthetic validators, some bonded below it, `validate` refused them, and genesis
+/// panicked -- found by the weights run, which builds the development preset, while every test
+/// here was green. Built the way the node builds it: the preset patched over the defaults.
+#[test]
+fn every_preset_builds_its_genesis() {
+	fn merge(base: &mut serde_json::Value, patch: serde_json::Value) {
+		match (base, patch) {
+			(serde_json::Value::Object(b), serde_json::Value::Object(p)) => {
+				for (k, v) in p {
+					merge(b.entry(k).or_insert(serde_json::Value::Null), v);
+				}
+			},
+			(b, p) => *b = p,
+		}
+	}
+	for preset in preset_names() {
+		// The dev and local presets read runtime storage parameters, and genesis is built
+		// into storage: both need externalities.
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			let patch: serde_json::Value =
+				serde_json::from_slice(&get_preset(&preset).expect("listed preset exists"))
+					.expect("valid json");
+			let mut config =
+				serde_json::to_value(crate::RuntimeGenesisConfig::default()).expect("serialises");
+			merge(&mut config, patch);
+			let json = serde_json::to_vec(&config).expect("serialises");
+			pezframe_support::genesis_builder_helper::build_state::<crate::RuntimeGenesisConfig>(
+				json,
+			)
+			.unwrap_or_else(|e| panic!("preset {preset:?} does not build: {e}"));
+		});
 	}
 }

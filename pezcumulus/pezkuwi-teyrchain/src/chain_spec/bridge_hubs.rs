@@ -14,15 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use pezkuwi_omni_node_lib::chain_spec::GenericChainSpec;
 use pezsc_chain_spec::{ChainSpec, ChainType};
 use std::str::FromStr;
 
 /// Collects all supported BridgeHub configurations
 #[derive(Debug, PartialEq)]
 pub enum BridgeHubRuntimeType {
-	// The live ids stay even though no live spec is embedded: `LegacyRuntime::from_id` parses
-	// a running node's chain id into this type, so a launched hub started from its own spec
-	// file would not start if its id were missing here.
+	// Both live ids stay: `LegacyRuntime::from_id` parses a running node's chain id into this
+	// type, so a hub started from its own spec file needs its id here. Zagros runs its bridge
+	// hub since 2026-10-04 and embeds the live spec; Pezkuwichain takes one after Zagros has.
 	Pezkuwichain,
 	PezkuwichainLocal,
 	// used by benchmarks
@@ -59,8 +60,11 @@ impl BridgeHubRuntimeType {
 
 	pub fn load_config(&self) -> Result<Box<dyn ChainSpec>, String> {
 		match self {
-			BridgeHubRuntimeType::Zagros | BridgeHubRuntimeType::Pezkuwichain => {
-				Err(std::format!("{self:?}: not launched: neither network runs this chain yet, so no spec of it is embedded. Zagros takes it first and Pezkuwichain after it; pass the launched chain's spec as a file"))
+			BridgeHubRuntimeType::Zagros => Ok(Box::new(GenericChainSpec::from_json_bytes(
+				&include_bytes!("../../chain-specs/bridge-hub-zagros.json")[..],
+			)?)),
+			BridgeHubRuntimeType::Pezkuwichain => {
+				Err(std::format!("{self:?}: not launched: Pezkuwichain takes this chain after Zagros has run it, so no spec of it is embedded yet; pass the launched chain's spec as a file"))
 			},
 			BridgeHubRuntimeType::ZagrosLocal => Ok(Box::new(zagros::local_config(
 				zagros::BRIDGE_HUB_ZAGROS_LOCAL,

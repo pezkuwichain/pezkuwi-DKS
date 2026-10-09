@@ -917,7 +917,12 @@ parameter_types! {
 }
 
 parameter_types! {
-	pub const Period: u32 = prod_or_fast!(6 * HOURS, 20);
+	// One hour, the relay's session length. An era is `SessionsPerEra - PlanningEraOffset + 1`
+	// sessions (five) and `EraPayout` is capped at `MaxEraDuration`, six relay hours; six-hour
+	// sessions made a thirty-hour era paid for six, a fifth of the set inflation. `KickThreshold`
+	// is `Period` too, so a non-invulnerable candidate silent for an hour is kicked (none on the
+	// live Zagros on 2026-10-07).
+	pub const Period: u32 = prod_or_fast!(1 * HOURS, 20);
 	pub const Offset: u32 = 0;
 }
 
@@ -1565,6 +1570,27 @@ impl pezpallet_pez_treasury::BenchmarkSetup<RuntimeOrigin> for PezTreasuryBenchm
 	}
 }
 
+/// The origin `Komite` accepts, for benchmarks: People, as `CommitteeOrigin` requires.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct KomiteBenchmarkSetup;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_komite::BenchmarkSetup<RuntimeOrigin> for KomiteBenchmarkSetup {
+	fn committee_origin() -> RuntimeOrigin {
+		pezpallet_xcm::Origin::Xcm(PeopleLocation::get()).into()
+	}
+}
+
+impl pezpallet_komite::Config for Runtime {
+	// TNPoS seats the committee, and TNPoS lives on People.
+	type CommitteeOrigin = EnsureXcm<Equals<PeopleLocation>>;
+	// The election asks for as many winners as the committee has validators here.
+	type OnCommittee = staking::SetValidatorCountToSeatedValidators;
+	type MaxMembers = ConstU32<{ pezkuwi_tnpos_primitives::invariant::MAX_COMMITTEE }>;
+	type WeightInfo = weights::pezpallet_komite::WeightInfo<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = KomiteBenchmarkSetup;
+}
+
 impl pezpallet_pez_treasury::Config for Runtime {
 	type Assets = Assets;
 	type WeightInfo = weights::pezpallet_pez_treasury::WeightInfo<Runtime>;
@@ -1902,6 +1928,7 @@ construct_runtime!(
 
 		// PezkuwiChain Custom Pallets
 		PezTreasury: pezpallet_pez_treasury = 70,
+		Komite: pezpallet_komite = 71,
 		TokenWrapper: pezpallet_token_wrapper = 73,
 
 		// The economic franchise: what the money decides, and how. Weight-counted, unlike the
@@ -1972,6 +1999,8 @@ pub type UncheckedExtrinsic =
 pub type Migrations = (
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
+	// one-off, keyed on `Komite` arriving (its storage version 0 -> 1)
+	staking::StartTheEraClockWithKomite,
 );
 
 /// Executive: handles dispatch to the various modules.
@@ -2098,6 +2127,7 @@ mod benches {
 		[pezpallet_ah_ops, AhOps]
 		[pezpallet_sudo, Sudo]
 		// PezkuwiChain Custom Pallets
+		[pezpallet_komite, Komite]
 		[pezpallet_pez_treasury, PezTreasury]
 		[pezpallet_token_wrapper, TokenWrapper]
 	);

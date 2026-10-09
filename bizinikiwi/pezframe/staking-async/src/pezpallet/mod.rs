@@ -1078,7 +1078,11 @@ pub mod pezpallet {
 				.expect(&format!("Failed to decode public key from pair: {:?}", pair.public()));
 
 			let (min, max) = T::VoterList::range();
-			let stake = BalanceOf::<T>::from(rng.next_u64().min(max).max(min));
+			// At least the configured bond floors, which genesis has already set: a synthetic
+			// validator bonded below `MinValidatorBond` is refused by `validate`, and the whole
+			// genesis build with it.
+			let floor = MinValidatorBond::<T>::get().max(MinNominatorBond::<T>::get());
+			let stake = BalanceOf::<T>::from(rng.next_u64().min(max).max(min)).max(floor);
 			let two: BalanceOf<T> = 2u32.into();
 
 			assert_ok!(T::Currency::mint_into(&who, stake * two));

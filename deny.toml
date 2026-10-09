@@ -117,6 +117,12 @@ ignore = [
 	# level from `NetworkWorker::new`, the one constructor every path to that backend passes
 	# through. The residual risk was never the advisory -- it was a misconfiguration nobody
 	# could see.
+	#
+	# OSV holds another on the same path, outside RustSec and so recorded only in
+	# `.github/scripts/osv-baseline.json`: GHSA-5j98-2g5x-46v6 on `hickory-resolver` 0.24.4
+	# (lookups hide whether DNSSEC validated; fixed only in 0.26.2). It rests on the same
+	# default and closes with the same libp2p move. litep2p's resolver was bumped past it
+	# (0.26.3) on 2026-10-07, the day the advisory reached the gate.
 ]
 
 # License compliance

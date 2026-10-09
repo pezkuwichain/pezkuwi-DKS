@@ -68,16 +68,17 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 	let mut builder = NetworkConfigBuilder::new().with_relaychain(|r| {
 		let r = r
 			.with_chain("zagros-local")
-			// One core and one backing validator per teyrchain, so that no chain waits for a
-			// core another one holds -- the question here is whether each chain runs, not how
-			// they share.
+			// Cores come from registration, not from here. Each teyrchain registered at genesis
+			// opens the core it runs on (`AssignCoretime`) after the ones the configuration
+			// already names, and the scheduler makes one validator group per core, an empty one
+			// when validators run out. The first run left the configured five cores in place: the
+			// teyrchains sat on cores 5 to 9 behind empty groups and stopped at block 3. With
+			// none configured the five registrations make five cores, and five validators put one
+			// in every group.
 			.with_genesis_overrides(json!({
 				"configuration": {
 					"config": {
-						"scheduler_params": {
-							"num_cores": TEYRCHAINS.len(),
-							"max_validators_per_core": 1
-						}
+						"scheduler_params": { "num_cores": 0, "max_validators_per_core": 1 }
 					}
 				}
 			}))

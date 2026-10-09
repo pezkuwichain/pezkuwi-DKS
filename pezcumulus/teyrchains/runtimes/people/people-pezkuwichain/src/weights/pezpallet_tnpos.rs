@@ -199,4 +199,11 @@ impl<T: pezframe_system::Config> pezpallet_tnpos::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(9))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
+	/// Not yet measured: a ceiling (two reads and two writes, and a set of `n` accounts built
+	/// and stored) until the weights run benchmarks it.
+	fn note_bonded(n: u32, ) -> Weight {
+		Weight::from_parts(10_000_000, 2_000)
+			.saturating_add(Weight::from_parts(100_000, 40).saturating_mul(n.into()))
+			.saturating_add(T::DbWeight::get().reads_writes(2, 2))
+	}
 }

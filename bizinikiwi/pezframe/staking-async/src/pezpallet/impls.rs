@@ -534,6 +534,7 @@ impl<T: Config> Pezpallet<T> {
 		}
 
 		let total_nominator_stake = exposure.total().saturating_sub(overview_own);
+		let mut paid_to_nominators: BalanceOf<T> = Zero::zero();
 		for nominator in exposure.others().iter() {
 			let nominator_exposure_part =
 				Perbill::from_rational(nominator.value, total_nominator_stake);
@@ -543,6 +544,7 @@ impl<T: Config> Pezpallet<T> {
 			if let Some((imbalance, dest)) =
 				Self::make_payout_legacy(era, &nominator.who, nominator_reward)
 			{
+				paid_to_nominators = paid_to_nominators.saturating_add(imbalance.peek());
 				nominator_payout_count.saturating_inc();
 				Self::deposit_event(Event::<T>::Rewarded {
 					stash: nominator.who.clone(),
@@ -551,6 +553,25 @@ impl<T: Config> Pezpallet<T> {
 				});
 				total_imbalance.subsume(imbalance);
 			}
+		}
+
+		// What this page owed its nominators and did not pay -- there were none, or a share's
+		// rounding, or a payee that takes nothing -- is minted to the remainder rather than never
+		// minted at all. Each page pays only its own nominators, so it owes only its part.
+		let page_nominator_stake: BalanceOf<T> = exposure
+			.others()
+			.iter()
+			.fold(Zero::zero(), |acc: BalanceOf<T>, n| acc.saturating_add(n.value));
+		let owed = if total_nominator_stake.is_zero() {
+			// No nominators at all: a single page, owing the whole of their part.
+			total_nominator_payout
+		} else {
+			Perbill::from_rational(page_nominator_stake, total_nominator_stake)
+				.mul_floor(total_nominator_payout)
+		};
+		let unpaid = owed.saturating_sub(paid_to_nominators);
+		if !unpaid.is_zero() {
+			T::RewardRemainder::on_unbalanced(asset::issue::<T>(unpaid));
 		}
 
 		T::Reward::on_unbalanced(total_imbalance);
@@ -797,6 +818,16 @@ impl<T: Config> Pezpallet<T> {
 		LastValidatorEra::<T>::remove(&stash);
 
 		Ok(())
+	}
+
+	/// Record the work validators did in the active era, without ending a session.
+	///
+	/// A relay session report both carries era points and ends a session. On a chain whose era
+	/// clock is its own -- the Asset Hub, whose validator set comes from People and not from its
+	/// own election -- the two must be separable: the points are the only measure of who
+	/// validated, and the relay's session numbers are not this chain's.
+	pub fn note_era_points(points: impl IntoIterator<Item = (T::AccountId, u32)>) {
+		Eras::<T>::reward_active_era(points)
 	}
 
 	#[cfg(test)]
@@ -1195,9 +1226,16 @@ impl<T: Config> ElectionDataProvider for Pezpallet<T> {
 	type BlockNumber = BlockNumberFor<T>;
 	type MaxVotesPerVoter = MaxNominationsOf<T>;
 
+	/// `ValidatorCount`, but never more than the electable targets there are now.
+	///
+	/// An election asked for more winners than it has targets can never fill its seats, and a
+	/// multi-block election that cannot fill them never completes -- the era clock waits on it.
+	/// Where the count is set ahead of the snapshot, a validator chilling in between would do
+	/// exactly that, so the count asked for is read against the targets at snapshot time.
 	fn desired_targets() -> data_provider::Result<u32> {
-		Self::register_weight(T::DbWeight::get().reads(1));
-		Ok(ValidatorCount::<T>::get())
+		let targets = T::TargetList::iter().count() as u32;
+		Self::register_weight(T::DbWeight::get().reads(1 + targets as u64));
+		Ok(ValidatorCount::<T>::get().min(targets))
 	}
 
 	fn electing_voters(

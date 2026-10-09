@@ -64,4 +64,13 @@
 #
 # Measured the same day (run 37067510936, reference box): two pages cost 6.6 ms and 417 KB of
 # proof, inside the block on both twins. The files are in the tree, so the list is empty again.
+#
+# 2026-10-08: `pezpallet_komite` is new on both Asset Hubs (index 71). Its one call,
+# `set_committee`, stores a committee of up to `MAX_COMMITTEE` (64) members; the recorded
+# weight is a placeholder sized above the work until this measures it.
+#
+# Asked twice: the first run (37798217660) could not build the development preset's genesis --
+# its synthetic validators bonded below the new 10,000 HEZ floor -- fixed in the commit before.
+# Measured (run 37817572382): ~90 us plus ~11 us and one read per member, well above the
+# placeholder. The files are in the tree, so the list is empty again.
 runs: []

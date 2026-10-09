@@ -430,6 +430,38 @@ impl pezframe_support::traits::Time for MockTime {
 	}
 }
 
+parameter_types! {
+	pub static HalfSplitRewards: bool = false;
+}
+
+/// The default calculator, or -- with `HalfSplitRewards` -- a fixed half to the nominators
+/// whatever the stakes, so a validator without nominators leaves a half no one is owed.
+pub struct TestStakerRewardCalculator;
+impl pezsp_staking::StakerRewardCalculator<Balance> for TestStakerRewardCalculator {
+	fn calculate_validator_incentive_weight(self_stake: Balance) -> Balance {
+		<reward::DefaultStakerRewardCalculator<Test> as pezsp_staking::StakerRewardCalculator<
+			Balance,
+		>>::calculate_validator_incentive_weight(self_stake)
+	}
+	fn calculate_staker_reward(
+		total: Balance,
+		commission: Perbill,
+		own: Balance,
+		exposure: Balance,
+	) -> pezsp_staking::StakerRewardResult<Balance> {
+		if HalfSplitRewards::get() {
+			let nominators = total / 2;
+			return pezsp_staking::StakerRewardResult {
+				validator_payout: total - nominators,
+				nominator_payout: nominators,
+			};
+		}
+		<reward::DefaultStakerRewardCalculator<Test> as pezsp_staking::StakerRewardCalculator<
+			Balance,
+		>>::calculate_staker_reward(total, commission, own, exposure)
+	}
+}
+
 /// Switchable EraPayout: returns (0,0) in DAP mode, real values in legacy mode.
 pub struct TestEraPayout;
 impl EraPayout<Balance> for TestEraPayout {
@@ -555,7 +587,7 @@ impl Config for Test {
 	type DisableMinting = DisableMintingMode;
 	type UnclaimedRewardHandler = Dap;
 	type RewardPots = SequentialTest;
-	type StakerRewardCalculator = reward::DefaultStakerRewardCalculator<Test>;
+	type StakerRewardCalculator = TestStakerRewardCalculator;
 	type MaxPruningItems = MaxPruningItems;
 	type PlanningEraOffset = PlanningEraOffset;
 	type Filter = MockedRestrictList;
@@ -657,6 +689,11 @@ impl ExtBuilder {
 	/// Switch to legacy reward mode (EraPayout-based minting instead of DAP pots).
 	pub(crate) fn legacy_reward_mode(self) -> Self {
 		UseLegacyEraPayout::set(true);
+		self
+	}
+	/// Split every validator's reward half to the validator, half to its nominators.
+	pub(crate) fn half_split_rewards(self) -> Self {
+		HalfSplitRewards::set(true);
 		self
 	}
 	pub(crate) fn nominate(mut self, nominate: bool) -> Self {

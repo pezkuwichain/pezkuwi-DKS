@@ -474,6 +474,7 @@ members = [
 	"pezcumulus/teyrchains/integration-tests/emulated/tests/pezbridges/bridge-hub-zagros",
 	"pezcumulus/teyrchains/pezpallets/collective-content",
 	"pezcumulus/teyrchains/pezpallets/identity-kyc",
+	"pezcumulus/teyrchains/pezpallets/komite",
 	"pezcumulus/teyrchains/pezpallets/messaging",
 	"pezcumulus/teyrchains/pezpallets/perwerde",
 	"pezcumulus/teyrchains/pezpallets/pez-rewards",
@@ -1168,6 +1169,7 @@ pezpallet-tnpos = { path = "pezkuwi/pezpallets/tnpos", version = "1.0.0", defaul
 
 # People Teyrchain pezpallets (Phase 2)
 pezpallet-identity-kyc = { path = "pezcumulus/teyrchains/pezpallets/identity-kyc", version = "1.0.0", default-features = false }
+pezpallet-komite = { path = "pezcumulus/teyrchains/pezpallets/komite", version = "1.0.0", default-features = false }
 pezpallet-messaging = { path = "pezcumulus/teyrchains/pezpallets/messaging", version = "1.0.0", default-features = false }
 pezpallet-perwerde = { path = "pezcumulus/teyrchains/pezpallets/perwerde", version = "1.0.0", default-features = false }
 pezpallet-referral = { path = "pezcumulus/teyrchains/pezpallets/referral", version = "1.0.0", default-features = false }

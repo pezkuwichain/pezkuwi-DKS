@@ -89,11 +89,9 @@ impl LoadSpec for ChainSpecLoader {
 				Box::new(collectives::collectives_zagros_development_config())
 			},
 			"collectives-zagros-local" => Box::new(collectives::collectives_zagros_local_config()),
-			"collectives-zagros" => {
-				return Err("collectives-zagros: not launched yet, so no spec of it is embedded; \
-				            pass the launched chain's spec as a file"
-					.into())
-			},
+			"collectives-zagros" => Box::new(GenericChainSpec::from_json_bytes(
+				&include_bytes!("../../chain-specs/collectives-zagros.json")[..],
+			)?),
 
 			// -- BridgeHub
 			bridge_like_id

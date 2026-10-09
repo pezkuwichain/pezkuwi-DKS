@@ -30,7 +30,8 @@ use scale_info::TypeInfo;
 	serde::Deserialize,
 )]
 pub enum StratumId {
-	/// Bonded HEZ; ranked internally by the existing Phragmen election on Asset Hub.
+	/// Bonded HEZ. Its seats are drawn by lot like the other strata's; the Asset Hub's
+	/// election ranks no one here, it builds the exposures that payout and slashing read.
 	#[codec(index = 0)]
 	Stake,
 	/// Elected members of the assembly.

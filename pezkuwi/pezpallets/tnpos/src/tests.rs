@@ -1166,3 +1166,67 @@ fn falling_under_the_security_floor_is_announced() {
 		assert_eq!(CurrentCommittee::<Test>::get().len() as u32, 14);
 	});
 }
+
+fn bonded(v: &[AccountId]) -> pezframe_support::BoundedVec<AccountId, MaxBonded> {
+	pezframe_support::BoundedVec::try_from(v.to_vec()).unwrap()
+}
+
+#[test]
+fn only_the_asset_hub_may_report_who_is_bonded_and_not_backwards() {
+	new_test_ext().execute_with(|| {
+		assert_noop!(
+			Tnpos::note_bonded(RuntimeOrigin::signed(ALICE), 1, bonded(&[ALICE])),
+			pezsp_runtime::DispatchError::BadOrigin
+		);
+		assert_ok!(Tnpos::note_bonded(RuntimeOrigin::root(), 5, bonded(&[ALICE])));
+		assert_noop!(
+			Tnpos::note_bonded(RuntimeOrigin::root(), 4, bonded(&[BOB])),
+			Error::<Test>::StaleBondReport
+		);
+	});
+}
+
+/// Spec C4: a candidate stands only with a validator's bond on the Asset Hub. Before the first
+/// report the gate is open -- the era clock must not wait on a message -- and once a report
+/// has arrived an account it does not name cannot join.
+#[test]
+fn an_account_not_bonded_on_the_asset_hub_cannot_join() {
+	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
+		set_perwerde(ALICE, 500);
+		assert_ok!(Tnpos::note_bonded(RuntimeOrigin::root(), 1, bonded(&[BOB])));
+		assert_noop!(
+			Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde),
+			Error::<Test>::NotBondedOnAssetHub
+		);
+		assert_ok!(Tnpos::note_bonded(RuntimeOrigin::root(), 2, bonded(&[ALICE, BOB])));
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
+	});
+}
+
+/// The bond is read again at every draw, not trusted from the day a member joined: one whose
+/// bond lapses is not drawn.
+#[test]
+fn a_member_whose_bond_lapses_is_not_drawn() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		let bench: Vec<AccountId> = PoolMembers::<Test>::iter()
+			.filter_map(|(w, s)| (s == StratumId::Divan).then_some(w))
+			.collect();
+		let (keep, lapsed) = bench.split_at(3);
+		let still: Vec<AccountId> = PoolMembers::<Test>::iter()
+			.map(|(w, _)| w)
+			.filter(|w| !lapsed.contains(w))
+			.collect();
+		assert_ok!(Tnpos::note_bonded(RuntimeOrigin::root(), 1, bonded(&still)));
+
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let committee = CurrentCommittee::<Test>::get();
+		for &who in keep {
+			assert!(committee.contains(&who), "a bonded judge must still be drawable");
+		}
+		for &who in lapsed {
+			assert!(!committee.contains(&who), "a lapsed bond must stop being drawn");
+		}
+	});
+}

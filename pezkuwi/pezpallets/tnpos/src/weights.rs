@@ -20,6 +20,8 @@ pub trait WeightInfo {
 	/// `p` is the pool size: seating iterates `PoolMembers` once per seated stratum, so the
 	/// cost is linear in it and a constant here would be a lie the block budget pays for.
 	fn seat_committee(p: u32) -> Weight;
+	/// `n` is the number of accounts reported.
+	fn note_bonded(n: u32) -> Weight;
 }
 
 /// Not measured, and deliberately not zero -- and measured now says these are too low.
@@ -46,6 +48,12 @@ pub trait WeightInfo {
 /// in both People runtimes' `define_benchmarks!` now, so the next weights run replaces this
 /// whole impl with real numbers.
 impl WeightInfo for () {
+	fn note_bonded(n: u32) -> Weight {
+		// Builds and writes a set of `n` accounts; two writes.
+		Weight::from_parts(10_000_000, 2_000)
+			.saturating_add(Weight::from_parts(100_000, 40).saturating_mul(n.into()))
+			.saturating_add(RocksDbWeight::get().reads_writes(2, 2))
+	}
 	fn join() -> Weight {
 		// Reads the five register scores and the key register; writes pool membership.
 		Weight::from_parts(50_000_000, 4_000)

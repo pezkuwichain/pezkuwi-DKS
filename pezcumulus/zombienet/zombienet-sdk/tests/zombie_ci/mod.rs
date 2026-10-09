@@ -3,6 +3,7 @@
 
 mod bootnodes;
 mod elastic_scaling;
+mod emission;
 mod full_node_catching_up;
 mod full_node_warp_sync;
 mod migrate_solo;

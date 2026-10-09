@@ -943,3 +943,18 @@ fn from_most_staked_to_least_staked() {
 			);
 		});
 }
+
+/// An election asked for more winners than it has electable targets can never fill its seats,
+/// and a multi-block election that cannot fill them never completes. So the count asked for is
+/// at most the number of targets there are when the snapshot is taken.
+#[test]
+fn desired_targets_never_exceed_the_electable_targets() {
+	ExtBuilder::default().build_and_execute(|| {
+		let targets = <Test as Config>::TargetList::iter().count() as u32;
+		assert!(targets > 0);
+		ValidatorCount::<Test>::put(targets + 5);
+		assert_eq!(Staking::desired_targets(), Ok(targets));
+		ValidatorCount::<Test>::put(1);
+		assert_eq!(Staking::desired_targets(), Ok(1));
+	});
+}

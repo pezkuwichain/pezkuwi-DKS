@@ -234,7 +234,10 @@ fn default_teyrchains_host_configuration_is_consistent() {
 fn hez_allocations_sum_to_200m() {
 	// Two of the founding office's three budgets are minted on the other two chains, so they
 	// leave the relay's side of the ledger even though they come out of the founder's share.
-	let off_relay = 2 * zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING;
+	// The genesis validators' stakes (spec K5) come out of it too, and are minted on the
+	// Asset Hub where they are bonded.
+	let off_relay = 2 * zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING
+		+ zagros_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT;
 	let here = HEZ_FOUNDER_ALLOCATION - off_relay
 		+ zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
 	let elsewhere = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
@@ -242,11 +245,31 @@ fn hez_allocations_sum_to_200m() {
 		+ off_relay;
 	assert_eq!(
 		here,
-		19_999_000 * HEZ,
+		19_955_000 * HEZ,
 		"the relay mints the founder's 20M less the two office budgets held on the Asset Hub \
-		 and on People, plus the validators' funding out of the treasury"
+		 and on People and the validators' 44,000 staked there, plus the validators' funding \
+		 out of the treasury"
 	);
 	assert_eq!(here + elsewhere, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
+}
+
+/// The relay seats exactly the stashes the Asset Hub's genesis bonds (spec K5): one list in
+/// `zagros_runtime_constants::genesis`, read by both. A seat whose stash is not bonded there
+/// earns nothing; a stash bonded there that is not seated validates nothing.
+#[test]
+fn the_relay_seats_the_stashes_the_asset_hub_bonds() {
+	let genesis = pezkuwichain_genesis_config();
+	let seated: Vec<serde_json::Value> = genesis["session"]["keys"]
+		.as_array()
+		.expect("the session patch lists keys")
+		.iter()
+		.map(|k| k[0].clone())
+		.collect();
+	let bonded: Vec<serde_json::Value> = zagros_runtime_constants::genesis::VALIDATOR_STASHES
+		.iter()
+		.map(|s| serde_json::to_value(AccountId::from(*s)).expect("an account id serialises"))
+		.collect();
+	assert_eq!(seated, bonded);
 }
 
 /// The genesis seats the four validators Zagros runs.
@@ -367,6 +390,7 @@ fn sudo_starts_with_a_fee_budget() {
 				- zagros_runtime_constants::currency::HEZ_SUDO_FUNDING
 				- zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
 				- zagros_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT
+				- zagros_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT
 		})
 		.unwrap_or(0);
 	assert_eq!(
@@ -374,9 +398,10 @@ fn sudo_starts_with_a_fee_budget() {
 		HEZ_FOUNDER_ALLOCATION
 			- zagros_runtime_constants::currency::HEZ_SUDO_FUNDING
 			- zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
-			- zagros_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT,
-		"root's budget, the founding office's and the accumulation accounts' come out of the \
-		 founder's allocation, not on top of it"
+			- zagros_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT
+			- zagros_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT,
+		"root's budget, the founding office's, the accumulation accounts' and the genesis \
+		 validators' stakes come out of the founder's allocation, not on top of it"
 	);
 }
 
@@ -443,14 +468,17 @@ fn the_relay_mints_exactly_its_share() {
 	// that the spender tracks pay from.
 	// Less the two office budgets that are minted on the Asset Hub and on People: they are
 	// carved from the founder's share but they are not held here.
+	// And less the genesis validators' stakes, minted and bonded on the Asset Hub.
 	let owned = HEZ_FOUNDER_ALLOCATION
 		- 2 * zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING
+		- zagros_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT
 		+ zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
 	// Escrow: the mirror of what the Asset Hub holds, so a teleport back has something to
 	// release. Not new supply -- the same HEZ, represented there and held here.
 	let escrow = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
 		- zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING
-		+ 2 * zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING;
+		+ 2 * zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING
+		+ zagros_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT;
 
 	assert_eq!(
 		total,
@@ -1052,11 +1080,12 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	// Hub, one on People -- so the escrow covers them too. Without this the seed would be
 	// short by exactly what those two chains mint, and the first teleport home of that size
 	// would be refused with nothing on either chain saying why.
-	let checking_account_seed: u128 =
-		HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
+	let checking_account_seed: u128 = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
 			- zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING
 			+ 2 * zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING
-			+ zagros_runtime_constants::currency::HEZ_ACCUMULATION_PEOPLE;
+			+ zagros_runtime_constants::currency::HEZ_ACCUMULATION_PEOPLE
+			// The genesis validators' stakes are held on the Asset Hub too (spec K5).
+			+ zagros_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT;
 	let checking_account: AccountId = crate::XcmPallet::check_account();
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
@@ -1073,7 +1102,9 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 					HEZ_FOUNDER_ALLOCATION
 						- zagros_runtime_constants::currency::HEZ_SUDO_FUNDING
 						- zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
-						- zagros_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT,
+						- zagros_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT
+						// The genesis validators' stakes, minted and bonded on the Asset Hub.
+						- zagros_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT,
 				),
 				// Root's fee budget. Carved out of the founder's share, not added to it, so the
 				// genesis total is untouched -- the same shape as `HEZ_VALIDATOR_FUNDING` coming

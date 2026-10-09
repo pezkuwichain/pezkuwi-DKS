@@ -915,18 +915,20 @@ pub(crate) async fn the_board_ratifies_and_the_record_counts(
 	)
 	.await?;
 
-	// Every member ratifies every course, members beside each other.
+	// Every member ratifies every course, members beside each other, and each course as its own
+	// transaction. `ratify_results` is charged for `MaxStudentsPerCourse` students whatever the
+	// course holds -- about 0.63 s and 2.6 MB of proof each -- so five in one batch is about
+	// 3.1 s and 13 MB and the pool refuses it as "would exhaust the block limits". Measured in
+	// the run that first reached this stage (2026-10-04).
 	let ratifications = board.iter().map(|member| {
-		let calls: Vec<Value> = ids
-			.iter()
-			.map(|id| {
-				dynamic::tx("Perwerde", "ratify_results", vec![Value::u128(*id as u128)])
-					.into_value()
-			})
-			.collect();
-		let batch = dynamic::tx("Utility", "batch_all", vec![Value::unnamed_composite(calls)]);
 		let member = member.clone();
-		async move { must(people, &batch, &member, "a board member could not ratify").await }
+		async move {
+			for id in ids {
+				let tx = dynamic::tx("Perwerde", "ratify_results", vec![Value::u128(*id as u128)]);
+				must(people, &tx, &member, "a board member could not ratify").await?;
+			}
+			Ok::<(), anyhow::Error>(())
+		}
 	});
 	futures::future::try_join_all(ratifications).await?;
 

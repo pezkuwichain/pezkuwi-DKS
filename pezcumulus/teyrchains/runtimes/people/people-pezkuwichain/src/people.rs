@@ -2153,6 +2153,9 @@ impl pezpallet_tnpos::Config for Runtime {
 	type MaxScoreAge = TnposMaxScoreAge;
 	type EraLength = TnposEraLength;
 	type MaxPoolSize = TnposMaxPoolSize;
+	// The Asset Hub reports who is bonded there; a candidacy needs a validator's bond (spec C4).
+	type BondOrigin = pezpallet_xcm::EnsureXcm<pezframe_support::traits::Equals<AssetHubLocation>>;
+	type MaxBonded = ConstU32<{ pezkuwi_tnpos_primitives::invariant::MAX_BONDED_REPORT }>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = TnposBenchmarkHelper;
 }
@@ -2251,11 +2254,62 @@ impl pezpallet_tnpos::SendCommitteeToRelay<AccountId> for CommitteeToRelay {
 		// `prune_up_to: None`: pruning the relay's session history is the relay's own
 		// bookkeeping, and this chain does not track its session indices. Saying nothing is
 		// the honest answer; saying a number we did not measure would discard history.
+		let to_asset_hub = committee_call_for_asset_hub(era, &committee);
 		let report = pezpallet_staking_async_rc_client::ValidatorSetReport::new_terminal(
 			committee, era, None,
 		);
-		send_to_relay(RelayRuntimePallets::AhClient(AhClientCalls::ValidatorSet(report)))
+		let to_relay =
+			send_to_relay(RelayRuntimePallets::AhClient(AhClientCalls::ValidatorSet(report)));
+		// The Asset Hub keeps the last snapshot if this one is lost and goes on paying by it,
+		// so a failed send there is logged, not fatal: the relay still gets its set.
+		if send_to_asset_hub(to_asset_hub).is_err() {
+			log::warn!(
+				target: "runtime::tnpos",
+				"the committee for era {era} did not reach the Asset Hub; it pays by the last one",
+			);
+		}
+		to_relay
 	}
+}
+
+parameter_types! {
+	/// `Komite`'s index in the Asset Hub runtime (`pezpallet_komite = 71`). Held at the other
+	/// end by `the_committee_call_decodes_the_way_people_builds_it` in the Asset Hub's tests.
+	pub const KomitePalletIndex: u8 = 71;
+}
+/// `set_committee`'s call index in `pezpallet-komite`.
+const KOMITE_SET_COMMITTEE: u8 = 0;
+
+/// The committee and each member's trust, encoded as `Komite::set_committee` on the Asset Hub.
+pub(crate) fn committee_call_for_asset_hub(
+	era: u32,
+	committee: &[AccountId],
+) -> alloc::vec::Vec<u8> {
+	use codec::Encode;
+	let members: alloc::vec::Vec<(AccountId, u128)> = committee
+		.iter()
+		.map(|m| (m.clone(), pezpallet_trust::TrustScores::<Runtime>::get(m)))
+		.collect();
+	(KomitePalletIndex::get(), KOMITE_SET_COMMITTEE, era, members).encode()
+}
+
+/// An unpaid `Transact` at the Asset Hub, spoken as this chain itself.
+fn send_to_asset_hub(call: alloc::vec::Vec<u8>) -> Result<(), ()> {
+	use xcm::latest::prelude::*;
+	let message = Xcm(alloc::vec![
+		UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+		// `Xcm`, so the Asset Hub sees this chain's location and `EnsureXcm<Equals<PeopleLocation>>`
+		// lets it through.
+		Transact { origin_kind: OriginKind::Xcm, fallback_max_weight: None, call: call.into() },
+	]);
+	let (ticket, _) = <crate::xcm_config::XcmRouter as SendXcm>::validate(
+		&mut Some(AssetHubLocation::get()),
+		&mut Some(message),
+	)
+	.map_err(|_| ())?;
+	<crate::xcm_config::XcmRouter as SendXcm>::deliver(ticket)
+		.map(|_| ())
+		.map_err(|_| ())
 }
 
 /// Opens the People -> Asset Hub channel so the pot spends can be benchmarked.
@@ -2310,6 +2364,39 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	/// The Asset Hub builds `note_bonded` by hand as (83, 11, era, accounts) -- it cannot name
+	/// this runtime's types. This pins the receiving end: if the pallet moves or the call
+	/// renumbers, this fails here instead of the report landing on whatever now sits there.
+	#[test]
+	fn the_bond_report_decodes_the_way_the_asset_hub_builds_it() {
+		use codec::{Decode, Encode};
+		let who = AccountId::from([5u8; 32]);
+		let bytes = (83u8, 11u8, 4u32, vec![who.clone()]).encode();
+		match crate::RuntimeCall::decode(&mut &bytes[..]).expect("decodes") {
+			crate::RuntimeCall::Tnpos(pezpallet_tnpos::Call::note_bonded { era, bonded }) => {
+				assert_eq!(era, 4);
+				assert_eq!(bonded.into_inner(), vec![who]);
+			},
+			other => panic!("83/11 decodes as {other:?}"),
+		}
+	}
+
+	/// The Asset Hub pays the committee by trust x work, and trust lives here, so each seating
+	/// carries each member's trust there. These are the bytes the Asset Hub's
+	/// `the_committee_call_decodes_the_way_people_builds_it` decodes as `Komite::set_committee`.
+	#[test]
+	fn the_committee_reaches_the_asset_hub_with_each_members_trust() {
+		use codec::Encode;
+		let a = AccountId::from([1u8; 32]);
+		let b = AccountId::from([2u8; 32]);
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			pezpallet_trust::TrustScores::<Runtime>::insert(&a, 70u128);
+			pezpallet_trust::TrustScores::<Runtime>::insert(&b, 140u128);
+			let call = committee_call_for_asset_hub(3, &[a.clone(), b.clone()]);
+			assert_eq!(call, (71u8, 0u8, 3u32, vec![(a, 70u128), (b, 140u128)]).encode());
+		});
+	}
 
 	/// The relay addresses this chain's `pezpallet_tnpos` as pallet 83, call 10.
 	///

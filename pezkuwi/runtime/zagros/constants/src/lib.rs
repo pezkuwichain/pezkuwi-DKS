@@ -106,6 +106,16 @@ pub mod currency {
 	/// total stays at two hundred million to the planck.
 	pub const HEZ_ACCUMULATION_CARVE_OUT: Balance =
 		HEZ_ACCUMULATION_RELAY + HEZ_ACCUMULATION_PEOPLE;
+
+	/// What each genesis validator starts with on the Asset Hub (spec K5): the validator bond,
+	/// bonded, and a thousand beside it for fees.
+	pub const HEZ_GENESIS_VALIDATOR_STAKE: Balance = 11_000 * UNITS;
+	/// Of `HEZ_GENESIS_VALIDATOR_STAKE`, the part bonded at genesis -- the validator floor.
+	pub const HEZ_GENESIS_VALIDATOR_BOND: Balance = 10_000 * UNITS;
+	/// All of it, carved out of the founder's allocation on the relay and minted on the Asset
+	/// Hub, so the genesis total stays at two hundred million to the planck.
+	pub const HEZ_GENESIS_STAKE_CARVE_OUT: Balance =
+		super::genesis::VALIDATOR_STASHES.len() as Balance * HEZ_GENESIS_VALIDATOR_STAKE;
 	pub const CENTS: Balance = UNITS / 30_000;
 	/// One unit, named for what a deposit or a spend is reckoned in.
 	///
@@ -133,6 +143,43 @@ pub mod currency {
 }
 
 /// Time and blocks.
+/// The genesis validators' stashes, which the relay seats and the Asset Hub bonds (spec K5).
+///
+/// One list for both chains: the relay's genesis authorities and the Asset Hub's genesis
+/// stakers must be the same accounts, and a list held twice drifts. The relay's preset test
+/// `the_relay_seats_the_stashes_the_asset_hub_bonds` holds its own authorities to this one.
+/// Generated from `res/genesis/zagros/zagros-wallets.json` (public keys only; that file never
+/// enters this repository).
+pub mod genesis {
+	/// The genesis validators' stash public keys, in seating order.
+	pub const VALIDATOR_STASHES: [[u8; 32]; 4] = [
+		// Validator_01: 5Gbb57WXHVrtVG6ozytVjAm9BCg1sNdBLLmtR1UmVcTm2UJB
+		[
+			0xc8, 0x7e, 0xb3, 0x13, 0x03, 0x6e, 0x49, 0x1d, 0x0b, 0x5c, 0x7b, 0x07, 0x77, 0xe8,
+			0x9e, 0x84, 0xb1, 0x25, 0x91, 0x91, 0xf4, 0x34, 0x97, 0x7a, 0xcc, 0x47, 0x27, 0x0c,
+			0x76, 0x75, 0x48, 0x03,
+		],
+		// Validator_02: 5ED8FZU9u2xDYqdT2gX1p9QM96ivmCPTRMmNXT3Z9jSGkmQR
+		[
+			0x5e, 0xe4, 0x8c, 0xcb, 0x62, 0x5f, 0x4b, 0xbc, 0x56, 0x7a, 0x53, 0x5f, 0xc9, 0xaf,
+			0xcd, 0xa4, 0x60, 0x9d, 0xf8, 0x61, 0xa3, 0x32, 0x0d, 0x19, 0x10, 0xd9, 0x9e, 0xc9,
+			0x0e, 0x97, 0xeb, 0x65,
+		],
+		// Validator_03: 5Dkd9PhMvuvYGSQmfBrqeH2F8FVnmaQ1MW8pM5Fe5MmhnjBU
+		[
+			0x4a, 0xae, 0x30, 0x51, 0xa6, 0xd7, 0x81, 0xb8, 0xe2, 0x5f, 0x9c, 0xac, 0xe9, 0x48,
+			0x8a, 0xac, 0xb3, 0x1a, 0xfc, 0x2a, 0x9e, 0x2a, 0x03, 0x12, 0x0f, 0x52, 0x76, 0x7b,
+			0xb0, 0xe8, 0xa9, 0x08,
+		],
+		// Validator_04: 5HYNdbYjhvZaFUvtZK2q8MqQL1F46jccH1eRL5TXnemNaJZQ
+		[
+			0xf2, 0x47, 0x51, 0xf6, 0xee, 0xb8, 0x6f, 0x26, 0x36, 0xcb, 0xf9, 0x67, 0x9f, 0xcb,
+			0x8a, 0xac, 0xc6, 0xcf, 0x5e, 0x26, 0x6c, 0x7f, 0x47, 0x25, 0x05, 0xc9, 0x17, 0x3f,
+			0xdc, 0x3b, 0x54, 0x58,
+		],
+	];
+}
+
 pub mod time {
 	use pezkuwi_runtime_common::prod_or_fast;
 

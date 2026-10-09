@@ -92,6 +92,9 @@ fn legacy_max_era_duration_caps_payout() {
 	ExtBuilder::default().legacy_reward_mode().build_and_execute(|| {
 		let half = time_per_era() / 2;
 		MaxEraDuration::set(half);
+		// Some work, so the era has someone to pay; an era with none pays the remainder all of
+		// it (`an_era_with_no_work_pays_the_treasury_everything`).
+		Staking::reward_by_ids(vec![(11, 1)]);
 
 		Session::roll_until_active_era(2);
 
@@ -162,5 +165,43 @@ fn legacy_to_dap_migration_flow() {
 		assert_ok!(Staking::payout_stakers(RuntimeOrigin::signed(1337), 11, dap_era));
 		// DAP payout doesn't change issuance (transfer, not mint).
 		assert_eq!(pezpallet_balances::TotalIssuance::<Test>::get(), pre_issuance);
+	});
+}
+
+/// Points held by an account with no exposure in the era cannot be claimed -- a payout needs an
+/// exposure -- so their share would never be minted. It goes to the remainder at era end, and
+/// the points leave the era so the shares that can be claimed stay exact.
+#[test]
+fn points_without_an_exposure_pay_the_treasury_not_the_validators() {
+	ExtBuilder::default().legacy_reward_mode().build_and_execute(|| {
+		let total = time_per_era() as Balance;
+		let remainder = RemainderRatio::get() * total;
+		let stakers = total - remainder;
+		let unclaimable = Perbill::from_rational(40u32, 100u32).mul_floor(stakers);
+
+		// 11 is elected in era 1; 999 never was.
+		Staking::reward_by_ids(vec![(11, 60), (999, 40)]);
+		RewardRemainderUnbalanced::set(0);
+		Session::roll_until_active_era(2);
+
+		let points = ErasRewardPoints::<Test>::get(1);
+		assert!(!points.individual.contains_key(&999));
+		assert_eq!(points.total, 60);
+		assert_eq!(ErasValidatorReward::<Test>::get(1).unwrap(), stakers - unclaimable);
+		assert_eq!(RewardRemainderUnbalanced::get(), remainder + unclaimable);
+	});
+}
+
+/// An era in which nobody did any work has no one to pay: the whole validator payout goes to
+/// the remainder rather than sitting in `ErasValidatorReward` where nothing can claim it.
+#[test]
+fn an_era_with_no_work_pays_the_treasury_everything() {
+	ExtBuilder::default().legacy_reward_mode().build_and_execute(|| {
+		let total = time_per_era() as Balance;
+		RewardRemainderUnbalanced::set(0);
+		Session::roll_until_active_era(2);
+
+		assert_eq!(ErasValidatorReward::<Test>::get(1).unwrap(), 0);
+		assert_eq!(RewardRemainderUnbalanced::get(), total);
 	});
 }
