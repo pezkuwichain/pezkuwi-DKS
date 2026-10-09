@@ -77,6 +77,8 @@
 # 2026-10-09: `pezpallet_tnpos` on both People twins. `note_bonded` (the Asset Hub's bond report,
 # spec C4) has never been measured -- its weight is a ceiling -- and `seat_committee` now checks
 # every candidate against a full bond report, which its last measurement did not include.
+# Asked twice: the first run (37932288409) failed -- the runtime's benchmark helper gave trust
+# and nothing else, which passes none of the four strata that read a state; fixed before this.
 runs:
   - runtime: people-pezkuwichain
     pallet: pezpallet_tnpos

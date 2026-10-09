@@ -2084,12 +2084,52 @@ impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
 			},
 			// The remaining six reach this chain as trust standing until their own channels
 			// land; one write covers all of them.
-			StratumId::Meclis
-			| StratumId::Divan
-			| StratumId::WelatiLottery
-			| StratumId::Geography
-			| StratumId::Tenure
-			| StratumId::Infrastructure => {
+			// Four strata read a state rather than a score, and trust alone passes none of
+			// them: the benchmarks join Meclis, so with trust and nothing else every TNPoS
+			// benchmark measured a refusal or failed outright (weights run 37932288409).
+			StratumId::Meclis => {
+				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+				pezpallet_welati::ParliamentMembers::<Runtime>::mutate(|house| {
+					if !house.iter().any(|m| &m.account == who) {
+						let _ = house.try_push(pezpallet_welati::types::ParliamentMember {
+							account: who.clone(),
+							elected_at: 0,
+							term_ends_at: BlockNumber::MAX,
+							votes_participated: 0,
+							total_votes_eligible: 0,
+							participation_rate: 100,
+							committees: Default::default(),
+						});
+					}
+				});
+			},
+			StratumId::Divan => {
+				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+				// The court has eleven seats; past that the account stays off it, which the
+				// stratum's floor of three tolerates.
+				pezpallet_welati::DiwanMembers::<Runtime>::mutate(|court| {
+					if !court.iter().any(|m| &m.account == who) {
+						let _ = court.try_push(pezpallet_welati::types::DiwanMember {
+							account: who.clone(),
+							appointed_at: 0,
+							term_ends_at: BlockNumber::MAX,
+							appointed_by: pezpallet_welati::types::AppointmentAuthority::Parliament,
+						});
+					}
+				});
+			},
+			StratumId::Geography => {
+				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+				// Spread across all six regions, as the stratum's rotation needs.
+				let region = pezpallet_welati::types::Region::ALL
+					[(<AccountId as AsRef<[u8]>>::as_ref(who)[0] % 6) as usize];
+				pezpallet_welati::AttestedRegion::<Runtime>::insert(who, region);
+			},
+			StratumId::Infrastructure => {
+				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+				pezpallet_tnpos::SeatedSessions::<Runtime>::insert(who, u32::MAX);
+			},
+			StratumId::WelatiLottery | StratumId::Tenure => {
 				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
 			},
 		}
