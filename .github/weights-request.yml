@@ -79,10 +79,8 @@
 # every candidate against a full bond report, which its last measurement did not include.
 # Asked twice: the first run (37932288409) failed -- the runtime's benchmark helper gave trust
 # and nothing else, which passes none of the four strata that read a state; fixed before this.
-runs:
-  - runtime: people-pezkuwichain
-    pallet: pezpallet_tnpos
-    why: note_bonded never measured; seat_committee now reads the bond report
-  - runtime: people-zagros
-    pallet: pezpallet_tnpos
-    why: note_bonded never measured; seat_committee now reads the bond report
+#
+# Measured (run 37942860046): `note_bonded` ~30 us plus ~0.19 us per reported account, and
+# `seat_committee` now ~34 ms plus ~61 us per pool member -- a full pool is about a twelfth of
+# a block. The files are in the tree and the pallet's `()` impl copies them.
+runs: []

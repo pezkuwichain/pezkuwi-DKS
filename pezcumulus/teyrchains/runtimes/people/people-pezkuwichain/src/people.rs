@@ -2418,6 +2418,25 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 mod tests {
 	use super::*;
 
+	/// Seating runs in `on_initialize` and charges its worst case -- the full pool -- whether
+	/// or not the pool is full, as mandatory weight nothing can refuse. Above the block it
+	/// would make the era's first block unbuildable. Measured on 2026-10-09 it is about a
+	/// twelfth of the ref time and a third of the proof size; this fails if the pool bound
+	/// or the measured weight grows past the block.
+	#[test]
+	fn the_worst_seating_fits_in_one_block() {
+		use pezpallet_tnpos::WeightInfo as _;
+		let max = <Runtime as pezframe_system::Config>::BlockWeights::get().max_block;
+		let seating = crate::weights::pezpallet_tnpos::WeightInfo::<Runtime>::seat_committee(
+			TnposMaxPoolSize::get(),
+		);
+		assert!(seating.all_lte(max), "seating {seating:?} exceeds the block {max:?}");
+		let report = crate::weights::pezpallet_tnpos::WeightInfo::<Runtime>::note_bonded(
+			pezkuwi_tnpos_primitives::invariant::MAX_BONDED_REPORT,
+		);
+		assert!(report.all_lte(max), "a full bond report {report:?} exceeds the block {max:?}");
+	}
+
 	/// The Asset Hub builds `note_bonded` by hand as (83, 11, era, accounts) -- it cannot name
 	/// this runtime's types. This pins the receiving end: if the pallet moves or the call
 	/// renumbers, this fails here instead of the report landing on whatever now sits there.
