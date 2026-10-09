@@ -1999,8 +1999,6 @@ pub type UncheckedExtrinsic =
 pub type Migrations = (
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	// one-off, keyed on `Komite` arriving (its storage version 0 -> 1)
-	staking::StartTheEraClockWithKomite,
 );
 
 /// Executive: handles dispatch to the various modules.

@@ -2760,35 +2760,6 @@ fn a_relay_offence_lands_in_the_era_its_session_ran_in() {
 	});
 }
 
-/// The upgrade that brings `Komite` also starts a chain that was launched with the era clock
-/// stopped -- the live Zagros: `ForceNone`, no validator count, no bond floor -- without a root
-/// call, and does it once: a later `ForceNone`, set on purpose, is left alone.
-#[test]
-fn the_komite_upgrade_starts_a_stopped_era_clock_once() {
-	use pezframe_support::traits::{GetStorageVersion, OnRuntimeUpgrade, StorageVersion};
-	use pezpallet_staking_async::{ForceEra, Forcing, MinValidatorBond, ValidatorCount};
-	ExtBuilder::<Runtime>::default().build().execute_with(|| {
-		ForceEra::<Runtime>::put(Forcing::ForceNone);
-		ValidatorCount::<Runtime>::put(0);
-		MinValidatorBond::<Runtime>::put(0);
-		StorageVersion::new(0).put::<asset_hub_zagros_runtime::Komite>();
-
-		asset_hub_zagros_runtime::Migrations::on_runtime_upgrade();
-
-		assert_eq!(ForceEra::<Runtime>::get(), Forcing::NotForcing);
-		assert_eq!(ValidatorCount::<Runtime>::get(), 3);
-		assert_eq!(
-			MinValidatorBond::<Runtime>::get(),
-			asset_hub_zagros_runtime::genesis_config_presets::MIN_VALIDATOR_BOND
-		);
-		assert_eq!(asset_hub_zagros_runtime::Komite::on_chain_storage_version(), 1);
-
-		ForceEra::<Runtime>::put(Forcing::ForceNone);
-		asset_hub_zagros_runtime::Migrations::on_runtime_upgrade();
-		assert_eq!(ForceEra::<Runtime>::get(), Forcing::ForceNone);
-	});
-}
-
 /// Work is weighed by the trust of the committee the active era was elected under, not by the
 /// latest snapshot: a member People removes mid-era still holds that era's exposure and keeps
 /// its own trust to the era's end, rather than jumping to full weight.
