@@ -5,8 +5,8 @@
 
 //! Weights for pezpallet-tnpos.
 //!
-//! The zero implementation exists so tests can run before the benchmark pass; it is not a
-//! weight anyone may ship. Task 13 replaces it with measured values from CI.
+//! Both People runtimes bind their own generated file (`weights/pezpallet_tnpos.rs`); the
+//! `()` impl below is what the mock and any runtime without generated weights get.
 
 use pezframe_support::weights::{constants::RocksDbWeight, Weight};
 
@@ -24,72 +24,57 @@ pub trait WeightInfo {
 	fn note_bonded(n: u32) -> Weight;
 }
 
-/// Not measured, and deliberately not zero -- and measured now says these are too low.
+/// Measured, not estimated: each figure is the larger of the two People twins' generated
+/// weights from the reference box (weights run 37942860046, 2026-10-09, `--steps 50
+/// --repeat 20`), with the runtime's `DbWeight` replaced by `RocksDbWeight`.
 ///
-/// This impl is the fallback for a runtime that has not generated weights. It returned
-/// `Weight::zero()` for all seven calls until 2026-08-30, which made every TNPoS extrinsic
-/// free on both People chains. The figures below replaced the zeros as a stand-in, and the
-/// benchmark run that followed showed the stand-in undercharging five of the seven: `join` by
-/// 1.8x, `report_offence` by 9x, and `seat_committee` by 107x -- its measured base alone is
-/// 21.5 billion ref_time, one per cent of a block, because it draws from nine strata.
-///
-/// They are left as they are rather than raised to match, because both production runtimes now
-/// bind the generated file and nothing reads this. What it must never be again is zero. A
-/// runtime that binds `()` is a runtime whose weights were never generated, and this should
-/// cost it visibly rather than silently.
-///
-/// This returned `Weight::zero()` for all seven calls, and both People runtimes bound
-/// `WeightInfo = ()` -- so every TNPoS extrinsic was free, `join` and `commit_seed` included,
-/// each of which writes storage. A free call is a free block.
-///
-/// The figures below are a ceiling, not a measurement: one read and one write of a bounded
-/// item at the reference machine's own DbWeight, plus a flat execution allowance. They
-/// overcharge, which costs a caller a little; zero undercharges by everything. The pallet is
-/// in both People runtimes' `define_benchmarks!` now, so the next weights run replaces this
-/// whole impl with real numbers.
+/// This impl returned `Weight::zero()` for every call until 2026-08-30, which made every TNPoS
+/// extrinsic free; a hand-written ceiling replaced it and the first measurement showed that
+/// ceiling undercharging five of the seven calls, `seat_committee` by 107x. Neither a zero nor
+/// a guess is a weight: when a benchmark changes, the generated files are re-measured and
+/// these figures are copied from them.
 impl WeightInfo for () {
-	fn note_bonded(n: u32) -> Weight {
-		// Builds and writes a set of `n` accounts; two writes.
-		Weight::from_parts(10_000_000, 2_000)
-			.saturating_add(Weight::from_parts(100_000, 40).saturating_mul(n.into()))
-			.saturating_add(RocksDbWeight::get().reads_writes(2, 2))
-	}
 	fn join() -> Weight {
-		// Reads the five register scores and the key register; writes pool membership.
-		Weight::from_parts(50_000_000, 4_000)
-			.saturating_add(RocksDbWeight::get().reads(7))
-			.saturating_add(RocksDbWeight::get().writes(2))
+		Weight::from_parts(103_013_000, 34_255)
+			.saturating_add(RocksDbWeight::get().reads(14))
+			.saturating_add(RocksDbWeight::get().writes(3))
 	}
 	fn leave() -> Weight {
-		Weight::from_parts(30_000_000, 3_000)
+		Weight::from_parts(42_032_000, 3_514)
 			.saturating_add(RocksDbWeight::get().reads(2))
-			.saturating_add(RocksDbWeight::get().writes(2))
+			.saturating_add(RocksDbWeight::get().writes(3))
 	}
 	fn set_strata() -> Weight {
-		Weight::from_parts(30_000_000, 3_000)
+		Weight::from_parts(24_150_000, 1_489)
 			.saturating_add(RocksDbWeight::get().reads(1))
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
 	fn report_offence() -> Weight {
-		Weight::from_parts(30_000_000, 3_000)
-			.saturating_add(RocksDbWeight::get().reads(3))
-			.saturating_add(RocksDbWeight::get().writes(4))
+		Weight::from_parts(671_611_000, 67_004)
+			.saturating_add(RocksDbWeight::get().reads(39))
+			.saturating_add(RocksDbWeight::get().writes(5))
 	}
 	fn commit_seed() -> Weight {
-		Weight::from_parts(30_000_000, 3_000)
-			.saturating_add(RocksDbWeight::get().reads(2))
+		Weight::from_parts(37_351_000, 3_557)
+			.saturating_add(RocksDbWeight::get().reads(4))
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
 	fn reveal_seed() -> Weight {
-		Weight::from_parts(30_000_000, 3_000)
-			.saturating_add(RocksDbWeight::get().reads(2))
+		Weight::from_parts(35_942_000, 3_557)
+			.saturating_add(RocksDbWeight::get().reads(4))
 			.saturating_add(RocksDbWeight::get().writes(2))
 	}
 	fn seat_committee(p: u32) -> Weight {
-		// Draws from every stratum and writes the committee; scales with the pool.
-		Weight::from_parts(200_000_000, 20_000)
-			.saturating_add(Weight::from_parts(500_000, 0).saturating_mul(p.into()))
-			.saturating_add(RocksDbWeight::get().reads(12))
+		Weight::from_parts(33_856_663_000, 128_790)
+			.saturating_add(Weight::from_parts(61_476_839, 3_037).saturating_mul(p.into()))
+			.saturating_add(RocksDbWeight::get().reads(35))
+			.saturating_add(RocksDbWeight::get().reads((3_u64).saturating_mul(p.into())))
 			.saturating_add(RocksDbWeight::get().writes(4))
+	}
+	fn note_bonded(n: u32) -> Weight {
+		Weight::from_parts(29_837_030, 34_255)
+			.saturating_add(Weight::from_parts(187_864, 0).saturating_mul(n.into()))
+			.saturating_add(RocksDbWeight::get().reads(2))
+			.saturating_add(RocksDbWeight::get().writes(2))
 	}
 }

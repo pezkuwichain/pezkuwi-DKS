@@ -277,14 +277,40 @@ impl pezpallet_tnpos::Config for Test {
 	type MaxBonded = MaxBonded;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = BenchHelper;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BondBenchmarkHelper = RootReportsBonds;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct RootReportsBonds;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_tnpos::BondBenchmarkSetup<RuntimeOrigin> for RootReportsBonds {
+	fn bond_origin() -> RuntimeOrigin {
+		RuntimeOrigin::root()
+	}
 }
 
 #[cfg(feature = "runtime-benchmarks")]
 pub struct BenchHelper;
 #[cfg(feature = "runtime-benchmarks")]
 impl pezpallet_tnpos::BenchmarkHelper<AccountId> for BenchHelper {
-	fn make_eligible(who: &AccountId, _stratum: StratumId) {
-		put_score(*who, TRUST, 1_000, System::block_number());
+	/// Pass `stratum`'s own gate, as the runtime's helper does. It used to give trust and
+	/// nothing else, which passes no gate the benchmarks join -- they join Meclis, a seat --
+	/// so six of the pallet's benchmark tests failed and no one ran them to see it.
+	fn make_eligible(who: &AccountId, stratum: StratumId) {
+		let now = System::block_number();
+		put_score(*who, TRUST, 1_000, now);
+		match stratum {
+			StratumId::Stake => put_score(*who, STAKING, 1_000, now),
+			StratumId::Perwerde => put_score(*who, PERWERDE, 1_000, now),
+			StratumId::Tiki => put_score(*who, TIKI, 1_000, now),
+			StratumId::Meclis => seat_in_meclis(*who),
+			StratumId::Divan => seat_on_the_diwan(*who),
+			// Spread across all six, as the rotation needs.
+			StratumId::Geography => attest_region(*who, (*who % 6) as u8),
+			StratumId::Infrastructure => credit_sessions(*who, u32::MAX),
+			StratumId::Tenure | StratumId::WelatiLottery => {},
+		}
 		// `do_join` also requires session keys; arrange them here so this mirrors what
 		// the runtime's own `BenchmarkHelper` guarantees.
 		ensure_has_keys(*who);

@@ -15,6 +15,10 @@ impl<T: Config> Pezpallet<T> {
 	/// in `PoolMembers` with nothing to back a seat. Checking both places closes both the
 	/// entry and the standing-membership route to the same silent drop in session.
 	fn candidates(stratum: StratumId) -> Vec<T::AccountId> {
+		// The bond report, read once for the whole pool rather than once per member: it names
+		// up to `MaxBonded` accounts, and decoding it for each of a thousand members was the
+		// largest cost of a seating.
+		let bonded = BondedOnAssetHub::<T>::get();
 		PoolMembers::<T>::iter()
 			.take(T::MaxPoolSize::get() as usize)
 			.filter_map(|(who, s)| {
@@ -26,8 +30,9 @@ impl<T: Config> Pezpallet<T> {
 				// recognises -- and the disqualifying gates would disqualify nobody who was
 				// already inside, which is the whole of what they are for.
 				(s == stratum
+					&& bonded.as_ref().map_or(true, |b| b.contains(&who))
 					&& T::HasSessionKeys::has_keys(&who)
-					&& Self::eligible_for(&who, stratum).is_ok())
+					&& Self::stands_for(&who, stratum).is_ok())
 				.then_some(who)
 			})
 			.collect()

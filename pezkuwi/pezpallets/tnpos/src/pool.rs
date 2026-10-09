@@ -24,8 +24,14 @@ impl<T: Config> Pezpallet<T> {
 	/// chain cannot see the account's standing, the second says it has seen it and the
 	/// answer is no. Collapsing them would let an outage read as a judgement.
 	pub(crate) fn eligible_for(who: &T::AccountId, stratum: StratumId) -> Result<(), Error<T>> {
-		// Every stratum, every time: at the door and at each draw (spec C4).
+		// Every stratum: a candidacy needs a validator's bond on the Asset Hub (spec C4).
 		ensure!(Self::bonded_on_asset_hub(who), Error::<T>::NotBondedOnAssetHub);
+		Self::stands_for(who, stratum)
+	}
+
+	/// `stratum`'s own gate, without the bond: what the draw checks per candidate once it has
+	/// read the bond report a single time for the whole pool.
+	pub(crate) fn stands_for(who: &T::AccountId, stratum: StratumId) -> Result<(), Error<T>> {
 		let now = pezframe_system::Pezpallet::<T>::block_number();
 		let age = T::MaxScoreAge::get();
 		let fresh = |s: pezkuwi_tnpos_primitives::scores::ScoreSnapshot<BlockNumberFor<T>>| {

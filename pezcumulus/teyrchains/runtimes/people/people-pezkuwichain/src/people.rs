@@ -2027,6 +2027,17 @@ pezsp_runtime::impl_opaque_keys! {
 #[cfg(feature = "runtime-benchmarks")]
 pub struct TnposBenchmarkHelper;
 
+/// The origin `Tnpos::note_bonded` accepts, for benchmarks: the Asset Hub, as `BondOrigin`
+/// requires.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct TnposBondBenchmarkSetup;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_tnpos::BondBenchmarkSetup<RuntimeOrigin> for TnposBondBenchmarkSetup {
+	fn bond_origin() -> RuntimeOrigin {
+		pezpallet_xcm::Origin::Xcm(AssetHubLocation::get()).into()
+	}
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
 	fn make_eligible(who: &AccountId, stratum: pezkuwi_tnpos_primitives::StratumId) {
@@ -2073,12 +2084,52 @@ impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
 			},
 			// The remaining six reach this chain as trust standing until their own channels
 			// land; one write covers all of them.
-			StratumId::Meclis
-			| StratumId::Divan
-			| StratumId::WelatiLottery
-			| StratumId::Geography
-			| StratumId::Tenure
-			| StratumId::Infrastructure => {
+			// Four strata read a state rather than a score, and trust alone passes none of
+			// them: the benchmarks join Meclis, so with trust and nothing else every TNPoS
+			// benchmark measured a refusal or failed outright (weights run 37932288409).
+			StratumId::Meclis => {
+				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+				pezpallet_welati::ParliamentMembers::<Runtime>::mutate(|house| {
+					if !house.iter().any(|m| &m.account == who) {
+						let _ = house.try_push(pezpallet_welati::types::ParliamentMember {
+							account: who.clone(),
+							elected_at: 0,
+							term_ends_at: BlockNumber::MAX,
+							votes_participated: 0,
+							total_votes_eligible: 0,
+							participation_rate: 100,
+							committees: Default::default(),
+						});
+					}
+				});
+			},
+			StratumId::Divan => {
+				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+				// The court has eleven seats; past that the account stays off it, which the
+				// stratum's floor of three tolerates.
+				pezpallet_welati::DiwanMembers::<Runtime>::mutate(|court| {
+					if !court.iter().any(|m| &m.account == who) {
+						let _ = court.try_push(pezpallet_welati::types::DiwanMember {
+							account: who.clone(),
+							appointed_at: 0,
+							term_ends_at: BlockNumber::MAX,
+							appointed_by: pezpallet_welati::types::AppointmentAuthority::Parliament,
+						});
+					}
+				});
+			},
+			StratumId::Geography => {
+				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+				// Spread across all six regions, as the stratum's rotation needs.
+				let region = pezpallet_welati::types::Region::ALL
+					[(<AccountId as AsRef<[u8]>>::as_ref(who)[0] % 6) as usize];
+				pezpallet_welati::AttestedRegion::<Runtime>::insert(who, region);
+			},
+			StratumId::Infrastructure => {
+				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+				pezpallet_tnpos::SeatedSessions::<Runtime>::insert(who, u32::MAX);
+			},
+			StratumId::WelatiLottery | StratumId::Tenure => {
 				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
 			},
 		}
@@ -2158,6 +2209,8 @@ impl pezpallet_tnpos::Config for Runtime {
 	type MaxBonded = ConstU32<{ pezkuwi_tnpos_primitives::invariant::MAX_BONDED_REPORT }>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = TnposBenchmarkHelper;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BondBenchmarkHelper = TnposBondBenchmarkSetup;
 }
 
 /// How a key registration reaches the relay's session pallet.
@@ -2364,6 +2417,25 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	/// Seating runs in `on_initialize` and charges its worst case -- the full pool -- whether
+	/// or not the pool is full, as mandatory weight nothing can refuse. Above the block it
+	/// would make the era's first block unbuildable. Measured on 2026-10-09 it is about a
+	/// twelfth of the ref time and a third of the proof size; this fails if the pool bound
+	/// or the measured weight grows past the block.
+	#[test]
+	fn the_worst_seating_fits_in_one_block() {
+		use pezpallet_tnpos::WeightInfo as _;
+		let max = <Runtime as pezframe_system::Config>::BlockWeights::get().max_block;
+		let seating = crate::weights::pezpallet_tnpos::WeightInfo::<Runtime>::seat_committee(
+			TnposMaxPoolSize::get(),
+		);
+		assert!(seating.all_lte(max), "seating {seating:?} exceeds the block {max:?}");
+		let report = crate::weights::pezpallet_tnpos::WeightInfo::<Runtime>::note_bonded(
+			pezkuwi_tnpos_primitives::invariant::MAX_BONDED_REPORT,
+		);
+		assert!(report.all_lte(max), "a full bond report {report:?} exceeds the block {max:?}");
+	}
 
 	/// The Asset Hub builds `note_bonded` by hand as (83, 11, era, accounts) -- it cannot name
 	/// this runtime's types. This pins the receiving end: if the pallet moves or the call

@@ -72,5 +72,15 @@
 # Asked twice: the first run (37798217660) could not build the development preset's genesis --
 # its synthetic validators bonded below the new 10,000 HEZ floor -- fixed in the commit before.
 # Measured (run 37817572382): ~90 us plus ~11 us and one read per member, well above the
-# placeholder. The files are in the tree, so the list is empty again.
+# placeholder. The files are in the tree.
+#
+# 2026-10-09: `pezpallet_tnpos` on both People twins. `note_bonded` (the Asset Hub's bond report,
+# spec C4) has never been measured -- its weight is a ceiling -- and `seat_committee` now checks
+# every candidate against a full bond report, which its last measurement did not include.
+# Asked twice: the first run (37932288409) failed -- the runtime's benchmark helper gave trust
+# and nothing else, which passes none of the four strata that read a state; fixed before this.
+#
+# Measured (run 37942860046): `note_bonded` ~30 us plus ~0.19 us per reported account, and
+# `seat_committee` now ~34 ms plus ~61 us per pool member -- a full pool is about a twelfth of
+# a block. The files are in the tree and the pallet's `()` impl copies them.
 runs: []
