@@ -70,9 +70,6 @@
     "RUSTSEC-2025-0009",
     "RUSTSEC-2025-0010"
   ],
-  "rsa@0.9.10": [
-    "RUSTSEC-2023-0071"
-  ],
   "rustls-pemfile@1.0.4": [
     "RUSTSEC-2025-0134"
   ],
@@ -83,9 +80,6 @@
     "RUSTSEC-2026-0098",
     "RUSTSEC-2026-0099",
     "RUSTSEC-2026-0104"
-  ],
-  "smallstr@0.3.1": [
-    "RUSTSEC-2026-0215"
   ],
   "tracing-subscriber@0.2.25": [
     "GHSA-xwfj-jgwm-7wp5",

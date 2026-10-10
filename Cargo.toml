@@ -615,6 +615,7 @@ members = [
 	"templates/teyrchain/runtime",
 	"templates/zombienet",
 	"umbrella",
+	"vendor/scale-info-legacy",
 	"vendor/ss58-registry",
 	# Vendored pezkuwi-subxt crates
 	"vendor/pezkuwi-subxt/codegen",
@@ -1556,7 +1557,7 @@ smoldot = { version = "0.20.0", default-features = false }
 smoldot-light = { version = "0.18.0", default-features = false }
 soketto = { version = "0.8.0" }
 spinners = { version = "4.1.1" }
-sqlx = { version = "0.8.2" }
+sqlx = { version = "0.9.0" }
 ss58-registry = { package = "pezsp-ss58-registry", version = "1.52.0", default-features = false }
 ssz_rs = { version = "0.9.0", default-features = false }
 ssz_rs_derive = { version = "0.9.0", default-features = false }
@@ -1743,6 +1744,10 @@ zeroize = { opt-level = 3 }
 # serde_core doesn't properly export prelude traits for this target
 # See: https://github.com/pezkuwichain/serde/tree/fix-wasm32v1-none
 [patch.crates-io]
+# scale-info-legacy 0.4.2 (latest) depends on smallstr, which is unmaintained (RUSTSEC-2026-0215)
+# with no fixed release. The vendored copy swaps its one SmallString alias for String; drop the
+# patch once an upstream release no longer depends on smallstr.
+scale-info-legacy = { path = "vendor/scale-info-legacy" }
 serde = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 serde_core = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 # arrayvec was vendored because 0.7.6 failed on wasm32v1-none (E0223 ambiguity from the
