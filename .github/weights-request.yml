@@ -88,16 +88,8 @@
 # swapped the citizenship and trust checks for constants under `runtime-benchmarks` (`true`,
 # `true`, `100`), so the recorded weights never paid for the IdentityKyc and Trust reads the
 # real calls make. The stubs are gone; the benchmarks now make real citizens.
-runs:
-  - runtime: people-pezkuwichain
-    pallet: pezpallet_trust
-    why: citizenship check was a constant under runtime-benchmarks
-  - runtime: people-zagros
-    pallet: pezpallet_trust
-    why: citizenship check was a constant under runtime-benchmarks
-  - runtime: people-pezkuwichain
-    pallet: pezpallet_messaging
-    why: citizenship and trust checks were constants under runtime-benchmarks
-  - runtime: people-zagros
-    pallet: pezpallet_messaging
-    why: citizenship and trust checks were constants under runtime-benchmarks
+#
+# Measured (run 38003454834): messaging `register_encryption_key` and `send_message` came back at
+# ~1.8-2x the stubbed figures (reads 2->4, 4->7: `IdentityKyc::KycStatuses`, `Trust::TrustScores`),
+# trust `force_recalculate_trust_score` at ~1.4x (reads 3->4). The files are in the tree.
+runs: []
