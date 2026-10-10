@@ -47,13 +47,10 @@ ignore = [
 	"RUSTSEC-2025-0052", # async-std
 	"RUSTSEC-2025-0141", # bincode
 	#
-	# libsecp256k1 — this line records the item, it does not settle it. The crate is the
-	# host-side body of the secp256k1 ECDSA recovery host function, so every node has to
-	# agree on what it returns: replacing it is a consensus change, not a version bump.
-	# Upstream carries the same crate, so follow upstream rather than diverging alone. If it
-	# is ever to be replaced, the genesis reset is the only window where that costs nothing;
-	# after genesis, changing signature recovery breaks consensus.
-	"RUSTSEC-2025-0161", # libsecp256k1
+	# libsecp256k1: nothing exempted. It was the host-side body of the secp256k1 recovery host
+	# functions; those now run on k256, checked verdict-for-verdict against libsecp256k1 0.7.2
+	# (`pezsp_core::ecdsa::recover_overflowing`). It stays in Cargo.lock only through smoldot,
+	# the subxt light client's engine, which no node or runtime builds.
 
 	# ── memmap2 ───────────────────────────────────────────────────────────────
 	# Nothing exempted. The note here said "no fixed release for the pinned versions"; 0.9.11

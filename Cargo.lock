@@ -7949,6 +7949,7 @@ dependencies = [
  "once_cell",
  "serdect",
  "sha2 0.10.9",
+ "signature",
 ]
 
 [[package]]
@@ -14452,7 +14453,7 @@ dependencies = [
  "bitvec",
  "hex-literal",
  "impl-trait-for-tuples",
- "libsecp256k1",
+ "k256",
  "log",
  "parity-scale-codec",
  "pez-slot-range-helper",
@@ -15861,9 +15862,9 @@ dependencies = [
  "futures",
  "glob-match",
  "hex",
+ "k256",
  "lazy_static",
  "libp2p",
- "libsecp256k1",
  "multiaddr",
  "pezkuwi-subxt",
  "pezkuwi-subxt-signer",
@@ -21962,7 +21963,6 @@ dependencies = [
  "impl-serde",
  "itertools 0.11.0",
  "k256",
- "libsecp256k1",
  "log",
  "merlin",
  "parity-scale-codec",
@@ -22136,7 +22136,6 @@ dependencies = [
  "bytes",
  "docify",
  "ed25519-dalek",
- "libsecp256k1",
  "log",
  "parity-scale-codec",
  "pezsp-core",

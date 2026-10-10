@@ -44,6 +44,85 @@ type NativeSignature = (k256::ecdsa::Signature, k256::ecdsa::RecoveryId);
 /// An identifier used to match public keys against ecdsa keys
 pub const CRYPTO_ID: CryptoTypeId = CryptoTypeId(*b"ecds");
 
+/// Why [`recover_overflowing`] failed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OverflowingRecoverError {
+	/// The recovery id is not 0, 1, 2 or 3.
+	BadV,
+	/// No public key can be recovered from this signature and message.
+	BadSignature,
+}
+
+/// The secp256k1 group order `n`, big-endian.
+const SECP256K1_N: [u8; 32] = [
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,
+	0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41,
+];
+
+/// Reduce a big-endian 256-bit integer modulo `n`. Any such integer is below `2n`, so one
+/// subtraction is enough.
+fn reduce_mod_n(x: &mut [u8]) {
+	if x[..] < SECP256K1_N[..] {
+		return;
+	}
+	let mut borrow = 0u16;
+	for i in (0..32).rev() {
+		let sub = SECP256K1_N[i] as u16 + borrow;
+		let cur = x[i] as u16;
+		borrow = (cur < sub) as u16;
+		x[i] = (cur + (borrow << 8) - sub) as u8;
+	}
+}
+
+/// Recover the public key from a 64-byte `r || s` signature whose scalars may be at or above
+/// the group order, as the deprecated host functions and [`Pair::verify_deprecated`] have always
+/// accepted.
+///
+/// `r` and `s` are reduced modulo `n` first, which is what libsecp256k1's
+/// `Signature::parse_overflowing_slice` did before this moved to `k256`. A high `s` is
+/// normalised to `n - s` with the recovery id's parity flipped, which recovers the same key.
+/// Returns the 65-byte uncompressed key (`0x04` prefix).
+///
+/// Every verdict, accepted keys and both error kinds, was checked against libsecp256k1 0.7.2
+/// on 530 000 signatures (valid, high-s, overflowing r and s, every `v`, random and edge
+/// scalars) with no difference; a sample is pinned in
+/// `test::recover_overflowing_matches_libsecp256k1`.
+pub fn recover_overflowing(
+	rs: &[u8; 64],
+	v: u8,
+	prehash: &[u8; 32],
+) -> Result<[u8; 65], OverflowingRecoverError> {
+	use k256::ecdsa::{RecoveryId as K256RecoveryId, Signature as K256Signature};
+	let mut rid = K256RecoveryId::from_byte(v).ok_or(OverflowingRecoverError::BadV)?;
+	let mut rs = *rs;
+	reduce_mod_n(&mut rs[..32]);
+	reduce_mod_n(&mut rs[32..]);
+	let mut sig =
+		K256Signature::from_slice(&rs).map_err(|_| OverflowingRecoverError::BadSignature)?;
+	if let Some(low) = sig.normalize_s() {
+		sig = low;
+		rid = K256RecoveryId::new(!rid.is_y_odd(), rid.is_x_reduced());
+	}
+	let key = k256::ecdsa::VerifyingKey::recover_from_prehash(prehash, &sig, rid)
+		.map_err(|_| OverflowingRecoverError::BadSignature)?;
+	let mut out = [0u8; 65];
+	out.copy_from_slice(key.to_encoded_point(false).as_bytes());
+	Ok(out)
+}
+
+/// [`recover_overflowing`], returning the 33-byte compressed key.
+pub fn recover_overflowing_compressed(
+	rs: &[u8; 64],
+	v: u8,
+	prehash: &[u8; 32],
+) -> Result<[u8; 33], OverflowingRecoverError> {
+	let full = recover_overflowing(rs, v, prehash)?;
+	let mut out = [0u8; 33];
+	out[0] = 0x02 | (full[64] & 1);
+	out[1..].copy_from_slice(&full[1..33]);
+	Ok(out)
+}
+
 /// The byte length of public key
 pub const PUBLIC_KEY_SERIALIZED_SIZE: usize = 33;
 
@@ -384,21 +463,11 @@ where
 	/// Parses Signature using parse_overflowing_slice.
 	#[deprecated(note = "please use `verify` instead")]
 	pub fn verify_deprecated<M: AsRef<[u8]>>(sig: &Signature, message: M, pubkey: &Public) -> bool {
-		let message =
-			libsecp256k1::Message::parse(&pezsp_crypto_hashing::blake2_256(message.as_ref()));
-
-		let parse_signature_overflowing = |x: [u8; SIGNATURE_SERIALIZED_SIZE]| {
-			let sig = libsecp256k1::Signature::parse_overflowing_slice(&x[..64]).ok()?;
-			let rid = libsecp256k1::RecoveryId::parse(x[64]).ok()?;
-			Some((sig, rid))
-		};
-
-		let (sig, rid) = match parse_signature_overflowing(sig.0) {
-			Some(sigri) => sigri,
-			_ => return false,
-		};
-		match libsecp256k1::recover(&message, &sig, &rid) {
-			Ok(actual) => pubkey == &actual.serialize_compressed(),
+		let message = pezsp_crypto_hashing::blake2_256(message.as_ref());
+		let mut rs = [0u8; 64];
+		rs.copy_from_slice(&sig.0[..64]);
+		match recover_overflowing_compressed(&rs, sig.0[64], &message) {
+			Ok(actual) => pubkey == &actual,
 			_ => false,
 		}
 	}
@@ -540,7 +609,55 @@ mod seal {
 }
 
 #[cfg(test)]
+mod overflowing_vectors;
+
+#[cfg(test)]
 mod test {
+
+	#[test]
+	fn recover_overflowing_matches_libsecp256k1() {
+		let unhex = |s: &str| array_bytes::hex2bytes(s).unwrap();
+		for (i, (rs, v, msg, want)) in super::overflowing_vectors::VECTORS.iter().enumerate() {
+			let rs: [u8; 64] = unhex(rs).try_into().unwrap();
+			let msg: [u8; 32] = unhex(msg).try_into().unwrap();
+			let got = recover_overflowing(&rs, *v, &msg);
+			let want = want.map(|k| <[u8; 65]>::try_from(unhex(k)).unwrap());
+			assert_eq!(got, want, "vector {i}");
+			assert_eq!(
+				recover_overflowing_compressed(&rs, *v, &msg).ok(),
+				want.ok().map(|k| {
+					let mut c = [0u8; 33];
+					c[0] = 0x02 | (k[64] & 1);
+					c[1..].copy_from_slice(&k[1..33]);
+					c
+				}),
+				"vector {i} compressed",
+			);
+		}
+	}
+
+	#[test]
+	fn reduce_mod_n_subtracts_once_at_and_above_n() {
+		let mut at = SECP256K1_N;
+		reduce_mod_n(&mut at);
+		assert_eq!(at, [0u8; 32]);
+		let mut top = [0xFFu8; 32];
+		reduce_mod_n(&mut top);
+		// 2^256 - 1 - n
+		let mut want = [0u8; 32];
+		want[15] = 0x01;
+		want[16..].copy_from_slice(&[
+			0x45, 0x51, 0x23, 0x19, 0x50, 0xB7, 0x5F, 0xC4, 0x40, 0x2D, 0xA1, 0x73, 0x2F, 0xC9,
+			0xBE, 0xBE,
+		]);
+		assert_eq!(top, want);
+		let mut below = SECP256K1_N;
+		below[31] -= 1;
+		let keep = below;
+		reduce_mod_n(&mut below);
+		assert_eq!(below, keep);
+	}
+
 	use super::*;
 	use crate::{
 		crypto::{

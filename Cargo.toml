@@ -902,7 +902,6 @@ libfuzzer-sys = { version = "0.4" }
 libp2p = { version = "0.54.1" }
 libp2p-identity = { version = "0.2.9" }
 libp2p-kad = { version = "0.46.2", default-features = false }
-libsecp256k1 = { version = "0.7.0", default-features = false }
 linked-hash-map = { version = "0.5.4" }
 linked_hash_set = { version = "0.1.4" }
 linregress = { version = "0.5.1" }
@@ -1715,7 +1714,6 @@ integer-sqrt = { opt-level = 3 }
 keccak = { opt-level = 3 }
 libm = { opt-level = 3 }
 librocksdb-sys = { opt-level = 3 }
-libsecp256k1 = { opt-level = 3 }
 libz-sys = { opt-level = 3 }
 mio = { opt-level = 3 }
 nalgebra = { opt-level = 3 }

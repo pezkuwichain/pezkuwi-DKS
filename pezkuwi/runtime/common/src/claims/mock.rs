@@ -88,20 +88,20 @@ impl Config for Test {
 	type WeightInfo = TestWeightInfo;
 }
 
-pub fn alice() -> libsecp256k1::SecretKey {
-	libsecp256k1::SecretKey::parse(&keccak_256(b"Alice")).unwrap()
+pub fn alice() -> SecretKey {
+	secret(&keccak_256(b"Alice"))
 }
-pub fn bob() -> libsecp256k1::SecretKey {
-	libsecp256k1::SecretKey::parse(&keccak_256(b"Bob")).unwrap()
+pub fn bob() -> SecretKey {
+	secret(&keccak_256(b"Bob"))
 }
-pub fn dave() -> libsecp256k1::SecretKey {
-	libsecp256k1::SecretKey::parse(&keccak_256(b"Dave")).unwrap()
+pub fn dave() -> SecretKey {
+	secret(&keccak_256(b"Dave"))
 }
-pub fn eve() -> libsecp256k1::SecretKey {
-	libsecp256k1::SecretKey::parse(&keccak_256(b"Eve")).unwrap()
+pub fn eve() -> SecretKey {
+	secret(&keccak_256(b"Eve"))
 }
-pub fn frank() -> libsecp256k1::SecretKey {
-	libsecp256k1::SecretKey::parse(&keccak_256(b"Frank")).unwrap()
+pub fn frank() -> SecretKey {
+	secret(&keccak_256(b"Frank"))
 }
 
 // This function basically just builds a genesis storage key/value store according to
