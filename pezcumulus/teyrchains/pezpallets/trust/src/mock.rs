@@ -216,8 +216,9 @@ impl pezpallet_trust::TikiScoreProvider<u64> for MockTikiScoreProvider {
 pub struct MockCitizenshipStatusProvider;
 impl pezpallet_trust::CitizenshipStatusProvider<u64> for MockCitizenshipStatusProvider {
 	fn is_citizen(who: &u64) -> bool {
-		// For tests: accounts 1-100 are citizens, 999 is not
-		*who >= 1 && *who <= 100 && *who != 999
+		// For tests: accounts 1-100 are citizens, 999 is not -- and so is anyone with an
+		// approved KYC record, which is how the benchmarks make one.
+		(*who >= 1 && *who <= 100 && *who != 999) || IdentityKyc::is_citizen(who)
 	}
 }
 

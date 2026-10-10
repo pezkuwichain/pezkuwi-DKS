@@ -943,24 +943,12 @@ impl pezpallet_trust::TikiScoreProvider<AccountId> for TikiScoreSource {
 	}
 }
 
-/// Citizenship status source for Trust pezpallet - uses real IdentityKyc
-#[cfg(not(feature = "runtime-benchmarks"))]
+/// Citizenship status source for Trust pezpallet - uses real IdentityKyc, benchmarks included:
+/// the trust benchmark makes its caller a citizen through the KYC record this reads.
 pub struct CitizenshipSource;
-#[cfg(not(feature = "runtime-benchmarks"))]
 impl pezpallet_trust::CitizenshipStatusProvider<AccountId> for CitizenshipSource {
 	fn is_citizen(who: &AccountId) -> bool {
 		IdentityKyc::is_citizen(who)
-	}
-}
-
-/// Mock citizenship source for benchmarks - always returns true
-#[cfg(feature = "runtime-benchmarks")]
-pub struct CitizenshipSource;
-#[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_trust::CitizenshipStatusProvider<AccountId> for CitizenshipSource {
-	fn is_citizen(_who: &AccountId) -> bool {
-		// Always return true for benchmark purposes
-		true
 	}
 }
 
@@ -987,29 +975,17 @@ impl pezpallet_trust::Config for Runtime {
 // Messaging Pezpallet Configuration (PEZkurd-P2Pmessage)
 // =============================================================================
 
-/// Messaging citizenship checker — bridges to IdentityKyc pallet
-#[cfg(not(feature = "runtime-benchmarks"))]
+/// Messaging citizenship checker — bridges to IdentityKyc pallet. The same under
+/// `runtime-benchmarks`: the benchmarks make real citizens (`MessagingBenchmarkHelper`).
 pub struct MessagingCitizenshipChecker;
-#[cfg(not(feature = "runtime-benchmarks"))]
 impl pezpallet_messaging::types::CitizenshipChecker<AccountId> for MessagingCitizenshipChecker {
 	fn is_citizen(who: &AccountId) -> bool {
 		IdentityKyc::is_citizen(who)
 	}
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-pub struct MessagingCitizenshipChecker;
-#[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_messaging::types::CitizenshipChecker<AccountId> for MessagingCitizenshipChecker {
-	fn is_citizen(_who: &AccountId) -> bool {
-		true
-	}
-}
-
-/// Messaging trust score checker — bridges to Trust pallet
-#[cfg(not(feature = "runtime-benchmarks"))]
+/// Messaging trust score checker — bridges to Trust pallet, benchmarks included.
 pub struct MessagingTrustScoreChecker;
-#[cfg(not(feature = "runtime-benchmarks"))]
 impl pezpallet_messaging::types::TrustScoreChecker<AccountId> for MessagingTrustScoreChecker {
 	fn trust_score_of(who: &AccountId) -> u32 {
 		// Trust pallet returns u128, we cap at u32::MAX for messaging
@@ -1018,12 +994,21 @@ impl pezpallet_messaging::types::TrustScoreChecker<AccountId> for MessagingTrust
 	}
 }
 
+/// Benchmarks run the real checkers above, so they need real citizens: an approved KYC record
+/// and a trust score that clears `MessagingMinTrustScore`.
 #[cfg(feature = "runtime-benchmarks")]
-pub struct MessagingTrustScoreChecker;
+pub struct MessagingBenchmarkHelper;
 #[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_messaging::types::TrustScoreChecker<AccountId> for MessagingTrustScoreChecker {
-	fn trust_score_of(_who: &AccountId) -> u32 {
-		100 // High trust for benchmarks
+impl pezpallet_messaging::types::BenchmarkHelper<AccountId> for MessagingBenchmarkHelper {
+	fn make_citizen(who: &AccountId) {
+		pezpallet_identity_kyc::KycStatuses::<Runtime>::insert(
+			who,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
+		pezpallet_trust::TrustScores::<Runtime>::insert(
+			who,
+			u128::from(MessagingMinTrustScore::get()).saturating_mul(10),
+		);
 	}
 }
 
@@ -1052,6 +1037,8 @@ impl pezpallet_messaging::Config for Runtime {
 	type MaxInboxSize = MessagingMaxInboxSize;
 	type MaxMessagesPerEra = MessagingMaxMessagesPerEra;
 	type EraLength = MessagingEraLength;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = MessagingBenchmarkHelper;
 }
 
 // =============================================================================

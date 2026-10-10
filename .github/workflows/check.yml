@@ -396,6 +396,35 @@ jobs:
             -p coretime-pezkuwichain-runtime -p coretime-zagros-runtime \
             -p collectives-zagros-runtime
 
+  # Our own pallets' benchmark tests. `impl_benchmark_test_suite!` only compiles under
+  # `runtime-benchmarks`, and until this job nothing ran tests with that feature: the job above
+  # only *checks* the runtimes, and the weekly suite tests without it. Measured 2026-10-10: five
+  # benchmarks in three pallets (messaging, token-wrapper, trust) failed against their own
+  # mocks, and six in TNPoS had been failing on main until the day before -- found only because
+  # a weights run stopped hours in. A benchmark that cannot run is a weight nobody can
+  # regenerate, so they are tested where every push is.
+  #
+  # The list is every pallet we wrote that has benchmarks (`pez-facts`); one added later is
+  # added here, or it has a gap nobody chose.
+  test-pallet-benchmarks:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, bizinikiwi-build]
+    steps:
+      - uses: actions/checkout@v7
+      # Same reason as `check-runtime-benchmarks`: the feature reaches `pallet-revive`'s
+      # Solidity fixtures, and skipping them would report green over code it never built.
+      - uses: ./.github/actions/install-solidity
+      - name: Tests with runtime-benchmarks, our pallets
+        run: |
+          cargo test --locked --features runtime-benchmarks --lib \
+            -p pezpallet-tnpos -p pezpallet-komite -p pezpallet-collective-content \
+            -p pezpallet-identity-kyc -p pezpallet-messaging -p pezpallet-perwerde \
+            -p pezpallet-pez-rewards -p pezpallet-pez-treasury -p pezcumulus-ping \
+            -p pezpallet-referral -p pezpallet-staking-score -p pezpallet-tiki \
+            -p pezpallet-token-wrapper -p pezpallet-trust -p pezpallet-welati
+
   # The jobs above name the packages they care about. Between them they pull in 503 of the
   # workspace's 616 crates, which leaves 113 that nothing on this path compiles — among them
   # all 27 crates of the emulated integration-test tree, 29 pallets and 15 client crates.

@@ -25,8 +25,7 @@ mod benchmarks {
 	#[benchmark]
 	fn register_encryption_key() {
 		let caller: T::AccountId = whitelisted_caller();
-		// NOTE: In real benchmarks, caller must be mocked as citizen.
-		// This requires BenchmarkHelper trait integration (future work).
+		T::BenchmarkHelper::make_citizen(&caller);
 		let key = [1u8; 32];
 
 		#[extrinsic_call]
@@ -44,6 +43,10 @@ mod benchmarks {
 		let nonce = [4u8; 24];
 		let ciphertext = alloc::vec![0xAB; l as usize];
 
+		// Both ends are checked: the sender for citizenship and trust, the recipient for
+		// citizenship.
+		T::BenchmarkHelper::make_citizen(&sender);
+		T::BenchmarkHelper::make_citizen(&recipient);
 		// Pre-setup: register encryption keys
 		EncryptionKeys::<T>::insert(&sender, [1u8; 32]);
 		EncryptionKeys::<T>::insert(&recipient, key);

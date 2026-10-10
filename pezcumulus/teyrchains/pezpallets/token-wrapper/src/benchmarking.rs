@@ -20,11 +20,15 @@ mod benchmarks {
 	fn wrap() {
 		let caller: T::AccountId = whitelisted_caller();
 		let pezpallet_account = Pezpallet::<T>::account_id();
-		let amount = 10_000u32.into();
+		let amount: <T::Currency as Currency<T::AccountId>>::Balance = 10_000u32.into();
 
 		// Fund both caller and pezpallet account
+		// A thousand existential deposits, and always more than `amount`: with a deposit of one
+		// (the mock's) a thousand alone was below the ten thousand being wrapped and the call
+		// failed `InsufficientBalance` -- in a test nothing in CI ran.
 		let funding = <T::Currency as Currency<T::AccountId>>::minimum_balance()
-			.saturating_mul(1000u32.into());
+			.saturating_mul(1000u32.into())
+			.saturating_add(amount.saturating_mul(10u32.into()));
 
 		T::Currency::make_free_balance_be(&caller, funding);
 		T::Currency::make_free_balance_be(&pezpallet_account, funding);
@@ -48,11 +52,15 @@ mod benchmarks {
 	fn unwrap() {
 		let caller: T::AccountId = whitelisted_caller();
 		let pezpallet_account = Pezpallet::<T>::account_id();
-		let amount = 10_000u32.into();
+		let amount: <T::Currency as Currency<T::AccountId>>::Balance = 10_000u32.into();
 
 		// Fund both accounts
+		// A thousand existential deposits, and always more than `amount`: with a deposit of one
+		// (the mock's) a thousand alone was below the ten thousand being wrapped and the call
+		// failed `InsufficientBalance` -- in a test nothing in CI ran.
 		let funding = <T::Currency as Currency<T::AccountId>>::minimum_balance()
-			.saturating_mul(1000u32.into());
+			.saturating_mul(1000u32.into())
+			.saturating_add(amount.saturating_mul(10u32.into()));
 
 		T::Currency::make_free_balance_be(&caller, funding);
 		T::Currency::make_free_balance_be(&pezpallet_account, funding);

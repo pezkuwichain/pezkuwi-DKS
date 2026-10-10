@@ -83,4 +83,13 @@
 # Measured (run 37942860046): `note_bonded` ~30 us plus ~0.19 us per reported account, and
 # `seat_committee` now ~34 ms plus ~61 us per pool member -- a full pool is about a twelfth of
 # a block. The files are in the tree and the pallet's `()` impl copies them.
+#
+# 2026-10-10: `pezpallet_trust` and `pezpallet_messaging` on both People twins. Both runtimes
+# swapped the citizenship and trust checks for constants under `runtime-benchmarks` (`true`,
+# `true`, `100`), so the recorded weights never paid for the IdentityKyc and Trust reads the
+# real calls make. The stubs are gone; the benchmarks now make real citizens.
+#
+# Measured (run 38003454834): messaging `register_encryption_key` and `send_message` came back at
+# ~1.8-2x the stubbed figures (reads 2->4, 4->7: `IdentityKyc::KycStatuses`, `Trust::TrustScores`),
+# trust `force_recalculate_trust_score` at ~1.4x (reads 3->4). The files are in the tree.
 runs: []
