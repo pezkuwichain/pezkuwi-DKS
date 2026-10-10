@@ -1197,7 +1197,7 @@ bizinikiwi-test-runtime-transaction-pool = { path = "bizinikiwi/test-utils/runti
 bizinikiwi-test-utils = { path = "bizinikiwi/test-utils", version = "4.0.0-dev" }
 bizinikiwi-wasm-builder = { path = "bizinikiwi/utils/wasm-builder", version = "17.0.0", default-features = false }
 parity-bytes = { version = "0.1.2", default-features = false }
-parity-db = { version = "0.4.12" }
+parity-db = { version = "0.5.7" }
 parity-wasm = { version = "0.45.0" }
 parking_lot = { version = "0.12.1", default-features = false }
 partial_sort = { version = "0.2.0" }

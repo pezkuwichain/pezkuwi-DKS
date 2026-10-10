@@ -5654,7 +5654,7 @@ dependencies = [
  "foldhash 0.2.0",
  "libm",
  "portable-atomic",
- "siphasher 1.0.1",
+ "siphasher",
 ]
 
 [[package]]
@@ -6882,7 +6882,7 @@ checksum = "6e8319f3cc8fe416e7aa1ab95dcc04fd49f35397a47d0b2f0f225f6dba346a07"
 dependencies = [
  "arbitrary",
  "lazy_static",
- "memmap2 0.9.11",
+ "memmap2",
  "rustc_version 0.4.1",
  "semver 1.0.27",
 ]
@@ -9116,15 +9116,6 @@ dependencies = [
 
 [[package]]
 name = "memmap2"
-version = "0.5.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83faa42c0a078c393f6b29d5db232d8be22776a891f8f56e5284faee4a20b327"
-dependencies = [
- "libc",
-]
-
-[[package]]
-name = "memmap2"
 version = "0.9.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1219ed1b7f229ee7104d281dd01d6802fe28bb6e95d292942c4daacdeb798c0"
@@ -9956,10 +9947,11 @@ checksum = "16b56e3a2420138bdb970f84dfb9c774aea80fa0e7371549eedec0d80c209c67"
 
 [[package]]
 name = "parity-db"
-version = "0.4.13"
+version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "592a28a24b09c9dc20ac8afaa6839abc417c720afe42c12e1e4a9d6aa2508d2e"
+checksum = "7697e37afbb7410115e32f2da9a96e908a601d103c7c769540ad08bb8406aa0c"
 dependencies = [
+ "ahash 0.8.12",
  "blake2 0.10.6",
  "crc32fast",
  "fs2",
@@ -9967,10 +9959,10 @@ dependencies = [
  "libc",
  "log",
  "lz4",
- "memmap2 0.5.10",
+ "memmap2",
  "parking_lot 0.12.5",
- "rand 0.8.6",
- "siphasher 0.3.11",
+ "rand 0.9.4",
+ "siphasher",
  "snap",
  "winapi",
 ]
@@ -19663,7 +19655,7 @@ dependencies = [
  "bizinikiwi-test-runtime",
  "clap",
  "docify",
- "memmap2 0.9.11",
+ "memmap2",
  "parity-scale-codec",
  "pezsc-chain-spec-derive",
  "pezsc-client-api",
@@ -22954,7 +22946,7 @@ version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67eabc2ef2a60eb7faa00097bd1ffdb5bd28e62bf39990626a582201b7a754e5"
 dependencies = [
- "siphasher 1.0.1",
+ "siphasher",
 ]
 
 [[package]]
@@ -25959,12 +25951,6 @@ dependencies = [
 
 [[package]]
 name = "siphasher"
-version = "0.3.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38b58827f4464d87d377d175e90bf58eb00fd8716ff0a62f80356b5e61555d0d"
-
-[[package]]
-name = "siphasher"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
@@ -26060,7 +26046,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "sha3 0.10.8",
- "siphasher 1.0.1",
+ "siphasher",
  "slab",
  "smallvec",
  "soketto",
@@ -26121,7 +26107,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "sha3 0.10.8",
- "siphasher 1.0.1",
+ "siphasher",
  "slab",
  "smallvec",
  "soketto",
@@ -26160,7 +26146,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "serde",
  "serde_json",
- "siphasher 1.0.1",
+ "siphasher",
  "slab",
  "smol",
  "smoldot 0.20.0",
@@ -26196,7 +26182,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "serde",
  "serde_json",
- "siphasher 1.0.1",
+ "siphasher",
  "slab",
  "smol",
  "smoldot 2.2.0",
@@ -26965,7 +26951,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "520cf51c674f8b93d533f80832babe413214bb766b6d7cb74ee99ad2971f8467"
 dependencies = [
  "debugid",
- "memmap2 0.9.11",
+ "memmap2",
  "stable_deref_trait",
  "uuid",
 ]
