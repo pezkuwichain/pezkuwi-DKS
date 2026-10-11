@@ -523,7 +523,6 @@ def print_flows():
 # Placements that differ on purpose, with the reason. Anything not here that differs is a gap.
 DELIBERATE = {
     ("Sudo", "asset-hub-zagros"): "testnet only",
-    ("AhOps", "asset-hub-zagros"): "testnet only",
     ("ToPezkuwichainXcmRouter", "asset-hub-zagros"): "the bridge points the other way",
     ("ToZagrosXcmRouter", "asset-hub-pezkuwichain"): "the bridge points the other way",
     ("EthereumInboundQueueV2", "bridge-hub-zagros"): "Snowbridge v2, testnet only",

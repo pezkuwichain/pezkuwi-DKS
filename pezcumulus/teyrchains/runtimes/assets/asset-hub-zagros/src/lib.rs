@@ -1737,12 +1737,6 @@ impl pezpallet_revive::Config for Runtime {
 	type DebugEnabled = ConstBool<false>;
 }
 
-impl pezpallet_ah_ops::Config for Runtime {
-	type Currency = Balances;
-	type RcBlockNumberProvider = RelaychainDataProvider<Runtime>;
-	type WeightInfo = weights::pezpallet_ah_ops::WeightInfo<Runtime>;
-}
-
 impl pezpallet_sudo::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
@@ -1958,7 +1952,6 @@ construct_runtime!(
 		// TODO: the pezpallet instance should be removed once all pools have migrated
 		// to the new account IDs.
 		AssetConversionMigration: pezpallet_asset_conversion_ops = 200,
-		AhOps: pezpallet_ah_ops = 254,
 	}
 );
 
@@ -1992,13 +1985,24 @@ pub type TxExtension = pezcumulus_pezpallet_weight_reclaim::StorageWeightReclaim
 pub type UncheckedExtrinsic =
 	pezpallet_revive::evm::runtime::UncheckedExtrinsic<Address, Signature, EthExtraImpl>;
 
+parameter_types! {
+	/// `AhOps` (index 254) served the relay-to-Asset-Hub migration: it unlocks lease and
+	/// crowdloan reserves that the migrator crates write into its storage. Neither migrator is in
+	/// this tree, so nothing ever wrote there; the live chain held only the pallet's storage
+	/// version. The pallet is gone and this clears that key. Once a release carrying it has run
+	/// on Zagros, the entry and this parameter can go.
+	pub const AhOpsPalletName: &'static str = "AhOps";
+}
+
 /// Migrations to apply on runtime upgrade.
 ///
-/// Only the permanent ones remain. The one-off entries were removed with the genesis reset: each
-/// converted state that only the chain before the reset had, and a chain born from this
-/// runtime's genesis starts with every pallet at its in-code storage version and none of that
-/// state.
+/// Only the permanent ones remain, and the removal of `AhOps`, which the live chain still
+/// carries. The one-off entries were removed with the genesis reset: each converted state that
+/// only the chain before the reset had, and a chain born from this runtime's genesis starts with
+/// every pallet at its in-code storage version and none of that state.
 pub type Migrations = (
+	// unreleased
+	pezframe_support::migrations::RemovePallet<AhOpsPalletName, RocksDbWeight>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 );
@@ -2124,7 +2128,6 @@ mod benches {
 		[pezpallet_election_provider_multi_block::signed, MultiBlockElectionSigned]
 		[pezpallet_nomination_pools, NominationPoolsBench::<Runtime>]
 		[pezpallet_migrations, MultiBlockMigrations]
-		[pezpallet_ah_ops, AhOps]
 		[pezpallet_sudo, Sudo]
 		// PezkuwiChain Custom Pallets
 		[pezpallet_komite, Komite]

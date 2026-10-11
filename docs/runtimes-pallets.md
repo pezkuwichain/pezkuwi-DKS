@@ -283,9 +283,6 @@
 #### Migrations (Index 200)
 - **AssetConversionMigration** (200) - pallet_asset_conversion_ops
 
-#### Admin Operations (Index 254)
-- **AhOps** (254) - pallet_ah_ops
-
 ---
 
 ## 5. People PezkuwiChain Teyrchain Runtime

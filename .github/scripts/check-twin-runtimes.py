@@ -31,8 +31,6 @@ PAIRS = [
 ACCEPTED = {
 	("asset-hub", "Sudo"):
 		"Zagros keeps sudo as a testnet; mainnet's Asset Hub must never have one.",
-	("asset-hub", "AhOps"):
-		"Migration operations pallet, testnet only.",
 	("bridge-hub", "EthereumSystemV2"):
 		"Snowbridge v2 is installed on Zagros only. Recorded as an open item: the same three "
 		"pallets have to reach bridge-hub-pezkuwichain, at these indices.",

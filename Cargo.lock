@@ -1832,7 +1832,6 @@ dependencies = [
  "pezkuwi-teyrchain-primitives",
  "pezkuwi-tnpos-primitives",
  "pezkuwichain-runtime-constants",
- "pezpallet-ah-ops",
  "pezpallet-asset-conversion",
  "pezpallet-asset-conversion-ops",
  "pezpallet-asset-conversion-tx-payment",
