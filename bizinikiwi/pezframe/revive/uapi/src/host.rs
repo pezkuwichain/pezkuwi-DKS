@@ -122,7 +122,8 @@ pub trait HostFn: private::Sealed {
 	///
 	/// Adds the EVM gas stipend for non-zero value calls.
 	///
-	/// If gas is `u64::MAX`, the call will run with uncapped limits.
+	/// If gas is `u64::MAX`, the call will run with uncapped limits. A non-zero value call
+	/// still reserves the stipend then, so it needs the same weight as with a finite gas argument.
 	fn call_evm(
 		flags: CallFlags,
 		callee: &[u8; 20],

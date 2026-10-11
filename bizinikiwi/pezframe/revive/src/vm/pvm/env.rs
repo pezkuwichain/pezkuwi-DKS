@@ -329,13 +329,21 @@ pub mod env {
 	) -> Result<ReturnErrorCode, TrapReason> {
 		let (input_data_len, input_data_ptr) = extract_hi_lo(input_data);
 		let (output_len_ptr, output_ptr) = extract_hi_lo(output_data);
-		let resources = if gas == u64::MAX {
+		// What this call is charged must not depend on whether `gas` is `u64::MAX`. A contract
+		// forwarding `gas_left()` passes `u64::MAX` whenever the deposit limit is unbounded --
+		// which is how `ReviveApi_call` dry-runs -- and a finite value once the call is submitted
+		// with a real deposit limit. If the uncapped case skipped the value read or the stipend,
+		// the dry run would report less weight than the submitted call needs, and the call would
+		// run out of gas at exactly the weight it was told to bring.
+		self.charge_gas(RuntimeCosts::CopyFromContract(32))?;
+		let value = memory.read_u256(value_ptr)?;
+		// We also need to detect the 2300: We need to add something scaled.
+		let add_stipend = !value.is_zero() || gas == revm::interpreter::gas::CALL_STIPEND;
+		let resources = if gas == u64::MAX && !add_stipend {
 			CallResources::NoLimits
 		} else {
-			self.charge_gas(RuntimeCosts::CopyFromContract(32))?;
-			let value = memory.read_u256(value_ptr)?;
-			// We also need to detect the 2300: We need to add something scaled.
-			let add_stipend = !value.is_zero() || gas == revm::interpreter::gas::CALL_STIPEND;
+			// With `gas == u64::MAX` this caps nothing -- the nested frame gets everything that
+			// is left -- but it still reserves the stipend a value transfer is owed.
 			CallResources::from_ethereum_gas(gas.into(), add_stipend)
 		};
 
