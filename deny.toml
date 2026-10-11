@@ -67,48 +67,13 @@ ignore = [
 	# not have to wait: 0183 and 0184 are fixed in 0.21.0, which the workspace pins. One crate
 	# uses it, `revive/rpc`'s build script, and only to read the branch and commit id.
 
-	# ── hickory DNS ───────────────────────────────────────────────────────────
-	# 0119 lands on `hickory-proto` 0.24.4, which arrives only through `libp2p-dns` ->
-	# `libp2p`. The node compiles both P2P stacks but runs one, and the default is litep2p,
-	# which resolves `hickory-proto` 0.26.1 -- the release that fixes this. So the whole of
-	# the exemption rests on that default, and on nothing else: a node started with
-	# `--network-backend libp2p` is running the affected code.
-	#
-	# That default is not left to be remembered. `pezsc_network::config::tests::
-	# the_default_network_backend_is_litep2p` fails if it ever flips, which is the case that
-	# would otherwise move every node onto the vulnerable stack while this file stayed green
-	# -- the gate reasons about the dependency graph, not about which half of it runs.
-	#
-	# Measure before trusting this entry:
-	#   cargo tree -i hickory-proto@0.24.4     # must show only the libp2p path
-	# 0118 was here too and never matched our graph; cargo-deny reported it as
-	# `advisory-not-detected` on every run, so it is gone. A dead entry is a warning that
-	# teaches you to skim the live ones.
-	"RUSTSEC-2026-0119", # hickory: O(n^2) name-compression CPU exhaustion
-
-	# ── when these two entries close ──────────────────────────────────────────
-	# Measured 2026-09-09, and written here because an exemption without an end is the worst
-	# kind: upstream `stable2606`, the release this fork syncs to, pins `libp2p = "0.54.1"` --
-	# the same version we carry. So upgrading libp2p would not be following upstream, it would
-	# be leaving it, alone, in the crate that carries the node's networking, to repair a stack
-	# the nodes do not run. Deleting it instead means deleting the crate's original
-	# implementation (litep2p lives in its own subtree; libp2p is the body of the crate) and
-	# re-resolving that deletion on every framework sync, forever.
-	#
-	# So neither was done, and the trigger is upstream's: **when polkadot-sdk moves libp2p, we
-	# take it with the sync**, not as a separate job. Until then the tolerance rests on the
-	# default backend, and the default is held by a test.
-	#
-	# What did change: a node started with `--network-backend libp2p` now says so at `error!`
-	# level from `NetworkWorker::new`, the one constructor every path to that backend passes
-	# through. The residual risk was never the advisory -- it was a misconfiguration nobody
-	# could see.
-	#
-	# OSV holds another on the same path, outside RustSec and so recorded only in
-	# `.github/scripts/osv-baseline.json`: GHSA-5j98-2g5x-46v6 on `hickory-resolver` 0.24.4
-	# (lookups hide whether DNSSEC validated; fixed only in 0.26.2). It rests on the same
-	# default and closes with the same libp2p move. litep2p's resolver was bumped past it
-	# (0.26.3) on 2026-10-07, the day the advisory reached the gate.
+	# ── hickory DNS / libp2p ──────────────────────────────────────────────────
+	# Nothing exempted. RUSTSEC-2026-0119 (`hickory-proto` 0.24.4) was tolerated while the
+	# rust-libp2p backend was compiled in beside litep2p and kept from running only by the
+	# default backend. That backend was removed on 2026-10-11, and with it `libp2p-dns`, the
+	# only path to hickory 0.24; litep2p resolves `hickory-proto` 0.26.3. The OSV-only entries on
+	# the same stack (`hickory-resolver` 0.24.4, `libp2p-quic` 0.11.1, `yamux` 0.12.1,
+	# `ring` 0.16.20, and `h2` 0.3.27 behind libp2p-upnp) left `.github/scripts/osv-baseline.json` in the same change.
 ]
 
 # License compliance

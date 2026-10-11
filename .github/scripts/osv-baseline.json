@@ -14,24 +14,11 @@
   "fxhash@0.2.1": [
     "RUSTSEC-2025-0057"
   ],
-  "h2@0.3.27": [
-    "RUSTSEC-2026-0258"
-  ],
-  "hickory-proto@0.24.4": [
-    "GHSA-q2qq-hmj6-3wpp",
-    "RUSTSEC-2026-0119"
-  ],
-  "hickory-resolver@0.24.4": [
-    "GHSA-5j98-2g5x-46v6"
-  ],
   "instant@0.1.13": [
     "RUSTSEC-2024-0384"
   ],
   "jsonwebtoken@9.3.1": [
     "GHSA-h395-gr6q-cpjc"
-  ],
-  "libp2p-quic@0.11.1": [
-    "GHSA-5hq8-qhww-jm7q"
   ],
   "libsecp256k1@0.7.2": [
     "RUSTSEC-2025-0161"
@@ -59,24 +46,8 @@
   "proc-macro-error@1.0.4": [
     "RUSTSEC-2024-0370"
   ],
-  "ring@0.16.20": [
-    "GHSA-4p46-pwfr-66x6",
-    "RUSTSEC-2025-0009",
-    "RUSTSEC-2025-0010"
-  ],
-  "rustls-webpki@0.101.7": [
-    "GHSA-82j2-j2ch-gfr8",
-    "GHSA-965h-392x-2mh5",
-    "GHSA-xgp8-3hg3-c2mh",
-    "RUSTSEC-2026-0098",
-    "RUSTSEC-2026-0099",
-    "RUSTSEC-2026-0104"
-  ],
   "tracing-subscriber@0.2.25": [
     "GHSA-xwfj-jgwm-7wp5",
     "RUSTSEC-2025-0055"
-  ],
-  "yamux@0.12.1": [
-    "GHSA-vxx9-2994-q338"
   ]
 }
