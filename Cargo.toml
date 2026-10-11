@@ -1201,7 +1201,7 @@ bizinikiwi-wasm-builder = { path = "bizinikiwi/utils/wasm-builder", version = "1
 parity-bytes = { version = "0.1.2", default-features = false }
 parity-db = { version = "0.5.7" }
 parking_lot = { version = "0.12.1", default-features = false }
-paste = { version = "1.0.15", default-features = false }
+paste = { path = "vendor/paste", version = "1.0.15", default-features = false }
 pbkdf2 = { version = "0.12.2", default-features = false }
 people-pezkuwichain-emulated-chain = { version = "0.1.0", path = "pezcumulus/teyrchains/integration-tests/emulated/chains/teyrchains/people/people-pezkuwichain" }
 people-pezkuwichain-runtime = { version = "0.1.0", path = "pezcumulus/teyrchains/runtimes/people/people-pezkuwichain" }
@@ -1523,7 +1523,7 @@ scale-bits = { version = "0.7.0", default-features = false }
 scale-decode = { version = "0.16.2", default-features = false }
 scale-encode = { version = "0.10.0", default-features = false }
 scale-info = { version = "2.11.6", default-features = false }
-scale-info-legacy = { version = "0.4.0", default-features = false }
+scale-info-legacy = { path = "vendor/scale-info-legacy", version = "0.4.0", default-features = false }
 scale-type-resolver = { version = "0.2.0" }
 scale-typegen = { version = "0.12.0" }
 scale-value = { version = "0.18.1", default-features = false }
@@ -1610,7 +1610,7 @@ tower-http = { version = "0.5.2" }
 tracing = { version = "0.1.37", default-features = false }
 tracing-core = { version = "0.1.32", default-features = false }
 tracing-futures = { version = "0.2.4" }
-tracing-log = { version = "0.2.0" }
+tracing-log = { path = "vendor/tracing-log", version = "0.2.0" }
 tracing-subscriber = { version = "0.3.20" }
 tracking-allocator = { version = "2.0.0", path = "pezkuwi/node/tracking-allocator", default-features = false, package = "pezstaging-tracking-allocator" }
 trie-bench = { version = "=0.42.0" }
