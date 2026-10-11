@@ -1,0 +1,26 @@
+[package]
+name = "fxprof-processed-profile"
+version = "0.6.0"
+edition = "2021"
+rust-version = "1.58"
+authors = ["Markus Stange <mstange.moz@gmail.com>"]
+description = "Create profiles in the Firefox Profiler's processed profile JSON format."
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/mstange/samply/"
+publish = false
+
+# Vendored from fxprof-processed-profile 0.6.0, the version wasmtime 36's `profiling` feature
+# pins, for one change: its FxHasher came from fxhash, which is unmaintained
+# (RUSTSEC-2025-0057). It now comes from rustc-hash 1.1, the same Fx algorithm, so the hash maps
+# and therefore the profile JSON stay as they were. See src/fast_hash_map.rs.
+
+[dependencies]
+bitflags = { version = "2.0" }
+debugid = { version = "0.8.0" }
+rustc-hash = { version = "1.1.0" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
+
+[dev-dependencies]
+assert-json-diff = { version = "2.0.1" }

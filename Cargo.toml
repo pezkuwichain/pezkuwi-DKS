@@ -615,6 +615,7 @@ members = [
 	"templates/teyrchain/runtime",
 	"templates/zombienet",
 	"umbrella",
+	"vendor/fxprof-processed-profile",
 	"vendor/paste",
 	"vendor/scale-info-legacy",
 	"vendor/ss58-registry",
@@ -1751,6 +1752,9 @@ paste = { path = "vendor/paste" }
 # use-after-free fixed in lru 0.16.3; pezsc-tracing enables that cache. The vendored copy moves
 # it to lru 0.18. Drop the patch once a tracing-log release does.
 tracing-log = { path = "vendor/tracing-log" }
+# wasmtime 36 profiling pins fxprof-processed-profile 0.6, which hashes with fxhash
+# (unmaintained, RUSTSEC-2025-0057). The vendored copy takes the same FxHasher from rustc-hash.
+fxprof-processed-profile = { path = "vendor/fxprof-processed-profile" }
 serde = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 serde_core = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 # arrayvec was vendored because 0.7.6 failed on wasm32v1-none (E0223 ambiguity from the
