@@ -21,7 +21,7 @@ futures = { workspace = true }
 glob-match = { workspace = true }
 hex = { workspace = true }
 k256 = { workspace = true, default-features = true, features = ["ecdsa"] }
-libp2p = { workspace = true }
+libp2p-identity = { features = ["ed25519", "peerid"], workspace = true }
 multiaddr = { workspace = true }
 pezkuwi-subxt = { workspace = true, features = ["jsonrpsee", "native"] }
 pezkuwi-subxt-signer = { workspace = true }
