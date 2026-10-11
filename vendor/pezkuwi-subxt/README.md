@@ -10,7 +10,6 @@ Subxt is a library for interacting with [Bizinikiwi](https://github.com/pezkuwic
 - Do all of the above via a safe, statically typed interface or via a dynamic one when you need the flexibility.
 - Compile to WASM and run entirely in the browser.
 - Do a bunch of things in a `#[no_std]` environment via the `subxt-core` crate.
-- Use a built-in light client (`smoldot`) to interact with chains.
 
 ## Usage
 

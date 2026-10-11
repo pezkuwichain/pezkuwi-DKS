@@ -134,7 +134,6 @@ std = [
 	"pezkuwi-statement-table?/std",
 	"pezkuwi-subxt-codegen?/std",
 	"pezkuwi-subxt-core?/std",
-	"pezkuwi-subxt-lightclient?/std",
 	"pezkuwi-subxt-macro?/std",
 	"pezkuwi-subxt-metadata?/std",
 	"pezkuwi-subxt-rpcs?/std",
@@ -1137,7 +1136,6 @@ serde = [
 	"pezkuwi-statement-table?/serde",
 	"pezkuwi-subxt-codegen?/serde",
 	"pezkuwi-subxt-core?/serde",
-	"pezkuwi-subxt-lightclient?/serde",
 	"pezkuwi-subxt-macro?/serde",
 	"pezkuwi-subxt-metadata?/serde",
 	"pezkuwi-subxt-rpcs?/serde",
@@ -2136,7 +2134,6 @@ node = [
 	"pezkuwi-statement-table",
 	"pezkuwi-subxt",
 	"pezkuwi-subxt-codegen",
-	"pezkuwi-subxt-lightclient",
 	"pezkuwi-subxt-rpcs",
 	"pezkuwi-subxt-utils-fetchmetadata",
 	"pezkuwi-subxt-utils-stripmetadata",
@@ -4343,12 +4340,6 @@ version = "0.44.0"
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/codegen"
-version = "0.44.0"
-
-[dependencies.pezkuwi-subxt-lightclient]
-default-features = false
-optional = true
-path = "../vendor/pezkuwi-subxt/lightclient"
 version = "0.44.0"
 
 [dependencies.pezkuwi-subxt-rpcs]

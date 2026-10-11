@@ -10,7 +10,6 @@
 //! - [Constants](constants)
 //! - [Blocks](blocks)
 //! - [Runtime APIs](runtime_apis)
-//! - [Unstable Light Client](light_client)
 //! - [Custom Values](custom_values)
 //! - [RPC calls](rpc)
 //!
@@ -20,7 +19,6 @@ pub mod blocks;
 pub mod constants;
 pub mod custom_values;
 pub mod events;
-pub mod light_client;
 pub mod rpc;
 pub mod runtime_apis;
 pub mod storage;

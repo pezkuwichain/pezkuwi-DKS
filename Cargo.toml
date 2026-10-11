@@ -624,7 +624,6 @@ members = [
 	# Vendored pezkuwi-subxt crates
 	"vendor/pezkuwi-subxt/codegen",
 	"vendor/pezkuwi-subxt/core",
-	"vendor/pezkuwi-subxt/lightclient",
 	"vendor/pezkuwi-subxt/macro",
 	"vendor/pezkuwi-subxt/metadata",
 	"vendor/pezkuwi-subxt/rpcs",
@@ -1548,8 +1547,6 @@ shlex = { version = "1.3.0" }
 simple-mermaid = { version = "0.1.1" }
 slotmap = { version = "1.0" }
 smallvec = { version = "1.11.0", default-features = false }
-smoldot = { version = "0.20.0", default-features = false }
-smoldot-light = { version = "0.18.0", default-features = false }
 soketto = { version = "0.8.0" }
 spinners = { version = "4.1.1" }
 sqlx = { version = "0.9.0" }
@@ -1563,7 +1560,6 @@ strum = { version = "0.26.3", default-features = false }
 pezkuwi-subxt = { path = "vendor/pezkuwi-subxt/subxt", version = "0.44.0", default-features = false }
 pezkuwi-subxt-codegen = { path = "vendor/pezkuwi-subxt/codegen", version = "0.44.0" }
 pezkuwi-subxt-core = { path = "vendor/pezkuwi-subxt/core", version = "0.44.0", default-features = false }
-pezkuwi-subxt-lightclient = { path = "vendor/pezkuwi-subxt/lightclient", version = "0.44.0", default-features = false }
 pezkuwi-subxt-macro = { path = "vendor/pezkuwi-subxt/macro", version = "0.44.0" }
 pezkuwi-subxt-metadata = { path = "vendor/pezkuwi-subxt/metadata", version = "0.44.0", default-features = false }
 pezkuwi-subxt-rpcs = { path = "vendor/pezkuwi-subxt/rpcs", version = "0.44.0" }

@@ -5,11 +5,6 @@
   "libsecp256k1@0.7.2": [
     "RUSTSEC-2025-0161"
   ],
-  "lru@0.12.5": [
-    "GHSA-rhfx-m35p-ff5j",
-    "RUSTSEC-2026-0002",
-    "RUSTSEC-2026-0253"
-  ],
   "parity-wasm@0.45.0": [
     "RUSTSEC-2022-0061"
   ],

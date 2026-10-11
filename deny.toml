@@ -46,8 +46,10 @@ ignore = [
 	#
 	# libsecp256k1: nothing exempted. It was the host-side body of the secp256k1 recovery host
 	# functions; those now run on k256, checked verdict-for-verdict against libsecp256k1 0.7.2
-	# (`pezsp_core::ecdsa::recover_overflowing`). It stays in Cargo.lock only through smoldot,
-	# the subxt light client's engine, which no node or runtime builds.
+	# (`pezsp_core::ecdsa::recover_overflowing`). smoldot (the vendored subxt light client's
+	# engine) was the other route in and is gone with that crate. It stays in Cargo.lock only as
+	# revm-precompile's optional `libsecp256k1` feature, which nothing enables: Cargo records
+	# optional dependencies whether or not a feature turns them on, so it is never compiled.
 
 	# ── memmap2 ───────────────────────────────────────────────────────────────
 	# Nothing exempted. The note here said "no fixed release for the pinned versions"; 0.9.11

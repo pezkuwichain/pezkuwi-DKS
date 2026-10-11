@@ -12,12 +12,6 @@ macro_rules! cfg_feature {
 	}
 }
 
-macro_rules! cfg_unstable_light_client {
-	($($item:item)*) => {
-		crate::macros::cfg_feature!("unstable-light-client", $($item)*);
-	};
-}
-
 macro_rules! cfg_jsonrpsee {
 	($($item:item)*) => {
 		crate::macros::cfg_feature!("jsonrpsee", $($item)*);
@@ -44,4 +38,3 @@ pub(crate) use cfg_feature;
 pub(crate) use cfg_jsonrpsee;
 pub(crate) use cfg_mock_rpc_client;
 pub(crate) use cfg_reconnecting_rpc_client;
-pub(crate) use cfg_unstable_light_client;

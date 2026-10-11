@@ -199,7 +199,6 @@ allow-dependencies-licenses:
   - pkg:cargo/pezkuwi-subxt
   - pkg:cargo/pezkuwi-subxt-codegen
   - pkg:cargo/pezkuwi-subxt-core
-  - pkg:cargo/pezkuwi-subxt-lightclient
   - pkg:cargo/pezkuwi-subxt-macro
   - pkg:cargo/pezkuwi-subxt-metadata
   - pkg:cargo/pezkuwi-subxt-rpcs

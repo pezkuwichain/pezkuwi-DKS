@@ -17,8 +17,6 @@
 //! which implement [`RpcClientT`] and can therefore be used to construct [`RpcClient`]s.
 //!
 //! - **jsonrpsee**: Enable an RPC client based on `jsonrpsee`.
-//! - **unstable-light-client**: Enable an RPC client which uses the Smoldot light client under the
-//!   hood to communicate with the network of choice.
 //! - **reconnecting-rpc-client**: Enable an RPC client based on `jsonrpsee` which handles
 //!   reconnecting automatically in the event of network issues.
 //! - **mock-rpc-client**: Enable a mock RPC client that can be used in tests.
@@ -27,12 +25,6 @@ crate::macros::cfg_jsonrpsee! {
 	mod jsonrpsee_impl;
 	pub use jsonrpsee::core::client::Client as JsonrpseeRpcClient;
 	pub use jsonrpsee_impl::client as jsonrpsee_client;
-}
-
-crate::macros::cfg_unstable_light_client! {
-	mod lightclient_impl;
-	pub use pezkuwi_subxt_lightclient::LightClientRpc as LightClientRpcClient;
-	pub use pezkuwi_subxt_lightclient::LightClient;
 }
 
 crate::macros::cfg_reconnecting_rpc_client! {
