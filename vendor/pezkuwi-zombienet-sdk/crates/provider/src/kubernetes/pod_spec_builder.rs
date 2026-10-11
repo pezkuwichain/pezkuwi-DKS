@@ -94,7 +94,7 @@ impl PodSpecBuilder {
 			Volume {
 				name: "zombie-wrapper-volume".to_string(),
 				config_map: Some(ConfigMapVolumeSource {
-					name: Some("zombie-wrapper".to_string()),
+					name: "zombie-wrapper".to_string(),
 					default_mode: Some(0o755),
 					..Default::default()
 				}),
@@ -103,7 +103,7 @@ impl PodSpecBuilder {
 			Volume {
 				name: "helper-binaries-downloader-volume".to_string(),
 				config_map: Some(ConfigMapVolumeSource {
-					name: Some("helper-binaries-downloader".to_string()),
+					name: "helper-binaries-downloader".to_string(),
 					default_mode: Some(0o755),
 					..Default::default()
 				}),
