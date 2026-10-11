@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Ensure license & attribution files present
         run: |
           set -e
@@ -27,6 +29,15 @@ jobs:
           test -f LICENSE-APACHE
           test -f LICENSE-GPL3
           echo "compliance files present"
+      # DMCA #4389053: a file that names Parity Technologies must keep naming it. Compared
+      # against the PR's base, or the previous main on a push.
+      - name: Parity attribution kept
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          base=${BASE:-}
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then base=HEAD~1; fi
+          .github/scripts/check-attribution.sh "$base" HEAD
 
   # Whose chain is this. Cheap, and it catches a class the compiler cannot see: a foreign chain
   # id kept as an alias builds fine, and a bootnode in a chain spec is JSON no compiler reads.
