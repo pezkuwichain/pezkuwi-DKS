@@ -145,20 +145,8 @@ pub fn run_with_args(args: Vec<String>) -> pezsc_cli::Result<()> {
 			let runner = cli.create_runner(&cli.run)?;
 
 			runner.run_node_until_exit(|config| async move {
-				match config.network.network_backend {
-					pezsc_network::config::NetworkBackendType::Libp2p => service::new_full::<
-						pezsc_network::NetworkWorker<_, _>,
-					>(
-						config, cli.consensus
-					)
-					.map_err(pezsc_cli::Error::Service),
-					pezsc_network::config::NetworkBackendType::Litep2p => service::new_full::<
-						pezsc_network::Litep2pNetworkBackend,
-					>(
-						config, cli.consensus
-					)
-					.map_err(pezsc_cli::Error::Service),
-				}
+				service::new_full::<pezsc_network::Litep2pNetworkBackend>(config, cli.consensus)
+					.map_err(pezsc_cli::Error::Service)
 			})
 		},
 	}

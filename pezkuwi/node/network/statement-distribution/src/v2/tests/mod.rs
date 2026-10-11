@@ -384,7 +384,7 @@ fn test_harness<T: Future<Output = VirtualOverseer>>(
 	let req_protocol_names = ReqProtocolNames::new(&GENESIS_HASH, None);
 	let (candidate_req_receiver, req_cfg) = IncomingRequest::get_config_receiver::<
 		Block,
-		pezsc_network::NetworkWorker<Block, Hash>,
+		pezsc_network::Litep2pNetworkBackend,
 	>(&req_protocol_names);
 	let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
 

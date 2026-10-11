@@ -24,12 +24,10 @@ pub use pezsc_client_db::{BlocksPruning, Database, DatabaseSource, PruningMode};
 pub use pezsc_executor::{WasmExecutionMethod, WasmtimeInstantiationStrategy};
 pub use pezsc_network::{
 	config::{
-		MultiaddrWithPeerId, NetworkConfiguration, NodeKeyConfig, NonDefaultSetConfig, ProtocolId,
-		Role, SetConfig, SyncMode, TransportConfig,
+		MultiaddrWithPeerId, NetworkConfiguration, NodeKeyConfig, ProtocolId,
+		RequestResponseConfig, Role, SetConfig, SyncMode, TransportConfig,
 	},
-	request_responses::{
-		IncomingRequest, OutgoingResponse, ProtocolConfig as RequestResponseConfig,
-	},
+	request_responses::{IncomingRequest, OutgoingResponse},
 	Multiaddr,
 };
 pub use pezsc_rpc_server::{

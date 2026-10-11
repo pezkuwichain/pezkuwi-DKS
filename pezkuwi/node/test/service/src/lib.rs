@@ -104,14 +104,7 @@ pub fn new_full<OverseerGenerator: OverseerGen>(
 		collator_reputation_persist_interval: None,
 	};
 
-	match config.network.network_backend {
-		pezsc_network::config::NetworkBackendType::Libp2p => {
-			pezkuwi_service::new_full::<_, pezsc_network::NetworkWorker<_, _>>(config, params)
-		},
-		pezsc_network::config::NetworkBackendType::Litep2p => {
-			pezkuwi_service::new_full::<_, pezsc_network::Litep2pNetworkBackend>(config, params)
-		},
-	}
+	pezkuwi_service::new_full::<_, pezsc_network::Litep2pNetworkBackend>(config, params)
 }
 
 fn get_relative_workers_path_for_test() -> PathBuf {
@@ -167,8 +160,7 @@ pub fn node_config(
 
 	network_config.allow_non_globals_in_dht = true;
 
-	// Libp2p needs to know the local address on which it should listen for incoming connections,
-	// while Litep2p will use `/ip4/127.0.0.1/tcp/0` by default.
+	// Listen on an ephemeral loopback port so that several test nodes can run side by side.
 	let addr: multiaddr::Multiaddr = "/ip4/127.0.0.1/tcp/0".parse().expect("valid address; qed");
 	network_config.listen_addresses.push(addr.clone());
 	network_config.public_addresses.push(addr);
@@ -234,10 +226,6 @@ pub async fn get_listen_address(network: Arc<dyn NetworkService>) -> pezsc_netwo
 	loop {
 		// Litep2p provides instantly the listen address of the TCP protocol and
 		// ditched the `/0` port used by the `node_config` function.
-		//
-		// Libp2p backend needs to be polled in a separate tokio task a few times
-		// before the listen address is available. The address is made available
-		// through the `SwarmEvent::NewListenAddr` event.
 		let listen_addresses = network.listen_addresses();
 
 		// The network backend must produce a valid TCP port.

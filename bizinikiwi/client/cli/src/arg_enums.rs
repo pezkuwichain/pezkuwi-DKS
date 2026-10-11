@@ -315,12 +315,12 @@ impl Into<pezsc_network::config::SyncMode> for SyncMode {
 }
 
 /// Network backend type.
+///
+/// litep2p is the only P2P stack; the enum is kept so the `--network-backend` flag stays
+/// accepted on existing command lines.
 #[derive(Debug, Clone, Copy, ValueEnum, PartialEq)]
 #[value(rename_all = "lower")]
 pub enum NetworkBackendType {
-	/// Use libp2p for P2P networking.
-	Libp2p,
-
 	/// Use litep2p for P2P networking.
 	Litep2p,
 }
@@ -328,7 +328,6 @@ pub enum NetworkBackendType {
 impl Into<pezsc_network::config::NetworkBackendType> for NetworkBackendType {
 	fn into(self) -> pezsc_network::config::NetworkBackendType {
 		match self {
-			Self::Libp2p => pezsc_network::config::NetworkBackendType::Libp2p,
 			Self::Litep2p => pezsc_network::config::NetworkBackendType::Litep2p,
 		}
 	}

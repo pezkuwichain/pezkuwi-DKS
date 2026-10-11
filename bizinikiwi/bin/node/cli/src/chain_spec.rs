@@ -470,7 +470,7 @@ pub(crate) mod tests {
 			integration_test_config_with_two_authorities(),
 			|config| {
 				let NewFullBase { task_manager, client, network, sync, transaction_pool, .. } =
-					new_full_base::<pezsc_network::NetworkWorker<_, _>>(
+					new_full_base::<pezsc_network::Litep2pNetworkBackend>(
 						config,
 						None,
 						false,

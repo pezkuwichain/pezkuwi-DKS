@@ -23,11 +23,10 @@
 
 pub use crate::{
 	discovery::DEFAULT_KADEMLIA_REPLICATION_FACTOR,
+	litep2p::RequestResponseConfig,
 	peer_store::PeerStoreProvider,
 	protocol::{notification_service, NotificationsSink, ProtocolHandlePair},
-	request_responses::{
-		IncomingRequest, OutgoingResponse, ProtocolConfig as RequestResponseConfig,
-	},
+	request_responses::{IncomingRequest, OutgoingResponse},
 	service::{
 		metrics::NotificationMetrics,
 		traits::{NotificationConfig, NotificationService, PeerStore},

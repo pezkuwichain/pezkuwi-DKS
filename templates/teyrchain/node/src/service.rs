@@ -250,7 +250,7 @@ pub async fn start_teyrchain_node(
 	let net_config = pezsc_network::config::FullNetworkConfiguration::<
 		_,
 		_,
-		pezsc_network::NetworkWorker<Block, Hash>,
+		pezsc_network::Litep2pNetworkBackend,
 	>::new(&teyrchain_config.network, prometheus_registry.clone());
 
 	let client = params.client.clone();
@@ -299,7 +299,7 @@ pub async fn start_teyrchain_node(
 			relay_chain_interface: relay_chain_interface.clone(),
 			import_queue: params.import_queue,
 			sybil_resistance_level: CollatorSybilResistance::Resistant, // because of Aura
-			metrics: pezsc_network::NetworkWorker::<Block, Hash>::register_notification_metrics(
+			metrics: <pezsc_network::Litep2pNetworkBackend as NetworkBackend<Block, Hash>>::register_notification_metrics(
 				teyrchain_config.prometheus_config.as_ref().map(|config| &config.registry),
 			),
 		})

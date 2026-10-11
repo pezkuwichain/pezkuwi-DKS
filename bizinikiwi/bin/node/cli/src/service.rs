@@ -856,28 +856,13 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 	let mixnet_config = cli.mixnet_params.config(config.role.is_authority());
 	let database_path = config.database.path().map(Path::to_path_buf);
 
-	let task_manager = match config.network.network_backend {
-		pezsc_network::config::NetworkBackendType::Libp2p => {
-			let task_manager = new_full_base::<pezsc_network::NetworkWorker<_, _>>(
-				config,
-				mixnet_config,
-				cli.no_hardware_benchmarks,
-				|_, _| (),
-			)
-			.map(|NewFullBase { task_manager, .. }| task_manager)?;
-			task_manager
-		},
-		pezsc_network::config::NetworkBackendType::Litep2p => {
-			let task_manager = new_full_base::<pezsc_network::Litep2pNetworkBackend>(
-				config,
-				mixnet_config,
-				cli.no_hardware_benchmarks,
-				|_, _| (),
-			)
-			.map(|NewFullBase { task_manager, .. }| task_manager)?;
-			task_manager
-		},
-	};
+	let task_manager = new_full_base::<pezsc_network::Litep2pNetworkBackend>(
+		config,
+		mixnet_config,
+		cli.no_hardware_benchmarks,
+		|_, _| (),
+	)
+	.map(|NewFullBase { task_manager, .. }| task_manager)?;
 
 	if let Some(database_path) = database_path {
 		pezsc_storage_monitor::StorageMonitorService::try_spawn(
@@ -958,7 +943,7 @@ mod tests {
 			|config| {
 				let mut setup_handles = None;
 				let NewFullBase { task_manager, client, network, sync, transaction_pool, .. } =
-					new_full_base::<pezsc_network::NetworkWorker<_, _>>(
+					new_full_base::<pezsc_network::Litep2pNetworkBackend>(
 						config,
 						None,
 						false,
@@ -1182,7 +1167,7 @@ mod tests {
 			crate::chain_spec::tests::integration_test_config_with_two_authorities(),
 			|config| {
 				let NewFullBase { task_manager, client, network, sync, transaction_pool, .. } =
-					new_full_base::<pezsc_network::NetworkWorker<_, _>>(
+					new_full_base::<pezsc_network::Litep2pNetworkBackend>(
 						config,
 						None,
 						false,
