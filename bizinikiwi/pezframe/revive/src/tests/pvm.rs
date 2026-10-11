@@ -5709,6 +5709,60 @@ fn delegate_call_with_gas_limit() {
 	});
 }
 
+/// The weight a dry run reports must be enough to submit the same call with.
+///
+/// `ReviveApi_call` dry-runs with an unbounded storage deposit limit, so `gas_left()` saturates
+/// to `u64::MAX` and a contract forwarding it (`addr.call{value: v}("")` under resolc) took the
+/// uncapped branch of `call_evm`: no charge for reading the value, no call stipend. A submitted
+/// call carries a finite deposit limit, gets a finite `gas_left()`, and takes the other branch,
+/// which charges both -- so it needed more weight than the dry run reported and ran out of gas
+/// at exactly the reported amount (live Zagros Asset Hub, escrow `release`, 2026-10-11).
+#[test]
+fn dry_run_weight_is_enough_for_value_call_forwarding_gas_left() {
+	let (binary, _code_hash) = compile_module("call_with_value_and_gas_left").unwrap();
+
+	ExtBuilder::default().existential_deposit(200).build().execute_with(|| {
+		let _ = <Test as Config>::Currency::set_balance(&ALICE, 1_000_000_000_000);
+		// The payee is an ordinary account that already exists, as the escrow seller does.
+		let _ = <Test as Config>::Currency::set_balance(&BOB, 1_000_000);
+
+		let Contract { addr, .. } = builder::bare_instantiate(Code::Upload(binary))
+			.native_value(1_000_000)
+			.build_and_unwrap_contract();
+		let data = (BOB_ADDR, 1_000_000_000u64).encode();
+
+		// What `ReviveApi_call` does with `gas_limit: None, storage_deposit_limit: None`.
+		let dry_run = pezframe_support::storage::transactional::with_transaction(|| {
+			let result = builder::bare_call(addr)
+				.transaction_limits(TransactionLimits::WeightAndDeposit {
+					weight_limit: WEIGHT_LIMIT,
+					deposit_limit: u128::MAX,
+				})
+				.data(data.clone())
+				.exec_config(ExecConfig::new_bizinikiwi_tx().with_dry_run(Default::default()))
+				.build();
+			pezsp_runtime::TransactionOutcome::Rollback(Ok::<_, DispatchError>(result))
+		})
+		.unwrap();
+		assert!(
+			dry_run.result.as_ref().is_ok_and(|r| !r.did_revert()),
+			"dry run failed: {:?}",
+			dry_run.result
+		);
+
+		// Submitted the way a wallet does: the dry run's weight, a finite deposit limit.
+		let bob_before = <Test as Config>::Currency::free_balance(&BOB);
+		assert_ok!(
+			builder::call(addr)
+				.weight_limit(dry_run.weight_required)
+				.storage_deposit_limit(10_000_000_000)
+				.data(data)
+				.build()
+		);
+		assert_eq!(<Test as Config>::Currency::free_balance(&BOB), bob_before + 1_000);
+	});
+}
+
 #[test]
 fn call_with_gas_limit() {
 	let (caller_binary, _caller_code_hash) = compile_module("call_with_gas").unwrap();
