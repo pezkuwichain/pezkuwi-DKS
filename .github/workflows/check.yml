@@ -106,6 +106,10 @@ jobs:
       # already had `pezpallet_revive` there, and five jobs reported the cascade instead.
       - name: No runtime holds one pallet index twice
         run: python3 .github/scripts/check-pallet-indices.py --verbose
+      # The pallet inventory in docs/ was written by hand once and then went ten months out of
+      # date. It is generated now, and this fails when a runtime moves without it.
+      - name: The pallet inventory matches the runtimes
+        run: python3 .github/scripts/runtime-pallets.py --check
       # The step above keeps each runtime's map internally consistent and the twins equal to
       # each other. This asks the question neither answers: is the number the *sender* wrote
       # down still the number the receiver answers on. Welati addresses the Asset Hub and the
