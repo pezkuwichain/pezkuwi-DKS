@@ -47,5 +47,7 @@
 //! produced from such a module deterministic.
 
 mod runtime_blob;
+mod stack_limiter;
+mod wasm_module;
 
 pub use runtime_blob::RuntimeBlob;

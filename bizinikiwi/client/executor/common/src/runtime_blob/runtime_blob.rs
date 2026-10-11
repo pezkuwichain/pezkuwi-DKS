@@ -16,12 +16,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use super::{
+	stack_limiter,
+	wasm_module::{self, id, Export, Limits, WasmModule},
+};
 use crate::{error::WasmError, wasm_runtime::HeapAllocStrategy};
 use polkavm::ArcBytes;
-use wasm_instrument::parity_wasm::elements::{
-	deserialize_buffer, serialize, ExportEntry, External, Internal, MemorySection, MemoryType,
-	Module, Section,
-};
+use wasmparser::ExternalKind;
 
 /// A program blob containing a Bizinikiwi runtime.
 #[derive(Clone)]
@@ -29,7 +30,7 @@ pub struct RuntimeBlob(BlobKind);
 
 #[derive(Clone)]
 enum BlobKind {
-	WebAssembly(Module),
+	WebAssembly(WasmModule),
 	PolkaVM((polkavm::ProgramBlob, ArcBytes)),
 }
 
@@ -61,7 +62,7 @@ impl RuntimeBlob {
 			}
 		}
 
-		let raw_module: Module = deserialize_buffer(raw_blob)
+		let raw_module = WasmModule::parse(raw_blob)
 			.map_err(|e| WasmError::Other(format!("cannot deserialize module: {:?}", e)))?;
 		Ok(Self(BlobKind::WebAssembly(raw_module)))
 	}
@@ -80,10 +81,9 @@ impl RuntimeBlob {
 	/// Only valid for WASM programs; will return an error if the blob is a PolkaVM program.
 	pub fn inject_stack_depth_metering(self, stack_depth_limit: u32) -> Result<Self, WasmError> {
 		let injected_module =
-			wasm_instrument::inject_stack_limiter(self.into_webassembly_blob()?, stack_depth_limit)
-				.map_err(|e| {
-					WasmError::Other(format!("cannot inject the stack limiter: {:?}", e))
-				})?;
+			stack_limiter::inject(self.into_webassembly_blob()?, stack_depth_limit).map_err(
+				|e| WasmError::Other(format!("cannot inject the stack limiter: {:?}", e)),
+			)?;
 
 		Ok(Self(BlobKind::WebAssembly(injected_module)))
 	}
@@ -97,46 +97,34 @@ impl RuntimeBlob {
 	/// Only valid for WASM programs; will return an error if the blob is a PolkaVM program.
 	pub fn convert_memory_import_into_export(&mut self) -> Result<(), WasmError> {
 		let raw_module = self.as_webassembly_blob_mut()?;
-		let import_section = match raw_module.import_section_mut() {
-			Some(import_section) => import_section,
-			None => return Ok(()),
+		let Some((memory_name, limits)) =
+			raw_module.take_memory_import().map_err(WasmError::Other)?
+		else {
+			return Ok(());
 		};
 
-		let import_entries = import_section.entries_mut();
-		for index in 0..import_entries.len() {
-			let entry = &import_entries[index];
-			let memory_ty = match entry.external() {
-				External::Memory(memory_ty) => *memory_ty,
-				_ => continue,
-			};
-
-			let memory_name = entry.field().to_owned();
-			import_entries.remove(index);
-
-			raw_module
-				.insert_section(Section::Memory(MemorySection::with_entries(vec![memory_ty])))
-				.map_err(|error| {
-					WasmError::Other(format!(
+		raw_module
+			.insert_section(id::MEMORY, wasm_module::encode_vec(&[limits], |out, l| l.encode(out)))
+			.map_err(|error| {
+				WasmError::Other(format!(
 					"can't convert a memory import into an export: failed to insert a new memory section: {}",
 					error
 				))
-				})?;
+			})?;
 
-			if raw_module.export_section_mut().is_none() {
-				// A module without an export section is somewhat unrealistic, but let's do this
-				// just in case to cover all of our bases.
-				raw_module
-					.insert_section(Section::Export(Default::default()))
-					.expect("an export section can be always inserted if it doesn't exist; qed");
-			}
+		if raw_module.known(id::EXPORT).is_none() {
+			// A module without an export section is somewhat unrealistic, but let's do this
+			// just in case to cover all of our bases.
 			raw_module
-				.export_section_mut()
-				.expect("export section already existed or we just added it above, so it always exists; qed")
-				.entries_mut()
-				.push(ExportEntry::new(memory_name, Internal::Memory(0)));
-
-			break;
+				.insert_section(id::EXPORT, vec![0])
+				.expect("an export section can be always inserted if it doesn't exist; qed");
 		}
+		let mut entry = Vec::new();
+		Export { name: memory_name, kind: ExternalKind::Memory, index: 0 }.encode(&mut entry);
+		let exports = raw_module.known_mut(id::EXPORT).expect(
+			"export section already existed or we just added it above, so it always exists; qed",
+		);
+		*exports = wasm_module::append_items(exports, 1, &entry).map_err(WasmError::Other)?;
 
 		Ok(())
 	}
@@ -146,13 +134,12 @@ impl RuntimeBlob {
 	/// Only valid for WASM programs; will return an error if the blob is a PolkaVM program.
 	pub fn clear_memory_max_limit(&mut self) -> Result<(), WasmError> {
 		let raw_module = self.as_webassembly_blob_mut()?;
-		let memory_section = match raw_module.memory_section_mut() {
-			Some(section) => section,
-			None => return Ok(()),
+		let Some(memories) = raw_module.memories().map_err(WasmError::Other)? else {
+			return Ok(());
 		};
-		for memory_ty in memory_section.entries_mut() {
-			*memory_ty = MemoryType::new(memory_ty.limits().initial(), None);
-		}
+		let memories: Vec<_> =
+			memories.iter().map(|m| Limits { initial: m.initial, maximum: None }).collect();
+		raw_module.set_memories(&memories);
 		Ok(())
 	}
 
@@ -168,27 +155,32 @@ impl RuntimeBlob {
 		heap_alloc_strategy: HeapAllocStrategy,
 	) -> Result<(), WasmError> {
 		let raw_module = self.as_webassembly_blob_mut()?;
-		let memory_section = raw_module
-			.memory_section_mut()
+		let memories = raw_module
+			.memories()
+			.map_err(WasmError::Other)?
 			.ok_or_else(|| WasmError::Other("no memory section found".into()))?;
 
-		if memory_section.entries().is_empty() {
+		if memories.is_empty() {
 			return Err(WasmError::Other("memory section is empty".into()));
 		}
-		for memory_ty in memory_section.entries_mut() {
-			let initial = memory_ty.limits().initial();
-			let (min, max) = match heap_alloc_strategy {
-				HeapAllocStrategy::Dynamic { maximum_pages } => {
-					// Ensure `initial <= maximum_pages`
-					(maximum_pages.map(|m| m.min(initial)).unwrap_or(initial), maximum_pages)
-				},
-				HeapAllocStrategy::Static { extra_pages } => {
-					let pages = initial.saturating_add(extra_pages);
-					(pages, Some(pages))
-				},
-			};
-			*memory_ty = MemoryType::new(min, max);
-		}
+		let memories: Vec<_> = memories
+			.iter()
+			.map(|memory| {
+				let initial = memory.initial;
+				let (min, max) = match heap_alloc_strategy {
+					HeapAllocStrategy::Dynamic { maximum_pages } => {
+						// Ensure `initial <= maximum_pages`
+						(maximum_pages.map(|m| m.min(initial)).unwrap_or(initial), maximum_pages)
+					},
+					HeapAllocStrategy::Static { extra_pages } => {
+						let pages = initial.saturating_add(extra_pages);
+						(pages, Some(pages))
+					},
+				};
+				Limits { initial: min, maximum: max }
+			})
+			.collect();
+		raw_module.set_memories(&memories);
 		Ok(())
 	}
 
@@ -197,24 +189,18 @@ impl RuntimeBlob {
 	///
 	/// Only valid for WASM programs; will return an error if the blob is a PolkaVM program.
 	pub fn custom_section_contents(&self, section_name: &str) -> Option<&[u8]> {
-		self.as_webassembly_blob()
-			.ok()?
-			.custom_sections()
-			.find(|cs| cs.name() == section_name)
-			.map(|cs| cs.payload())
+		self.as_webassembly_blob().ok()?.custom_section(section_name)
 	}
 
 	/// Consumes this runtime blob and serializes it.
 	pub fn serialize(self) -> Vec<u8> {
 		match self.0 {
-			BlobKind::WebAssembly(raw_module) => {
-				serialize(raw_module).expect("serializing into a vec should succeed; qed")
-			},
+			BlobKind::WebAssembly(raw_module) => raw_module.serialize(),
 			BlobKind::PolkaVM(ref blob) => blob.1.to_vec(),
 		}
 	}
 
-	fn as_webassembly_blob(&self) -> Result<&Module, WasmError> {
+	fn as_webassembly_blob(&self) -> Result<&WasmModule, WasmError> {
 		match self.0 {
 			BlobKind::WebAssembly(ref raw_module) => Ok(raw_module),
 			BlobKind::PolkaVM(..) => Err(WasmError::Other(
@@ -223,7 +209,7 @@ impl RuntimeBlob {
 		}
 	}
 
-	fn as_webassembly_blob_mut(&mut self) -> Result<&mut Module, WasmError> {
+	fn as_webassembly_blob_mut(&mut self) -> Result<&mut WasmModule, WasmError> {
 		match self.0 {
 			BlobKind::WebAssembly(ref mut raw_module) => Ok(raw_module),
 			BlobKind::PolkaVM(..) => Err(WasmError::Other(
@@ -232,7 +218,7 @@ impl RuntimeBlob {
 		}
 	}
 
-	fn into_webassembly_blob(self) -> Result<Module, WasmError> {
+	fn into_webassembly_blob(self) -> Result<WasmModule, WasmError> {
 		match self.0 {
 			BlobKind::WebAssembly(raw_module) => Ok(raw_module),
 			BlobKind::PolkaVM(..) => Err(WasmError::Other(

@@ -18837,12 +18837,14 @@ dependencies = [
 name = "pezsc-executor-common"
 version = "0.29.0"
 dependencies = [
+ "hex",
  "pezsc-allocator",
  "pezsp-maybe-compressed-blob",
  "pezsp-wasm-interface",
  "polkavm",
+ "sha2 0.10.9",
  "thiserror 1.0.69",
- "wasm-instrument",
+ "wasmparser 0.236.1",
 ]
 
 [[package]]
