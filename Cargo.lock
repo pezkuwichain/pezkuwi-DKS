@@ -21188,9 +21188,9 @@ dependencies = [
 name = "pezsp-version"
 version = "29.0.0"
 dependencies = [
+ "hex",
  "impl-serde",
  "parity-scale-codec",
- "parity-wasm",
  "pezsp-core",
  "pezsp-crypto-hashing-proc-macro",
  "pezsp-runtime",
@@ -21198,7 +21198,10 @@ dependencies = [
  "pezsp-version-proc-macro",
  "scale-info",
  "serde",
+ "sha2 0.10.9",
  "thiserror 1.0.69",
+ "wasm-encoder 0.236.1",
+ "wasmparser 0.236.1",
 ]
 
 [[package]]

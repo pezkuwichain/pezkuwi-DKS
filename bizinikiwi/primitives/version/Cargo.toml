@@ -19,7 +19,6 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 codec = { features = ["derive"], workspace = true }
 impl-serde = { optional = true, workspace = true }
-parity-wasm = { optional = true, workspace = true }
 pezsp-core = { workspace = true }
 pezsp-crypto-hashing-proc-macro = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true }
@@ -28,13 +27,18 @@ pezsp-version-proc-macro = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 serde = { features = ["alloc", "derive"], optional = true, workspace = true }
 thiserror = { optional = true, workspace = true }
+wasm-encoder = { optional = true, workspace = true }
+wasmparser = { optional = true, workspace = true }
+
+[dev-dependencies]
+hex = { workspace = true, default-features = true }
+sha2 = { workspace = true, default-features = true }
 
 [features]
 default = ["std"]
 std = [
 	"codec/std",
 	"impl-serde/std",
-	"parity-wasm",
 	"pezsp-core/std",
 	"pezsp-crypto-hashing-proc-macro/std",
 	"pezsp-runtime/std",
@@ -43,6 +47,10 @@ std = [
 	"scale-info/std",
 	"serde/std",
 	"thiserror",
+	"wasm-encoder",
+	"wasm-encoder?/std",
+	"wasmparser",
+	"wasmparser?/std",
 ]
 serde = [
 	"codec/serde",
