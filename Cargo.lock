@@ -15574,12 +15574,13 @@ name = "pezpallet-contracts-fixtures"
 version = "1.0.0"
 dependencies = [
  "anyhow",
- "parity-wasm",
  "pezframe-system",
  "pezsp-runtime",
  "tempfile",
  "toml 0.8.23",
  "twox-hash",
+ "wasm-encoder 0.236.1",
+ "wasmparser 0.236.1",
 ]
 
 [[package]]
