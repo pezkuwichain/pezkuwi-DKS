@@ -352,10 +352,9 @@ pub type LocalPalletOriginToLocation = (
 
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	// Production relay: only a governance-controlled pallet origin (StakingAdmin) may
-	// originate raw `pezpallet_xcm::send` messages. Ordinary signed
-	// accounts are intentionally excluded here (unlike the zagros/testnet config) so that no
-	// funded relay account can craft arbitrary XCM programs toward any current or future
+	// Both relays: only a governance-controlled pallet origin (StakingAdmin) may originate raw
+	// `pezpallet_xcm::send` messages. Ordinary signed accounts are intentionally excluded, on
+	// the testnet as on mainnet, so that no funded relay account can craft arbitrary XCM programs toward any current or future
 	// teyrchain. Local execution for signed accounts is still permitted via `ExecuteXcmOrigin`
 	// below, which is scoped to the caller's own derived-sovereign origin and does not grant
 	// send-to-any-destination capability.
