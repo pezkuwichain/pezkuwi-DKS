@@ -33,6 +33,7 @@ use pezframe_support::{
 		tokens::imbalance::{ResolveAssetTo, ResolveTo},
 		ConstU32, Contains, Equals, Everything, LinearStoragePrice, PalletInfoAccess,
 	},
+	PalletId,
 };
 use pezframe_system::EnsureRoot;
 use pezkuwi_runtime_common::xcm_sender::ExponentialPrice;
@@ -233,6 +234,34 @@ pub type PoolFungiblesTransactor = FungiblesAdapter<
 	CheckingAccount,
 >;
 
+// `pezpallet-revive` (index 66) holds ERC20 balances inside contracts. Without a transactor for
+// them, XCM could not move those assets at all: the pallet would be on the chain and its tokens
+// stranded there. Zagros carries the same transactor and exercised the path first.
+parameter_types! {
+	/// Taken from the real gas and deposits of a standard ERC20 transfer call.
+	pub const ERC20TransferGasLimit: Weight = Weight::from_parts(500_000_000_000, 10 * 1024 * 1024);
+	pub const ERC20TransferStorageDepositLimit: Balance = 10_200_000_000;
+	pub ERC20TransfersCheckingAccount: AccountId = PalletId(*b"py/revch").into_account_truncating();
+}
+
+/// Transactor for ERC20 tokens.
+pub type ERC20Transactor = pez_assets_common::ERC20Transactor<
+	// We need this for accessing pezpallet-revive.
+	Runtime,
+	// The matcher for smart contracts.
+	pez_assets_common::ERC20Matcher,
+	// How to convert from a location to an account id.
+	LocationToAccountId,
+	// The maximum gas that can be used by a standard ERC20 transfer.
+	ERC20TransferGasLimit,
+	// The maximum storage deposit that can be used by a standard ERC20 transfer.
+	ERC20TransferStorageDepositLimit,
+	// We're generic over this so we can't escape specifying it.
+	AccountId,
+	// Checking account for ERC20 transfers.
+	ERC20TransfersCheckingAccount,
+>;
+
 /// Means for transacting assets on this chain.
 pub type AssetTransactors = (
 	FungibleTransactor,
@@ -240,6 +269,7 @@ pub type AssetTransactors = (
 	ForeignFungiblesTransactor,
 	PoolFungiblesTransactor,
 	UniquesTransactor,
+	ERC20Transactor,
 );
 
 /// This is the type we use to convert an (incoming) XCM origin into a local `Origin` instance,

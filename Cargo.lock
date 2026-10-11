@@ -1622,6 +1622,7 @@ dependencies = [
 name = "asset-hub-pezkuwichain-runtime"
 version = "0.11.0"
 dependencies = [
+ "alloy-core",
  "asset-test-pezutils",
  "bizinikiwi-wasm-builder",
  "hex-literal",
@@ -1662,6 +1663,7 @@ dependencies = [
  "pezpallet-asset-rewards",
  "pezpallet-assets",
  "pezpallet-assets-freezer",
+ "pezpallet-assets-precompiles",
  "pezpallet-aura",
  "pezpallet-authorship",
  "pezpallet-bags-list",
@@ -1687,6 +1689,8 @@ dependencies = [
  "pezpallet-preimage",
  "pezpallet-proxy",
  "pezpallet-referenda",
+ "pezpallet-revive",
+ "pezpallet-revive-fixtures",
  "pezpallet-scheduler",
  "pezpallet-session",
  "pezpallet-staking",
@@ -1703,6 +1707,7 @@ dependencies = [
  "pezpallet-xcm",
  "pezpallet-xcm-benchmarks",
  "pezpallet-xcm-bridge-hub-router",
+ "pezpallet-xcm-precompiles",
  "pezsp-api",
  "pezsp-authority-discovery",
  "pezsp-block-builder",
@@ -1721,6 +1726,7 @@ dependencies = [
  "pezsp-session",
  "pezsp-staking",
  "pezsp-storage",
+ "pezsp-tracing",
  "pezsp-transaction-pool",
  "pezsp-version",
  "pezsp-weights",

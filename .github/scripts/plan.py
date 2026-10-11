@@ -522,7 +522,6 @@ def print_flows():
 
 # Placements that differ on purpose, with the reason. Anything not here that differs is a gap.
 DELIBERATE = {
-    ("Revive", "asset-hub-zagros"): "Zagros carries contracts; the mainnet hub does not yet",
     ("Sudo", "asset-hub-zagros"): "testnet only",
     ("AhOps", "asset-hub-zagros"): "testnet only",
     ("ToPezkuwichainXcmRouter", "asset-hub-zagros"): "the bridge points the other way",
@@ -530,7 +529,6 @@ DELIBERATE = {
     ("EthereumInboundQueueV2", "bridge-hub-zagros"): "Snowbridge v2, testnet only",
     ("EthereumOutboundQueueV2", "bridge-hub-zagros"): "Snowbridge v2, testnet only",
     ("EthereumSystemV2", "bridge-hub-zagros"): "Snowbridge v2, testnet only",
-    ("AssetsPrecompilesPermit", "asset-hub-zagros"): "testnet only",
     # Upstream declares these for Rococo's hub alone, and ours mirrors that. Measured
     # against `polkadot-stable2606-1` rather than assumed: they appear in
     # bridge-hub-rococo and in no other hub.

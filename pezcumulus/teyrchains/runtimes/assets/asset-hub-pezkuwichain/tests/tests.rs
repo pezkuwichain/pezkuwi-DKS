@@ -19,6 +19,10 @@
 
 extern crate alloc;
 
+use alloy_core::{
+	primitives::U256,
+	sol_types::{sol_data, SolType},
+};
 use asset_hub_pezkuwichain_runtime::{
 	xcm_config,
 	xcm_config::{
@@ -27,8 +31,9 @@ use asset_hub_pezkuwichain_runtime::{
 	},
 	AllPalletsWithoutSystem, AssetConversion, AssetDeposit, Assets, Balances, Block,
 	CollatorSelection, ExistentialDeposit, ForeignAssets, ForeignAssetsInstance,
-	MetadataDepositBase, MetadataDepositPerByte, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
-	SessionKeys, TeyrchainSystem, ToZagrosXcmRouterInstance, TrustBackedAssetsInstance, XcmpQueue,
+	MetadataDepositBase, MetadataDepositPerByte, PezkuwiXcm, Revive, Runtime, RuntimeCall,
+	RuntimeEvent, RuntimeOrigin, SessionKeys, TeyrchainSystem, ToZagrosXcmRouterInstance,
+	TrustBackedAssetsInstance, WeightToFee, XcmpQueue,
 };
 use asset_test_pezutils::{
 	test_cases_over_bridge::TestBridgingConfig, CollatorSessionKey, CollatorSessionKeys,
@@ -39,29 +44,53 @@ use hex_literal::hex;
 use pezframe_support::{
 	assert_ok, parameter_types,
 	traits::{
-		fungible::{Inspect, Mutate},
+		fungible::{self, Inspect, Mutate},
 		fungibles::{
-			Create, Inspect as FungiblesInspect, InspectEnumerable, Mutate as FungiblesMutate,
+			self, Create, Inspect as FungiblesInspect, InspectEnumerable, Mutate as FungiblesMutate,
 		},
 	},
 	weights::{Weight, WeightToFee as WeightToFeeT},
 };
+use pezpallet_revive::{
+	test_utils::builder::{BareInstantiateBuilder, Contract},
+	Code, TransactionLimits,
+};
+use pezpallet_revive_fixtures::{compile_module, compile_module_with_type, FixtureType};
 use pezsp_consensus_aura::SlotDuration;
 use pezsp_core::crypto::Ss58Codec;
 use pezsp_runtime::traits::MaybeEquivalence;
 use std::convert::Into;
-use testnet_teyrchains_constants::pezkuwichain::{consensus::*, currency::UNITS, fee::WeightToFee};
+use testnet_teyrchains_constants::pezkuwichain::{consensus::*, currency::UNITS};
 use teyrchains_common::{AccountId, AssetIdForTrustBackedAssets, AuraId, Balance};
-use xcm::latest::{
-	prelude::{Assets as XcmAssets, *},
-	ZAGROS_GENESIS_HASH,
+use xcm::{
+	latest::{
+		prelude::{Assets as XcmAssets, *},
+		ZAGROS_GENESIS_HASH,
+	},
+	VersionedXcm,
 };
 use xcm_builder::WithLatestLocationConverter;
 use xcm_executor::traits::{JustTry, TransactAsset, WeightTrader};
 use xcm_runtime_pezapis::conversions::LocationToAccountHelper;
 
 const ALICE: [u8; 32] = [1u8; 32];
+const BOB: [u8; 32] = [2u8; 32];
 const SOME_ASSET_ADMIN: [u8; 32] = [5u8; 32];
+
+/// The three ERC20 fixtures, compiled from their Solidity rather than read as bytes.
+///
+/// They used to be `include_bytes!` of three `.polkavm` blobs checked in beside their sources,
+/// and nothing in the tree built them. Editing the `.sol` left the blob untouched, so the test
+/// went on passing against the old binary and said nothing -- and `fake_erc20.polkavm` had no
+/// source at all, a binary in the tree that nobody could regenerate or read.
+///
+/// `compile_module_with_type` is what the rest of the fixtures already use, and the crate
+/// already requires resolc to build its other thirty contracts, so this costs no new tooling.
+fn erc20_code(name: &str) -> Vec<u8> {
+	compile_module_with_type(name, FixtureType::Resolc)
+		.unwrap_or_else(|e| panic!("compiling {name}: {e}"))
+		.0
+}
 
 parameter_types! {
 	pub Governance: GovernanceOrigin<RuntimeOrigin> = GovernanceOrigin::Location(GovernanceLocation::get());
@@ -89,6 +118,12 @@ fn slot_durations() -> SlotDurations {
 		relay: SlotDuration::from_millis(RELAY_CHAIN_SLOT_DURATION_MILLIS.into()),
 		para: SlotDuration::from_millis(SLOT_DURATION),
 	}
+}
+
+/// Build a bare_instantiate call.
+fn bare_instantiate(origin: &AccountId, code: Vec<u8>) -> BareInstantiateBuilder<Runtime> {
+	let origin = RuntimeOrigin::signed(origin.clone());
+	BareInstantiateBuilder::<Runtime>::bare_instantiate(origin, Code::Upload(code))
 }
 
 #[test]
@@ -2207,4 +2242,327 @@ fn the_bond_report_names_every_validator_here() {
 		// Sorted, so the same validators always make the same message.
 		assert_eq!(call, (83u8, 11u8, 3u32, vec![b, a]).encode());
 	});
+}
+
+#[test]
+fn weight_of_message_increases_when_dealing_with_erc20s() {
+	use xcm::VersionedXcm;
+	use xcm_runtime_pezapis::fees::runtime_decl_for_xcm_payment_api::XcmPaymentApiV2;
+	let message = Xcm::<()>::builder_unsafe().withdraw_asset((Parent, 100u128)).build();
+	let versioned = VersionedXcm::<()>::V5(message);
+	let regular_asset_weight = Runtime::query_xcm_weight(versioned).unwrap();
+
+	let message = Xcm::<()>::builder_unsafe()
+		.withdraw_asset((AccountKey20 { network: None, key: [1u8; 20] }, 100u128))
+		.build();
+	let versioned = VersionedXcm::<()>::V5(message);
+	let weight = Runtime::query_xcm_weight(versioned).unwrap();
+	assert!(
+		weight.ref_time() > regular_asset_weight.ref_time()
+			// The proof size really blows up.
+			&& weight.proof_size() > 10 * regular_asset_weight.proof_size()
+	);
+	assert_eq!(weight, crate::xcm_config::ERC20TransferGasLimit::get());
+}
+
+#[test]
+fn withdraw_and_deposit_erc20s() {
+	let sender: AccountId = ALICE.into();
+	let beneficiary: AccountId = BOB.into();
+	let revive_account = pezpallet_revive::Pezpallet::<Runtime>::account_id();
+	let checking_account =
+		asset_hub_pezkuwichain_runtime::xcm_config::ERC20TransfersCheckingAccount::get();
+	let initial_hez_amount = 100_000_000_000_000_000u128;
+	pezsp_tracing::init_for_tests();
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		// Bring the revive account to life.
+		assert_ok!(Balances::mint_into(&revive_account, initial_hez_amount));
+		// We need to give enough funds for every account involved so they
+		// can call `Revive::map_account`.
+		assert_ok!(Balances::mint_into(&sender, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&beneficiary, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&checking_account, initial_hez_amount));
+
+		// We need to map all accounts.
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(checking_account.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
+
+		let code = erc20_code("MyToken");
+
+		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
+		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
+		let Contract { addr: erc20_address, .. } = bare_instantiate(&sender, code)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
+			.data(constructor_data)
+			.build_and_unwrap_contract();
+
+		let sender_balance_before = <Balances as fungible::Inspect<_>>::balance(&sender);
+
+		let erc20_transfer_amount = 100u128;
+		let hez_amount_for_fees = 10_000_000_000_000u128;
+		// Actual XCM to execute locally.
+		let message = Xcm::<RuntimeCall>::builder()
+			.withdraw_asset((Parent, hez_amount_for_fees))
+			.pay_fees((Parent, hez_amount_for_fees))
+			.withdraw_asset((
+				AccountKey20 { key: erc20_address.into(), network: None },
+				erc20_transfer_amount,
+			))
+			.deposit_asset(AllCounted(1), beneficiary.clone())
+			.refund_surplus()
+			.deposit_asset(AllCounted(1), sender.clone())
+			.build();
+		assert_ok!(PezkuwiXcm::execute(
+			RuntimeOrigin::signed(sender.clone()),
+			Box::new(VersionedXcm::V5(message)),
+			Weight::from_parts(600_000_000_000, 15 * 1024 * 1024),
+		));
+
+		// Revive is not taking any fees.
+		let sender_balance_after = <Balances as fungible::Inspect<_>>::balance(&sender);
+		// Balance after is larger than the difference between balance before and transferred
+		// amount because of the refund.
+		assert!(sender_balance_after > sender_balance_before - hez_amount_for_fees);
+
+		// Beneficiary receives the ERC20.
+		let beneficiary_amount =
+			<Revive as fungibles::Inspect<_>>::balance(erc20_address, &beneficiary);
+		assert_eq!(beneficiary_amount, erc20_transfer_amount);
+	});
+}
+
+#[test]
+fn non_existent_erc20_will_error() {
+	let sender: AccountId = ALICE.into();
+	let beneficiary: AccountId = BOB.into();
+	let revive_account = pezpallet_revive::Pezpallet::<Runtime>::account_id();
+	let checking_account =
+		asset_hub_pezkuwichain_runtime::xcm_config::ERC20TransfersCheckingAccount::get();
+	let initial_hez_amount = 10_000_000_000_000u128;
+	// We try to withdraw an ERC20 token but the address doesn't exist.
+	let non_existent_contract_address = [1u8; 20];
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		// Bring the revive account to life.
+		assert_ok!(Balances::mint_into(&revive_account, initial_hez_amount));
+		// We need to give enough funds for every account involved so they
+		// can call `Revive::map_account`.
+		assert_ok!(Balances::mint_into(&sender, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&beneficiary, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&checking_account, initial_hez_amount));
+
+		// We need to map all accounts.
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(checking_account.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
+
+		let hez_amount_for_fees = 1_000_000_000_000u128;
+		let erc20_transfer_amount = 100u128;
+		let message = Xcm::<RuntimeCall>::builder()
+			.withdraw_asset((Parent, hez_amount_for_fees))
+			.pay_fees((Parent, hez_amount_for_fees))
+			.withdraw_asset((
+				AccountKey20 { key: non_existent_contract_address, network: None },
+				erc20_transfer_amount,
+			))
+			.deposit_asset(AllCounted(1), beneficiary.clone())
+			.build();
+		// Execution fails but doesn't panic.
+		assert!(PezkuwiXcm::execute(
+			RuntimeOrigin::signed(sender.clone()),
+			Box::new(VersionedXcm::V5(message)),
+			Weight::from_parts(2_500_000_000, 120_000),
+		)
+		.is_err());
+	});
+}
+
+#[test]
+fn smart_contract_not_erc20_will_error() {
+	let sender: AccountId = ALICE.into();
+	let beneficiary: AccountId = BOB.into();
+	let revive_account = pezpallet_revive::Pezpallet::<Runtime>::account_id();
+	let checking_account =
+		asset_hub_pezkuwichain_runtime::xcm_config::ERC20TransfersCheckingAccount::get();
+	let initial_hez_amount = 10_000_000_000_000u128;
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		// Bring the revive account to life.
+		assert_ok!(Balances::mint_into(&revive_account, initial_hez_amount));
+
+		// We need to give enough funds for every account involved so they
+		// can call `Revive::map_account`.
+		assert_ok!(Balances::mint_into(&sender, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&beneficiary, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&checking_account, initial_hez_amount));
+
+		// We need to map all accounts.
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(checking_account.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
+
+		let (code, _) = compile_module("dummy").unwrap();
+
+		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
+			.build_and_unwrap_contract();
+
+		let hez_amount_for_fees = 1_000_000_000_000u128;
+		let erc20_transfer_amount = 100u128;
+		let message = Xcm::<RuntimeCall>::builder()
+			.withdraw_asset((Parent, hez_amount_for_fees))
+			.pay_fees((Parent, hez_amount_for_fees))
+			.withdraw_asset((
+				AccountKey20 { key: non_erc20_address.into(), network: None },
+				erc20_transfer_amount,
+			))
+			.deposit_asset(AllCounted(1), beneficiary.clone())
+			.build();
+		// Execution fails but doesn't panic.
+		assert!(PezkuwiXcm::execute(
+			RuntimeOrigin::signed(sender.clone()),
+			Box::new(VersionedXcm::V5(message)),
+			Weight::from_parts(2_500_000_000, 120_000),
+		)
+		.is_err());
+	});
+}
+
+// Here the contract returns a number but because it can be cast to true
+// it still succeeds.
+#[test]
+fn smart_contract_does_not_return_bool_fails() {
+	let sender: AccountId = ALICE.into();
+	let beneficiary: AccountId = BOB.into();
+	let revive_account = pezpallet_revive::Pezpallet::<Runtime>::account_id();
+	let checking_account =
+		asset_hub_pezkuwichain_runtime::xcm_config::ERC20TransfersCheckingAccount::get();
+	let initial_hez_amount = 10_000_000_000_000u128;
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		// Bring the revive account to life.
+		assert_ok!(Balances::mint_into(&revive_account, initial_hez_amount));
+
+		// We need to give enough funds for every account involved so they
+		// can call `Revive::map_account`.
+		assert_ok!(Balances::mint_into(&sender, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&beneficiary, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&checking_account, initial_hez_amount));
+
+		// We need to map all accounts.
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(checking_account.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
+
+		// This contract implements the ERC20 interface for `transfer` except it returns a uint256.
+		let code = erc20_code("MyTokenFake");
+
+		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
+		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
+
+		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
+			.data(constructor_data)
+			.build_and_unwrap_contract();
+
+		let hez_amount_for_fees = 1_000_000_000_000u128;
+		let erc20_transfer_amount = 100u128;
+		let message = Xcm::<RuntimeCall>::builder()
+			.withdraw_asset((Parent, hez_amount_for_fees))
+			.pay_fees((Parent, hez_amount_for_fees))
+			.withdraw_asset((
+				AccountKey20 { key: non_erc20_address.into(), network: None },
+				erc20_transfer_amount,
+			))
+			.deposit_asset(AllCounted(1), beneficiary.clone())
+			.build();
+		// Execution fails but doesn't panic.
+		assert!(PezkuwiXcm::execute(
+			RuntimeOrigin::signed(sender.clone()),
+			Box::new(VersionedXcm::V5(message)),
+			Weight::from_parts(2_500_000_000, 220_000),
+		)
+		.is_err());
+	});
+}
+
+#[test]
+fn expensive_erc20_runs_out_of_gas() {
+	let sender: AccountId = ALICE.into();
+	let beneficiary: AccountId = BOB.into();
+	let revive_account = pezpallet_revive::Pezpallet::<Runtime>::account_id();
+	let checking_account =
+		asset_hub_pezkuwichain_runtime::xcm_config::ERC20TransfersCheckingAccount::get();
+	let initial_hez_amount = 10_000_000_000_000u128;
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		// Bring the revive account to life.
+		assert_ok!(Balances::mint_into(&revive_account, initial_hez_amount));
+
+		// We need to give enough funds for every account involved so they
+		// can call `Revive::map_account`.
+		assert_ok!(Balances::mint_into(&sender, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&beneficiary, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&checking_account, initial_hez_amount));
+
+		// We need to map all accounts.
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(checking_account.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
+
+		// This contract does a lot more storage writes in `transfer`.
+		let code = erc20_code("MyTokenExpensive");
+
+		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
+		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
+		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
+			.data(constructor_data)
+			.build_and_unwrap_contract();
+
+		let hez_amount_for_fees = 1_000_000_000_000u128;
+		let erc20_transfer_amount = 100u128;
+		let message = Xcm::<RuntimeCall>::builder()
+			.withdraw_asset((Parent, hez_amount_for_fees))
+			.pay_fees((Parent, hez_amount_for_fees))
+			.withdraw_asset((
+				AccountKey20 { key: non_erc20_address.into(), network: None },
+				erc20_transfer_amount,
+			))
+			.deposit_asset(AllCounted(1), beneficiary.clone())
+			.build();
+		// Execution fails but doesn't panic.
+		assert!(PezkuwiXcm::execute(
+			RuntimeOrigin::signed(sender.clone()),
+			Box::new(VersionedXcm::V5(message)),
+			Weight::from_parts(2_500_000_000, 120_000),
+		)
+		.is_err());
+	});
+}
+
+/// EIP-155 chain id. The fork carried an upstream test network's id, so a transaction signed for
+/// that network was valid here and wallets listed this chain under its name. Ids from the upstream
+/// 4204204xx family are refused outright, and the value is pinned to our own.
+#[test]
+fn evm_chain_id_is_our_own() {
+	let id = <<Runtime as pezpallet_revive::Config>::ChainId as pezframe_support::traits::Get<
+		u64,
+	>>::get();
+	assert!(!(420_420_400..420_420_500).contains(&id), "upstream EVM chain id {id}");
+	assert_eq!(id, 1920);
 }

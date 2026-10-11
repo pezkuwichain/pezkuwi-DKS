@@ -1085,6 +1085,9 @@ where
 			pezframe_system::CheckWeight::<Runtime>::new(),
 			pezpallet_asset_conversion_tx_payment::ChargeAssetTxPayment::<Runtime>::from(tip, None),
 			pezframe_metadata_hash_extension::CheckMetadataHash::<Runtime>::new(true),
+			// `TxExtension` carries `SetOrigin` for `pezpallet_revive`; a signed offchain
+			// payload has no Ethereum origin to carry, so it goes in empty.
+			pezpallet_revive::evm::tx_extension::SetOrigin::<Runtime>::default(),
 		));
 		let raw_payload = SignedPayload::new(call, tx_ext)
 			.map_err(|e| {
