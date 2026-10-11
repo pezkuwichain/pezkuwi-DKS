@@ -128,7 +128,7 @@ impl PeerMessagesGenerator {
 		options: &ApprovalsOptions,
 	) -> String {
 		let mut fingerprint = options.fingerprint();
-		let configuration_bytes = bincode::serialize(&configuration).unwrap();
+		let configuration_bytes = serde_json::to_vec(&configuration).unwrap();
 		fingerprint.extend(configuration_bytes);
 		let mut sha1 = sha1::Sha1::new();
 		sha1.update(fingerprint);
