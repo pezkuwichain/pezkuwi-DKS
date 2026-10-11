@@ -1641,10 +1641,11 @@ construct_runtime! {
 		StateTrieMigration: pezpallet_state_trie_migration = 254,
 
 		// === CUSTOM PEZKUWI PALLETS ===
-		// RIP ValidatorPool 91 - it implemented SessionManager but was never wired to
-		// anything, so its shadow-mode apparatus ran zero times. TNPoS replaces it on
-		// Zagros; it does not land here yet because the staking-score oracle it needs is
-		// still open (M7.0). Index left unused on purpose.
+		// RIP ValidatorPool 91 - it implemented SessionManager but was never wired to anything.
+		// Index left unused on purpose. The validator committee is drawn by TNPoS on the People
+		// chain (`pezpallet_tnpos`, index 83 there); this relay's session manager is
+		// `StakingAhClient`, and it reports each session's performance back to the register
+		// through `StakingXcmToAssetHub::tell_the_register`.
 
 		// Root testing pezpallet.
 		RootTesting: pezpallet_root_testing = 249,

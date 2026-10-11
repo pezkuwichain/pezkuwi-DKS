@@ -1654,8 +1654,11 @@ construct_runtime! {
 		StateTrieMigration: pezpallet_state_trie_migration = 254,
 
 		// === CUSTOM PEZKUWI PALLETS ===
-		// TNPoS: draws the validator committee and is the session manager (see
-		// `pezpallet_session::Config::SessionManager` above).
+		// RIP ValidatorPool 91 - it implemented SessionManager but was never wired to anything.
+		// Index left unused on purpose. The validator committee is drawn by TNPoS on the People
+		// chain (`pezpallet_tnpos`, index 83 there); this relay's session manager is
+		// `StakingAhClient`, and it reports each session's performance back to the register
+		// through `StakingXcmToAssetHub::tell_the_register`.
 
 		// Root testing pezpallet.
 		RootTesting: pezpallet_root_testing = 249,
