@@ -615,6 +615,7 @@ members = [
 	"templates/teyrchain/runtime",
 	"templates/zombienet",
 	"umbrella",
+	"vendor/paste",
 	"vendor/scale-info-legacy",
 	"vendor/ss58-registry",
 	# Vendored pezkuwi-subxt crates
@@ -1746,6 +1747,10 @@ zeroize = { opt-level = 3 }
 # with no fixed release. The vendored copy swaps its one SmallString alias for String; drop the
 # patch once an upstream release no longer depends on smallstr.
 scale-info-legacy = { path = "vendor/scale-info-legacy" }
+# paste 1.0.15 is unmaintained (RUSTSEC-2024-0436) and 26 crates in the graph ask for it, most of
+# them third-party (alloy, ark, netlink). The vendored crate re-exports pastey, its maintained
+# successor, under the paste name.
+paste = { path = "vendor/paste" }
 serde = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 serde_core = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 # arrayvec was vendored because 0.7.6 failed on wasm32v1-none (E0223 ambiguity from the

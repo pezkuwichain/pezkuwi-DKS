@@ -1,0 +1,12 @@
+[package]
+name = "paste"
+# Above the last crates.io release (1.0.15) so every `paste = "1"` requirement in the graph
+# resolves to this crate through the workspace patch.
+version = "1.0.16"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "paste 1.x API served by pastey, the maintained successor (RUSTSEC-2024-0436)"
+publish = false
+
+[dependencies]
+pastey = { version = "0.2.3" }
