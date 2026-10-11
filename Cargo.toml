@@ -618,6 +618,7 @@ members = [
 	"vendor/paste",
 	"vendor/scale-info-legacy",
 	"vendor/ss58-registry",
+	"vendor/tracing-log",
 	# Vendored pezkuwi-subxt crates
 	"vendor/pezkuwi-subxt/codegen",
 	"vendor/pezkuwi-subxt/core",
@@ -1746,6 +1747,10 @@ scale-info-legacy = { path = "vendor/scale-info-legacy" }
 # them third-party (alloy, ark, netlink). The vendored crate re-exports pastey, its maintained
 # successor, under the paste name.
 paste = { path = "vendor/paste" }
+# tracing-log 0.2.0 (latest) runs its interest cache on lru 0.7, which has a panic-safety
+# use-after-free fixed in lru 0.16.3; pezsc-tracing enables that cache. The vendored copy moves
+# it to lru 0.18. Drop the patch once a tracing-log release does.
+tracing-log = { path = "vendor/tracing-log" }
 serde = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 serde_core = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 # arrayvec was vendored because 0.7.6 failed on wasm32v1-none (E0223 ambiguity from the
