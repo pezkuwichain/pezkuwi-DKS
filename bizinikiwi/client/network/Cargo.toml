@@ -62,7 +62,6 @@ unsigned-varint = { features = [
 	"asynchronous_codec",
 	"futures",
 ], workspace = true }
-wasm-timer = { workspace = true }
 zeroize = { workspace = true, default-features = true }
 
 [dev-dependencies]

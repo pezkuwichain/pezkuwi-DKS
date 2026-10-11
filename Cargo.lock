@@ -438,7 +438,7 @@ dependencies = [
  "futures-utils-wasm",
  "http",
  "lru 0.18.5",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pin-project",
  "reqwest 0.13.4",
  "serde",
@@ -725,7 +725,7 @@ dependencies = [
  "derive_more 2.1.1",
  "futures",
  "futures-utils-wasm",
- "parking_lot 0.12.5",
+ "parking_lot",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -2938,7 +2938,7 @@ dependencies = [
  "futures",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-transaction-pool",
  "pezsc-transaction-pool-api",
  "pezsp-blockchain",
@@ -2965,7 +2965,7 @@ dependencies = [
  "hex",
  "jsonrpsee",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezkuwi-subxt",
  "pezkuwi-subxt-core",
  "pezkuwi-subxt-rpcs",
@@ -4780,7 +4780,7 @@ dependencies = [
  "hashbrown 0.14.5",
  "lock_api",
  "once_cell",
- "parking_lot_core 0.9.12",
+ "parking_lot_core",
 ]
 
 [[package]]
@@ -4794,7 +4794,7 @@ dependencies = [
  "hashbrown 0.14.5",
  "lock_api",
  "once_cell",
- "parking_lot_core 0.9.12",
+ "parking_lot_core",
 ]
 
 [[package]]
@@ -5822,7 +5822,7 @@ dependencies = [
  "log",
  "num-traits",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "rand 0.8.6",
  "scale-info",
 ]
@@ -6103,7 +6103,7 @@ checksum = "1d930c203dd0b6ff06e0201a4a2fe9149b43c684fd4420555b26d21b1a02956f"
 dependencies = [
  "futures-core",
  "lock_api",
- "parking_lot 0.12.5",
+ "parking_lot",
 ]
 
 [[package]]
@@ -6474,7 +6474,7 @@ dependencies = [
  "futures-timer",
  "no-std-compat",
  "nonzero_ext",
- "parking_lot 0.12.5",
+ "parking_lot",
  "portable-atomic",
  "quanta",
  "rand 0.8.6",
@@ -6744,7 +6744,7 @@ dependencies = [
  "moka",
  "ndk-context",
  "once_cell",
- "parking_lot 0.12.5",
+ "parking_lot",
  "rand 0.10.2",
  "resolv-conf",
  "smallvec",
@@ -7648,7 +7648,7 @@ dependencies = [
  "http-body",
  "http-body-util",
  "jsonrpsee-types",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pin-project",
  "rand 0.8.6",
  "rustc-hash 2.1.1",
@@ -7936,7 +7936,7 @@ dependencies = [
  "json-patch",
  "k8s-openapi",
  "kube-client",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pin-project",
  "serde",
  "serde_json",
@@ -7971,7 +7971,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf7a85fe66f9ff9cd74e169fdd2c94c6e1e74c412c99a73b4df3200b5d3760b2"
 dependencies = [
  "kvdb",
- "parking_lot 0.12.5",
+ "parking_lot",
 ]
 
 [[package]]
@@ -7982,7 +7982,7 @@ checksum = "739ac938a308a9a8b6772fd1d840fd9c0078f9c74fe294feaf32faae727102cc"
 dependencies = [
  "kvdb",
  "num_cpus",
- "parking_lot 0.12.5",
+ "parking_lot",
  "regex",
  "rocksdb",
 ]
@@ -8295,7 +8295,7 @@ dependencies = [
  "multihash",
  "multihash-codetable",
  "network-interface",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pin-project",
  "prost 0.13.5",
  "prost-build 0.14.3",
@@ -8610,7 +8610,7 @@ dependencies = [
  "hashlink 0.8.4",
  "lioness",
  "log",
- "parking_lot 0.12.5",
+ "parking_lot",
  "rand 0.8.6",
  "rand_chacha 0.3.1",
  "rand_distr",
@@ -8655,7 +8655,7 @@ dependencies = [
  "crossbeam-epoch",
  "crossbeam-utils",
  "equivalent",
- "parking_lot 0.12.5",
+ "parking_lot",
  "portable-atomic",
  "smallvec",
  "tagptr",
@@ -9257,7 +9257,7 @@ dependencies = [
  "log",
  "lz4",
  "memmap2",
- "parking_lot 0.12.5",
+ "parking_lot",
  "rand 0.9.4",
  "siphasher",
  "snap",
@@ -9307,37 +9307,12 @@ checksum = "f38d5652c16fde515bb1ecef450ab0f6a219d619a7274976324d5e377f7dceba"
 
 [[package]]
 name = "parking_lot"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
-dependencies = [
- "instant",
- "lock_api",
- "parking_lot_core 0.8.6",
-]
-
-[[package]]
-name = "parking_lot"
 version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93857453250e3077bd71ff98b6a65ea6621a19bb0f559a85248955ac12c45a1a"
 dependencies = [
  "lock_api",
- "parking_lot_core 0.9.12",
-]
-
-[[package]]
-name = "parking_lot_core"
-version = "0.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60a2cfe6f0ad2bfc16aefa463b497d5c7a5ecd44a23efa72aa342d90177356dc"
-dependencies = [
- "cfg-if",
- "instant",
- "libc",
- "redox_syscall 0.2.16",
- "smallvec",
- "winapi",
+ "parking_lot_core",
 ]
 
 [[package]]
@@ -9857,7 +9832,7 @@ dependencies = [
  "backoff",
  "futures",
  "num-traits",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezbp-header-pez-chain",
  "relay-utils",
  "tokio",
@@ -9914,7 +9889,7 @@ dependencies = [
  "futures",
  "hex",
  "num-traits",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-finality-relay",
  "pezbp-messages",
  "pezsp-arithmetic",
@@ -11088,7 +11063,7 @@ dependencies = [
  "async-trait",
  "futures",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezcumulus-client-consensus-common",
  "pezcumulus-client-network",
  "pezcumulus-primitives-core",
@@ -11119,7 +11094,7 @@ dependencies = [
  "bizinikiwi-prometheus-endpoint",
  "futures",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezcumulus-client-collator",
  "pezcumulus-client-consensus-common",
  "pezcumulus-client-proof-size-recording",
@@ -11208,7 +11183,7 @@ dependencies = [
  "async-trait",
  "bizinikiwi-prometheus-endpoint",
  "futures",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezcumulus-client-consensus-common",
  "pezcumulus-primitives-core",
  "pezcumulus-relay-chain-interface",
@@ -11231,7 +11206,7 @@ dependencies = [
  "futures",
  "futures-timer",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezcumulus-primitives-core",
  "pezcumulus-relay-chain-inprocess-interface",
  "pezcumulus-relay-chain-interface",
@@ -12826,7 +12801,7 @@ dependencies = [
  "async-trait",
  "futures",
  "futures-timer",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-tracing-gum",
  "pezkuwi-node-network-protocol",
  "pezkuwi-node-subsystem",
@@ -12870,7 +12845,7 @@ dependencies = [
  "futures",
  "futures-timer",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-tracing-gum",
  "pezkuwi-node-metrics",
  "pezkuwi-node-network-protocol",
@@ -12931,7 +12906,7 @@ dependencies = [
  "kvdb-memorydb",
  "merlin",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-tracing-gum",
  "pezkuwi-node-subsystem",
  "pezkuwi-node-subsystem-test-helpers",
@@ -13000,7 +12975,7 @@ dependencies = [
  "futures-timer",
  "kvdb-memorydb",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-tracing-gum",
  "pezkuwi-erasure-coding",
  "pezkuwi-node-clock",
@@ -13050,6 +13025,7 @@ name = "pezkuwi-node-core-bitfield-signing"
 version = "7.0.0"
 dependencies = [
  "futures",
+ "futures-timer",
  "pez-tracing-gum",
  "pezkuwi-node-subsystem",
  "pezkuwi-node-subsystem-test-helpers",
@@ -13058,7 +13034,6 @@ dependencies = [
  "pezkuwi-primitives-test-helpers",
  "pezsp-keystore",
  "thiserror 1.0.69",
- "wasm-timer",
 ]
 
 [[package]]
@@ -13120,7 +13095,7 @@ dependencies = [
  "futures-timer",
  "kvdb-memorydb",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-tracing-gum",
  "pezkuwi-node-clock",
  "pezkuwi-node-subsystem",
@@ -13432,7 +13407,7 @@ version = "1.0.0"
 dependencies = [
  "async-trait",
  "futures",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezkuwi-erasure-coding",
  "pezkuwi-node-subsystem",
  "pezkuwi-node-subsystem-util",
@@ -13486,7 +13461,7 @@ dependencies = [
  "kvdb-shared-tests",
  "parity-db",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-tracing-gum",
  "pezkuwi-erasure-coding",
  "pezkuwi-node-metrics",
@@ -14428,7 +14403,7 @@ dependencies = [
  "log",
  "parity-db",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-tracing-gum",
  "pezframe-benchmarking",
  "pezframe-benchmarking-cli",
@@ -15454,7 +15429,7 @@ dependencies = [
  "futures",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-block-builder",
  "pezsc-client-api",
  "pezsc-offchain",
@@ -16463,7 +16438,7 @@ version = "1.0.0"
 dependencies = [
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezframe-election-provider-support",
  "pezframe-support",
  "pezframe-system",
@@ -16490,7 +16465,7 @@ version = "0.9.0"
 dependencies = [
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezframe-benchmarking",
  "pezframe-election-provider-support",
  "pezframe-support",
@@ -16514,7 +16489,7 @@ dependencies = [
  "hex",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezframe-benchmarking",
  "pezframe-election-provider-support",
  "pezframe-remote-externalities",
@@ -18911,7 +18886,7 @@ dependencies = [
  "futures",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-block-builder",
  "pezsc-client-api",
  "pezsc-proposer-metrics",
@@ -19041,7 +19016,7 @@ dependencies = [
  "futures",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-executor",
  "pezsc-transaction-pool-api",
  "pezsc-utils",
@@ -19073,7 +19048,7 @@ dependencies = [
  "log",
  "parity-db",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-kitchensink-runtime",
  "pezsc-client-api",
  "pezsc-state-db",
@@ -19101,7 +19076,7 @@ dependencies = [
  "futures",
  "log",
  "mockall",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-client-api",
  "pezsc-network-types",
  "pezsc-utils",
@@ -19125,7 +19100,7 @@ dependencies = [
  "futures",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-fork-tree",
  "pezsc-block-builder",
  "pezsc-client-api",
@@ -19167,7 +19142,7 @@ dependencies = [
  "num-rational",
  "num-traits",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-fork-tree",
  "pezsc-block-builder",
  "pezsc-client-api",
@@ -19234,7 +19209,7 @@ dependencies = [
  "futures",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-block-builder",
  "pezsc-client-api",
  "pezsc-consensus",
@@ -19258,7 +19233,6 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "tokio",
- "wasm-timer",
 ]
 
 [[package]]
@@ -19270,7 +19244,7 @@ dependencies = [
  "jsonrpsee",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-consensus-beefy",
  "pezsc-rpc",
  "pezsp-application-crypto",
@@ -19310,7 +19284,7 @@ dependencies = [
  "futures-timer",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pez-fork-tree",
  "pezsc-block-builder",
  "pezsc-chain-spec",
@@ -19418,7 +19392,7 @@ dependencies = [
  "futures-timer",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-client-api",
  "pezsc-consensus",
  "pezsp-api",
@@ -19466,7 +19440,7 @@ dependencies = [
  "criterion",
  "num_cpus",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "paste",
  "pezsc-executor-common",
  "pezsc-executor-polkavm",
@@ -19528,7 +19502,7 @@ dependencies = [
  "cargo_metadata",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "paste",
  "pezsc-allocator",
  "pezsc-executor-common",
@@ -19551,7 +19525,7 @@ dependencies = [
  "hex",
  "jsonrpsee",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezkuwi-primitives",
  "pezsc-transaction-pool-api",
  "pezsp-api",
@@ -19591,7 +19565,7 @@ name = "pezsc-keystore"
 version = "25.0.0"
 dependencies = [
  "array-bytes 6.2.3",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsp-application-crypto",
  "pezsp-core",
  "pezsp-keystore",
@@ -19613,7 +19587,7 @@ dependencies = [
  "log",
  "mixnet",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-client-api",
  "pezsc-network",
  "pezsc-network-types",
@@ -19646,7 +19620,7 @@ dependencies = [
  "litep2p",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-client-api",
  "pezsc-network-common",
  "pezsc-network-types",
@@ -19667,7 +19641,6 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "unsigned-varint 0.7.2",
- "wasm-timer",
  "zeroize",
 ]
 
@@ -19807,7 +19780,7 @@ dependencies = [
  "futures",
  "futures-timer",
  "log",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-block-builder",
  "pezsc-client-api",
  "pezsc-consensus",
@@ -19880,7 +19853,7 @@ dependencies = [
  "num_cpus",
  "once_cell",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-block-builder",
  "pezsc-client-api",
  "pezsc-client-db",
@@ -19924,7 +19897,7 @@ dependencies = [
  "jsonrpsee",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-block-builder",
  "pezsc-chain-spec",
  "pezsc-client-api",
@@ -20021,7 +19994,7 @@ dependencies = [
  "log",
  "multihash-codetable",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-block-builder",
  "pezsc-chain-spec",
  "pezsc-client-api",
@@ -20096,7 +20069,7 @@ dependencies = [
  "jsonrpsee",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-chain-spec",
  "pezsc-client-api",
  "pezsc-client-db",
@@ -20158,7 +20131,7 @@ dependencies = [
  "futures",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-block-builder",
  "pezsc-client-api",
  "pezsc-client-db",
@@ -20187,7 +20160,7 @@ version = "0.30.0"
 dependencies = [
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsp-core",
 ]
 
@@ -20202,7 +20175,7 @@ dependencies = [
  "itertools 0.11.0",
  "log",
  "parity-db",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-client-api",
  "pezsc-keystore",
  "pezsc-network-statement",
@@ -20274,9 +20247,10 @@ version = "15.0.0"
 dependencies = [
  "chrono",
  "futures",
+ "futures-timer",
  "log",
  "multiaddr",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-utils",
  "rand 0.8.6",
  "rustls",
@@ -20285,7 +20259,6 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tokio-tungstenite 0.27.0",
- "wasm-timer",
  "webpki-roots",
 ]
 
@@ -20300,7 +20273,7 @@ dependencies = [
  "libc",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsc-client-api",
  "pezsc-tracing-proc-macro",
  "pezsp-api",
@@ -20349,7 +20322,7 @@ dependencies = [
  "itertools 0.11.0",
  "linked-hash-map",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezcumulus-zombienet-sdk-helpers",
  "pezkuwi-zombienet-configuration",
  "pezkuwi-zombienet-sdk",
@@ -20402,7 +20375,7 @@ dependencies = [
  "futures",
  "futures-timer",
  "log",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsp-arithmetic",
  "prometheus",
  "tokio-test",
@@ -21079,7 +21052,7 @@ version = "28.0.0"
 dependencies = [
  "futures",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsp-api",
  "pezsp-consensus",
  "pezsp-core",
@@ -21234,7 +21207,7 @@ dependencies = [
  "log",
  "merlin",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "paste",
  "pezsp-crypto-hashing",
  "pezsp-debug-derive",
@@ -21342,7 +21315,7 @@ version = "10.0.0"
 dependencies = [
  "kvdb",
  "kvdb-rocksdb",
- "parking_lot 0.12.5",
+ "parking_lot",
 ]
 
 [[package]]
@@ -21435,7 +21408,7 @@ name = "pezsp-keystore"
 version = "0.34.0"
 dependencies = [
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsp-core",
  "pezsp-externalities",
 ]
@@ -21708,7 +21681,7 @@ dependencies = [
  "hash-db",
  "log",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsp-core",
  "pezsp-externalities",
  "pezsp-panic-handler",
@@ -21832,7 +21805,7 @@ dependencies = [
  "memory-db",
  "nohash-hasher",
  "parity-scale-codec",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezsp-core",
  "pezsp-externalities",
  "pezsp-runtime",
@@ -22507,7 +22480,7 @@ dependencies = [
  "log",
  "nix 0.27.1",
  "once_cell",
- "parking_lot 0.12.5",
+ "parking_lot",
  "smallvec",
  "symbolic-demangle",
  "tempfile",
@@ -22750,7 +22723,7 @@ dependencies = [
  "fnv",
  "lazy_static",
  "memchr",
- "parking_lot 0.12.5",
+ "parking_lot",
  "thiserror 1.0.69",
 ]
 
@@ -23024,7 +22997,7 @@ checksum = "5253a3a0d56548d5b0be25414171dc780cc6870727746d05bd2bde352eee96c5"
 dependencies = [
  "ahash 0.8.12",
  "hashbrown 0.13.2",
- "parking_lot 0.12.5",
+ "parking_lot",
 ]
 
 [[package]]
@@ -23315,15 +23288,6 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb5a58c1855b4b6819d59012155603f0b22ad30cad752600aadfcb695265519a"
-dependencies = [
- "bitflags 1.3.2",
-]
-
-[[package]]
-name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
@@ -23497,7 +23461,7 @@ dependencies = [
  "futures",
  "jsonpath_lib",
  "num-traits",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pezbp-runtime",
  "pezsp-runtime",
  "pezsp-tracing",
@@ -25201,7 +25165,7 @@ dependencies = [
  "itertools 0.14.0",
  "log",
  "lru 0.12.5",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pin-project",
  "rand 0.8.6",
  "rand_chacha 0.3.1",
@@ -25563,8 +25527,8 @@ dependencies = [
  "bitflags 1.3.2",
  "cfg_aliases 0.2.1",
  "libc",
- "parking_lot 0.12.5",
- "parking_lot_core 0.9.12",
+ "parking_lot",
+ "parking_lot_core",
  "static_init_macro",
  "winapi",
 ]
@@ -26451,7 +26415,7 @@ dependencies = [
  "bytes",
  "libc",
  "mio",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2 0.6.2",
@@ -26794,7 +26758,7 @@ dependencies = [
  "matchers",
  "nu-ansi-term",
  "once_cell",
- "parking_lot 0.12.5",
+ "parking_lot",
  "regex-automata",
  "sharded-slab",
  "smallvec",
@@ -27502,21 +27466,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasm-timer"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
-dependencies = [
- "futures",
- "js-sys",
- "parking_lot 0.11.2",
- "pin-utils",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "wasmi"
 version = "0.32.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -27883,7 +27832,7 @@ checksum = "1c598d6b99ea013e35844697fc4670d08339d5cda15588f193c6beedd12f644b"
 dependencies = [
  "futures",
  "js-sys",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pin-utils",
  "slab",
  "wasm-bindgen",
@@ -28704,7 +28653,7 @@ dependencies = [
  "futures",
  "log",
  "nohash-hasher",
- "parking_lot 0.12.5",
+ "parking_lot",
  "pin-project",
  "rand 0.9.4",
  "static_assertions",

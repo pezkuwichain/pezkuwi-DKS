@@ -16,7 +16,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::{collections::BTreeSet, sync::Arc, time::Duration};
+use std::{
+	collections::BTreeSet,
+	sync::Arc,
+	time::{Duration, Instant},
+};
 
 use pezsc_network::{NetworkPeers, ReputationChange};
 use pezsc_network_gossip::{MessageIntent, ValidationResult, Validator, ValidatorContext};
@@ -26,7 +30,6 @@ use pezsp_runtime::traits::{Block, Hash, Header, NumberFor};
 use codec::{Decode, DecodeAll, Encode};
 use log::{debug, trace};
 use parking_lot::{Mutex, RwLock};
-use wasm_timer::Instant;
 
 use crate::{
 	communication::{benefit, cost, peers::KnownPeers},

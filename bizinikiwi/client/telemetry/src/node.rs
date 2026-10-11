@@ -21,6 +21,7 @@ use crate::{
 	TelemetryPayload,
 };
 use futures::{channel::mpsc, prelude::*};
+use futures_timer::Delay;
 use multiaddr::Multiaddr;
 use rand::Rng as _;
 use std::{
@@ -29,7 +30,6 @@ use std::{
 	task::{Context, Poll},
 	time::Duration,
 };
-use wasm_timer::Delay;
 
 pub(crate) type ConnectionNotifierSender = mpsc::Sender<()>;
 pub(crate) type ConnectionNotifierReceiver = mpsc::Receiver<()>;
