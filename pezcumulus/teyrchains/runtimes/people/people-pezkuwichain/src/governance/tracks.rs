@@ -184,3 +184,62 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 		}
 	}
 }
+
+#[cfg(test)]
+mod rehearsal_tests {
+	use super::TRACKS_DATA;
+
+	fn track(
+		name: &str,
+	) -> &'static pezpallet_referenda::Track<u16, crate::Balance, crate::BlockNumber> {
+		TRACKS_DATA
+			.iter()
+			// `str_array` zero-pads to a fixed width, so the stored name carries trailing nulls
+			// and a direct comparison against the literal never matches.
+			.find(|t| {
+				let stored: &[u8] = t.info.name.as_ref();
+				stored.iter().position(|b| *b == 0).map_or(stored, |n| &stored[..n])
+					== name.as_bytes()
+			})
+			.expect("the track exists")
+	}
+
+	/// A deployed runtime carries the periods as the constitution states them.
+	///
+	/// `qeyd_rules` is the one to check because it is the slowest and therefore the one a
+	/// compression would most obviously help with -- which is exactly why it must not be
+	/// compressed by accident. Every runtime this project deploys is built without
+	/// `fast-runtime`, so this is the branch the live chains take.
+	#[test]
+	#[cfg(not(feature = "fast-runtime"))]
+	fn deployed_tracks_keep_the_constitution_periods() {
+		let t = &track("qeyd_rules").info;
+		assert_eq!(t.prepare_period, 90 * super::DAYS, "ninety days of preparation");
+		assert_eq!(t.decision_period, 90 * super::DAYS, "ninety days to decide");
+		assert_eq!(t.confirm_period, 7 * super::DAYS, "a week to confirm");
+		assert_eq!(t.min_enactment_period, 30 * super::DAYS, "a month before it takes effect");
+	}
+
+	/// A rehearsal runtime compresses them, and the order the constitution gives them survives.
+	///
+	/// The order is the part worth asserting: a compression that made every track the same
+	/// length would let a rehearsal pass arrangements the real chain would refuse, because a
+	/// track meant to deliberate longer than another no longer does.
+	#[test]
+	#[cfg(feature = "fast-runtime")]
+	fn rehearsal_tracks_compress_and_stay_ordered() {
+		let slow = &track("qeyd_rules").info;
+		let fast = &track("welati_admin").info;
+		assert_eq!(slow.prepare_period, 90, "one block per day");
+		assert_eq!(slow.decision_period, 90);
+		assert_eq!(slow.confirm_period, 7);
+		assert_eq!(slow.min_enactment_period, 30);
+		// Below a day the floor applies rather than zero.
+		assert_eq!(fast.prepare_period, 2, "two hours floors at two blocks, not zero");
+		assert_eq!(fast.min_enactment_period, 2, "ten minutes floors at two blocks, not zero");
+		assert!(
+			slow.decision_period > fast.decision_period,
+			"the constitutional track still deliberates longer than the administrative one"
+		);
+	}
+}
