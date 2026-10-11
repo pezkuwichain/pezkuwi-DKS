@@ -4,6 +4,7 @@ version = "1.0.0"
 authors = [
 	"Acala Developers",
 	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
+	"Parity Technologies <admin@parity.io>",
 ]
 edition.workspace = true
 license = "Apache-2.0"
