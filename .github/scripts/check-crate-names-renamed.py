@@ -39,10 +39,6 @@ SKIP_DIRS = (
     "vendor/",  # upstream's own sources, vendored unmodified
     "target/",
     ".git/",
-    # Separate workspaces with their own manifests and their own dependencies. They pull
-    # `sp-core` and friends from crates.io by their published names, so a reference there is
-    # correct -- and this crate's `cargo metadata` cannot see it to know that.
-    "tools/usdt-bridge/",
 )
 
 

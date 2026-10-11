@@ -29,16 +29,18 @@ jobs:
         with:
           command: check ${{ matrix.checks }}
 
-  # The tools under tools/ declare their own [workspace], so the run above never reaches their
-  # dependency graphs. That is not a small gap: the bridge tooling was carrying a `bytes`
-  # integer overflow and a `time` stack-exhaustion DoS, and nothing here would have said so.
-  # Same policy file, so the ignore list stays single-sourced.
+  # A tool under tools/ that declares its own [workspace] has a dependency graph the run above
+  # never reaches. That is not a small gap: the bridge tooling, while it had a lockfile of its
+  # own, was carrying a `bytes` integer overflow and a `time` stack-exhaustion DoS, and nothing
+  # here would have said so. The bridge is a root workspace member now and is covered above;
+  # chain-spec-tool still keeps its own lockfile. Same policy file, so the ignore list stays
+  # single-sourced.
   cargo-deny-tools:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        manifest: [tools/usdt-bridge/Cargo.toml, tools/chain-spec-tool/Cargo.toml]
+        manifest: [tools/chain-spec-tool/Cargo.toml]
     steps:
       - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2

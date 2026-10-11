@@ -53,18 +53,46 @@ OSV_BATCH = "https://api.osv.dev/v1/querybatch"
 CHUNK = 500
 
 
+def lock_roots():
+    """Every directory in the tree that carries its own `Cargo.lock`.
+
+    Read from git rather than listed, because a list is what went wrong: until 2026-10-12 this
+    audited the root workspace only, while `tools/usdt-bridge` -- a service that runs on the
+    fleet -- resolved nine packages with advisories against a lockfile of its own, among
+    them `libsecp256k1` and `paste` that the root graph had already closed, and only two of
+    which Dependabot reported. The bridge is a workspace member now; a tool that still keeps
+    its own lockfile builds its own graph, so it is covered the moment it is committed.
+    """
+    out = subprocess.run(
+        ["git", "ls-files", "--", "Cargo.lock", "*/Cargo.lock"],
+        cwd=REPO, capture_output=True, text=True, check=True,
+    )
+    roots = sorted({(REPO / f).parent for f in out.stdout.split()})
+    if REPO not in roots:
+        sys.exit("the root Cargo.lock is not tracked -- that is not this workspace")
+    return roots
+
+
 def resolved_packages():
-    """(name, version) for everything in the resolved graph, features and all."""
+    """(name, version) for everything in every resolved graph, features and all."""
+    found = set()
+    for root in lock_roots():
+        found |= resolved_packages_in(root)
+    return sorted(found)
+
+
+def resolved_packages_in(root):
     out = subprocess.run(
         ["cargo", "metadata", "--format-version", "1", "--all-features"],
-        cwd=REPO, capture_output=True, text=True, timeout=900,
+        cwd=root, capture_output=True, text=True, timeout=900,
     )
     if out.returncode != 0:
-        sys.exit(f"cargo metadata failed:\n{out.stderr[-2000:]}")
+        sys.exit(f"cargo metadata failed in {root.relative_to(REPO)}:\n{out.stderr[-2000:]}")
     meta = json.loads(out.stdout)
     nodes = (meta.get("resolve") or {}).get("nodes") or []
     if not nodes:
-        sys.exit("cargo metadata returned no resolve graph -- nothing was audited")
+        sys.exit(f"cargo metadata returned no resolve graph in {root.relative_to(REPO)} -- "
+                 "nothing was audited")
 
     found = set()
     for n in nodes:
@@ -80,7 +108,7 @@ def resolved_packages():
         if pid.startswith("path+"):
             continue
         found.add((name, version))
-    return sorted(found)
+    return found
 
 
 def query_osv(pkgs):

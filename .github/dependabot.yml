@@ -32,19 +32,3 @@ updates:
         update-types: ["minor", "patch"]
       cargo-major:
         update-types: ["major"]
-
-  # usdt-bridge is a separate crate/workspace with its own Cargo.lock; group its bumps
-  # so the bridge never spawns per-crate PRs of its own (e.g. the stray rand/rustls ones).
-  # Majors are separated for the same reason as above: this workspace signs and submits
-  # transactions, so a breaking bump riding along in a patch PR is the worst place for one.
-  - package-ecosystem: "cargo"
-    directory: "/tools/usdt-bridge"
-    labels: ["A1-insubstantial"]
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    groups:
-      bridge-minor-patch:
-        update-types: ["minor", "patch"]
-      bridge-major:
-        update-types: ["major"]
