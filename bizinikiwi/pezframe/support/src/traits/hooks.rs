@@ -337,7 +337,6 @@ impl_for_tuples_attr! {
 	}
 }
 
-#[cfg_attr(doc, aquamarine::aquamarine)]
 /// The pezpallet hooks trait. This is merely an umbrella trait for:
 ///
 /// - [`OnInitialize`]
@@ -357,36 +356,7 @@ impl_for_tuples_attr! {
 ///
 /// In short, the following diagram shows the flow of hooks in a pezpallet
 ///
-/// ```mermaid
-/// graph LR
-/// 	Optional --> Mandatory
-/// 	Mandatory --> ExtrinsicsMandatory
-/// 	ExtrinsicsMandatory --> Poll
-/// 	Poll --> Extrinsics
-/// 	Extrinsics --> AfterMandatory
-/// 	AfterMandatory --> onIdle
-///
-/// subgraph Optional
-/// 	OnRuntimeUpgrade
-/// end
-///
-/// subgraph Mandatory
-/// 	OnInitialize
-/// end
-///
-/// subgraph ExtrinsicsMandatory
-/// 	Inherent1 --> Inherent2
-/// end
-///
-/// subgraph Extrinsics
-/// 	direction TB
-/// 	Extrinsic1 --> Extrinsic2
-/// end
-///
-/// subgraph AfterMandatory
-/// 	OnFinalize
-/// end
-/// ```
+#[cfg_attr(doc, doc = simple_mermaid::mermaid!("../../docs/mermaid/hooks_order.mmd"))]
 ///
 /// * [`OnRuntimeUpgrade`](Hooks::OnRuntimeUpgrade) hooks are only executed when a code change is
 ///   detected.

@@ -8,7 +8,6 @@ use codec::Decode;
 use darling::{ast::NestedMeta, FromMeta};
 use pezkuwi_subxt_codegen::{CodegenBuilder, CodegenError, Metadata};
 use proc_macro::TokenStream;
-use proc_macro_error2::{abort_call_site, proc_macro_error};
 use quote::ToTokens;
 use scale_typegen::typegen::{
 	settings::substitutes::path_segments,
@@ -87,7 +86,6 @@ struct SubstituteType {
 // appended.
 #[allow(missing_docs)]
 #[proc_macro_attribute]
-#[proc_macro_error]
 pub fn subxt(args: TokenStream, input: TokenStream) -> TokenStream {
 	match subxt_inner(args, parse_macro_input!(input as syn::ItemMod)) {
 		Ok(e) => e,
@@ -145,7 +143,7 @@ fn subxt_inner(args: TokenStream, item_mod: syn::ItemMod) -> Result<TokenStream,
 	);
 
 	for d in args.derive_for_type {
-		validate_type_path(&d.path.path, &metadata);
+		validate_type_path(&d.path.path, &metadata)?;
 		codegen.add_derives_for_type(d.path, d.derive.into_iter(), d.recursive);
 	}
 
@@ -158,13 +156,13 @@ fn subxt_inner(args: TokenStream, item_mod: syn::ItemMod) -> Result<TokenStream,
 			.collect(),
 	);
 	for d in args.attributes_for_type {
-		validate_type_path(&d.path.path, &metadata);
+		validate_type_path(&d.path.path, &metadata)?;
 		codegen.add_attributes_for_type(d.path, d.attributes.into_iter().map(|a| a.0), d.recursive)
 	}
 
 	// Insert type substitutions:
 	for sub in args.substitute_type.into_iter() {
-		validate_type_path(&sub.path, &metadata);
+		validate_type_path(&sub.path, &metadata)?;
 		codegen.set_type_substitute(sub.path, sub.with);
 	}
 
@@ -173,10 +171,17 @@ fn subxt_inner(args: TokenStream, item_mod: syn::ItemMod) -> Result<TokenStream,
 	Ok(code.into())
 }
 
-/// Checks that a type is present in the type registry. If it is not found, abort with a
+/// A compile error spanning the macro call site.
+fn call_site_error(message: impl std::fmt::Display) -> TokenStream {
+	syn::Error::new(proc_macro::Span::call_site().into(), message)
+		.into_compile_error()
+		.into()
+}
+
+/// Checks that a type is present in the type registry. If it is not found, fail with a
 /// helpful error message, showing the user alternative types, that have the same name, but are at
 /// different locations in the metadata.
-fn validate_type_path(path: &syn::Path, metadata: &Metadata) {
+fn validate_type_path(path: &syn::Path, metadata: &Metadata) -> Result<(), TokenStream> {
 	let path_segments = path_segments(path);
 	let ident = &path
 		.segments
@@ -196,32 +201,34 @@ fn validate_type_path(path: &syn::Path, metadata: &Metadata) {
 			s
 		};
 
-		abort_call_site!(
+		return Err(call_site_error(format!(
 			"Type `{}` does not exist at path `{}`\n\n{}",
-			ident.to_string(),
+			ident,
 			pretty_path(path),
 			alternatives
-		);
+		)));
 	}
 
 	fn pretty_path(path: &syn::Path) -> String {
 		path.to_token_stream().to_string().replace(' ', "")
 	}
+
+	Ok(())
 }
 
 /// Resolves a path, handling the $OUT_DIR placeholder if present.
 /// If $OUT_DIR is present in the path, it's replaced with the actual OUT_DIR environment variable.
 /// Otherwise, the path is resolved relative to CARGO_MANIFEST_DIR.
-fn resolve_path(path_str: &str) -> std::path::PathBuf {
+fn resolve_path(path_str: &str) -> Result<std::path::PathBuf, TokenStream> {
 	if path_str.contains("$OUT_DIR") {
-		let out_dir = std::env::var("OUT_DIR").unwrap_or_else(|_| {
-			abort_call_site!("$OUT_DIR is used in path but OUT_DIR environment variable is not set")
-		});
-		std::path::Path::new(&path_str.replace("$OUT_DIR", &out_dir)).into()
+		let out_dir = std::env::var("OUT_DIR").map_err(|_| {
+			call_site_error("$OUT_DIR is used in path but OUT_DIR environment variable is not set")
+		})?;
+		Ok(std::path::Path::new(&path_str.replace("$OUT_DIR", &out_dir)).into())
 	} else {
 		let root = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".into());
 		let root_path = std::path::Path::new(&root);
-		root_path.join(path_str)
+		Ok(root_path.join(path_str))
 	}
 }
 
@@ -235,11 +242,11 @@ fn fetch_metadata(
 	#[cfg(feature = "runtime-wasm-path")]
 	if let Some(path) = &args.runtime_path {
 		if args.runtime_metadata_insecure_url.is_some() || args.runtime_metadata_path.is_some() {
-			abort_call_site!(
-				"Only one of 'runtime_metadata_path', 'runtime_metadata_insecure_url' or `runtime_path` must be provided"
-			);
+			return Err(call_site_error(
+				"Only one of 'runtime_metadata_path', 'runtime_metadata_insecure_url' or `runtime_path` must be provided",
+			));
 		};
-		let path = resolve_path(path);
+		let path = resolve_path(path)?;
 
 		let metadata = wasm_loader::from_wasm_file(&path).map_err(|e| e.into_compile_error())?;
 		return Ok(metadata);
@@ -248,12 +255,12 @@ fn fetch_metadata(
 	let metadata = match (&args.runtime_metadata_path, &args.runtime_metadata_insecure_url) {
 		(Some(rest_of_path), None) => {
 			if unstable_metadata {
-				abort_call_site!(
-					"The 'unstable_metadata' attribute requires `runtime_metadata_insecure_url`"
-				)
+				return Err(call_site_error(
+					"The 'unstable_metadata' attribute requires `runtime_metadata_insecure_url`",
+				));
 			}
 
-			let path = resolve_path(rest_of_path);
+			let path = resolve_path(rest_of_path)?;
 
 			pezkuwi_subxt_utils_fetchmetadata::from_file_blocking(&path)
 				.and_then(|b| pezkuwi_subxt_codegen::Metadata::decode(&mut &*b).map_err(Into::into))
@@ -263,9 +270,9 @@ fn fetch_metadata(
 		(None, Some(url_string)) => {
 			use pezkuwi_subxt_utils_fetchmetadata::{from_url_blocking, MetadataVersion, Url};
 
-			let url = Url::parse(url_string).unwrap_or_else(|_| {
-				abort_call_site!("Cannot download metadata; invalid url: {}", url_string)
-			});
+			let url = Url::parse(url_string).map_err(|_| {
+				call_site_error(format!("Cannot download metadata; invalid url: {}", url_string))
+			})?;
 
 			let version = match unstable_metadata {
 				true => MetadataVersion::Unstable,
@@ -279,33 +286,33 @@ fn fetch_metadata(
 		},
 		#[cfg(not(feature = "runtime-metadata-insecure-url"))]
 		(None, Some(_)) => {
-			abort_call_site!(
-				"'runtime_metadata_insecure_url' requires the 'runtime-metadata-insecure-url' feature to be enabled"
-			)
+			return Err(call_site_error(
+				"'runtime_metadata_insecure_url' requires the 'runtime-metadata-insecure-url' feature to be enabled",
+			));
 		},
 		#[cfg(feature = "runtime-wasm-path")]
 		(None, None) => {
-			abort_call_site!(
-				"At least one of 'runtime_metadata_path', 'runtime_metadata_insecure_url'  or  'runtime_path` can be provided"
-			)
+			return Err(call_site_error(
+				"At least one of 'runtime_metadata_path', 'runtime_metadata_insecure_url'  or  'runtime_path` can be provided",
+			));
 		},
 		#[cfg(not(feature = "runtime-wasm-path"))]
 		(None, None) => {
-			abort_call_site!(
-				"At least one of 'runtime_metadata_path', 'runtime_metadata_insecure_url' can be provided"
-			)
+			return Err(call_site_error(
+				"At least one of 'runtime_metadata_path', 'runtime_metadata_insecure_url' can be provided",
+			));
 		},
 		#[cfg(feature = "runtime-wasm-path")]
 		_ => {
-			abort_call_site!(
-				"Only one of 'runtime_metadata_path', 'runtime_metadata_insecure_url'  or  'runtime_path` can be provided"
-			)
+			return Err(call_site_error(
+				"Only one of 'runtime_metadata_path', 'runtime_metadata_insecure_url'  or  'runtime_path` can be provided",
+			));
 		},
 		#[cfg(not(feature = "runtime-wasm-path"))]
 		_ => {
-			abort_call_site!(
-				"Only one of 'runtime_metadata_path' or 'runtime_metadata_insecure_url' can be provided"
-			)
+			return Err(call_site_error(
+				"Only one of 'runtime_metadata_path' or 'runtime_metadata_insecure_url' can be provided",
+			));
 		},
 	};
 	Ok(metadata)

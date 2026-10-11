@@ -37,9 +37,9 @@ ignore = [
 	# None of these is a known vulnerability. The advisory says only that no further
 	# patches will come, so each needs a reason it is tolerable to carry.
 	#
-	# Macro crates: they run at compile time and no part of them reaches a binary or a blob.
-	# (paste is gone: vendor/paste serves its API through pastey.)
-	"RUSTSEC-2026-0173", # proc-macro-error2
+	# Macro crates: none left. paste is gone (vendor/paste serves its API through pastey), and
+	# so is proc-macro-error2: the vendored subxt macro reports errors through syn::Error,
+	# aquamarine gave way to simple-mermaid, and cmd_lib 2.0.1 dropped it upstream.
 	#
 	# Host and build-time tooling, never inside a runtime blob — the same class as git2 below.
 	"RUSTSEC-2022-0061", # parity-wasm: wasm-builder, sp-version embed, contracts fixtures

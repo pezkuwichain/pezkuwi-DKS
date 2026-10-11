@@ -12,8 +12,10 @@ const CHAIN_SPEC_BUILDER_PATH: &str = "../../../../../target/release/pezstaging-
 macro_rules! bash(
 	( chain-spec-builder $($a:tt)* ) => {{
 		let path = get_chain_spec_builder_path();
+		// cmd_lib 2 only joins `$` to a variable name written at the call site; inside this
+		// macro the program has to be interpolated from a string literal instead.
 		spawn_with_output!(
-			$path $($a)*
+			"$path" $($a)*
 		)
 		.expect("a process running. qed")
 		.wait_with_output()

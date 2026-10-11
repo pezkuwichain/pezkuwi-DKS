@@ -878,20 +878,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aquamarine"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f50776554130342de4836ba542aa85a4ddb361690d7e8df13774d7284c3d5c2"
-dependencies = [
- "include_dir",
- "itertools 0.10.5",
- "proc-macro-error2",
- "proc-macro2 1.0.106",
- "quote 1.0.46",
- "syn 2.0.118",
-]
-
-[[package]]
 name = "arbitrary"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3330,25 +3316,23 @@ dependencies = [
 
 [[package]]
 name = "cmd_lib"
-version = "1.9.6"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1af0f9b65935ff457da75535a6b6ff117ac858f03f71191188b3b696f90aec5a"
+checksum = "dc93f60133215cad2ef47e47db5a386c78874a2630c2c2be68f0f543b3ce0c2c"
 dependencies = [
  "cmd_lib_macros",
- "env_logger 0.10.2",
+ "env_logger 0.11.8",
  "faccess",
- "lazy_static",
  "log",
  "os_pipe",
 ]
 
 [[package]]
 name = "cmd_lib_macros"
-version = "1.9.6"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e69eee115667ccda8b9ed7010bcf13356ad45269fc92aa78534890b42809a64"
+checksum = "bd39b5c2657c1a0064aa5d73636dac4a217edeeb6c5f8a5f52c123a758462ece"
 dependencies = [
- "proc-macro-error2",
  "proc-macro2 1.0.106",
  "quote 1.0.46",
  "syn 2.0.118",
@@ -5230,19 +5214,6 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cd405aab171cb85d6735e5c8d9db038c17d3ca007a4d2c25f337935c3d90580"
-dependencies = [
- "humantime",
- "is-terminal",
- "log",
- "regex",
- "termcolor",
-]
-
-[[package]]
-name = "env_logger"
 version = "0.11.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c863f0904021b108aa8b2f55046443e6b1ebde8fd4a15c399893aae4fa069f"
@@ -6881,25 +6852,6 @@ dependencies = [
  "proc-macro2 1.0.106",
  "quote 1.0.46",
  "syn 2.0.118",
-]
-
-[[package]]
-name = "include_dir"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "923d117408f1e49d914f1a379a309cffe4f18c05cf4e3d12e613a15fc81bd0dd"
-dependencies = [
- "include_dir_macros",
-]
-
-[[package]]
-name = "include_dir_macros"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cab85a7ed0bd5f0e76d93846e0147172bed2e2d3f859bcc33a8d9699cad1a75"
-dependencies = [
- "proc-macro2 1.0.106",
- "quote 1.0.46",
 ]
 
 [[package]]
@@ -11873,7 +11825,6 @@ dependencies = [
 name = "pezframe-executive"
 version = "28.0.0"
 dependencies = [
- "aquamarine",
  "array-bytes 6.2.3",
  "bizinikiwi-test-runtime-client",
  "log",
@@ -11890,6 +11841,7 @@ dependencies = [
  "pezsp-tracing",
  "pezsp-version",
  "scale-info",
+ "simple-mermaid",
 ]
 
 [[package]]
@@ -11981,7 +11933,6 @@ name = "pezframe-support"
 version = "28.0.0"
 dependencies = [
  "Inflector",
- "aquamarine",
  "array-bytes 6.2.3",
  "bitflags 1.3.2",
  "derive-where",
@@ -12019,6 +11970,7 @@ dependencies = [
  "scale-info",
  "serde",
  "serde_json",
+ "simple-mermaid",
  "tt-call",
 ]
 
@@ -14387,7 +14339,6 @@ dependencies = [
  "pezsp-io",
  "pezsp-maybe-compressed-blob",
  "pezsp-state-machine",
- "proc-macro-error2",
  "quote 1.0.46",
  "scale-typegen",
  "syn 2.0.118",
@@ -15459,7 +15410,6 @@ dependencies = [
 name = "pezpallet-bags-list"
 version = "27.0.0"
 dependencies = [
- "aquamarine",
  "bizinikiwi-test-utils",
  "docify",
  "log",
@@ -15474,6 +15424,7 @@ dependencies = [
  "pezsp-runtime",
  "pezsp-tracing",
  "scale-info",
+ "simple-mermaid",
 ]
 
 [[package]]
@@ -22225,16 +22176,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "proc-macro-error-attr2"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96de42df36bb9bba5542fe9f1a054b8cc87e172759a1868aa05c1f3acc89dfc5"
-dependencies = [
- "proc-macro2 1.0.106",
- "quote 1.0.46",
-]
-
-[[package]]
 name = "proc-macro-error-attr3"
 version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -22242,18 +22183,6 @@ checksum = "82366fd7d8b7a440d66d13418820c69df9b3908bcb1a0476d7f5ce5d12f5a04d"
 dependencies = [
  "proc-macro2 1.0.106",
  "quote 1.0.46",
-]
-
-[[package]]
-name = "proc-macro-error2"
-version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11ec05c52be0a07b08061f7dd003e7d7092e0472bc731b4af7bb1ef876109802"
-dependencies = [
- "proc-macro-error-attr2",
- "proc-macro2 1.0.106",
- "quote 1.0.46",
- "syn 2.0.118",
 ]
 
 [[package]]

@@ -73,33 +73,12 @@
 //! ```
 
 #[cfg(doc)]
-#[cfg_attr(doc, aquamarine::aquamarine)]
 /// # Block Execution
 ///
 /// These are the steps of block execution as done by [`Executive::execute_block`]. A block is
 /// invalid if any of them fail.
 ///
-/// ```mermaid
-/// flowchart TD
-///     Executive::execute_block --> on_runtime_upgrade
-///     on_runtime_upgrade --> System::initialize
-///     Executive::initialize_block --> System::initialize
-///     System::initialize --> on_initialize
-///     on_initialize --> PreInherents[System::PreInherents]
-///     PreInherents --> Inherents[Apply Inherents]
-///     Inherents --> PostInherents[System::PostInherents]
-///     PostInherents --> Check{MBM ongoing?}
-///     Check -->|No| poll
-///     Check -->|Yes| post_transactions_2[System::PostTransaction]
-///     post_transactions_2 --> Step[MBMs::step]
-///     Step --> on_finalize
-///     poll --> transactions[Apply Transactions]
-///     transactions --> post_transactions_1[System::PostTransaction]
-///     post_transactions_1 --> CheckIdle{Weight remaining?}
-///     CheckIdle -->|Yes| on_idle
-///     CheckIdle -->|No| on_finalize
-///     on_idle --> on_finalize
-/// ```
+#[cfg_attr(doc, doc = simple_mermaid::mermaid!("../docs/mermaid/block_flowchart.mmd"))]
 pub mod block_flowchart {}
 
 #[cfg(test)]
