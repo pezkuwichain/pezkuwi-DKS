@@ -1,6 +1,6 @@
 # PezkuwiChain
 
-### A state that runs as software
+*A state that runs as software*
 
 **Whitepaper v6.1 — Testnet Edition**
 Dijital Kurdistan Tech Institute
