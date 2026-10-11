@@ -41,8 +41,10 @@ ignore = [
 	# so is proc-macro-error2: the vendored subxt macro reports errors through syn::Error,
 	# aquamarine gave way to simple-mermaid, and cmd_lib 2.0.1 dropped it upstream.
 	#
-	# Host and build-time tooling, never inside a runtime blob — the same class as git2 below.
-	"RUSTSEC-2022-0061", # parity-wasm: wasm-builder, sp-version embed, contracts fixtures
+	# parity-wasm (RUSTSEC-2022-0061): nothing exempted. The executor's blob handling and PVF
+	# stack-height metering, sp-version's embedding, wasm-builder's check, the contracts
+	# fixtures and benchmarks now use wasmparser and wasm-encoder; it and wasm-instrument are
+	# out of Cargo.lock.
 	#
 	# libsecp256k1: nothing exempted, and nothing left. It was the host-side body of the
 	# secp256k1 recovery host functions; those now run on k256, checked verdict-for-verdict
