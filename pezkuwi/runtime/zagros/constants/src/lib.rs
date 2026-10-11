@@ -107,6 +107,25 @@ pub mod currency {
 	pub const HEZ_ACCUMULATION_CARVE_OUT: Balance =
 		HEZ_ACCUMULATION_RELAY + HEZ_ACCUMULATION_PEOPLE;
 
+	/// What the collators' pot on the Asset Hub starts with: that chain's existential deposit.
+	///
+	/// The pot is where both teyrchains send every transaction fee, every native XCM fee and
+	/// the dust of reaped accounts, and it is paid by the same `resolve` as the accumulation
+	/// accounts above -- so while it does not exist, every such credit below the deposit is
+	/// dropped and the supply shrinks by it. Measured 2026-10-12: a teleport's fee on the Asset
+	/// Hub (3_084_898) is below its deposit (3_333_333), and on a chain started without the
+	/// pot every one of them was burned. The teyrchains' deposits are a tenth of the relay's;
+	/// each runtime pins that it agrees with the figure here, since this crate cannot see it.
+	pub const HEZ_COLLATOR_POT_ASSET_HUB: Balance = EXISTENTIAL_DEPOSIT / 10;
+
+	/// The same for the People chain's collators' pot.
+	pub const HEZ_COLLATOR_POT_PEOPLE: Balance = EXISTENTIAL_DEPOSIT / 10;
+
+	/// Both, carved out of the founder's allocation on the relay as every other genesis seed
+	/// is, and escrowed there because both are held on other chains.
+	pub const HEZ_COLLATOR_POT_CARVE_OUT: Balance =
+		HEZ_COLLATOR_POT_ASSET_HUB + HEZ_COLLATOR_POT_PEOPLE;
+
 	/// What each genesis validator starts with on the Asset Hub (spec K5): the validator bond,
 	/// bonded, and a thousand beside it for fees.
 	pub const HEZ_GENESIS_VALIDATOR_STAKE: Balance = 11_000 * UNITS;

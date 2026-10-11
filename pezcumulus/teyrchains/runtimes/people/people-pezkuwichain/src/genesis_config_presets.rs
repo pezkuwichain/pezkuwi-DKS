@@ -106,6 +106,13 @@ fn people_pezkuwichain_genesis(
 					pezpallet_accumulate_and_forward::Pezpallet::<Runtime>::accumulation_account(),
 					pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_PEOPLE,
 				)))
+				// The collators' pot at its existential deposit: every transaction fee and every
+				// native XCM fee here is resolved into it, so the same refusal applies. Out of
+				// the founder's line on the relay and escrowed there.
+				.chain(core::iter::once((
+					crate::CollatorSelection::account_id(),
+					pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_PEOPLE,
+				)))
 				.collect(),
 		},
 		teyrchain_info: TeyrchainInfoConfig { teyrchain_id: id },
@@ -398,4 +405,41 @@ fn the_accumulation_account_starts_at_its_existential_deposit() {
 		})
 		.sum();
 	assert_eq!(funded, ed, "the accumulation account must start at the existential deposit");
+}
+
+/// The collators' pot starts at this chain's existential deposit, and the relay escrows exactly
+/// that -- the accumulation account's twin, for the account the fees are actually paid into.
+///
+/// Every transaction fee and every native XCM fee here reaches the pot through `resolve`, which
+/// refuses a deposit that would leave an account below the existential deposit; without the pot
+/// each such credit is dropped and the supply shrinks by it (measured 2026-10-12 on the Asset
+/// Hub, whose pot is paid the same way).
+#[test]
+fn the_collators_pot_starts_at_its_existential_deposit() {
+	let ed = <Runtime as pezpallet_balances::Config>::ExistentialDeposit::get();
+	assert_eq!(
+		pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_PEOPLE,
+		ed,
+		"the relay escrows what it believes this chain's existential deposit is"
+	);
+
+	let preset = get_preset(&PresetId::from(preset_names::PRESET_GENESIS))
+		.expect("the genesis preset exists");
+	let genesis: serde_json::Value =
+		serde_json::from_slice(&preset).expect("the preset is valid json");
+	let pot = serde_json::to_value(crate::CollatorSelection::account_id())
+		.expect("an account id serialises");
+	let funded: u128 = genesis["balances"]["balances"]
+		.as_array()
+		.expect("the balances patch is an array of (account, amount)")
+		.iter()
+		.filter(|entry| entry[0] == pot)
+		.map(|entry| {
+			entry[1]
+				.as_u64()
+				.map(u128::from)
+				.unwrap_or_else(|| entry[1].to_string().parse().expect("a balance is a number"))
+		})
+		.sum();
+	assert_eq!(funded, ed, "the collators' pot must start at the existential deposit");
 }

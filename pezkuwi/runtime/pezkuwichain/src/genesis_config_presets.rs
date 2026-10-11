@@ -296,6 +296,7 @@ fn sudo_starts_with_a_fee_budget() {
 				- pezkuwichain_runtime_constants::currency::HEZ_SUDO_FUNDING
 				- pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
 				- pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT
+				- pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_CARVE_OUT
 				- pezkuwichain_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT
 		})
 		.unwrap_or(0);
@@ -305,9 +306,10 @@ fn sudo_starts_with_a_fee_budget() {
 			- pezkuwichain_runtime_constants::currency::HEZ_SUDO_FUNDING
 			- pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
 			- pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT
+						- pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_CARVE_OUT
 			- pezkuwichain_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT,
-		"root's budget, the founding office's, the accumulation accounts' and the genesis \
-		 validators' stakes come out of the founder's allocation, not on top of it"
+		"root's budget, the founding office's, the accumulation accounts', the collators' pots and \
+		 the genesis validators' stakes come out of the founder's allocation, not on top of it"
 	);
 }
 
@@ -1395,6 +1397,8 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 			- pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING
 			+ 2 * pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING
 			+ pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_PEOPLE
+			// The collators' pots on the Asset Hub and on People, minted there.
+			+ pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_CARVE_OUT
 			// The genesis validators' stakes are held on the Asset Hub too (spec K5).
 			+ pezkuwichain_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT;
 	let checking_account: AccountId = crate::XcmPallet::check_account();
@@ -1414,6 +1418,7 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 						- pezkuwichain_runtime_constants::currency::HEZ_SUDO_FUNDING
 						- pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
 						- pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT
+						- pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_CARVE_OUT
 						// The genesis validators' stakes, minted and bonded on the Asset Hub.
 						- pezkuwichain_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT,
 				),
