@@ -29,9 +29,9 @@ pezframe-support = { workspace = true }
 pezframe-system = { workspace = true }
 
 # third party
-aquamarine = { workspace = true }
 docify = { workspace = true }
 log = { workspace = true }
+simple-mermaid = { workspace = true }
 
 # Optional imports for benchmarking
 pezframe-benchmarking = { optional = true, workspace = true }

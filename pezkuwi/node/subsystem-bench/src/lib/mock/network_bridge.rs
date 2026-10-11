@@ -31,7 +31,7 @@ use pezkuwi_node_subsystem_types::{
 	messages::{BitfieldDistributionMessage, NetworkBridgeEvent, StatementDistributionMessage},
 	OverseerSignal,
 };
-use pezsc_network::{request_responses::ProtocolConfig, RequestFailure};
+use pezsc_network::{config::RequestResponseConfig as ProtocolConfig, RequestFailure};
 
 const LOG_TARGET: &str = "subsystem-bench::network-bridge";
 const ALLOWED_PROTOCOLS: &[&str] = &[
@@ -213,7 +213,7 @@ impl MockNetworkBridgeRx {
 							},
 							NetworkMessage::RequestFromPeer(request) => {
 								if let Some(protocol) = self.chunk_request_sender.as_mut() {
-									assert!(ALLOWED_PROTOCOLS.contains(&&*protocol.name), "Unexpected protocol {:?}", protocol.name);
+									assert!(ALLOWED_PROTOCOLS.contains(&&*protocol.protocol_name), "Unexpected protocol {:?}", protocol.protocol_name);
 									if let Some(inbound_queue) = protocol.inbound_queue.as_ref() {
 										inbound_queue
 											.send(request)

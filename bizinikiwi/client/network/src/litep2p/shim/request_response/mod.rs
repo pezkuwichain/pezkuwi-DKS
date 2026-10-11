@@ -105,9 +105,7 @@ impl PendingRequest {
 }
 
 /// Request-response protocol configuration.
-///
-/// See [`RequestResponseConfiguration`](crate::request_response::ProtocolConfig) for more details.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RequestResponseConfig {
 	/// Name of the protocol on the wire. Should be something like `/foo/bar`.
 	pub protocol_name: ProtocolName,

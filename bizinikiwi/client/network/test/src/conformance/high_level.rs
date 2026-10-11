@@ -22,22 +22,14 @@ use crate::conformance::setup::{
 
 use pezsc_network::{
 	request_responses::OutgoingResponse, service::traits::NotificationEvent, IfDisconnected,
-	Litep2pNetworkBackend, NetworkWorker,
+	Litep2pNetworkBackend,
 };
 
 #[tokio::test]
 async fn check_connectivity() {
-	// Libp2p dials litep2p.
-	connect_backends(
-		&create_network_backend::<NetworkWorker<_, _>>(),
-		&create_network_backend::<Litep2pNetworkBackend>(),
-	)
-	.await;
-
-	// Litep2p dials libp2p.
 	connect_backends(
 		&create_network_backend::<Litep2pNetworkBackend>(),
-		&create_network_backend::<NetworkWorker<_, _>>(),
+		&create_network_backend::<Litep2pNetworkBackend>(),
 	)
 	.await;
 }
@@ -87,14 +79,8 @@ async fn check_request_response() {
 	}
 
 	inner_check_request_response(
-		create_network_backend::<NetworkWorker<_, _>>(),
 		create_network_backend::<Litep2pNetworkBackend>(),
-	)
-	.await;
-
-	inner_check_request_response(
 		create_network_backend::<Litep2pNetworkBackend>(),
-		create_network_backend::<NetworkWorker<_, _>>(),
 	)
 	.await;
 }
@@ -138,17 +124,9 @@ async fn check_notifications() {
 		}
 	}
 
-	// Check libp2p -> litep2p.
-	inner_check_notifications(
-		create_network_backend::<NetworkWorker<_, _>>(),
-		create_network_backend::<Litep2pNetworkBackend>(),
-	)
-	.await;
-
-	// Check litep2p -> libp2p.
 	inner_check_notifications(
 		create_network_backend::<Litep2pNetworkBackend>(),
-		create_network_backend::<NetworkWorker<_, _>>(),
+		create_network_backend::<Litep2pNetworkBackend>(),
 	)
 	.await;
 }
@@ -220,17 +198,9 @@ async fn check_notifications_ping_pong() {
 		}
 	}
 
-	// Check libp2p -> litep2p.
-	inner_check_notifications_ping_pong(
-		create_network_backend::<NetworkWorker<_, _>>(),
-		create_network_backend::<Litep2pNetworkBackend>(),
-	)
-	.await;
-
-	// Check litep2p -> libp2p.
 	inner_check_notifications_ping_pong(
 		create_network_backend::<Litep2pNetworkBackend>(),
-		create_network_backend::<NetworkWorker<_, _>>(),
+		create_network_backend::<Litep2pNetworkBackend>(),
 	)
 	.await;
 }

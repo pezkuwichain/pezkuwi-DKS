@@ -27,9 +27,9 @@ use crate::{
 	ObservedRole, ReputationChange,
 };
 
+use futures_timer::Delay;
 use parking_lot::Mutex;
 use prometheus_endpoint::Registry;
-use wasm_timer::Delay;
 
 use pezsc_network_types::PeerId;
 

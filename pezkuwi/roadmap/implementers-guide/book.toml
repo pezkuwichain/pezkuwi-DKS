@@ -2,6 +2,7 @@
 authors = [
 	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
 	"Kurdistan Tech Institute <info@pezkuwichain.io>",
+	"Parity Technologies <admin@parity.io>",
 ]
 language = "en"
 src = "src"

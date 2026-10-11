@@ -808,10 +808,7 @@ mod tests {
 
 	use std::sync::atomic::AtomicU32;
 
-	use crate::{
-		config::ProtocolId,
-		peer_store::{PeerStore, PeerStoreProvider},
-	};
+	use crate::{config::ProtocolId, litep2p::peerstore::Peerstore, peer_store::PeerStoreProvider};
 	use futures::{stream::FuturesUnordered, StreamExt};
 	use pezsp_core::H256;
 	use pezsp_tracing::tracing_subscriber;
@@ -840,8 +837,9 @@ mod tests {
 
 				let listen_addresses = Arc::new(RwLock::new(HashSet::new()));
 
-				let peer_store = PeerStore::new(vec![], None);
-				let peer_store_handle: Arc<dyn PeerStoreProvider> = Arc::new(peer_store.handle());
+				let mut peer_store = Peerstore::new(vec![], None);
+				let peer_store_handle: Arc<dyn PeerStoreProvider> =
+					Arc::new(peer_store.handle().clone());
 
 				let (discovery, ping_config, identify_config, kademlia_config, _mdns) =
 					Discovery::new(

@@ -42,8 +42,10 @@ fn get_chain_spec_builder_bin() -> String {
 macro_rules! bash(
 	( chain-spec-builder $($a:tt)* ) => {{
 		let bin = get_chain_spec_builder_bin();
+		// cmd_lib 2 only joins `$` to a variable name written at the call site; inside this
+		// macro the program has to be interpolated from a string literal instead.
 		spawn_with_output!(
-			$bin $($a)*
+			"$bin" $($a)*
 		)
 		.expect("a process running. qed")
 		.wait_with_output()

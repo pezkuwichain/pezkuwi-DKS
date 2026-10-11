@@ -384,9 +384,10 @@ impl<B: BlockInfoProvider> ReceiptProvider<B> {
 				"DELETE FROM eth_to_bizinikiwi_blocks WHERE bizinikiwi_block_hash in ({placeholders})"
 			);
 
-			let mut delete_tx_query = sqlx::query(&sql_tx);
-			let mut delete_logs_query = sqlx::query(&sql_logs);
-			let mut delete_mappings_query = sqlx::query(&sql_mappings);
+			// Only the `?` placeholders are interpolated; every value goes in through `bind`.
+			let mut delete_tx_query = sqlx::query(sqlx::AssertSqlSafe(sql_tx));
+			let mut delete_logs_query = sqlx::query(sqlx::AssertSqlSafe(sql_logs));
+			let mut delete_mappings_query = sqlx::query(sqlx::AssertSqlSafe(sql_mappings));
 
 			for block_map in chunk {
 				delete_tx_query = delete_tx_query.bind(block_map.bizinikiwi_hash.as_ref());
@@ -954,18 +955,21 @@ mod tests {
 	use pretty_assertions::assert_eq;
 	use sqlx::SqlitePool;
 
+	// `table` is always a literal table name from these tests, never input.
 	async fn count(pool: &SqlitePool, table: &str, block_hash: Option<H256>) -> usize {
 		let count: i64 = match block_hash {
 			None => {
-				sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table}"))
+				sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
 					.fetch_one(pool)
 					.await
 			},
 			Some(hash) => {
-				sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table} WHERE block_hash = ?"))
-					.bind(hash.as_ref())
-					.fetch_one(pool)
-					.await
+				sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+					"SELECT COUNT(*) FROM {table} WHERE block_hash = ?"
+				)))
+				.bind(hash.as_ref())
+				.fetch_one(pool)
+				.await
 			},
 		}
 		.unwrap();

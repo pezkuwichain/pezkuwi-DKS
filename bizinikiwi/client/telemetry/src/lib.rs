@@ -37,8 +37,8 @@
 #![warn(missing_docs)]
 
 use futures::{channel::mpsc, prelude::*};
-use libp2p::Multiaddr;
 use log::{error, warn};
+use multiaddr::Multiaddr;
 use parking_lot::Mutex;
 use pezsc_utils::mpsc::{tracing_unbounded, TracingUnboundedReceiver, TracingUnboundedSender};
 use serde::Serialize;
@@ -162,7 +162,7 @@ impl TelemetryWorker {
 		// Later transport will be initialized multiple times in
 		// `::process_register`, so it's a convenient way to get an
 		// error as early as possible.
-		let _transport = initialize_transport()?;
+		let _transport = WsTransport::new()?;
 		let (message_sender, message_receiver) = mpsc::channel(buffer_size);
 		let (register_sender, register_receiver) =
 			tracing_unbounded("mpsc_telemetry_register", 10_000);
@@ -214,7 +214,7 @@ impl TelemetryWorker {
 
 	async fn process_register(
 		input: Option<Register>,
-		node_pool: &mut HashMap<Multiaddr, Node<WsTrans>>,
+		node_pool: &mut HashMap<Multiaddr, Node>,
 		node_map: &mut HashMap<Id, Vec<(VerbosityLevel, Multiaddr)>>,
 		pending_connection_notifications: &mut Vec<(Multiaddr, ConnectionNotifierSender)>,
 	) {
@@ -256,7 +256,7 @@ impl TelemetryWorker {
 					let node = match node_pool.entry(addr.clone()) {
 						Occupied(entry) => entry.into_mut(),
 						Vacant(entry) => {
-							let transport = initialize_transport();
+							let transport = WsTransport::new();
 							let transport = match transport {
 								Ok(t) => t,
 								Err(err) => {
@@ -303,7 +303,7 @@ impl TelemetryWorker {
 	// dispatch messages to the telemetry nodes
 	async fn process_message(
 		input: Option<TelemetryMessage>,
-		node_pool: &mut HashMap<Multiaddr, Node<WsTrans>>,
+		node_pool: &mut HashMap<Multiaddr, Node>,
 		node_map: &HashMap<Id, Vec<(VerbosityLevel, Multiaddr)>>,
 	) {
 		let (id, verbosity, payload) = input.expect("the stream is never closed; qed");

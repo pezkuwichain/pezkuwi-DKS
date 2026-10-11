@@ -21,6 +21,10 @@
 #![warn(missing_docs)]
 #![deny(unused_crate_dependencies)]
 
+// Used by the integration tests only.
+#[cfg(test)]
+use {hex as _, sha2 as _};
+
 pub mod error;
 pub mod runtime_blob;
 pub mod util;

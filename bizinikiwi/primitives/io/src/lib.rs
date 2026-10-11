@@ -133,6 +133,25 @@ use secp256k1::{
 #[cfg(not(bizinikiwi_runtime))]
 use pezsp_externalities::{Externalities, ExternalitiesExt};
 
+/// Split an RSV signature for the version 1 recover host functions: `v` may be 0/1 or 27/28.
+#[cfg(not(bizinikiwi_runtime))]
+fn split_rsv(sig: &[u8; 65]) -> ([u8; 64], u8) {
+	let mut rs = [0u8; 64];
+	rs.copy_from_slice(&sig[..64]);
+	(rs, if sig[64] > 26 { sig[64] - 27 } else { sig[64] })
+}
+
+/// The version 1 recover host functions report a bad recovery id as `BadV` and every other
+/// failure as `BadSignature`; their `r || s` parse accepted any 64 bytes, so `BadRS` never
+/// came out of them.
+#[cfg(not(bizinikiwi_runtime))]
+fn overflowing_error(e: ecdsa::OverflowingRecoverError) -> EcdsaVerifyError {
+	match e {
+		ecdsa::OverflowingRecoverError::BadV => EcdsaVerifyError::BadV,
+		ecdsa::OverflowingRecoverError::BadSignature => EcdsaVerifyError::BadSignature,
+	}
+}
+
 pub use pezsp_externalities::MultiRemovalResults;
 
 #[cfg(all(not(feature = "disable_allocator"), bizinikiwi_runtime))]
@@ -1251,17 +1270,10 @@ pub trait Crypto {
 		sig: PassPointerAndRead<&[u8; 65], 65>,
 		msg: PassPointerAndRead<&[u8; 32], 32>,
 	) -> AllocateAndReturnByCodec<Result<[u8; 64], EcdsaVerifyError>> {
-		let rid = libsecp256k1::RecoveryId::parse(
-			if sig[64] > 26 { sig[64] - 27 } else { sig[64] } as u8,
-		)
-		.map_err(|_| EcdsaVerifyError::BadV)?;
-		let sig = libsecp256k1::Signature::parse_overflowing_slice(&sig[..64])
-			.map_err(|_| EcdsaVerifyError::BadRS)?;
-		let msg = libsecp256k1::Message::parse(msg);
-		let pubkey =
-			libsecp256k1::recover(&msg, &sig, &rid).map_err(|_| EcdsaVerifyError::BadSignature)?;
+		let (rs, v) = split_rsv(sig);
+		let pubkey = ecdsa::recover_overflowing(&rs, v, msg).map_err(overflowing_error)?;
 		let mut res = [0u8; 64];
-		res.copy_from_slice(&pubkey.serialize()[1..65]);
+		res.copy_from_slice(&pubkey[1..65]);
 		Ok(res)
 	}
 
@@ -1302,16 +1314,8 @@ pub trait Crypto {
 		sig: PassPointerAndRead<&[u8; 65], 65>,
 		msg: PassPointerAndRead<&[u8; 32], 32>,
 	) -> AllocateAndReturnByCodec<Result<[u8; 33], EcdsaVerifyError>> {
-		let rid = libsecp256k1::RecoveryId::parse(
-			if sig[64] > 26 { sig[64] - 27 } else { sig[64] } as u8,
-		)
-		.map_err(|_| EcdsaVerifyError::BadV)?;
-		let sig = libsecp256k1::Signature::parse_overflowing_slice(&sig[0..64])
-			.map_err(|_| EcdsaVerifyError::BadRS)?;
-		let msg = libsecp256k1::Message::parse(msg);
-		let pubkey =
-			libsecp256k1::recover(&msg, &sig, &rid).map_err(|_| EcdsaVerifyError::BadSignature)?;
-		Ok(pubkey.serialize_compressed())
+		let (rs, v) = split_rsv(sig);
+		ecdsa::recover_overflowing_compressed(&rs, v, msg).map_err(overflowing_error)
 	}
 
 	/// Verify and recover a SECP256k1 ECDSA signature.

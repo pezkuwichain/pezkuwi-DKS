@@ -36,7 +36,7 @@ use crate::{
 				config::{NotificationProtocolConfig, ProtocolControlHandle},
 				peerset::PeersetCommand,
 			},
-			request_response::{RequestResponseConfig, RequestResponseProtocol},
+			request_response::RequestResponseProtocol,
 		},
 	},
 	peer_store::PeerStoreProvider,
@@ -99,6 +99,8 @@ mod ipfs_dht;
 mod peerstore;
 mod service;
 mod shim;
+
+pub use shim::request_response::RequestResponseConfig;
 
 /// Litep2p bandwidth sink.
 struct Litep2pBandwidthSink {

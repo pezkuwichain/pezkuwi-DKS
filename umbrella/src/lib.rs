@@ -547,10 +547,6 @@ pub use pezkuwi_subxt_codegen;
 #[cfg(feature = "pezkuwi-subxt-core")]
 pub use pezkuwi_subxt_core;
 
-/// Light Client for chain interaction.
-#[cfg(feature = "pezkuwi-subxt-lightclient")]
-pub use pezkuwi_subxt_lightclient;
-
 /// Generate types and helpers for interacting with Bizinikiwi runtimes.
 #[cfg(feature = "pezkuwi-subxt-macro")]
 pub use pezkuwi_subxt_macro;

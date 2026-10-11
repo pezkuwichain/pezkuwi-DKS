@@ -100,7 +100,7 @@ fn new_node(tokio_handle: Handle) -> node_cli::service::NewFullBase {
 	};
 
 	tokio_handle.block_on(async move {
-		node_cli::service::new_full_base::<pezsc_network::NetworkWorker<_, _>>(
+		node_cli::service::new_full_base::<pezsc_network::Litep2pNetworkBackend>(
 			config,
 			None,
 			false,

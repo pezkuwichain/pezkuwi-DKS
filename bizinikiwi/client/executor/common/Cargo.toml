@@ -22,8 +22,12 @@ pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
 pezsp-wasm-interface = { workspace = true, default-features = true }
 polkavm = { workspace = true }
 thiserror = { workspace = true }
-wasm-instrument = { workspace = true, default-features = true }
+wasmparser = { workspace = true, features = ["features", "std"] }
+
+[dev-dependencies]
+hex = { workspace = true, default-features = true }
+sha2 = { workspace = true, default-features = true }
 
 [features]
 default = []
-std = ["pezsc-allocator/std", "polkavm/std"]
+std = ["pezsc-allocator/std", "polkavm/std", "wasmparser/std"]

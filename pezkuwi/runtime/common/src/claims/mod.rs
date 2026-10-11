@@ -708,27 +708,27 @@ where
 mod secp_utils {
 	use super::*;
 
-	pub fn public(secret: &libsecp256k1::SecretKey) -> libsecp256k1::PublicKey {
-		libsecp256k1::PublicKey::from_secret_key(secret)
+	pub type SecretKey = k256::ecdsa::SigningKey;
+
+	pub fn secret(seed: &[u8; 32]) -> SecretKey {
+		SecretKey::from_bytes(seed.into()).expect("a keccak digest is a valid scalar; qed")
 	}
-	pub fn eth(secret: &libsecp256k1::SecretKey) -> EthereumAddress {
+	pub fn eth(secret: &SecretKey) -> EthereumAddress {
 		let mut res = EthereumAddress::default();
-		res.0.copy_from_slice(&keccak_256(&public(secret).serialize()[1..65])[12..]);
+		let public = secret.verifying_key().to_encoded_point(false);
+		res.0.copy_from_slice(&keccak_256(&public.as_bytes()[1..65])[12..]);
 		res
 	}
-	pub fn sig<T: Config>(
-		secret: &libsecp256k1::SecretKey,
-		what: &[u8],
-		extra: &[u8],
-	) -> EcdsaSignature {
+	pub fn sig<T: Config>(secret: &SecretKey, what: &[u8], extra: &[u8]) -> EcdsaSignature {
 		let msg = keccak_256(&super::Pezpallet::<T>::ethereum_signable_message(
 			&to_ascii_hex(what)[..],
 			extra,
 		));
-		let (sig, recovery_id) = libsecp256k1::sign(&libsecp256k1::Message::parse(&msg), secret);
+		let (sig, recovery_id) =
+			secret.sign_prehash_recoverable(&msg).expect("signing a 32-byte digest; qed");
 		let mut r = [0u8; 65];
-		r[0..64].copy_from_slice(&sig.serialize()[..]);
-		r[64] = recovery_id.serialize();
+		r[0..64].copy_from_slice(&sig.to_bytes()[..]);
+		r[64] = recovery_id.to_byte();
 		EcdsaSignature(r)
 	}
 }

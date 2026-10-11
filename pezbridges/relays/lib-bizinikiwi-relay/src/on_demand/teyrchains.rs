@@ -26,10 +26,6 @@ use crate::{
 	TransactionParams,
 };
 
-use async_std::{
-	channel::{unbounded, Receiver, Sender},
-	sync::{Arc, Mutex},
-};
 use async_trait::async_trait;
 use futures::{select, FutureExt};
 use num_traits::Zero;
@@ -44,8 +40,12 @@ use relay_utils::{
 	metrics::MetricsParams, relay_loop::Client as RelayClient, BlockNumberBase, FailedClient,
 	HeaderId, UniqueSaturatedInto,
 };
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 use teyrchains_relay::teyrchains_loop::{AvailableHeader, SourceClient, TargetClient};
+use tokio::sync::{
+	mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+	Mutex,
+};
 
 /// On-demand Bizinikiwi <-> Bizinikiwi teyrchain finality relay.
 ///
@@ -57,7 +57,7 @@ pub struct OnDemandTeyrchainsRelay<P: BizinikiwiTeyrchainsPipeline, SourceRelayC
 	/// Relay task name.
 	relay_task_name: String,
 	/// Channel used to communicate with background task and ask for relay of teyrchain heads.
-	required_header_number_sender: Sender<BlockNumberOf<P::SourceTeyrchain>>,
+	required_header_number_sender: UnboundedSender<BlockNumberOf<P::SourceTeyrchain>>,
 	/// Source relay chain client.
 	source_relay_client: SourceRelayClnt,
 	/// Target chain client.
@@ -93,7 +93,7 @@ impl<
 		AccountIdOf<P::TargetChain>:
 			From<<AccountKeyPairOf<P::TargetChain> as pezsp_core::Pair>::Public>,
 	{
-		let (required_header_number_sender, required_header_number_receiver) = unbounded();
+		let (required_header_number_sender, required_header_number_receiver) = unbounded_channel();
 		let this = OnDemandTeyrchainsRelay {
 			relay_task_name: on_demand_teyrchains_relay_name::<P::SourceTeyrchain, P::TargetChain>(
 			),
@@ -103,7 +103,7 @@ impl<
 			on_demand_source_relay_to_target_headers: on_demand_source_relay_to_target_headers
 				.clone(),
 		};
-		async_std::task::spawn(async move {
+		tokio::spawn(async move {
 			background_task::<P>(
 				source_relay_client,
 				target_client,
@@ -137,7 +137,7 @@ where
 	}
 
 	async fn require_more_headers(&self, required_header: BlockNumberOf<P::SourceTeyrchain>) {
-		if let Err(e) = self.required_header_number_sender.send(required_header).await {
+		if let Err(e) = self.required_header_number_sender.send(required_header) {
 			tracing::trace!(
 				target: "bridge",
 				error=?e,
@@ -242,7 +242,9 @@ async fn background_task<P: BizinikiwiTeyrchainsPipeline>(
 	on_demand_source_relay_to_target_headers: Arc<
 		dyn OnDemandRelay<P::SourceRelayChain, P::TargetChain>,
 	>,
-	required_teyrchain_header_number_receiver: Receiver<BlockNumberOf<P::SourceTeyrchain>>,
+	mut required_teyrchain_header_number_receiver: UnboundedReceiver<
+		BlockNumberOf<P::SourceTeyrchain>,
+	>,
 ) where
 	P::SourceTeyrchain: Chain<Hash = ParaHash>,
 	P::SourceRelayChain:
@@ -275,11 +277,11 @@ async fn background_task<P: BizinikiwiTeyrchainsPipeline>(
 		select! {
 			new_required_teyrchain_header_number = required_teyrchain_header_number_receiver.recv().fuse() => {
 				let new_required_teyrchain_header_number = match new_required_teyrchain_header_number {
-					Ok(new_required_teyrchain_header_number) => new_required_teyrchain_header_number,
-					Err(e) => {
+					Some(new_required_teyrchain_header_number) => new_required_teyrchain_header_number,
+					None => {
+						// every sender is gone: the relay that requested headers was dropped
 						tracing::error!(
 							target: "bridge",
-							error=?e,
 							%relay_task_name,
 							"Background task has exited"
 						);
@@ -303,7 +305,7 @@ async fn background_task<P: BizinikiwiTeyrchainsPipeline>(
 					required_teyrchain_header_number = new_required_teyrchain_header_number;
 				}
 			},
-			_ = async_std::task::sleep(P::TargetChain::AVERAGE_BLOCK_INTERVAL).fuse() => {},
+			_ = tokio::time::sleep(P::TargetChain::AVERAGE_BLOCK_INTERVAL).fuse() => {},
 			_ = teyrchains_relay_task => {
 				// this should never happen in practice given the current code
 				restart_relay = true;
@@ -1013,7 +1015,7 @@ mod tests {
 		}
 	}
 
-	#[async_std::test]
+	#[tokio::test]
 	async fn select_headers_to_prove_returns_err_if_required_para_block_is_missing_at_source() {
 		assert!(matches!(
 			select_headers_to_prove((20_u32, 10_u32, 200_u32, 100_u32), 300_u32,).await,
@@ -1021,7 +1023,7 @@ mod tests {
 		));
 	}
 
-	#[async_std::test]
+	#[tokio::test]
 	async fn select_headers_to_prove_fails_to_use_existing_ancient_relay_block() {
 		assert_eq!(
 			select_headers_to_prove((220_u32, 10_u32, 200_u32, 100_u32), 100_u32,)
@@ -1031,7 +1033,7 @@ mod tests {
 		);
 	}
 
-	#[async_std::test]
+	#[tokio::test]
 	async fn select_headers_to_prove_is_able_to_use_existing_recent_relay_block() {
 		assert_eq!(
 			select_headers_to_prove((40_u32, 10_u32, 200_u32, 100_u32), 100_u32,)
@@ -1041,7 +1043,7 @@ mod tests {
 		);
 	}
 
-	#[async_std::test]
+	#[tokio::test]
 	async fn select_headers_to_prove_uses_new_relay_block() {
 		assert_eq!(
 			select_headers_to_prove((20_u32, 10_u32, 200_u32, 100_u32), 200_u32,)

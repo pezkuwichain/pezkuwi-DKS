@@ -235,7 +235,7 @@ async fn build_network_future<
 				sync_service.on_block_finalized(notification.hash, notification.header);
 			}
 
-			// Drive the network. Shut down the network future if `NetworkWorker` has terminated.
+			// Drive the network. Shut down the network future if the network backend has terminated.
 			_ = network_run => {
 				warn!("`NetworkWorker` has terminated, shutting down the network future. Ignore if the node is stopping.");
 				return

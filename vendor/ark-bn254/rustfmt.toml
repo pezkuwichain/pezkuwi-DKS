@@ -1,0 +1,9 @@
+# arkworks-rs/algebra formatting, so the vendored source stays diffable against upstream.
+edition = "2021"
+wrap_comments = true
+normalize_comments = true
+use_try_shorthand = true
+match_block_trailing_comma = true
+use_field_init_shorthand = true
+condense_wildcard_suffixes = true
+reorder_imports = true

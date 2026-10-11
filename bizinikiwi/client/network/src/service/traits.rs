@@ -25,8 +25,9 @@ use crate::{
 	error::{self, Error},
 	event::Event,
 	network_state::NetworkState,
+	peer_store::PeerStoreProvider,
 	request_responses::{IfDisconnected, RequestFailure},
-	service::{metrics::NotificationMetrics, signature::Signature, PeerStoreProvider},
+	service::{metrics::NotificationMetrics, signature::Signature},
 	types::ProtocolName,
 	ReputationChange,
 };
@@ -52,7 +53,7 @@ use std::{
 	time::{Duration, Instant},
 };
 
-pub use libp2p::identity::SigningError;
+pub use crate::service::signature::SigningError;
 
 /// Supertrait defining the services provided by [`NetworkBackend`] service handle.
 pub trait NetworkService:
@@ -330,12 +331,12 @@ pub struct NetworkStatus {
 pub trait NetworkStatusProvider {
 	/// High-level network status information.
 	///
-	/// Returns an error if the `NetworkWorker` is no longer running.
+	/// Returns an error if the network backend is no longer running.
 	async fn status(&self) -> Result<NetworkStatus, ()>;
 
 	/// Get the network state.
 	///
-	/// Returns an error if the `NetworkWorker` is no longer running.
+	/// Returns an error if the network backend is no longer running.
 	async fn network_state(&self) -> Result<NetworkState, ()>;
 }
 
@@ -471,7 +472,7 @@ pub trait NetworkPeers {
 
 	/// Get the list of reserved peers.
 	///
-	/// Returns an error if the `NetworkWorker` is no longer running.
+	/// Returns an error if the network backend is no longer running.
 	async fn reserved_peers(&self) -> Result<Vec<PeerId>, ()>;
 }
 

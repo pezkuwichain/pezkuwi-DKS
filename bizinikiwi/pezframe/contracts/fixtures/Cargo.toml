@@ -21,17 +21,18 @@ pezsp-runtime = { workspace = true, default-features = true }
 
 [build-dependencies]
 anyhow = { workspace = true, default-features = true }
-parity-wasm = { workspace = true }
 tempfile = { workspace = true }
 toml = { workspace = true }
 twox-hash = { workspace = true, default-features = true }
+wasm-encoder = { workspace = true, features = ["std"] }
+wasmparser = { workspace = true, features = ["std"] }
 
 [features]
 runtime-benchmarks = [
 	"pezframe-system/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 ]
-std = []
+std = ["wasm-encoder/std", "wasmparser/std"]
 try-runtime = ["pezframe-system/try-runtime", "pezsp-runtime/try-runtime"]
 serde = []
 experimental = []

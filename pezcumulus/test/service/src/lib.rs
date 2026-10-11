@@ -721,38 +721,19 @@ impl TestNodeBuilder {
 			format!("{} (relay chain)", relay_chain_config.network.node_name);
 
 		let (task_manager, client, network, rpc_handlers, transaction_pool, backend) =
-			match relay_chain_config.network.network_backend {
-				pezsc_network::config::NetworkBackendType::Libp2p => {
-					start_node_impl::<_, pezsc_network::NetworkWorker<_, _>>(
-						teyrchain_config,
-						self.collator_key,
-						relay_chain_config,
-						self.wrap_announce_block,
-						false,
-						|_| Ok(jsonrpsee::RpcModule::new(())),
-						collator_options,
-						self.record_proof_during_import,
-						false,
-					)
-					.await
-					.expect("could not create Cumulus test service")
-				},
-				pezsc_network::config::NetworkBackendType::Litep2p => {
-					start_node_impl::<_, pezsc_network::Litep2pNetworkBackend>(
-						teyrchain_config,
-						self.collator_key,
-						relay_chain_config,
-						self.wrap_announce_block,
-						false,
-						|_| Ok(jsonrpsee::RpcModule::new(())),
-						collator_options,
-						self.record_proof_during_import,
-						false,
-					)
-					.await
-					.expect("could not create Cumulus test service")
-				},
-			};
+			start_node_impl::<_, pezsc_network::Litep2pNetworkBackend>(
+				teyrchain_config,
+				self.collator_key,
+				relay_chain_config,
+				self.wrap_announce_block,
+				false,
+				|_| Ok(jsonrpsee::RpcModule::new(())),
+				collator_options,
+				self.record_proof_during_import,
+				false,
+			)
+			.await
+			.expect("could not create Cumulus test service");
 		let peer_id = network.local_peer_id();
 		let multiaddr = pezkuwi_test_service::get_listen_address(network.clone()).await;
 		let addr = MultiaddrWithPeerId { multiaddr, peer_id };

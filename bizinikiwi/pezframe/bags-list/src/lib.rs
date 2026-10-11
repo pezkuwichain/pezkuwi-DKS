@@ -83,7 +83,6 @@
 
 extern crate alloc;
 #[cfg(doc)]
-#[cfg_attr(doc, aquamarine::aquamarine)]
 /// In this example, assuming each node has an equal id and score (eg. node 21 has a score of 21),
 /// the node 22 can be moved from bag 1 to bag 0 with the `rebag` operation.
 ///
@@ -93,27 +92,7 @@ extern crate alloc;
 /// Moreover, in bag2, node 7 can be moved to the front of node 5 with the `put_in_front_of`, as it
 /// has a higher score.
 ///
-/// ```mermaid
-/// graph LR
-/// 	Bag0 --> Bag1 --> Bag2
-///
-/// 	subgraph Bag0[Bag 0: 21-30 DOT]
-/// 		direction LR
-/// 		25 --> 21 --> 22X[22]
-/// 	end
-///
-/// 	subgraph Bag1[Bag 1: 11-20 DOT]
-/// 		direction LR
-/// 		12 --> 22
-/// 	end
-///
-/// 	subgraph Bag2[Bag 2: 0-10 DOT]
-/// 		direction LR
-/// 		5 --> 7 --> 3
-/// 	end
-///
-/// 	style 22X stroke-dasharray: 5 5,opacity:50%
-/// ```
+#[cfg_attr(doc, doc = simple_mermaid::mermaid!("../docs/mermaid/bag_iteration.mmd"))]
 ///
 /// The equivalent of this in code would be:
 pub mod example {}

@@ -7,10 +7,9 @@
 //! The client forms the entry point to all of the Subxt APIs. Every client implements one or
 //! both of [`crate::client::OfflineClientT`] and [`crate::client::OnlineClientT`].
 //!
-//! Subxt ships with three clients which implement one or both of traits:
+//! Subxt ships with two clients which implement one or both of traits:
 //! - An [online client](crate::client::OnlineClient).
 //! - An [offline client](crate::client::OfflineClient).
-//! - A light client (which is currently still unstable).
 //!
 //! In theory it's possible for users to implement their own clients, although this isn't generally
 //! expected.
@@ -32,8 +31,7 @@
 //!
 //! [`crate::backend::rpc::RpcClient`] can itself be instantiated from anything that implements the
 //! low level [`crate::backend::rpc::RpcClientT`] trait; this allows you to decide how Subxt will
-//! attempt to talk to a node if you'd prefer something other default client. We use this approach
-//! under the hood to implement the light client.
+//! attempt to talk to a node if you'd prefer something other default client.
 //!
 //! ## Examples
 //!

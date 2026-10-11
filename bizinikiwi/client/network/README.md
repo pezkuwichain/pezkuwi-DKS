@@ -17,10 +17,8 @@ clients using the same network key, large interferences will happen.
 
 # Bizinikiwi's network protocol
 
-Bizinikiwi's networking protocol is based upon libp2p. It is at the moment not possible and not
-planned to permit using something else than the libp2p network stack and the rust-libp2p
-library. However the libp2p framework is very flexible and the rust-libp2p library could be
-extended to support a wider range of protocols than what is offered by libp2p.
+Bizinikiwi's networking protocol is based upon libp2p, the protocol family. The implementation
+is litep2p; the rust-libp2p backend that used to sit beside it has been removed.
 
 ## Discovery mechanisms
 
@@ -266,17 +264,17 @@ any method.
 
 # Usage
 
-Using the `pezsc-network` crate is done through the [`NetworkWorker`] struct. Create this
-struct by passing a [`config::Params`], then poll it as if it was a `Future`. You can extract an
-`Arc<NetworkService>` from the `NetworkWorker`, which can be shared amongst multiple places
-in order to give orders to the networking.
+Using the `pezsc-network` crate is done through the `Litep2pNetworkBackend` struct. Create it
+with `NetworkBackend::new` by passing a [`config::Params`], then drive it with
+`NetworkBackend::run`. `NetworkBackend::network_service` returns an
+`Arc<dyn NetworkService>` which can be shared amongst multiple places in order to give orders
+to the networking.
 
 See the [`config`] module for more information about how to configure the networking.
 
-After the `NetworkWorker` has been created, the important things to do are:
+After the backend has been created, the important things to do are:
 
-- Calling `NetworkWorker::poll` in order to advance the network. This can be done by
-dispatching a background task with the [`NetworkWorker`].
+- Running `NetworkBackend::run` in a background task in order to advance the network.
 - Calling `on_block_import` whenever a block is added to the client.
 - Calling `on_block_finalized` whenever a block is finalized.
 - Calling `trigger_repropagate` when a transaction is added to the pool.

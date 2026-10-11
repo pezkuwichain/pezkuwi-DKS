@@ -53,7 +53,7 @@ pezpallet-vesting = { workspace = true }
 pezframe-benchmarking = { optional = true, workspace = true }
 pezpallet-babe = { optional = true, workspace = true }
 
-libsecp256k1 = { workspace = true }
+k256 = { workspace = true, features = ["ecdsa"] }
 pezkuwi-primitives = { workspace = true }
 pezkuwi-runtime-teyrchains = { workspace = true }
 
@@ -64,7 +64,7 @@ xcm-executor = { optional = true, workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true, default-features = true }
-libsecp256k1 = { workspace = true, default-features = true }
+k256 = { workspace = true, default-features = true, features = ["ecdsa"] }
 pezframe-support-test = { workspace = true }
 pezkuwi-primitives-test-helpers = { workspace = true }
 pezpallet-babe = { workspace = true, default-features = true }
@@ -79,7 +79,7 @@ no_std = []
 std = [
 	"bitvec/std",
 	"codec/std",
-	"libsecp256k1/std",
+	"k256/std",
 	"log/std",
 	"pez-slot-range-helper/std",
 	"pezframe-benchmarking?/std",
@@ -120,8 +120,6 @@ std = [
 	"xcm/std",
 ]
 runtime-benchmarks = [
-	"libsecp256k1/hmac",
-	"libsecp256k1/static-context",
 	"pez-slot-range-helper/runtime-benchmarks",
 	"pezframe-benchmarking/runtime-benchmarks",
 	"pezframe-election-provider-support/runtime-benchmarks",

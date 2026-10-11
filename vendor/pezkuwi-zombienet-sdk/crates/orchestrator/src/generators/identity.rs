@@ -1,5 +1,5 @@
 use hex::FromHex;
-use libp2p::identity::{ed25519, Keypair};
+use libp2p_identity::{ed25519, Keypair};
 use sha2::digest::Digest;
 
 use super::errors::GeneratorError;

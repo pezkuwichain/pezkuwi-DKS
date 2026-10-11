@@ -19,17 +19,25 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 chrono = { workspace = true }
 futures = { workspace = true }
-libp2p = { features = ["dns", "tcp", "tokio", "websocket"], workspace = true }
+futures-timer = { workspace = true }
 log = { workspace = true, default-features = true }
+multiaddr = { workspace = true }
 parking_lot = { workspace = true, default-features = true }
 pezsc-utils = { workspace = true, default-features = true }
-pin-project = { workspace = true }
 rand = { workspace = true, default-features = true }
+rustls = { workspace = true }
 serde = { features = ["derive"], workspace = true, default-features = true }
 serde_json = { workspace = true, default-features = true }
 thiserror = { workspace = true }
-wasm-timer = { workspace = true }
+tokio = { features = ["net", "time"], workspace = true, default-features = true }
+# `rustls-tls-native-roots` is the feature litep2p already enables; it only matters when no
+# connector is passed, and telemetry always passes its own, built on `webpki-roots`.
+tokio-tungstenite = { features = ["rustls-tls-native-roots"], workspace = true }
+webpki-roots = { workspace = true }
+
+[dev-dependencies]
+tokio = { features = ["macros", "rt"], workspace = true, default-features = true }
 
 [features]
-std = ["log/std", "pezsc-utils/std"]
+std = ["log/std", "pezsc-utils/std", "rustls/std"]
 serde = []

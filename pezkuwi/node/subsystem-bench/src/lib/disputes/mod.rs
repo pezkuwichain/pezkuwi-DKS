@@ -55,7 +55,7 @@ use pezkuwi_node_network_protocol::request_response::{IncomingRequest, ReqProtoc
 use pezkuwi_overseer::{
 	Handle as OverseerHandle, Overseer, OverseerConnector, OverseerMetrics, SpawnGlue,
 };
-use pezkuwi_primitives::{AuthorityDiscoveryId, Block, Hash, ValidatorId};
+use pezkuwi_primitives::{AuthorityDiscoveryId, Block, ValidatorId};
 use pezsc_keystore::LocalKeystore;
 use pezsc_network::request_responses::IncomingRequest as RawIncomingRequest;
 use pezsc_service::SpawnTaskHandle;
@@ -106,7 +106,7 @@ fn build_overseer(
 	let keystore = make_keystore();
 	let (dispute_req_receiver, dispute_req_cfg) = IncomingRequest::get_config_receiver::<
 		Block,
-		pezsc_network::NetworkWorker<Block, Hash>,
+		pezsc_network::Litep2pNetworkBackend,
 	>(&ReqProtocolNames::new(GENESIS_HASH, None));
 	let mock_runtime_api = MockRuntimeApi::new(
 		state.config.clone(),

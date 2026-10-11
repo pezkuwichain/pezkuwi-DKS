@@ -99,42 +99,21 @@ fn main() -> Result<(), pezsc_cli::Error> {
 			let use_slot_based_collator = cli.authoring == AuthoringPolicy::SlotBased;
 			let (mut task_manager, _, _, _, _, _) = tokio_runtime
 				.block_on(async move {
-					match relay_chain_config.network.network_backend {
-						pezsc_network::config::NetworkBackendType::Libp2p => {
-							pezcumulus_test_service::start_node_impl::<
-								_,
-								pezsc_network::NetworkWorker<_, _>,
-							>(
-								teyrchain_config,
-								collator_key,
-								relay_chain_config,
-								cli.disable_block_announcements.then(wrap_announce_block),
-								cli.fail_pov_recovery,
-								|_| Ok(jsonrpsee::RpcModule::new(())),
-								collator_options,
-								true,
-								use_slot_based_collator,
-							)
-							.await
-						},
-						pezsc_network::config::NetworkBackendType::Litep2p => {
-							pezcumulus_test_service::start_node_impl::<
-								_,
-								pezsc_network::Litep2pNetworkBackend,
-							>(
-								teyrchain_config,
-								collator_key,
-								relay_chain_config,
-								cli.disable_block_announcements.then(wrap_announce_block),
-								cli.fail_pov_recovery,
-								|_| Ok(jsonrpsee::RpcModule::new(())),
-								collator_options,
-								true,
-								use_slot_based_collator,
-							)
-							.await
-						},
-					}
+					pezcumulus_test_service::start_node_impl::<
+						_,
+						pezsc_network::Litep2pNetworkBackend,
+					>(
+						teyrchain_config,
+						collator_key,
+						relay_chain_config,
+						cli.disable_block_announcements.then(wrap_announce_block),
+						cli.fail_pov_recovery,
+						|_| Ok(jsonrpsee::RpcModule::new(())),
+						collator_options,
+						true,
+						use_slot_based_collator,
+					)
+					.await
 				})
 				.expect("could not create Cumulus test service");
 

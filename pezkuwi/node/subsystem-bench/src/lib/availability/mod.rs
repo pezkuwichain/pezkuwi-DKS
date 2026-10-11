@@ -49,8 +49,11 @@ use pezkuwi_node_subsystem::{
 };
 use pezkuwi_node_subsystem_types::messages::{AvailabilityStoreMessage, NetworkBridgeEvent};
 use pezkuwi_overseer::{metrics::Metrics as OverseerMetrics, Handle as OverseerHandle};
-use pezkuwi_primitives::{Block, CoreIndex, GroupIndex, Hash};
-use pezsc_network::request_responses::{IncomingRequest as RawIncomingRequest, ProtocolConfig};
+use pezkuwi_primitives::{Block, CoreIndex, GroupIndex};
+use pezsc_network::{
+	config::RequestResponseConfig as ProtocolConfig,
+	request_responses::IncomingRequest as RawIncomingRequest,
+};
 use std::{ops::Sub, sync::Arc, time::Instant};
 use strum::Display;
 
@@ -166,20 +169,20 @@ pub fn prepare_test(
 
 	let (collation_req_receiver, collation_req_cfg) = IncomingRequest::get_config_receiver::<
 		Block,
-		pezsc_network::NetworkWorker<Block, Hash>,
+		pezsc_network::Litep2pNetworkBackend,
 	>(&state.req_protocol_names);
 	req_cfgs.push(collation_req_cfg);
 
 	let (pov_req_receiver, pov_req_cfg) = IncomingRequest::get_config_receiver::<
 		Block,
-		pezsc_network::NetworkWorker<Block, Hash>,
+		pezsc_network::Litep2pNetworkBackend,
 	>(&state.req_protocol_names);
 	req_cfgs.push(pov_req_cfg);
 
 	let (chunk_req_v1_receiver, chunk_req_v1_cfg) =
 		IncomingRequest::<v1::ChunkFetchingRequest>::get_config_receiver::<
 			Block,
-			pezsc_network::NetworkWorker<Block, Hash>,
+			pezsc_network::Litep2pNetworkBackend,
 		>(&state.req_protocol_names);
 
 	// We won't use v1 chunk fetching requests, but we need to keep the inbound queue alive.
@@ -189,7 +192,7 @@ pub fn prepare_test(
 	let (chunk_req_v2_receiver, chunk_req_v2_cfg) =
 		IncomingRequest::<v2::ChunkFetchingRequest>::get_config_receiver::<
 			Block,
-			pezsc_network::NetworkWorker<Block, Hash>,
+			pezsc_network::Litep2pNetworkBackend,
 		>(&state.req_protocol_names);
 
 	let (network, network_interface, network_receiver) = new_network(

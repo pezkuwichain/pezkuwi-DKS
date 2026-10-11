@@ -41,11 +41,12 @@ pub fn generate(seed: &str) -> Result<Accounts, GeneratorError> {
 				let pair = generate_pair::<ecdsa::Pair>(seed)
 					.map_err(|_| GeneratorError::KeyGeneration(k.into(), seed.into()))?;
 
-				let decompressed = libsecp256k1::PublicKey::parse_compressed(&pair.public().0)
+				use k256::elliptic_curve::sec1::ToEncodedPoint;
+				let decompressed = k256::PublicKey::from_sec1_bytes(&pair.public().0)
 					.map_err(|_| GeneratorError::KeyGeneration(k.into(), seed.into()))?
-					.serialize();
+					.to_encoded_point(false);
 				let mut m = [0u8; 64];
-				m.copy_from_slice(&decompressed[1..65]);
+				m.copy_from_slice(&decompressed.as_bytes()[1..65]);
 				let account = H160::from(H256::from(keccak_256(&m)));
 
 				(hex::encode(account), hex::encode(account))

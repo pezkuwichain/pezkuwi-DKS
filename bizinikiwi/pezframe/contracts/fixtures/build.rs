@@ -17,7 +17,6 @@
 
 //! Compile contracts to wasm.
 use anyhow::{bail, Context, Result};
-use parity_wasm::elements::{deserialize_file, serialize_to_file, Internal};
 use std::{
 	env, fs,
 	hash::Hasher,
@@ -25,6 +24,8 @@ use std::{
 	process::Command,
 };
 use twox_hash::XxHash32;
+use wasm_encoder::{CustomSection, ExportKind, ExportSection, RawSection};
+use wasmparser::{ExternalKind, Parser, Payload};
 
 /// Read the file at `path` and return its hash as a hex string.
 fn file_hash(path: &Path) -> String {
@@ -240,18 +241,44 @@ fn invoke_wasm_build(current_dir: &Path) -> Result<()> {
 	bail!("Failed to build wasm contracts");
 }
 
-/// Post-process the compiled wasm contracts.
+/// Post-process the compiled wasm contracts: keep only the `call` and `deploy` function
+/// exports. Every other section is copied byte for byte.
 fn post_process_wasm(input_path: &Path, output_path: &Path) -> Result<()> {
-	let mut module =
-		deserialize_file(input_path).with_context(|| format!("Failed to read {:?}", input_path))?;
-	if let Some(section) = module.export_section_mut() {
-		section.entries_mut().retain(|entry| {
-			matches!(entry.internal(), Internal::Function(_))
-				&& (entry.field() == "call" || entry.field() == "deploy")
-		});
-	}
+	let wasm = fs::read(input_path).with_context(|| format!("Failed to read {:?}", input_path))?;
+	fs::write(output_path, retain_entry_point_exports(&wasm)?).map_err(Into::into)
+}
 
-	serialize_to_file(output_path, module).map_err(Into::into)
+fn retain_entry_point_exports(wasm: &[u8]) -> Result<Vec<u8>> {
+	let mut module = wasm_encoder::Module::new();
+	for payload in Parser::new(0).parse_all(wasm) {
+		match payload? {
+			Payload::Version { .. } | Payload::End(_) | Payload::CodeSectionEntry(_) => {},
+			Payload::ExportSection(exports) => {
+				let mut section = ExportSection::new();
+				for export in exports {
+					let export = export?;
+					if export.kind == ExternalKind::Func
+						&& (export.name == "call" || export.name == "deploy")
+					{
+						section.export(export.name, ExportKind::Func, export.index);
+					}
+				}
+				module.section(&section);
+			},
+			Payload::CustomSection(custom) => {
+				module.section(&CustomSection {
+					name: custom.name().into(),
+					data: custom.data().into(),
+				});
+			},
+			payload => {
+				let (id, range) =
+					payload.as_section().with_context(|| "Unexpected wasm payload".to_string())?;
+				module.section(&RawSection { id, data: &wasm[range] });
+			},
+		}
+	}
+	Ok(module.finish())
 }
 
 /// Write the compiled contracts to the given output directory.

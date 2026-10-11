@@ -20,6 +20,7 @@
 
 mod call_builder;
 mod code;
+mod module_definition;
 mod sandbox;
 use self::{
 	call_builder::CallSetup,
@@ -49,7 +50,7 @@ use pezframe_system::RawOrigin;
 use pezpallet_balances;
 use pezpallet_contracts_uapi::{CallFlags, ReturnErrorCode};
 use pezsp_runtime::traits::{Bounded, Hash};
-use wasm_instrument::parity_wasm::elements::{Instruction, Local, ValueType};
+use wasm_encoder::{Instruction, MemArg, ValType};
 
 /// How many runs we do per API benchmark.
 ///
@@ -2018,31 +2019,29 @@ mod benchmarks {
 		// We do not need to be secure here. Fixed seed allows for deterministic results.
 		let mut rng = rand_pcg::Pcg32::seed_from_u64(8446744073709551615);
 
+		// Alignment 1 and offset 0, in memory 0.
+		const MEMARG: MemArg = MemArg { offset: 0, align: 0, memory_index: 0 };
 		let memory = ImportedMemory::max::<T>();
 		let bytes_per_page = 65536;
 		let bytes_per_memory = memory.max_pages * bytes_per_page;
 		let mut sbox = Sandbox::from(&WasmModule::<T>::from(ModuleDefinition {
 			memory: Some(memory),
-			call_body: Some(body::repeated_with_locals_using(
-				&[Local::new(1, ValueType::I64)],
-				r,
-				|| {
-					// Instruction sequence to load a `i64` from linear memory
-					// at a random memory location and store it back into another
-					// location of the linear memory.
-					let c0: i32 = rng.gen_range(0..bytes_per_memory as i32);
-					let c1: i32 = rng.gen_range(0..bytes_per_memory as i32);
-					[
-						Instruction::I32Const(c0), // address for `i64.load_8s`
-						Instruction::I64Load8S(0, 0),
-						Instruction::SetLocal(0),  /* temporarily store value loaded in
-						                            * `i64.load_8s` */
-						Instruction::I32Const(c1), // address for `i64.store8`
-						Instruction::GetLocal(0),  // value to be stores in `i64.store8`
-						Instruction::I64Store8(0, 0),
-					]
-				},
-			)),
+			call_body: Some(body::repeated_with_locals_using(&[(1, ValType::I64)], r, || {
+				// Instruction sequence to load a `i64` from linear memory
+				// at a random memory location and store it back into another
+				// location of the linear memory.
+				let c0: i32 = rng.gen_range(0..bytes_per_memory as i32);
+				let c1: i32 = rng.gen_range(0..bytes_per_memory as i32);
+				[
+					Instruction::I32Const(c0), // address for `i64.load_8s`
+					Instruction::I64Load8S(MEMARG),
+					Instruction::LocalSet(0),  /* temporarily store value loaded in
+					                            * `i64.load_8s` */
+					Instruction::I32Const(c1), // address for `i64.store8`
+					Instruction::LocalGet(0),  // value to be stores in `i64.store8`
+					Instruction::I64Store8(MEMARG),
+				]
+			})),
 			..Default::default()
 		}));
 		#[block]

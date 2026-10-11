@@ -7,10 +7,6 @@
 mod dispatch_error;
 mod hex;
 
-crate::macros::cfg_unstable_light_client! {
-	pub use pezkuwi_subxt_lightclient::LightClientError;
-}
-
 // Re-export dispatch error types:
 pub use dispatch_error::{
 	ArithmeticError, DispatchError, ModuleError, TokenError, TransactionalError,
@@ -98,12 +94,6 @@ pub enum Error {
 	OtherRpcClientError(#[from] pezkuwi_subxt_rpcs::Error),
 	#[error("Other codec error: {0}")]
 	OtherCodecError(#[from] codec::Error),
-	#[cfg(feature = "unstable-light-client")]
-	#[error("Other light client error: {0}")]
-	OtherLightClientError(#[from] pezkuwi_subxt_lightclient::LightClientError),
-	#[cfg(feature = "unstable-light-client")]
-	#[error("Other light client RPC error: {0}")]
-	OtherLightClientRpcError(#[from] pezkuwi_subxt_lightclient::LightClientRpcError),
 	// Dev note: Nothing in subxt should ever emit this error. It can instead be used
 	// to easily map other errors into a pezkuwi_subxt::Error for convenience. Some From impls
 	// make this automatic for common "other" error types.

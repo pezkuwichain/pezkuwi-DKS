@@ -1,0 +1,19 @@
+flowchart TD
+    Executive::execute_block --> on_runtime_upgrade
+    on_runtime_upgrade --> System::initialize
+    Executive::initialize_block --> System::initialize
+    System::initialize --> on_initialize
+    on_initialize --> PreInherents[System::PreInherents]
+    PreInherents --> Inherents[Apply Inherents]
+    Inherents --> PostInherents[System::PostInherents]
+    PostInherents --> Check{MBM ongoing?}
+    Check -->|No| poll
+    Check -->|Yes| post_transactions_2[System::PostTransaction]
+    post_transactions_2 --> Step[MBMs::step]
+    Step --> on_finalize
+    poll --> transactions[Apply Transactions]
+    transactions --> post_transactions_1[System::PostTransaction]
+    post_transactions_1 --> CheckIdle{Weight remaining?}
+    CheckIdle -->|Yes| on_idle
+    CheckIdle -->|No| on_finalize
+    on_idle --> on_finalize

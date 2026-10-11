@@ -13,6 +13,11 @@ documentation = "https://docs.pezkuwichain.io/"
 
 [workspace]
 resolver = "2"
+# Patch-only replacements, deliberately not members: a member is locked with every optional
+# feature and its dev-dependencies, which for revm-precompile adds substrate-bn, kzg-rs and the
+# sp1 stack, codspeed and bincode 1, and for ruint some 36 features (one nightly-only) and test
+# crates such as bincode 1 and postgres. See the comments on their [patch.crates-io] entries.
+exclude = ["vendor/revm-precompile", "vendor/ruint"]
 
 members = [
 	"bizinikiwi/bin/node/bench",
@@ -615,11 +620,16 @@ members = [
 	"templates/teyrchain/runtime",
 	"templates/zombienet",
 	"umbrella",
+	"vendor/ark-bn254",
+	"vendor/ark-models-ext",
+	"vendor/fxprof-processed-profile",
+	"vendor/paste",
+	"vendor/scale-info-legacy",
 	"vendor/ss58-registry",
+	"vendor/tracing-log",
 	# Vendored pezkuwi-subxt crates
 	"vendor/pezkuwi-subxt/codegen",
 	"vendor/pezkuwi-subxt/core",
-	"vendor/pezkuwi-subxt/lightclient",
 	"vendor/pezkuwi-subxt/macro",
 	"vendor/pezkuwi-subxt/metadata",
 	"vendor/pezkuwi-subxt/rpcs",
@@ -643,6 +653,7 @@ default-members = [
 	"pezcumulus/pezkuwi-teyrchain",
 	"pezkuwi",
 ]
+
 
 [workspace.lints.rust]
 suspicious_double_ref_op = { level = "allow", priority = 2 }
@@ -689,24 +700,23 @@ pezpallet-oracle-runtime-api = { path = "bizinikiwi/pezframe/honzon/oracle/runti
 Inflector = { version = "0.11.4" }
 aes-gcm = { version = "0.10" }
 ahash = { version = "0.8.2" }
-alloy-consensus = { version = "1.0.41", default-features = false }
-alloy-core = { version = "1.2.1", default-features = false }
-alloy-eips = { version = "1.2.1", default-features = false }
-alloy-network = { version = "1.8.3", default-features = false }
-alloy-primitives = { version = "1.2.1", default-features = false }
-alloy-provider = { version = "1.8.3", default-features = false }
+alloy-consensus = { version = "2.5.0", default-features = false }
+alloy-core = { version = "1.7.3", default-features = false }
+alloy-eips = { version = "2.5.0", default-features = false }
+alloy-network = { version = "2.5.0", default-features = false }
+alloy-primitives = { version = "1.7.3", default-features = false }
+alloy-provider = { version = "2.5.0", default-features = false }
 alloy-rlp = { version = "0.3", default-features = false }
-alloy-rpc-types = { version = "1.8.3", default-features = false }
-alloy-rpc-types-trace = { version = "1.8.3", default-features = false }
-alloy-signer = { version = "1.8.3", default-features = false }
-alloy-signer-local = { version = "1.8.3", default-features = false }
-alloy-sol-types = { version = "1.5.7", default-features = false }
+alloy-rpc-types = { version = "2.5.0", default-features = false }
+alloy-rpc-types-trace = { version = "2.5.0", default-features = false }
+alloy-signer = { version = "2.5.0", default-features = false }
+alloy-signer-local = { version = "2.5.0", default-features = false }
+alloy-sol-types = { version = "1.7.3", default-features = false }
 alloy-trie = { version = "0.9.1", default-features = false }
-alloy-tx-macros = { version = "1.2.1", default-features = false }
+alloy-tx-macros = { version = "2.5.0", default-features = false }
 always-assert = { version = "0.1" }
 anyhow = { version = "1.0.81", default-features = false }
 approx = { version = "0.5.1" }
-aquamarine = { version = "0.5.0" }
 arbitrary = { version = "1.3.2" }
 ark-bls12-377 = { version = "0.5.0", default-features = false }
 ark-bls12-377-ext = { version = "0.5.2", default-features = false }
@@ -737,14 +747,10 @@ asset-hub-zagros-emulated-chain = { version = "0.0.0", path = "pezcumulus/teyrch
 asset-hub-zagros-runtime = { version = "0.15.0", path = "pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros" }
 asset-test-pezutils = { path = "pezcumulus/teyrchains/runtimes/assets/test-utils", version = "7.0.0", default-features = false }
 async-channel = { version = "1.8.0" }
-async-std = { version = "1.9.0" }
 async-trait = { version = "0.1.88" }
-asynchronous-codec = { version = "0.6" }
-backoff = { version = "0.4" }
 backtrace = { version = "0.3.71" }
 base58 = { version = "0.2.0" }
 base64 = { version = "0.22.1", default-features = false }
-bincode = { version = "1.3.3" }
 bip32 = { version = "0.5.2", default-features = false }
 bip39 = { version = "2.2.0", default-features = false }
 bitflags = { version = "1.3.2" }
@@ -768,7 +774,7 @@ chrono = { version = "0.4.31" }
 cid = { version = "0.11.1" }
 clap = { version = "4.5.13" }
 clap_complete = { version = "4.5.13" }
-cmd_lib = { version = "1.9.5" }
+cmd_lib = { version = "2.0.1" }
 coarsetime = { version = "0.1.22" }
 codec = { version = "3.7.5", default-features = false, package = "parity-scale-codec" }
 collectives-zagros-emulated-chain = { version = "0.0.0", path = "pezcumulus/teyrchains/integration-tests/emulated/chains/teyrchains/collectives/collectives-zagros" }
@@ -871,7 +877,7 @@ hyper-util = { version = "0.1.5", default-features = false }
 impl-serde = { version = "0.5.0", default-features = false }
 impl-trait-for-tuples = { version = "0.2.2" }
 indexmap = { version = "2.7.1" }
-indicatif = { version = "0.17.7" }
+indicatif = { version = "0.18.0" }
 integer-sqrt = { version = "0.1.2" }
 ip_network = { version = "0.4.1" }
 is-terminal = { version = "0.4.9" }
@@ -887,9 +893,9 @@ jsonpath_lib = { version = "0.3" }
 jsonrpsee = { version = "0.24.10" }
 jsonrpsee-core = { version = "0.24.10" }
 k256 = { version = "0.13.4", default-features = false }
-k8s-openapi = { version = "0.20.0", features = ["v1_28"] }
+k8s-openapi = { version = "0.28.0", features = ["v1_32"] }
 keccak-hash = { version = "0.11.0", default-features = false }
-kube = { version = "0.87.1" }
+kube = { version = "4.2.0" }
 kvdb = { version = "0.13.0" }
 kvdb-memorydb = { version = "0.13.0" }
 kvdb-rocksdb = { version = "0.21.0" }
@@ -898,21 +904,18 @@ landlock = { version = "0.3.0" }
 lazy_static = { version = "1.5" }
 libc = { version = "0.2.155" }
 libfuzzer-sys = { version = "0.4" }
-libp2p = { version = "0.54.1" }
 libp2p-identity = { version = "0.2.9" }
-libp2p-kad = { version = "0.46.2", default-features = false }
-libsecp256k1 = { version = "0.7.0", default-features = false }
 linked-hash-map = { version = "0.5.4" }
 linked_hash_set = { version = "0.1.4" }
 linregress = { version = "0.5.1" }
 lite-json = { version = "0.2.0", default-features = false }
-# The backend the nodes actually run, so it is the one that gets the attention. Upstream
-# stable2606 is on 0.15.2 and this follows it.
+# The only P2P stack: the rust-libp2p backend was removed on 2026-10-11, after every deployed
+# node had been measured running litep2p. Upstream stable2606 is on 0.15.2 and this follows it.
 #
 # What is deliberately not followed is upstream's `webrtc` feature. Nothing in this tree uses
-# the WebRTC transport -- measured, zero references -- and the whole reason libp2p is left
-# alone rather than upgraded is that we do not carry code we do not run. Enabling a transport
-# for symmetry with upstream would contradict that on the very line that states it.
+# the WebRTC transport -- measured, zero references -- and we do not carry code we do not run.
+# That is also why the libp2p backend went instead of being upgraded. Enabling a transport for
+# symmetry with upstream would contradict that on the very line that states it.
 litep2p = { version = "0.15.2", features = ["rsa", "websocket"] }
 log = { version = "0.4.22", default-features = false }
 macro_magic = { version = "0.5.1" }
@@ -929,7 +932,6 @@ mockall = { version = "0.13.1" }
 multiaddr = { version = "0.18.1" }
 multihash = { version = "0.19.1", default-features = false }
 multihash-codetable = { version = "0.2.1", default-features = false, features = ["blake2b"] }
-multistream-select = { version = "0.13.0" }
 names = { version = "0.14.0", default-features = false }
 nix = { version = "0.29.0" }
 node-cli = { version = "3.0.0-dev", path = "bizinikiwi/bin/node/cli", package = "pezstaging-node-cli" }
@@ -1197,11 +1199,9 @@ bizinikiwi-test-runtime-transaction-pool = { path = "bizinikiwi/test-utils/runti
 bizinikiwi-test-utils = { path = "bizinikiwi/test-utils", version = "4.0.0-dev" }
 bizinikiwi-wasm-builder = { path = "bizinikiwi/utils/wasm-builder", version = "17.0.0", default-features = false }
 parity-bytes = { version = "0.1.2", default-features = false }
-parity-db = { version = "0.4.12" }
-parity-wasm = { version = "0.45.0" }
+parity-db = { version = "0.5.7" }
 parking_lot = { version = "0.12.1", default-features = false }
-partial_sort = { version = "0.2.0" }
-paste = { version = "1.0.15", default-features = false }
+paste = { path = "vendor/paste", version = "1.0.15", default-features = false }
 pbkdf2 = { version = "0.12.2", default-features = false }
 people-pezkuwichain-emulated-chain = { version = "0.1.0", path = "pezcumulus/teyrchains/integration-tests/emulated/chains/teyrchains/people/people-pezkuwichain" }
 people-pezkuwichain-runtime = { version = "0.1.0", path = "pezcumulus/teyrchains/runtimes/people/people-pezkuwichain" }
@@ -1470,7 +1470,6 @@ primitive-types = { version = "0.13.1", default-features = false, features = [
 	"num-traits",
 ] }
 proc-macro-crate = { version = "3.0.0" }
-proc-macro-error2 = { version = "2.0.0" }
 proc-macro-warning = { version = "1.0.0", default-features = false }
 proc-macro2 = { version = "1.0.86" }
 procfs = { version = "0.16.0" }
@@ -1524,7 +1523,7 @@ scale-bits = { version = "0.7.0", default-features = false }
 scale-decode = { version = "0.16.2", default-features = false }
 scale-encode = { version = "0.10.0", default-features = false }
 scale-info = { version = "2.11.6", default-features = false }
-scale-info-legacy = { version = "0.4.0", default-features = false }
+scale-info-legacy = { path = "vendor/scale-info-legacy", version = "0.4.0", default-features = false }
 scale-type-resolver = { version = "0.2.0" }
 scale-typegen = { version = "0.12.0" }
 scale-value = { version = "0.18.1", default-features = false }
@@ -1552,11 +1551,9 @@ shlex = { version = "1.3.0" }
 simple-mermaid = { version = "0.1.1" }
 slotmap = { version = "1.0" }
 smallvec = { version = "1.11.0", default-features = false }
-smoldot = { version = "0.20.0", default-features = false }
-smoldot-light = { version = "0.18.0", default-features = false }
 soketto = { version = "0.8.0" }
 spinners = { version = "4.1.1" }
-sqlx = { version = "0.8.2" }
+sqlx = { version = "0.9.0" }
 ss58-registry = { package = "pezsp-ss58-registry", version = "1.52.0", default-features = false }
 ssz_rs = { version = "0.9.0", default-features = false }
 ssz_rs_derive = { version = "0.9.0", default-features = false }
@@ -1567,7 +1564,6 @@ strum = { version = "0.26.3", default-features = false }
 pezkuwi-subxt = { path = "vendor/pezkuwi-subxt/subxt", version = "0.44.0", default-features = false }
 pezkuwi-subxt-codegen = { path = "vendor/pezkuwi-subxt/codegen", version = "0.44.0" }
 pezkuwi-subxt-core = { path = "vendor/pezkuwi-subxt/core", version = "0.44.0", default-features = false }
-pezkuwi-subxt-lightclient = { path = "vendor/pezkuwi-subxt/lightclient", version = "0.44.0", default-features = false }
 pezkuwi-subxt-macro = { path = "vendor/pezkuwi-subxt/macro", version = "0.44.0" }
 pezkuwi-subxt-metadata = { path = "vendor/pezkuwi-subxt/metadata", version = "0.44.0", default-features = false }
 pezkuwi-subxt-rpcs = { path = "vendor/pezkuwi-subxt/rpcs", version = "0.44.0" }
@@ -1605,7 +1601,7 @@ tokio = { version = "1.45.0", default-features = false }
 tokio-retry = { version = "0.3.0" }
 tokio-stream = { version = "0.1.14" }
 tokio-test = { version = "0.4.4" }
-tokio-tungstenite = { version = "0.26.2" }
+tokio-tungstenite = { version = "0.27.0" }
 tokio-util = { version = "0.7.8" }
 toml = { version = "0.8.12" }
 toml_edit = { version = "0.19" }
@@ -1614,7 +1610,7 @@ tower-http = { version = "0.5.2" }
 tracing = { version = "0.1.37", default-features = false }
 tracing-core = { version = "0.1.32", default-features = false }
 tracing-futures = { version = "0.2.4" }
-tracing-log = { version = "0.2.0" }
+tracing-log = { path = "vendor/tracing-log", version = "0.2.0" }
 tracing-subscriber = { version = "0.3.20" }
 tracking-allocator = { version = "2.0.0", path = "pezkuwi/node/tracking-allocator", default-features = false, package = "pezstaging-tracking-allocator" }
 trie-bench = { version = "=0.42.0" }
@@ -1630,21 +1626,21 @@ unsigned-varint = { version = "0.7.2" }
 url = { version = "2.5.4" }
 uuid = { version = "1.4" }
 verifiable = { version = "0.1", default-features = false }
-void = { version = "1.0.2" }
-w3f-bls = { version = "0.1.9", default-features = false }
+w3f-bls = { version = "0.2.0", default-features = false }
 wait-timeout = { version = "0.2" }
 walkdir = { version = "2.5.0" }
 wasm-bindgen = { version = "0.2.93" }
 wasm-bindgen-futures = { version = "0.4.43" }
 wasm-bindgen-test = { version = "0.3.24" }
-wasm-instrument = { version = "0.4", default-features = false }
+wasm-encoder = { version = "0.236.1", default-features = false }
 wasm-opt = { version = "0.116" }
-wasm-timer = { version = "0.2.5" }
 wasmi = { version = "0.32.3", default-features = false }
+wasmparser = { version = "0.236.1", default-features = false }
 wasmtime = { version = "36.0.13", default-features = false }
 wat = { version = "1.0.0" }
 web-sys = { version = "0.3.70" }
 web-time = { version = "1.1", default-features = false }
+webpki-roots = { version = "1.0.5" }
 x25519-dalek = { version = "2.0" }
 xcm = { path = "pezkuwi/xcm", version = "7.0.1", default-features = false, package = "pezstaging-xcm" }
 xcm-builder = { path = "pezkuwi/xcm/xcm-builder", version = "7.0.0", default-features = false, package = "pezstaging-xcm-builder" }
@@ -1714,7 +1710,6 @@ integer-sqrt = { opt-level = 3 }
 keccak = { opt-level = 3 }
 libm = { opt-level = 3 }
 librocksdb-sys = { opt-level = 3 }
-libsecp256k1 = { opt-level = 3 }
 libz-sys = { opt-level = 3 }
 mio = { opt-level = 3 }
 nalgebra = { opt-level = 3 }
@@ -1743,6 +1738,33 @@ zeroize = { opt-level = 3 }
 # serde_core doesn't properly export prelude traits for this target
 # See: https://github.com/pezkuwichain/serde/tree/fix-wasm32v1-none
 [patch.crates-io]
+# scale-info-legacy 0.4.2 (latest) depends on smallstr, which is unmaintained (RUSTSEC-2026-0215)
+# with no fixed release. The vendored copy swaps its one SmallString alias for String; drop the
+# patch once an upstream release no longer depends on smallstr.
+scale-info-legacy = { path = "vendor/scale-info-legacy" }
+# paste 1.0.15 is unmaintained (RUSTSEC-2024-0436) and 26 crates in the graph ask for it, most of
+# them third-party (alloy, ark, netlink). The vendored crate re-exports pastey, its maintained
+# successor, under the paste name.
+paste = { path = "vendor/paste" }
+# tracing-log 0.2.0 (latest) runs its interest cache on lru 0.7, which has a panic-safety
+# use-after-free fixed in lru 0.16.3; pezsc-tracing enables that cache. The vendored copy moves
+# it to lru 0.18. Drop the patch once a tracing-log release does.
+tracing-log = { path = "vendor/tracing-log" }
+# wasmtime 36 profiling pins fxprof-processed-profile 0.6, which hashes with fxhash
+# (unmaintained, RUSTSEC-2025-0057). The vendored copy takes the same FxHasher from rustc-hash.
+fxprof-processed-profile = { path = "vendor/fxprof-processed-profile" }
+# ark-bn254 0.5.0 without its unused r1cs feature, whose optional dependency chain put
+# tracing-subscriber 0.2 in the lockfile.
+ark-bn254 = { path = "vendor/ark-bn254" }
+# revm-precompile 25.0.0 without its unused libsecp256k1 feature: `std` named the optional
+# dependency as a weak feature, which kept libsecp256k1 0.7.2 (unmaintained) in the lockfile.
+revm-precompile = { path = "vendor/revm-precompile" }
+# ark-models-ext 0.5.2 with its derivative (unmaintained) derives written out by hand. It models
+# the curves behind pezsp-crypto-ec-utils' host functions, which stay on arkworks 0.5.
+ark-models-ext = { path = "vendor/ark-models-ext" }
+# ruint 1.20.0 without its unused `ark-ff` and `ark-ff-04` features, whose optional ark-ff 0.3
+# and 0.4 dependencies put derivative (unmaintained) in the lockfile.
+ruint = { path = "vendor/ruint" }
 serde = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 serde_core = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 # arrayvec was vendored because 0.7.6 failed on wasm32v1-none (E0223 ambiguity from the

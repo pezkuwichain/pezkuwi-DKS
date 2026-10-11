@@ -221,7 +221,7 @@ fn test_harness<T: Future<Output = TestHarness>>(
 
 	let (collation_req_v2_receiver, req_v2_cfg) = IncomingRequest::get_config_receiver::<
 		Block,
-		pezsc_network::NetworkWorker<Block, Hash>,
+		pezsc_network::Litep2pNetworkBackend,
 	>(&req_protocol_names);
 	let subsystem = async {
 		run_inner(

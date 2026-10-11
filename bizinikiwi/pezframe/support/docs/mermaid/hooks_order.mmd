@@ -1,0 +1,28 @@
+graph LR
+	Optional --> Mandatory
+	Mandatory --> ExtrinsicsMandatory
+	ExtrinsicsMandatory --> Poll
+	Poll --> Extrinsics
+	Extrinsics --> AfterMandatory
+	AfterMandatory --> onIdle
+
+subgraph Optional
+	OnRuntimeUpgrade
+end
+
+subgraph Mandatory
+	OnInitialize
+end
+
+subgraph ExtrinsicsMandatory
+	Inherent1 --> Inherent2
+end
+
+subgraph Extrinsics
+	direction TB
+	Extrinsic1 --> Extrinsic2
+end
+
+subgraph AfterMandatory
+	OnFinalize
+end

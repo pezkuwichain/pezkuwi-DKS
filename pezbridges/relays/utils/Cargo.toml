@@ -16,13 +16,13 @@ workspace = true
 [dependencies]
 anyhow = { workspace = true, default-features = true }
 async-trait = { workspace = true }
-backoff = { workspace = true }
 futures = { workspace = true }
 # Using reqwest with rustls-tls for pure Rust TLS (no OpenSSL dependency)
 jsonpath_lib = { workspace = true }
 num-traits = { workspace = true, default-features = true }
 parking_lot = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
 reqwest = { workspace = true }
 serde_json = { workspace = true, default-features = true }
 sysinfo = { workspace = true }

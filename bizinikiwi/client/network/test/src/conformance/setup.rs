@@ -33,7 +33,7 @@ use pezsp_runtime::traits::Zero;
 use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 
-/// High level network backend (litep2p or libp2p) test client.
+/// High level network backend test client.
 pub struct NetworkBackendClient {
 	pub network_service: Arc<dyn NetworkService>,
 	pub notification_service: Arc<Mutex<Box<dyn NotificationService>>>,

@@ -22,7 +22,6 @@ use crate::{write_file_if_changed, CargoCommandVersioned, RuntimeTarget, OFFLINE
 use build_helper::rerun_if_changed;
 use cargo_metadata::{DependencyKind, Metadata, MetadataCommand};
 use console::style;
-use parity_wasm::elements::{deserialize_buffer, Module};
 use polkavm_linker::TargetInstructionSet;
 use std::{
 	borrow::ToOwned,
@@ -37,6 +36,7 @@ use std::{
 use strum::{EnumIter, IntoEnumIterator};
 use toml::value::Table;
 use walkdir::WalkDir;
+use wasmparser::{Parser, Payload, Validator, WasmFeatures};
 
 /// Colorize an info message.
 ///
@@ -285,15 +285,17 @@ fn maybe_compact_and_compress_wasm(
 fn ensure_runtime_version_wasm_section_exists(blob_path: &Path) {
 	let blob = fs::read(blob_path).expect("`{blob_path}` was just written and should exist; qed");
 
-	let module: Module = match deserialize_buffer(&blob) {
-		Ok(m) => m,
-		Err(e) => {
-			println!("Failed to deserialize `{}`: {e:?}", blob_path.display());
-			process::exit(1);
-		},
-	};
+	// The executor runs WebAssembly 1.0 (MVP plus mutable globals) only, so a blob that uses
+	// anything newer fails the build here rather than on a node.
+	if let Err(e) = Validator::new_with_features(WasmFeatures::WASM1).validate_all(&blob) {
+		println!("Failed to deserialize `{}`: {e:?}", blob_path.display());
+		process::exit(1);
+	}
+	let found = Parser::new(0).parse_all(&blob).any(|payload| {
+		matches!(payload, Ok(Payload::CustomSection(section)) if section.name() == "runtime_version")
+	});
 
-	if !module.custom_sections().any(|cs| cs.name() == "runtime_version") {
+	if !found {
 		println!(
 			"Couldn't find the `runtime_version` section. \
 				  Please ensure that you are using the `pezsp_version::runtime_version` attribute macro!"

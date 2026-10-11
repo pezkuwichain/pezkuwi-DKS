@@ -23,7 +23,6 @@ bizinikiwi-test-runtime = { workspace = true }
 bizinikiwi-test-runtime-client = { workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
-libp2p = { workspace = true }
 log = { workspace = true, default-features = true }
 parking_lot = { workspace = true, default-features = true }
 pezsc-block-builder = { workspace = true, default-features = true }
@@ -35,13 +34,11 @@ pezsc-network-light = { workspace = true, default-features = true }
 pezsc-network-sync = { workspace = true, default-features = true }
 pezsc-network-types = { workspace = true, default-features = true }
 pezsc-service = { workspace = true }
-pezsc-utils = { workspace = true, default-features = true }
 pezsp-blockchain = { workspace = true, default-features = true }
 pezsp-consensus = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
-rand = { workspace = true, default-features = true }
 tokio = { workspace = true, default-features = true }
 
 [features]
@@ -72,7 +69,6 @@ std = [
 	"pezsc-network-types/std",
 	"pezsc-network/std",
 	"pezsc-service/std",
-	"pezsc-utils/std",
 	"pezsp-blockchain/std",
 	"pezsp-consensus/std",
 ]

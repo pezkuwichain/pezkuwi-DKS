@@ -109,7 +109,7 @@ fn build_overseer(
 		state.own_backing_group.clone(),
 	);
 	let (candidate_req_receiver, candidate_req_cfg) =
-		IncomingRequest::get_config_receiver::<Block, pezsc_network::NetworkWorker<Block, Hash>>(
+		IncomingRequest::get_config_receiver::<Block, pezsc_network::Litep2pNetworkBackend>(
 			&ReqProtocolNames::new(GENESIS_HASH, None),
 		);
 	let keystore = make_keystore();

@@ -1,0 +1,29 @@
+[package]
+name = "tracing-log"
+version = "0.2.0"
+edition = "2018"
+rust-version = "1.56.0"
+authors = ["Tokio Contributors <team@tokio.rs>"]
+description = "Provides compatibility between `tracing` and the `log` crate."
+homepage = "https://tokio.rs"
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/tokio-rs/tracing"
+publish = false
+
+# Vendored from tracing-log 0.2.0, the latest release, for one change: its `interest-cache`
+# feature used lru 0.7, which has a use-after-free when a key's hash or comparison panics
+# (fixed in lru 0.16.3). The cache now runs on lru 0.18; see src/interest_cache.rs.
+
+[dependencies]
+ahash = { version = "0.7.6", optional = true }
+log = { version = "0.4.17" }
+lru = { version = "0.18", optional = true }
+once_cell = { version = "1.13.0" }
+tracing-core = { version = "0.1.28" }
+
+[features]
+default = ["log-tracer", "std"]
+interest-cache = ["ahash", "lru"]
+log-tracer = []
+std = ["log/std"]

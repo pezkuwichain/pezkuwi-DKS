@@ -20,8 +20,6 @@ default = ["jsonrpsee", "native"]
 subxt = ["dep:pezkuwi-subxt-core"]
 jsonrpsee = ["dep:jsonrpsee", "dep:tokio-util"]
 
-unstable-light-client = ["dep:pezkuwi-subxt-lightclient"]
-
 reconnecting-rpc-client = ["dep:finito", "dep:tokio", "jsonrpsee", "tokio/sync"]
 
 mock-rpc-client = ["dep:tokio", "tokio/sync"]
@@ -32,7 +30,6 @@ native = [
 	"jsonrpsee?/async-client",
 	"jsonrpsee?/client-ws-transport-tls",
 	"jsonrpsee?/ws-client",
-	"pezkuwi-subxt-lightclient?/native",
 ]
 
 # Enable this for web/wasm builds.
@@ -44,7 +41,6 @@ web = [
 	"jsonrpsee?/async-wasm-client",
 	"jsonrpsee?/client-web-transport",
 	"jsonrpsee?/wasm-client",
-	"pezkuwi-subxt-lightclient?/web",
 ]
 std = [
 	"codec/std",
@@ -53,7 +49,6 @@ std = [
 	"hex/std",
 	"impl-serde/std",
 	"pezkuwi-subxt-core?/std",
-	"pezkuwi-subxt-lightclient?/std",
 	"primitive-types/std",
 	"serde/std",
 	"serde_json/std",
@@ -84,9 +79,6 @@ tokio-util = { workspace = true, features = ["compat"], optional = true }
 # Included with the reconnecting-rpc-client feature
 finito = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
-
-# Included with the unstable-light-client feature
-pezkuwi-subxt-lightclient = { workspace = true, optional = true, default-features = false }
 
 # Included with the pezkuwi-subxt-core feature to impl Config for RpcConfig
 pezkuwi-subxt-core = { workspace = true, optional = true }

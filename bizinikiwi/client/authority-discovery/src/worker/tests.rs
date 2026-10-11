@@ -36,8 +36,8 @@ use futures::{
 };
 use pezsc_client_api::HeaderBackend;
 use pezsc_network::{
-	service::signature::{Keypair, SigningError},
-	PublicKey, Signature,
+	service::signature::{Keypair, PublicKey, SigningError},
+	Signature,
 };
 use pezsc_network_types::{
 	kad::Key as KademliaKey,

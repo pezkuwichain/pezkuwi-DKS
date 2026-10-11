@@ -26,6 +26,7 @@ use futures::{
 	lock::Mutex,
 	FutureExt,
 };
+use futures_timer::Delay;
 use pezkuwi_node_subsystem::{
 	messages::{AvailabilityStoreMessage, BitfieldDistributionMessage},
 	overseer, ActivatedLeaf, FromOrchestra, OverseerSignal, SpawnedSubsystem, SubsystemError,
@@ -36,8 +37,10 @@ use pezkuwi_node_subsystem_util::{
 };
 use pezkuwi_primitives::{AvailabilityBitfield, CoreState, Hash, ValidatorIndex};
 use pezsp_keystore::{Error as KeystoreError, KeystorePtr};
-use std::{collections::HashMap, time::Duration};
-use wasm_timer::{Delay, Instant};
+use std::{
+	collections::HashMap,
+	time::{Duration, Instant},
+};
 
 mod metrics;
 use self::metrics::Metrics;
@@ -56,9 +59,6 @@ const LOG_TARGET: &str = "teyrchain::bitfield-signing";
 pub enum Error {
 	#[error(transparent)]
 	Util(#[from] util::Error),
-
-	#[error(transparent)]
-	Io(#[from] std::io::Error),
 
 	#[error(transparent)]
 	Oneshot(#[from] oneshot::Canceled),
@@ -238,7 +238,7 @@ where
 	};
 
 	// wait a bit before doing anything else
-	Delay::new_at(wait_until).await?;
+	Delay::new(wait_until.saturating_duration_since(Instant::now())).await;
 
 	// this timer does not appear at the head of the function because we don't want to include
 	// SPAWNED_TASK_DELAY each time.

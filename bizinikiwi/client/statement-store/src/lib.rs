@@ -51,8 +51,6 @@ mod metrics;
 mod subscription;
 
 #[cfg(feature = "test-helpers")]
-pub mod pezkuwi_subxt_client;
-#[cfg(feature = "test-helpers")]
 pub mod test_utils;
 
 use crate::subscription::{SubscriptionStatementsStream, SubscriptionsHandle};

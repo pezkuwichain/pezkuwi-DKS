@@ -892,7 +892,7 @@ where
 	let req_protocol_names = ReqProtocolNames::new(&genesis_hash, None);
 	let (req_receiver, req_cfg) = IncomingRequest::get_config_receiver::<
 		Block,
-		pezsc_network::NetworkWorker<Block, Hash>,
+		pezsc_network::Litep2pNetworkBackend,
 	>(&req_protocol_names);
 	let subsystem = DisputeDistributionSubsystem::new(
 		keystore,

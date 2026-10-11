@@ -14,13 +14,13 @@ workspace = true
 
 [dependencies]
 futures = { workspace = true }
+futures-timer = { workspace = true }
 gum = { workspace = true, default-features = true }
 pezkuwi-node-subsystem = { workspace = true, default-features = true }
 pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
 pezkuwi-primitives = { workspace = true, default-features = true }
 pezsp-keystore = { workspace = true, default-features = true }
 thiserror = { workspace = true }
-wasm-timer = { workspace = true }
 
 [dev-dependencies]
 pezkuwi-node-subsystem-test-helpers = { workspace = true }

@@ -1,0 +1,3 @@
+# bluealloy/revm formatting (rustfmt defaults), so the vendored source stays diffable against
+# upstream.
+edition = "2021"

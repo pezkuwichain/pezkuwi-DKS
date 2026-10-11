@@ -124,9 +124,9 @@ impl BeefyTestNet {
 			let (rx, cfg) = on_demand_justifications_protocol_config::<
 				_,
 				Block,
-				pezsc_network::NetworkWorker<_, _>,
+				pezsc_network::Litep2pNetworkBackend,
 			>(GENESIS_HASH, None);
-			let justif_protocol_name = cfg.name.clone();
+			let justif_protocol_name = cfg.protocol_name.clone();
 
 			net.add_authority_peer(vec![cfg]);
 
@@ -429,7 +429,7 @@ where
 		let on_demand_justif_handler = peer.data.beefy_justif_req_handler.lock().take().unwrap();
 
 		let network_params = crate::BeefyNetworkParams {
-			network: peer.network_service().clone(),
+			network: Arc::new(peer.network_service().clone()),
 			sync: peer.sync_service().clone(),
 			notification_service: notification_services.remove(&peer_id).unwrap(),
 			gossip_protocol_name: beefy_gossip_proto_name(),

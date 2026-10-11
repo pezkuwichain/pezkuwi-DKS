@@ -36,7 +36,6 @@ SKIP_CRATES = [
 	"pezkuwi-subxt",
 	"pezkuwi-subxt-codegen",
 	"pezkuwi-subxt-core",
-	"pezkuwi-subxt-lightclient",
 	"pezkuwi-subxt-macro",
 	"pezkuwi-subxt-metadata",
 	"pezkuwi-subxt-rpcs",

@@ -1,0 +1,4 @@
+# Upstream formatting, so the vendored source stays diffable against
+# paritytech/scale-info-legacy.
+edition = "2021"
+use_small_heuristics = "Max"
