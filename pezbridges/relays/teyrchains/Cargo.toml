@@ -14,10 +14,10 @@ homepage = { workspace = true }
 workspace = true
 
 [dependencies]
-async-std = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 relay-utils = { workspace = true }
+tokio = { workspace = true, default-features = true, features = ["time"] }
 tracing = { workspace = true }
 
 # Bridge dependencies
@@ -27,6 +27,7 @@ relay-bizinikiwi-client = { workspace = true }
 [dev-dependencies]
 pezsp-core = { workspace = true, default-features = true }
 relay-bizinikiwi-client = { features = ["test-helpers"], workspace = true }
+tokio = { workspace = true, default-features = true, features = ["macros", "rt", "sync"] }
 
 [features]
 runtime-benchmarks = [

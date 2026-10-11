@@ -17,7 +17,6 @@ workspace = true
 # Bizinikiwi Dependencies
 # Bridge dependencies
 anyhow = { workspace = true }
-async-std = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 codec = { workspace = true, default-features = true }

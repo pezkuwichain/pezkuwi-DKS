@@ -16,7 +16,6 @@
 
 //! Primitives for exposing the teyrchains finality relaying functionality in the CLI.
 
-use async_std::sync::Mutex;
 use async_trait::async_trait;
 use clap::Parser;
 use pezbp_pezkuwi_core::BlockNumber as RelayBlockNumber;
@@ -25,6 +24,7 @@ use relay_bizinikiwi_client::{Client, Teyrchain};
 use relay_utils::metrics::{GlobalMetrics, StandaloneMetric};
 use std::sync::Arc;
 use teyrchains_relay::teyrchains_loop::{AvailableHeader, SourceClient, TargetClient};
+use tokio::sync::Mutex;
 
 use crate::{
 	cli::{

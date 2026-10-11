@@ -68,7 +68,7 @@ struct ClientData<C: Chain> {
 	// `quick_cache::sync::Cache` has the `get_or_insert_async` method, which fits our needs,
 	// but it uses synchronization primitives that are not aware of async execution. They
 	// can block the executor threads and cause deadlocks => let's use primitives from
-	// `async_std` crate around `quick_cache::unsync::Cache`
+	// `tokio` crate around `quick_cache::unsync::Cache`
 	header_hash_by_number_cache: SyncCache<BlockNumberOf<C>, HashOf<C>>,
 	header_by_hash_cache: SyncCache<HashOf<C>, HeaderOf<C>>,
 	block_by_hash_cache: SyncCache<HashOf<C>, SignedBlockOf<C>>,

@@ -742,7 +742,6 @@ asset-hub-zagros-emulated-chain = { version = "0.0.0", path = "pezcumulus/teyrch
 asset-hub-zagros-runtime = { version = "0.15.0", path = "pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros" }
 asset-test-pezutils = { path = "pezcumulus/teyrchains/runtimes/assets/test-utils", version = "7.0.0", default-features = false }
 async-channel = { version = "1.8.0" }
-async-std = { version = "1.9.0" }
 async-trait = { version = "0.1.88" }
 backtrace = { version = "0.3.71" }
 base58 = { version = "0.2.0" }

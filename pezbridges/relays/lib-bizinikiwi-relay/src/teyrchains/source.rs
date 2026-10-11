@@ -20,7 +20,6 @@ use crate::{
 	proofs::to_raw_storage_proof,
 	teyrchains::{BizinikiwiTeyrchainsPipeline, TeyrchainsPipelineAdapter},
 };
-use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use codec::Decode;
 use pezbp_pezkuwi_core::teyrchains::{ParaHash, ParaHead, ParaHeadsProof, ParaId};
@@ -31,7 +30,9 @@ use relay_bizinikiwi_client::{
 	TeyrchainBase,
 };
 use relay_utils::relay_loop::Client as RelayClient;
+use std::sync::Arc;
 use teyrchains_relay::teyrchains_loop::{AvailableHeader, SourceClient};
+use tokio::sync::Mutex;
 
 /// Shared updatable reference to the maximal teyrchain header id that we want to sync from the
 /// source.
