@@ -23,7 +23,6 @@ pub use relay_loop::{relay_loop, relay_metrics};
 use std::fmt::Debug;
 
 use async_trait::async_trait;
-use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::future::{BoxFuture, FutureExt};
 use std::time::Duration;
 use thiserror::Error;
@@ -176,14 +175,61 @@ impl MaybeConnectionError for StringifiedMaybeConnectionError {
 	}
 }
 
+/// First delay handed out by [`retry_backoff`], before randomization.
+const INITIAL_BACKOFF_INTERVAL: Duration = Duration::from_millis(500);
+/// Factor the backoff interval grows by after every failed attempt.
+const BACKOFF_MULTIPLIER: f64 = 1.5;
+/// Every delay is drawn uniformly from `interval * (1 +/- BACKOFF_RANDOMIZATION_FACTOR)`.
+const BACKOFF_RANDOMIZATION_FACTOR: f64 = 0.5;
+
+/// Randomized exponential backoff for retrying connection-unrelated errors.
+///
+/// The interval starts at 500 ms and grows by 1.5x per attempt up to [`MAX_BACKOFF_INTERVAL`];
+/// each delay is the current interval randomized by +/-50%. It never gives up: the relayer must
+/// not stop because a request keeps failing. These are the parameters and arithmetic the relays
+/// used through the `backoff` crate, whose defaults they relied on, before it was unmaintained.
+#[derive(Clone, Debug)]
+pub struct ExponentialBackoff {
+	current_interval: Duration,
+}
+
+impl ExponentialBackoff {
+	/// Start again from the initial interval, after a request succeeded.
+	pub fn reset(&mut self) {
+		self.current_interval = INITIAL_BACKOFF_INTERVAL;
+	}
+
+	/// Delay to wait before the next retry; grows the interval for the one after.
+	pub fn next_backoff(&mut self) -> Duration {
+		let delay = randomized_interval(self.current_interval, rand::random::<f64>());
+		self.current_interval = grown_interval(self.current_interval);
+		delay
+	}
+}
+
+/// Uniform pick from `[interval - delta, interval + delta]`, `random` being in `[0, 1)`.
+fn randomized_interval(interval: Duration, random: f64) -> Duration {
+	let interval = interval.as_nanos() as f64;
+	let delta = BACKOFF_RANDOMIZATION_FACTOR * interval;
+	let min = interval - delta;
+	let max = interval + delta;
+	Duration::from_nanos((min + random * (max - min + 1.0)) as u64)
+}
+
+/// Next interval: multiplied, and capped at [`MAX_BACKOFF_INTERVAL`].
+fn grown_interval(interval: Duration) -> Duration {
+	let interval = interval.as_nanos() as f64;
+	let max = MAX_BACKOFF_INTERVAL.as_nanos() as f64;
+	if interval >= max / BACKOFF_MULTIPLIER {
+		MAX_BACKOFF_INTERVAL
+	} else {
+		Duration::from_nanos((interval * BACKOFF_MULTIPLIER) as u64)
+	}
+}
+
 /// Exponential backoff for connection-unrelated errors retries.
 pub fn retry_backoff() -> ExponentialBackoff {
-	ExponentialBackoff {
-		// we do not want relayer to stop
-		max_elapsed_time: None,
-		max_interval: MAX_BACKOFF_INTERVAL,
-		..Default::default()
-	}
+	ExponentialBackoff { current_interval: INITIAL_BACKOFF_INTERVAL }
 }
 
 /// Compact format of IDs vector.
@@ -302,7 +348,7 @@ where
 			ProcessFutureResult::ConnectionFailed
 		},
 		Err(error) => {
-			let retry_delay = retry_backoff.next_backoff().unwrap_or(CONNECTION_ERROR_DELAY);
+			let retry_delay = retry_backoff.next_backoff();
 			tracing::error!(
 				target: "bridge",
 				?error,
@@ -314,5 +360,45 @@ where
 			go_offline_future.set(go_offline(retry_delay).fuse());
 			ProcessFutureResult::Failed
 		},
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn backoff_interval_grows_to_the_cap_and_resets() {
+		let mut backoff = retry_backoff();
+		let mut expected = INITIAL_BACKOFF_INTERVAL;
+		for _ in 0..30 {
+			assert_eq!(backoff.current_interval, expected);
+			let delay = backoff.next_backoff();
+			assert!(delay >= expected / 2, "{delay:?} below {expected:?} - 50%");
+			assert!(delay <= expected * 3 / 2 + Duration::from_nanos(1));
+			expected = grown_interval(expected);
+		}
+		assert_eq!(backoff.current_interval, MAX_BACKOFF_INTERVAL);
+
+		backoff.reset();
+		assert_eq!(backoff.current_interval, INITIAL_BACKOFF_INTERVAL);
+	}
+
+	#[test]
+	fn backoff_interval_growth_matches_the_previous_crate() {
+		assert_eq!(grown_interval(Duration::from_millis(500)), Duration::from_millis(750));
+		assert_eq!(grown_interval(Duration::from_millis(750)), Duration::from_millis(1125));
+		// 40 s * 1.5 reaches the cap exactly; anything above 40 s is clamped to it.
+		assert_eq!(grown_interval(Duration::from_secs(40)), MAX_BACKOFF_INTERVAL);
+		assert_eq!(grown_interval(Duration::from_secs(39)), Duration::from_millis(58_500));
+		assert_eq!(grown_interval(MAX_BACKOFF_INTERVAL), MAX_BACKOFF_INTERVAL);
+	}
+
+	#[test]
+	fn backoff_delay_spans_half_to_one_and_a_half_of_the_interval() {
+		let interval = Duration::from_secs(10);
+		assert_eq!(randomized_interval(interval, 0.0), Duration::from_secs(5));
+		assert_eq!(randomized_interval(interval, 0.5), Duration::from_secs(10));
+		assert!(randomized_interval(interval, 0.999_999_999) <= Duration::from_secs(15));
 	}
 }

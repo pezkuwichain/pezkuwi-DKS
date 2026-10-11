@@ -2466,17 +2466,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be5eb007b7cacc6c660343e96f650fedf4b5a77512399eb952ca6642cf8d13f7"
 
 [[package]]
-name = "backoff"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b62ddb9cb1ec0a098ad4bbf9344d0713fa193ae1a80af55febcff2627b6a00c1"
-dependencies = [
- "getrandom 0.2.17",
- "instant",
- "rand 0.8.6",
-]
-
-[[package]]
 name = "backon"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7251,15 +7240,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "instant"
-version = "0.1.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0242819d153cba4b4b05a5a8f2a7e9bbf97b6055b2a002b395c96b5ff3c0222"
-dependencies = [
- "cfg-if",
-]
-
-[[package]]
 name = "integer-sqrt"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9829,7 +9809,6 @@ name = "pez-finality-relay"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "backoff",
  "futures",
  "num-traits",
  "parking_lot",
@@ -23456,7 +23435,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "backoff",
  "bizinikiwi-prometheus-endpoint",
  "futures",
  "jsonpath_lib",
@@ -23465,6 +23443,7 @@ dependencies = [
  "pezbp-runtime",
  "pezsp-runtime",
  "pezsp-tracing",
+ "rand 0.8.6",
  "reqwest 0.12.28",
  "serde_json",
  "sysinfo",

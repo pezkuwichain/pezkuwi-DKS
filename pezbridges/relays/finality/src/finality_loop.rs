@@ -27,12 +27,11 @@ use crate::{
 	headers::{JustifiedHeader, JustifiedHeaderSelector},
 };
 use async_trait::async_trait;
-use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::Fuse, select, Future, FutureExt};
 use num_traits::{Saturating, Zero};
 use relay_utils::{
-	metrics::MetricsParams, relay_loop::Client as RelayClient, retry_backoff, FailedClient,
-	HeaderId, MaybeConnectionError, TrackedTransactionStatus, TransactionTracker,
+	metrics::MetricsParams, relay_loop::Client as RelayClient, retry_backoff, ExponentialBackoff,
+	FailedClient, HeaderId, MaybeConnectionError, TrackedTransactionStatus, TransactionTracker,
 };
 use std::{
 	fmt::Debug,
@@ -435,9 +434,7 @@ impl<P: FinalitySyncPipeline, SC: SourceClient<P>, TC: TargetClient<P>> Finality
 				Err(error) => {
 					tracing::error!(target: "bridge", ?error, "Finality sync loop iteration has failed");
 					error.fail_if_connection_error()?;
-					self.retry_backoff
-						.next_backoff()
-						.unwrap_or(relay_utils::relay_loop::RECONNECT_DELAY)
+					self.retry_backoff.next_backoff()
 				},
 			};
 			self.ensure_finality_proofs_stream().await?;
