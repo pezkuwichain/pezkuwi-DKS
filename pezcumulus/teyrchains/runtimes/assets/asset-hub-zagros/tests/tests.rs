@@ -2867,3 +2867,15 @@ fn the_bond_report_names_every_validator_here() {
 		assert_eq!(call, (83u8, 11u8, 3u32, vec![b, a]).encode());
 	});
 }
+
+/// EIP-155 chain id. The fork carried an upstream test network's id, so a transaction signed for
+/// that network was valid here and wallets listed this chain under its name. Ids from the upstream
+/// 4204204xx family are refused outright, and the value is pinned to our own.
+#[test]
+fn evm_chain_id_is_our_own() {
+	let id = <<Runtime as pezpallet_revive::Config>::ChainId as pezframe_support::traits::Get<
+		u64,
+	>>::get();
+	assert!(!(420_420_400..420_420_500).contains(&id), "upstream EVM chain id {id}");
+	assert_eq!(id, 1921);
+}

@@ -362,17 +362,6 @@ impl SubscriptionGapQueue {
 	}
 }
 
-/// Returns the first EVM block number for main and test nets, `None` otherwise.
-fn known_first_evm_block_for_chain(chain_id: u64) -> Option<u32> {
-	match chain_id {
-		420420417 => Some(4_367_914),  // Paseo Asset Hub
-		420420418 => Some(12_234_156), // Dicle Asset Hub
-		420420419 => Some(11_405_259), // Polkadot Asset Hub
-		420420421 => Some(13_169_391), // Pezkuwichain Asset Hub
-		_ => None,
-	}
-}
-
 /// Fetch the chain ID from the substrate chain.
 async fn chain_id(api: &OnlineClient<SrcChainConfig>) -> Result<u64, ClientError> {
 	let query = pezkuwi_subxt_client::constants().revive().chain_id().unvalidated();
@@ -436,22 +425,6 @@ impl Client {
 			tokio::try_join!(chain_id(&api), max_block_weight(&api), async {
 				Ok(get_automine(&rpc_client).await)
 			},)?;
-
-		// Fall back to 0 when the hardcoded value exceeds the current best block (e.g. zombienet
-		// reusing a known chain ID) and backward sync is disabled.
-		if !is_archive {
-			if let Some(known) = known_first_evm_block_for_chain(chain_id) {
-				let best = block_provider.latest_block_number().await;
-				if known > best {
-					log::debug!(
-						target: LOG_TARGET,
-						"Hardcoded first EVM block {known} exceeds best block {best} \
-						 for chain {chain_id}, defaulting to 0"
-					);
-					receipt_provider.set_first_evm_block(0).await?;
-				}
-			}
-		}
 
 		let client = Self {
 			api,
@@ -526,13 +499,13 @@ impl Client {
 		&self.subscription_gap_queue
 	}
 
-	/// The earliest block number where the ReviveApi is available.
-	/// Resolution order: in-memory value > known-networks table > 0.
+	/// The earliest block number where the ReviveApi is available: the discovered value, else 0.
+	///
+	/// Both of our Asset Hubs carry pezpallet-revive from genesis, so there is no table of
+	/// per-network first EVM blocks. The one inherited from upstream keyed only networks we do not
+	/// run, and had one of them relabelled as ours with a first block far beyond our chain head.
 	fn earliest_block_number(&self) -> u32 {
-		self.receipt_provider
-			.first_evm_block()
-			.or_else(|| known_first_evm_block_for_chain(self.chain_id))
-			.unwrap_or(0)
+		self.receipt_provider.first_evm_block().unwrap_or(0)
 	}
 
 	/// Subscribe to new blocks, and execute the async closure for each block.

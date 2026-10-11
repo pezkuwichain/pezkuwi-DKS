@@ -1727,7 +1727,9 @@ impl pezpallet_revive::Config for Runtime {
 	type InstantiateOrigin = EnsureSigned<Self::AccountId>;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
-	type ChainId = ConstU64<420_420_421>;
+	// EIP-155 chain id. The fork carried an upstream test network's id; Zagros Asset Hub has its own,
+	// and Pezkuwichain Asset Hub 1920. Pinned by `evm_chain_id_is_our_own`.
+	type ChainId = ConstU64<1921>;
 	type NativeToEthRatio = ConstU32<1_000_000>; // 10^(18 - 12) Eth is 10^18, Native is 10^12.
 	type FindAuthor = <Runtime as pezpallet_authorship::Config>::FindAuthor;
 	type FeeInfo = pezpallet_revive::evm::fees::Info<Address, Signature, EthExtraImpl>;
