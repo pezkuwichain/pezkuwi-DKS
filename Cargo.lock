@@ -908,17 +908,6 @@ dependencies = [
 
 [[package]]
 name = "ark-bls12-377"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb00293ba84f51ce3bd026bd0de55899c4e68f0a39a5728cebae3a73ffdc0a4f"
-dependencies = [
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-std 0.4.0",
-]
-
-[[package]]
-name = "ark-bls12-377"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfedac3173d12820a5e0d6cd4de31b49719a74f4a41dc09b6652d0276a3b2cd4"
@@ -934,23 +923,11 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07208c7ea9e7abfe8fb01e190eba611f6e7c3cdbdef4a5473c9297d396495d1b"
 dependencies = [
- "ark-bls12-377 0.5.0",
+ "ark-bls12-377",
  "ark-ec 0.5.0",
  "ark-ff 0.5.0",
  "ark-models-ext",
  "ark-std 0.5.0",
-]
-
-[[package]]
-name = "ark-bls12-381"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c775f0d12169cba7aae4caeb547bb6a50781c7449a8aa53793827c9ec4abf488"
-dependencies = [
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
 ]
 
 [[package]]
@@ -1008,7 +985,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1cc9cae367e0c3c0b52e3ef13371122752654f45d0212ec7306fb0c1c012cd98"
 dependencies = [
- "ark-bls12-377 0.5.0",
+ "ark-bls12-377",
  "ark-ec 0.5.0",
  "ark-ff 0.5.0",
  "ark-std 0.5.0",
@@ -1025,23 +1002,6 @@ dependencies = [
  "ark-ff 0.5.0",
  "ark-models-ext",
  "ark-std 0.5.0",
-]
-
-[[package]]
-name = "ark-ec"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "defd9a439d56ac24968cca0571f598a61bc8c55f71d50a89cda591cb750670ba"
-dependencies = [
- "ark-ff 0.4.2",
- "ark-poly 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
- "derivative",
- "hashbrown 0.13.2",
- "itertools 0.10.5",
- "num-traits",
- "zeroize",
 ]
 
 [[package]]
@@ -1093,7 +1053,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebbf817b2db27d2787009b2ff76304a5b90b4b01bb16aa8351701fd40f5f37b2"
 dependencies = [
- "ark-bls12-377 0.5.0",
+ "ark-bls12-377",
  "ark-ec 0.5.0",
  "ark-ff 0.5.0",
  "ark-std 0.5.0",
@@ -1356,19 +1316,6 @@ dependencies = [
 
 [[package]]
 name = "ark-poly"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d320bfc44ee185d899ccbadfa8bc31aab923ce1558716e1997a1e74057fe86bf"
-dependencies = [
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
- "derivative",
- "hashbrown 0.13.2",
-]
-
-[[package]]
-name = "ark-poly"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "579305839da207f02b89cd1679e50e67b4331e2f9294a57693e5051b7703fe27"
@@ -1428,7 +1375,6 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb7b85a02b83d2f22f89bd5cac66c9c89474240cb6207cb1efc16d098e822a5"
 dependencies = [
- "ark-serialize-derive 0.4.2",
  "ark-std 0.4.0",
  "digest 0.10.7",
  "num-bigint",
@@ -1459,17 +1405,6 @@ dependencies = [
  "digest 0.10.7",
  "num-bigint",
  "serde_with",
-]
-
-[[package]]
-name = "ark-serialize-derive"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae3281bc6d0fd7e549af32b52511e1302185bd688fd3359fa36423346ff682ea"
-dependencies = [
- "proc-macro2 1.0.106",
- "quote 1.0.46",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -20798,7 +20733,7 @@ dependencies = [
 name = "pezsp-crypto-ec-utils"
 version = "0.10.0"
 dependencies = [
- "ark-bls12-377 0.5.0",
+ "ark-bls12-377",
  "ark-bls12-377-ext",
  "ark-bls12-381 0.5.0",
  "ark-bls12-381-ext",
@@ -26532,16 +26467,16 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "w3f-bls"
-version = "0.1.9"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6bfb937b3d12077654a9e43e32a4e9c20177dd9fea0f3aba673e7840bb54f32"
+checksum = "51c688cb593bb7aee25b58d8296537e76daf1396c4818a98e779b836876ce1b1"
 dependencies = [
- "ark-bls12-377 0.4.0",
- "ark-bls12-381 0.4.0",
- "ark-ec 0.4.2",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-serialize-derive 0.4.2",
+ "ark-bls12-377",
+ "ark-bls12-381 0.5.0",
+ "ark-ec 0.5.0",
+ "ark-ff 0.5.0",
+ "ark-serialize 0.5.0",
+ "ark-serialize-derive 0.5.0",
  "arrayref",
  "digest 0.10.7",
  "rand 0.8.6",

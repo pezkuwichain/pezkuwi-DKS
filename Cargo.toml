@@ -1624,7 +1624,7 @@ unsigned-varint = { version = "0.7.2" }
 url = { version = "2.5.4" }
 uuid = { version = "1.4" }
 verifiable = { version = "0.1", default-features = false }
-w3f-bls = { version = "0.1.9", default-features = false }
+w3f-bls = { version = "0.2.0", default-features = false }
 wait-timeout = { version = "0.2" }
 walkdir = { version = "2.5.0" }
 wasm-bindgen = { version = "0.2.93" }

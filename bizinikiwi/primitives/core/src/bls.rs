@@ -36,9 +36,9 @@ use crate::{
 use alloc::vec::Vec;
 
 use w3f_bls::{
-	DoublePublicKey, DoublePublicKeyScheme, DoubleSignature, EngineBLS, Keypair, Message,
-	NuggetBLSnCPPoP, ProofOfPossession as BlsProofOfPossession, SecretKey, SerializableToBytes,
-	TinyBLS381,
+	dual_scalar_mul::DualScalarMultiplication, DoubleNuggetBLS, EngineBLS, Keypair, Message,
+	NuggetBLSnCPPoP, NuggetDoublePublicKey, NuggetPublicKey, NuggetSignature,
+	ProofOfPossession as BlsProofOfPossession, SecretKey, SerializableToBytes, TinyBLS381,
 };
 
 #[cfg(feature = "full_crypto")]
@@ -104,9 +104,24 @@ pub mod bls381 {
 	}
 }
 
-trait BlsBound: EngineBLS + HardJunctionId + Send + Sync + 'static {}
+trait BlsBound:
+	EngineBLS<SignatureGroup: SerializableToBytes + DualScalarMultiplication>
+	+ HardJunctionId
+	+ Send
+	+ Sync
+	+ 'static
+{
+}
 
-impl<T: EngineBLS + HardJunctionId + Send + Sync + 'static> BlsBound for T {}
+impl<
+		T: EngineBLS<SignatureGroup: SerializableToBytes + DualScalarMultiplication>
+			+ HardJunctionId
+			+ Send
+			+ Sync
+			+ 'static,
+	> BlsBound for T
+{
+}
 
 /// Secret key serialized size
 const SECRET_KEY_SERIALIZED_SIZE: usize =
@@ -114,11 +129,11 @@ const SECRET_KEY_SERIALIZED_SIZE: usize =
 
 /// Public key serialized size
 pub const PUBLIC_KEY_SERIALIZED_SIZE: usize =
-	<DoublePublicKey<TinyBLS381> as SerializableToBytes>::SERIALIZED_BYTES_SIZE;
+	<NuggetDoublePublicKey<TinyBLS381> as SerializableToBytes>::SERIALIZED_BYTES_SIZE;
 
 /// Signature serialized size
 pub const SIGNATURE_SERIALIZED_SIZE: usize =
-	<DoubleSignature<TinyBLS381> as SerializableToBytes>::SERIALIZED_BYTES_SIZE;
+	<NuggetSignature<TinyBLS381> as SerializableToBytes>::SERIALIZED_BYTES_SIZE;
 
 /// Signature serialized size (for back cert) + Nugget BLS PoP size
 pub const PROOF_OF_POSSESSION_SERIALIZED_SIZE: usize = SIGNATURE_SERIALIZED_SIZE
@@ -212,7 +227,7 @@ impl<T: BlsBound> TraitPair for Pair<T> {
 
 	fn public(&self) -> Self::Public {
 		let mut raw = [0u8; PUBLIC_KEY_SERIALIZED_SIZE];
-		let pk = DoublePublicKeyScheme::into_double_public_key(&self.0).to_bytes();
+		let pk = DoubleNuggetBLS::into_nugget_double_public_key(&self.0).to_bytes();
 		raw.copy_from_slice(pk.as_slice());
 		Self::Public::unchecked_from(raw)
 	}
@@ -220,11 +235,13 @@ impl<T: BlsBound> TraitPair for Pair<T> {
 	#[cfg(feature = "full_crypto")]
 	fn sign(&self, message: &[u8]) -> Self::Signature {
 		let mut mutable_self = self.clone();
-		let r: [u8; SIGNATURE_SERIALIZED_SIZE] =
-			DoublePublicKeyScheme::sign(&mut mutable_self.0, &Message::new(b"", message))
-				.to_bytes()
-				.try_into()
-				.expect("Signature serializer returns vectors of SIGNATURE_SERIALIZED_SIZE size");
+		let r: [u8; SIGNATURE_SERIALIZED_SIZE] = w3f_bls::NuggetBLS::<T, T::SignatureGroup>::sign(
+			&mut mutable_self.0,
+			&Message::new(b"", message),
+		)
+		.to_bytes()
+		.try_into()
+		.expect("Signature serializer returns vectors of SIGNATURE_SERIALIZED_SIZE size");
 		Self::Signature::unchecked_from(r)
 	}
 
@@ -234,7 +251,7 @@ impl<T: BlsBound> TraitPair for Pair<T> {
 				Ok(pk) => pk,
 				Err(_) => return false,
 			};
-		let public_key = match w3f_bls::double::DoublePublicKey::<T>::from_bytes(&pubkey_array) {
+		let public_key = match NuggetDoublePublicKey::<T>::from_bytes(&pubkey_array) {
 			Ok(pk) => pk,
 			Err(_) => return false,
 		};
@@ -243,12 +260,12 @@ impl<T: BlsBound> TraitPair for Pair<T> {
 			Ok(s) => s,
 			Err(_) => return false,
 		};
-		let sig = match w3f_bls::double::DoubleSignature::from_bytes(sig_array) {
+		let sig = match NuggetSignature::<T>::from_bytes(sig_array) {
 			Ok(s) => s,
 			Err(_) => return false,
 		};
 
-		sig.verify(&Message::new(b"", message.as_ref()), &public_key)
+		public_key.verify(&Message::new(b"", message.as_ref()), &sig)
 	}
 
 	/// Get the seed for this key.
@@ -275,7 +292,7 @@ impl<T: BlsBound> ProofOfPossessionGenerator for Pair<T> {
 			<Keypair<T> as BlsProofOfPossessionGenerator<
 				T,
 				Sha256,
-				DoublePublicKey<T>,
+				NuggetDoublePublicKey<T>,
 				NuggetBLSnCPPoP<T>,
 			>>::generate_pok(&mut self.0)
 			.to_bytes()
@@ -298,7 +315,7 @@ impl<T: BlsBound> ProofOfPossessionVerifier for Pair<T> {
 		allegedly_possessed_pubkey: &Self::Public,
 	) -> bool {
 		let Ok(allegedly_possessed_pubkey_as_bls_pubkey) =
-			DoublePublicKey::<T>::from_bytes(allegedly_possessed_pubkey.as_ref())
+			NuggetDoublePublicKey::<T>::from_bytes(allegedly_possessed_pubkey.as_ref())
 		else {
 			return false;
 		};
@@ -422,10 +439,11 @@ mod tests {
 		let pair = Bls377Pair::from_seed(&array_bytes::hex2array_unchecked(
 			"9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
 		));
-		test_vector_should_work(pair,
-	    "7a84ca8ce4c37c93c95ecee6a3c0c9a7b9c225093cf2f12dc4f69cbfb847ef9424a18f5755d5a742247d386ff2aabb806bcf160eff31293ea9616976628f77266c8a8cc1d8753be04197bd6cdd8c5c87a148f782c4c1568d599b48833fd539001e580cff64bbc71850605433fcd051f3afc3b74819786f815ffb5272030a8d03e5df61e6183f8fd8ea85f26defa83400",
-	    "124571b4bf23083b5d07e720fde0a984d4d592868156ece77487e97a1ba4b29397dbdc454f13e3aed1ad4b6a99af2501c68ab88ec0495f962a4f55c7c460275a8d356cfa344c27778ca4c641bd9a3604ce5c28f9ed566e1d29bf3b5d3591e46ae28be3ece035e8e4db53a40fc5826002"
-	    )
+		test_vector_should_work(
+			pair,
+			"7a84ca8ce4c37c93c95ecee6a3c0c9a7b9c225093cf2f12dc4f69cbfb847ef9424a18f5755d5a742247d386ff2aabb806bcf160eff31293ea9616976628f77266c8a8cc1d8753be04197bd6cdd8c5c87a148f782c4c1568d599b48833fd539001e580cff64bbc71850605433fcd051f3afc3b74819786f815ffb5272030a8d03e5df61e6183f8fd8ea85f26defa83400",
+			"124571b4bf23083b5d07e720fde0a984d4d592868156ece77487e97a1ba4b29397dbdc454f13e3aed1ad4b6a99af2501c68ab88ec0495f962a4f55c7c460275a8d356cfa344c27778ca4c641bd9a3604ce5c28f9ed566e1d29bf3b5d3591e46ae28be3ece035e8e4db53a40fc5826002",
+		)
 	}
 
 	#[test]
@@ -433,10 +451,11 @@ mod tests {
 		let pair = Bls381Pair::from_seed(&array_bytes::hex2array_unchecked(
 			"9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
 		));
-		test_vector_should_work(pair,
-				    "88ff6c3a32542bc85f2adf1c490a929b7fcee50faeb95af9a036349390e9b3ea7326247c4fc4ebf88050688fd6265de0806284eec09ba0949f5df05dc93a787a14509749f36e4a0981bb748d953435483740907bb5c2fe8ffd97e8509e1a038b05fb08488db628ea0638b8d48c3ddf62ed437edd8b23d5989d6c65820fc70f80fb39b486a3766813e021124aec29a566",
-	    "8f4fe16cbb1b7f26ddbfbcde864a3c2f68802fbca5bd59920a135ed7e0f74cd9ba160e61c85e9acee3b4fe277862f226e60ac1958b57ed4487daf4673af420e8bf036ee8169190a927ede2e8eb3d6600633c69b2a84eb017473988fdfde082e150cbef05b77018c1f8ccc06da9e80421"
-	    )
+		test_vector_should_work(
+			pair,
+			"88ff6c3a32542bc85f2adf1c490a929b7fcee50faeb95af9a036349390e9b3ea7326247c4fc4ebf88050688fd6265de0806284eec09ba0949f5df05dc93a787a14509749f36e4a0981bb748d953435483740907bb5c2fe8ffd97e8509e1a038b05fb08488db628ea0638b8d48c3ddf62ed437edd8b23d5989d6c65820fc70f80fb39b486a3766813e021124aec29a566",
+			"8f4fe16cbb1b7f26ddbfbcde864a3c2f68802fbca5bd59920a135ed7e0f74cd9ba160e61c85e9acee3b4fe277862f226e60ac1958b57ed4487daf4673af420e8bf036ee8169190a927ede2e8eb3d6600633c69b2a84eb017473988fdfde082e150cbef05b77018c1f8ccc06da9e80421",
+		)
 	}
 
 	#[test]
@@ -446,10 +465,11 @@ mod tests {
 			None,
 		)
 		.unwrap();
-		test_vector_should_work(pair,
-	    "7a84ca8ce4c37c93c95ecee6a3c0c9a7b9c225093cf2f12dc4f69cbfb847ef9424a18f5755d5a742247d386ff2aabb806bcf160eff31293ea9616976628f77266c8a8cc1d8753be04197bd6cdd8c5c87a148f782c4c1568d599b48833fd539001e580cff64bbc71850605433fcd051f3afc3b74819786f815ffb5272030a8d03e5df61e6183f8fd8ea85f26defa83400",
-	    "124571b4bf23083b5d07e720fde0a984d4d592868156ece77487e97a1ba4b29397dbdc454f13e3aed1ad4b6a99af2501c68ab88ec0495f962a4f55c7c460275a8d356cfa344c27778ca4c641bd9a3604ce5c28f9ed566e1d29bf3b5d3591e46ae28be3ece035e8e4db53a40fc5826002"
-	    )
+		test_vector_should_work(
+			pair,
+			"7a84ca8ce4c37c93c95ecee6a3c0c9a7b9c225093cf2f12dc4f69cbfb847ef9424a18f5755d5a742247d386ff2aabb806bcf160eff31293ea9616976628f77266c8a8cc1d8753be04197bd6cdd8c5c87a148f782c4c1568d599b48833fd539001e580cff64bbc71850605433fcd051f3afc3b74819786f815ffb5272030a8d03e5df61e6183f8fd8ea85f26defa83400",
+			"124571b4bf23083b5d07e720fde0a984d4d592868156ece77487e97a1ba4b29397dbdc454f13e3aed1ad4b6a99af2501c68ab88ec0495f962a4f55c7c460275a8d356cfa344c27778ca4c641bd9a3604ce5c28f9ed566e1d29bf3b5d3591e46ae28be3ece035e8e4db53a40fc5826002",
+		)
 	}
 
 	#[test]
@@ -459,10 +479,11 @@ mod tests {
 			None,
 		)
 		.unwrap();
-		test_vector_should_work(pair,
-	    "88ff6c3a32542bc85f2adf1c490a929b7fcee50faeb95af9a036349390e9b3ea7326247c4fc4ebf88050688fd6265de0806284eec09ba0949f5df05dc93a787a14509749f36e4a0981bb748d953435483740907bb5c2fe8ffd97e8509e1a038b05fb08488db628ea0638b8d48c3ddf62ed437edd8b23d5989d6c65820fc70f80fb39b486a3766813e021124aec29a566",
-	    "8f4fe16cbb1b7f26ddbfbcde864a3c2f68802fbca5bd59920a135ed7e0f74cd9ba160e61c85e9acee3b4fe277862f226e60ac1958b57ed4487daf4673af420e8bf036ee8169190a927ede2e8eb3d6600633c69b2a84eb017473988fdfde082e150cbef05b77018c1f8ccc06da9e80421"
-	    )
+		test_vector_should_work(
+			pair,
+			"88ff6c3a32542bc85f2adf1c490a929b7fcee50faeb95af9a036349390e9b3ea7326247c4fc4ebf88050688fd6265de0806284eec09ba0949f5df05dc93a787a14509749f36e4a0981bb748d953435483740907bb5c2fe8ffd97e8509e1a038b05fb08488db628ea0638b8d48c3ddf62ed437edd8b23d5989d6c65820fc70f80fb39b486a3766813e021124aec29a566",
+			"8f4fe16cbb1b7f26ddbfbcde864a3c2f68802fbca5bd59920a135ed7e0f74cd9ba160e61c85e9acee3b4fe277862f226e60ac1958b57ed4487daf4673af420e8bf036ee8169190a927ede2e8eb3d6600633c69b2a84eb017473988fdfde082e150cbef05b77018c1f8ccc06da9e80421",
+		)
 	}
 
 	fn test_pair<E: BlsBound>(pair: Pair<E>) -> (String, String) {
@@ -493,8 +514,8 @@ mod tests {
 		let pair = Bls377Pair::from_seed(b"12345678901234567890123456789012");
 		let (public, _) = test_pair(pair);
 		assert_eq!(
-		    public,
-		    "754d2f2bbfa67df54d7e0e951979a18a1e0f45948857752cc2bac6bbb0b1d05e8e48bcc453920bf0c4bbd5993212480112a1fb433f04d74af0a8b700d93dc957ab3207f8d071e948f5aca1a7632c00bdf6d06be05b43e2e6216dccc8a5d55a0071cb2313cfd60b7e9114619cd17c06843b352f0b607a99122f6651df8f02e1ad3697bd208e62af047ddd7b942ba80080"
+			public,
+			"754d2f2bbfa67df54d7e0e951979a18a1e0f45948857752cc2bac6bbb0b1d05e8e48bcc453920bf0c4bbd5993212480112a1fb433f04d74af0a8b700d93dc957ab3207f8d071e948f5aca1a7632c00bdf6d06be05b43e2e6216dccc8a5d55a0071cb2313cfd60b7e9114619cd17c06843b352f0b607a99122f6651df8f02e1ad3697bd208e62af047ddd7b942ba80080"
 		);
 	}
 
@@ -504,7 +525,7 @@ mod tests {
 		let (public, _) = test_pair(pair);
 		assert_eq!(
 			public,
-		    "abe9554cc2cab7fdc391a4e07ed0f45544cf0fe235babedf553c098d37dd162d9402a0aed95c00ed01349a6017a3d864adcc9756e98b7931aa3526b1511730c9cbacf3cbe781ae5efefdb177b301bca0229a5cf87432251cd31341c9b88aea9501005fa16e814ad31a95fcc396633baf563f6306e982ddec978faa0399ba73c1c1a87fa4791b3f5bbb719c1401b2af37"
+			"abe9554cc2cab7fdc391a4e07ed0f45544cf0fe235babedf553c098d37dd162d9402a0aed95c00ed01349a6017a3d864adcc9756e98b7931aa3526b1511730c9cbacf3cbe781ae5efefdb177b301bca0229a5cf87432251cd31341c9b88aea9501005fa16e814ad31a95fcc396633baf563f6306e982ddec978faa0399ba73c1c1a87fa4791b3f5bbb719c1401b2af37"
 		);
 	}
 
