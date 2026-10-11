@@ -1,0 +1,40 @@
+[package]
+name = "ark-bn254"
+version = "0.5.0"
+edition = "2021"
+authors = ["arkworks contributors"]
+description = "The BN254 pairing-friendly elliptic curve"
+homepage = "https://arkworks.rs"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/arkworks-rs/algebra"
+publish = false
+
+# Vendored from ark-bn254 0.5.0 (latest), which revm-precompile uses for the BN254 precompiles,
+# without its `r1cs` feature. That feature's optional ark-r1cs-std dependency pulled ark-relations
+# and through it tracing-subscriber 0.2 (log poisoning, fixed only in 0.3.20) into Cargo.lock,
+# although nothing here enables it. The curve and field code is unchanged.
+
+[dependencies]
+ark-ec = { version = "0.5.0", default-features = false }
+ark-ff = { version = "0.5.0", default-features = false }
+ark-std = { version = "0.5.0", default-features = false }
+
+[dev-dependencies]
+ark-algebra-test-templates = { version = "0.5.0", default-features = false }
+ark-serialize = { version = "0.5.0", default-features = false }
+
+[features]
+default = ["curve"]
+curve = ["scalar_field"]
+scalar_field = []
+std = [
+	"ark-algebra-test-templates/std",
+	"ark-ec/std",
+	"ark-ff/std",
+	"ark-serialize/std",
+	"ark-std/std",
+]
+
+# The field macros test `cfg(feature = "asm")`, a feature of ark-ff, not of this crate.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("asm"))'] }
