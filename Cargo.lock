@@ -2607,7 +2607,6 @@ dependencies = [
  "jobserver",
  "merkleized-metadata",
  "parity-scale-codec",
- "parity-wasm",
  "pezsc-executor",
  "pezsp-core",
  "pezsp-io",
@@ -2621,6 +2620,7 @@ dependencies = [
  "toml 0.8.23",
  "walkdir",
  "wasm-opt",
+ "wasmparser 0.236.1",
 ]
 
 [[package]]

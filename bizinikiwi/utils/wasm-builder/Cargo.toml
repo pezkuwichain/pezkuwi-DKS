@@ -21,7 +21,6 @@ cargo_metadata = { workspace = true }
 console = { workspace = true }
 filetime = { workspace = true }
 jobserver = { workspace = true }
-parity-wasm = { workspace = true }
 pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
 polkavm-linker = { workspace = true }
 strum = { features = ["derive"], workspace = true, default-features = true }
@@ -29,6 +28,7 @@ tempfile = { workspace = true }
 toml = { workspace = true }
 walkdir = { workspace = true }
 wasm-opt = { workspace = true }
+wasmparser = { workspace = true, features = ["features", "std", "validate"] }
 
 # Dependencies required for the `metadata-hash` feature.
 array-bytes = { optional = true, workspace = true, default-features = true }
@@ -69,6 +69,6 @@ runtime-benchmarks = [
 	"pezsp-io?/runtime-benchmarks",
 	"pezsp-version?/runtime-benchmarks",
 ]
-std = []
+std = ["wasmparser/std"]
 serde = []
 with-tracing = []
