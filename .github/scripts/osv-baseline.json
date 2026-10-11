@@ -1,7 +1,4 @@
 {
-  "derivative@2.2.0": [
-    "RUSTSEC-2024-0388"
-  ],
   "parity-wasm@0.45.0": [
     "RUSTSEC-2022-0061"
   ]

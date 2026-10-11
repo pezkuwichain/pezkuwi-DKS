@@ -1,0 +1,48 @@
+[package]
+name = "ark-models-ext"
+version = "0.5.2"
+edition = "2021"
+authors = [
+	"Achim Schneider <achim@parity.io>",
+	"Davide Galassi <davxy@datawok.net>",
+	"Parity Technologies <admin@parity.io>",
+]
+description = "Replacement models for BLS12, BN and BW6 of ark-ec"
+keywords = ["arkworks", "cryptography", "elliptic-curves", "pairing"]
+categories = ["cryptography"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/paritytech/arkworks-extensions"
+publish = false
+
+# Vendored from ark-models-ext 0.5.2, the models behind the BLS12-377, BLS12-381, BW6-761,
+# Ed-on-BLS12-377, Bandersnatch, Pallas and Vesta `-ext` curves that pezsp-crypto-ec-utils
+# exposes as host functions. It derived Copy, Clone, PartialEq, Eq, Debug and Hash with
+# derivative, which is unmaintained (RUSTSEC-2024-0388). Those derives are written out by hand
+# with the same bounds (only the struct's own `P: *Config`) and the same behaviour: field-wise
+# comparison and hashing, tuple-style Debug. Everything else is unchanged. 0.6.0 drops
+# derivative too, but it is on arkworks 0.6, and moving the host-function curves is a separate
+# decision.
+
+[dependencies]
+ark-ec = { version = "0.5", default-features = false }
+ark-ff = { version = "0.5", default-features = false }
+ark-serialize = { version = "0.5", default-features = false }
+ark-std = { version = "0.5", default-features = false }
+
+[dev-dependencies]
+ark-bls12-381 = { version = "0.5", default-features = false, features = ["curve"] }
+ark-ed25519 = { version = "0.5", default-features = false }
+
+[features]
+default = ["std"]
+parallel = ["ark-std/parallel", "std"]
+# Upstream propagates std to ark-ff, ark-serialize and ark-std only; ark-ec and the two
+# dev-dependencies are added for the workspace's feature-propagation check (zepter).
+std = [
+	"ark-bls12-381/std",
+	"ark-ec/std",
+	"ark-ed25519/std",
+	"ark-ff/std",
+	"ark-serialize/std",
+	"ark-std/std",
+]

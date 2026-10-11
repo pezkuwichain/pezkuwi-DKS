@@ -621,6 +621,7 @@ members = [
 	"templates/zombienet",
 	"umbrella",
 	"vendor/ark-bn254",
+	"vendor/ark-models-ext",
 	"vendor/fxprof-processed-profile",
 	"vendor/paste",
 	"vendor/scale-info-legacy",
@@ -1758,6 +1759,9 @@ ark-bn254 = { path = "vendor/ark-bn254" }
 # revm-precompile 25.0.0 without its unused libsecp256k1 feature: `std` named the optional
 # dependency as a weak feature, which kept libsecp256k1 0.7.2 (unmaintained) in the lockfile.
 revm-precompile = { path = "vendor/revm-precompile" }
+# ark-models-ext 0.5.2 with its derivative (unmaintained) derives written out by hand. It models
+# the curves behind pezsp-crypto-ec-utils' host functions, which stay on arkworks 0.5.
+ark-models-ext = { path = "vendor/ark-models-ext" }
 # ruint 1.20.0 without its unused `ark-ff` and `ark-ff-04` features, whose optional ark-ff 0.3
 # and 0.4 dependencies put derivative (unmaintained) in the lockfile.
 ruint = { path = "vendor/ruint" }

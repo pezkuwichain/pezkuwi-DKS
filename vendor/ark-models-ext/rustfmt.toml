@@ -1,0 +1,4 @@
+# paritytech/arkworks-extensions has no rustfmt configuration and formats with rustfmt's
+# defaults; this file stops the workspace's own settings from applying, so the vendored source
+# stays diffable against upstream.
+edition = "2021"
