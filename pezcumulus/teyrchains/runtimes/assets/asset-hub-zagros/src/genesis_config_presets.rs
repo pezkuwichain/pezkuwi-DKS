@@ -668,6 +668,7 @@ mod genesis_ledger {
 		let presale = PresalePotPalletId::get().into_account_truncating();
 		let treasury: AccountId = TreasuryPalletId::get().into_account_truncating();
 		let checking = crate::PezkuwiXcm::check_account();
+		let collator_pot: AccountId = crate::CollatorSelection::account_id();
 		let ss58 = |a: &AccountId| -> String {
 			use pezsp_core::crypto::Ss58Codec;
 			a.to_ss58check()
@@ -690,7 +691,11 @@ mod genesis_ledger {
 			("presale", &presale, 100_000_000 * UNITS),
 			("treasury", &treasury, 39_999_000 * UNITS),
 			// 44,000 less again: the genesis validators' stakes are held here too (spec K5).
-			("checking", &checking, 19_956_000 * UNITS),
+			// Less the collators' pot below, which is held here as well.
+			("checking", &checking, 19_956_000 * UNITS - 3_333_333),
+			// The collators' pot at this chain's existential deposit (a tenth of a cent),
+			// out of the founder's line on the relay. Without it every fee below that is burned.
+			("collators'", &collator_pot, 3_333_333),
 		] {
 			let addr = ss58(acc);
 			assert_eq!(
@@ -703,19 +708,19 @@ mod genesis_ledger {
 				"the {name} pot must be keyless -- {addr} is not a modl account"
 			);
 		}
-		// The fifth, and the only one of them that is allowed to have a key.
+		// The sixth, and the only one of them that is allowed to have a key.
 		//
 		// Every pot above is keyless by design: a balance that can only leave through an
 		// approved spend. The founding office is the deliberate opposite -- it exists to sign,
 		// and a keyless account signs nothing. So it is asserted separately rather than added
 		// to the loop, because dropping it into that list would have quietly relaxed the
-		// keyless rule for all four.
-		// Found as "the account that is not one of the four pots" rather than by a copy of its
+		// keyless rule for all five.
+		// Found as "the account that is not one of the five pots" rather than by a copy of its
 		// public key. A second copy of a genesis key is a second thing to update, and the one
 		// that gets missed is always the copy -- *which* key it is is asserted on People, where
 		// the tiki that makes it the founding office actually lives.
 		let pots: alloc::collections::BTreeSet<String> =
-			[ss58(&airdrop), ss58(&presale), ss58(&treasury), ss58(&checking)]
+			[ss58(&airdrop), ss58(&presale), ss58(&treasury), ss58(&checking), ss58(&collator_pot)]
 				.into_iter()
 				.collect();
 		// The genesis validators, each with its stake (spec K5).
@@ -748,8 +753,8 @@ mod genesis_ledger {
 		);
 		assert_eq!(
 			hez.len(),
-			5 + validators.len(),
-			"the Asset Hub mints HEZ into five accounts and the genesis validators, and no more"
+			6 + validators.len(),
+			"the Asset Hub mints HEZ into six accounts and the genesis validators, and no more"
 		);
 		assert_eq!(
 			hez.values().sum::<u128>(),
