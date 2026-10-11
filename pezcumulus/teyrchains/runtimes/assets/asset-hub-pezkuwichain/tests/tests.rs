@@ -27,13 +27,14 @@ use asset_hub_pezkuwichain_runtime::{
 	xcm_config,
 	xcm_config::{
 		bridging, CheckingAccount, GovernanceLocation, LocationToAccountId, StakingPot,
-		TokenLocation, TrustBackedAssetsPalletLocation, XcmConfig,
+		TokenLocation, TrustBackedAssetsPalletLocation, UniquesConvertedConcreteId,
+		UniquesPalletLocation, XcmConfig,
 	},
 	AllPalletsWithoutSystem, AssetConversion, AssetDeposit, Assets, Balances, Block,
 	CollatorSelection, ExistentialDeposit, ForeignAssets, ForeignAssetsInstance,
 	MetadataDepositBase, MetadataDepositPerByte, PezkuwiXcm, Revive, Runtime, RuntimeCall,
 	RuntimeEvent, RuntimeOrigin, SessionKeys, TeyrchainSystem, ToZagrosXcmRouterInstance,
-	TrustBackedAssetsInstance, WeightToFee, XcmpQueue,
+	TrustBackedAssetsInstance, Uniques, WeightToFee, XcmpQueue,
 };
 use asset_test_pezutils::{
 	test_cases_over_bridge::TestBridgingConfig, CollatorSessionKey, CollatorSessionKeys,
@@ -42,12 +43,17 @@ use asset_test_pezutils::{
 use codec::{Decode, Encode};
 use hex_literal::hex;
 use pezframe_support::{
-	assert_ok, parameter_types,
+	assert_err, assert_noop, assert_ok, parameter_types,
 	traits::{
 		fungible::{self, Inspect, Mutate},
 		fungibles::{
 			self, Create, Inspect as FungiblesInspect, InspectEnumerable, Mutate as FungiblesMutate,
 		},
+		tokens::asset_ops::{
+			common_strategies::{Bytes, Owner},
+			Inspect as InspectUniqueAsset,
+		},
+		ContainsPair,
 	},
 	weights::{Weight, WeightToFee as WeightToFeeT},
 };
@@ -56,9 +62,10 @@ use pezpallet_revive::{
 	Code, TransactionLimits,
 };
 use pezpallet_revive_fixtures::{compile_module, compile_module_with_type, FixtureType};
+use pezpallet_uniques::{asset_ops::Item, asset_strategies::Attribute};
 use pezsp_consensus_aura::SlotDuration;
 use pezsp_core::crypto::Ss58Codec;
-use pezsp_runtime::traits::MaybeEquivalence;
+use pezsp_runtime::{traits::MaybeEquivalence, MultiAddress};
 use std::convert::Into;
 use testnet_teyrchains_constants::pezkuwichain::{consensus::*, currency::UNITS};
 use teyrchains_common::{AccountId, AssetIdForTrustBackedAssets, AuraId, Balance};
@@ -69,7 +76,10 @@ use xcm::{
 	},
 	VersionedXcm,
 };
-use xcm_builder::WithLatestLocationConverter;
+use xcm_builder::{
+	unique_instances::UniqueInstancesAdapter as NewNftAdapter, MatchInClassInstances, NoChecking,
+	NonFungiblesAdapter as OldNftAdapter, WithLatestLocationConverter,
+};
 use xcm_executor::traits::{JustTry, TransactAsset, WeightTrader};
 use xcm_runtime_pezapis::conversions::LocationToAccountHelper;
 
@@ -619,6 +629,177 @@ fn test_asset_xcm_trader_not_possible_for_non_sufficient_assets() {
 		});
 }
 
+fn test_nft_asset_transactor_works<T: TransactAsset>() {
+	ExtBuilder::<Runtime>::default()
+		.with_tracing()
+		.with_collators(vec![AccountId::from(ALICE)])
+		.with_session_keys(vec![(
+			AccountId::from(ALICE),
+			AccountId::from(ALICE),
+			SessionKeys { aura: AuraId::from(pezsp_core::sr25519::Public::from_raw(ALICE)) },
+		)])
+		.build()
+		.execute_with(|| {
+			let collection_id = 42;
+			let item_id = 101;
+
+			let alice = AccountId::from(ALICE);
+			let bob = AccountId::from(BOB);
+			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
+
+			assert_ok!(Balances::mint_into(&alice, 2 * UNITS));
+
+			assert_ok!(Uniques::create(
+				RuntimeHelper::origin_of(alice.clone()),
+				collection_id,
+				MultiAddress::Id(alice.clone()),
+			));
+
+			assert_ok!(Uniques::mint(
+				RuntimeHelper::origin_of(alice.clone()),
+				collection_id,
+				item_id,
+				MultiAddress::Id(bob.clone()),
+			));
+
+			let attr_key = vec![0xA, 0xA, 0xB, 0xB];
+			let attr_value = vec![0xC, 0x0, 0x0, 0x1, 0xF, 0x0, 0x0, 0xD];
+
+			assert_ok!(Uniques::set_attribute(
+				RuntimeHelper::origin_of(alice.clone()),
+				collection_id,
+				Some(item_id),
+				attr_key.clone().try_into().unwrap(),
+				attr_value.clone().try_into().unwrap(),
+			));
+
+			let collection_location = UniquesPalletLocation::get()
+				.appended_with(GeneralIndex(collection_id.into()))
+				.unwrap();
+			let item_asset: Asset =
+				(collection_location.clone(), AssetInstance::Index(item_id.into())).into();
+
+			let alice_account_location: Location = alice.clone().into();
+			let bob_account_location: Location = bob.clone().into();
+
+			// Can't deposit the token that isn't withdrawn
+			let item_holding = xcm_executor::AssetsInHolding::new_from_non_fungible(
+				collection_location.clone().into(),
+				AssetInstance::Index(item_id.into()),
+			);
+			assert!(matches!(
+				T::deposit_asset(item_holding, &alice_account_location, Some(&ctx)),
+				Err((_, XcmError::FailedToTransactAsset("AlreadyExists")))
+			));
+
+			// Alice isn't the owner, she can't withdraw the token
+			assert_noop!(
+				T::withdraw_asset(&item_asset, &alice_account_location, Some(&ctx),),
+				XcmError::FailedToTransactAsset("NoPermission")
+			);
+
+			// Bob, the owner, can withdraw the token. The holding it returns is what the
+			// deposit below consumes -- deposit_asset takes a holding, not an asset.
+			let withdrawn_holding =
+				T::withdraw_asset(&item_asset, &bob_account_location, Some(&ctx))
+					.expect("Bob owns the token");
+
+			// The token is withdrawn
+			assert_eq!(
+				Item::<Uniques>::inspect(&(collection_id, item_id), Owner::default()),
+				Err(pezpallet_uniques::Error::<Runtime>::UnknownItem.into()),
+			);
+
+			// But the attribute data is preserved as the pezpallet-uniques works that way.
+			assert_eq!(
+				Item::<Uniques>::inspect(
+					&(collection_id, item_id),
+					Bytes(Attribute(attr_key.as_slice()))
+				),
+				Ok(attr_value.clone()),
+			);
+
+			// Can't withdraw the already withdrawn token
+			assert_err!(
+				T::withdraw_asset(&item_asset, &bob_account_location, Some(&ctx),),
+				XcmError::FailedToTransactAsset("UnknownCollection")
+			);
+
+			// Deposit the token to alice, using the holding bob's withdraw produced
+			assert_ok!(T::deposit_asset(withdrawn_holding, &alice_account_location, Some(&ctx),));
+
+			// The token is deposited
+			assert_eq!(
+				Item::<Uniques>::inspect(&(collection_id, item_id), Owner::default()),
+				Ok(alice.clone()),
+			);
+
+			// The attribute data is the same
+			assert_eq!(
+				Item::<Uniques>::inspect(
+					&(collection_id, item_id),
+					Bytes(Attribute(attr_key.as_slice()))
+				),
+				Ok(attr_value.clone()),
+			);
+
+			// Can't deposit the token twice
+			let item_holding_again = xcm_executor::AssetsInHolding::new_from_non_fungible(
+				collection_location.clone().into(),
+				AssetInstance::Index(item_id.into()),
+			);
+			assert!(matches!(
+				T::deposit_asset(item_holding_again, &alice_account_location, Some(&ctx)),
+				Err((_, XcmError::FailedToTransactAsset("AlreadyExists")))
+			));
+
+			// Transfer the token directly
+			assert_ok!(T::transfer_asset(
+				&item_asset,
+				&alice_account_location,
+				&bob_account_location,
+				&ctx,
+			));
+
+			// The token's owner has changed
+			assert_eq!(
+				Item::<Uniques>::inspect(&(collection_id, item_id), Owner::default()),
+				Ok(bob.clone()),
+			);
+
+			// The attribute data is the same
+			assert_eq!(
+				Item::<Uniques>::inspect(
+					&(collection_id, item_id),
+					Bytes(Attribute(attr_key.as_slice()))
+				),
+				Ok(attr_value.clone()),
+			);
+		});
+}
+
+#[test]
+fn test_new_nft_config_works_as_the_old_one() {
+	type OldNftTransactor = OldNftAdapter<
+		Uniques,
+		UniquesConvertedConcreteId,
+		LocationToAccountId,
+		AccountId,
+		NoChecking,
+		CheckingAccount,
+	>;
+
+	type NewNftTransactor = NewNftAdapter<
+		AccountId,
+		LocationToAccountId,
+		MatchInClassInstances<UniquesConvertedConcreteId>,
+		Item<Uniques>,
+	>;
+
+	test_nft_asset_transactor_works::<OldNftTransactor>();
+	test_nft_asset_transactor_works::<NewNftTransactor>();
+}
+
 #[test]
 fn test_assets_balances_api_works() {
 	use pez_assets_common::runtime_api::runtime_decl_for_fungibles_api::FungiblesApi;
@@ -728,6 +909,91 @@ fn test_assets_balances_api_works() {
 			)
 				.into())));
 		});
+}
+
+#[test]
+fn authorized_aliases_work() {
+	ExtBuilder::<Runtime>::default()
+		.with_tracing()
+		.with_collators(vec![AccountId::from(ALICE)])
+		.with_session_keys(vec![(
+			AccountId::from(ALICE),
+			AccountId::from(ALICE),
+			SessionKeys { aura: AuraId::from(pezsp_core::sr25519::Public::from_raw(ALICE)) },
+		)])
+		.build()
+		.execute_with(|| {
+			let alice: AccountId = ALICE.into();
+			let local_alice = Location::new(0, AccountId32 { network: None, id: ALICE });
+			let alice_on_sibling_para =
+				Location::new(1, [Teyrchain(42), AccountId32 { network: None, id: ALICE }]);
+			let alice_on_relay = Location::new(1, AccountId32 { network: None, id: ALICE });
+			let bob_on_relay = Location::new(1, AccountId32 { network: None, id: [42_u8; 32] });
+
+			assert_ok!(Balances::mint_into(&alice, 2 * UNITS));
+
+			// neither `alice_on_sibling_para`, `alice_on_relay`, `bob_on_relay` are allowed to
+			// alias into `local_alice`
+			for aliaser in [&alice_on_sibling_para, &alice_on_relay, &bob_on_relay] {
+				assert!(!<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+					aliaser,
+					&local_alice
+				));
+			}
+
+			// Alice explicitly authorizes `alice_on_sibling_para` to alias her local account
+			assert_ok!(PezkuwiXcm::add_authorized_alias(
+				RuntimeHelper::origin_of(alice.clone()),
+				Box::new(alice_on_sibling_para.clone().into()),
+				None
+			));
+
+			// `alice_on_sibling_para` now explicitly allowed to alias into `local_alice`
+			assert!(<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+				&alice_on_sibling_para,
+				&local_alice
+			));
+			// as expected, `alice_on_relay` and `bob_on_relay` still can't alias into `local_alice`
+			for aliaser in [&alice_on_relay, &bob_on_relay] {
+				assert!(!<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+					aliaser,
+					&local_alice
+				));
+			}
+
+			// Alice explicitly authorizes `alice_on_relay` to alias her local account
+			assert_ok!(PezkuwiXcm::add_authorized_alias(
+				RuntimeHelper::origin_of(alice.clone()),
+				Box::new(alice_on_relay.clone().into()),
+				None
+			));
+			// Now both `alice_on_relay` and `alice_on_sibling_para` can alias into her local
+			// account
+			for aliaser in [&alice_on_relay, &alice_on_sibling_para] {
+				assert!(<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+					aliaser,
+					&local_alice
+				));
+			}
+
+			// Alice removes authorization for `alice_on_relay` to alias her local account
+			assert_ok!(PezkuwiXcm::remove_authorized_alias(
+				RuntimeHelper::origin_of(alice.clone()),
+				Box::new(alice_on_relay.clone().into())
+			));
+
+			// `alice_on_relay` no longer allowed to alias into `local_alice`
+			assert!(!<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+				&alice_on_relay,
+				&local_alice
+			));
+
+			// `alice_on_sibling_para` still allowed to alias into `local_alice`
+			assert!(<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+				&alice_on_sibling_para,
+				&local_alice
+			));
+		})
 }
 
 asset_test_pezutils::include_teleports_for_native_asset_works!(
