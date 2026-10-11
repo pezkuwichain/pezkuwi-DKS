@@ -44,12 +44,13 @@ ignore = [
 	# Host and build-time tooling, never inside a runtime blob — the same class as git2 below.
 	"RUSTSEC-2022-0061", # parity-wasm: wasm-builder, sp-version embed, contracts fixtures
 	#
-	# libsecp256k1: nothing exempted. It was the host-side body of the secp256k1 recovery host
-	# functions; those now run on k256, checked verdict-for-verdict against libsecp256k1 0.7.2
-	# (`pezsp_core::ecdsa::recover_overflowing`). smoldot (the vendored subxt light client's
-	# engine) was the other route in and is gone with that crate. It stays in Cargo.lock only as
-	# revm-precompile's optional `libsecp256k1` feature, which nothing enables: Cargo records
-	# optional dependencies whether or not a feature turns them on, so it is never compiled.
+	# libsecp256k1: nothing exempted, and nothing left. It was the host-side body of the
+	# secp256k1 recovery host functions; those now run on k256, checked verdict-for-verdict
+	# against libsecp256k1 0.7.2 (`pezsp_core::ecdsa::recover_overflowing`). smoldot (the
+	# vendored subxt light client's engine) was the second route in and is gone with that crate.
+	# The last was revm-precompile's optional `libsecp256k1` feature, which nothing enabled but
+	# which `std` named as a weak feature and so kept in Cargo.lock; vendor/revm-precompile is
+	# the same release without it, and libsecp256k1 has left the lockfile.
 
 	# ── memmap2 ───────────────────────────────────────────────────────────────
 	# Nothing exempted. The note here said "no fixed release for the pinned versions"; 0.9.11

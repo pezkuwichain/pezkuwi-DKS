@@ -13,6 +13,10 @@ documentation = "https://docs.pezkuwichain.io/"
 
 [workspace]
 resolver = "2"
+# A patch-only replacement, deliberately not a member: a member is locked with every optional
+# feature and its dev-dependencies, which for revm-precompile adds substrate-bn, kzg-rs and the
+# sp1 stack, codspeed and bincode 1. See the comment on its [patch.crates-io] entry.
+exclude = ["vendor/revm-precompile"]
 
 members = [
 	"bizinikiwi/bin/node/bench",
@@ -1749,6 +1753,9 @@ fxprof-processed-profile = { path = "vendor/fxprof-processed-profile" }
 # ark-bn254 0.5.0 without its unused r1cs feature, whose optional dependency chain put
 # tracing-subscriber 0.2 in the lockfile.
 ark-bn254 = { path = "vendor/ark-bn254" }
+# revm-precompile 25.0.0 without its unused libsecp256k1 feature: `std` named the optional
+# dependency as a weak feature, which kept libsecp256k1 0.7.2 (unmaintained) in the lockfile.
+revm-precompile = { path = "vendor/revm-precompile" }
 serde = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 serde_core = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 # arrayvec was vendored because 0.7.6 failed on wasm32v1-none (E0223 ambiguity from the

@@ -2,9 +2,6 @@
   "derivative@2.2.0": [
     "RUSTSEC-2024-0388"
   ],
-  "libsecp256k1@0.7.2": [
-    "RUSTSEC-2025-0161"
-  ],
   "parity-wasm@0.45.0": [
     "RUSTSEC-2022-0061"
   ]
