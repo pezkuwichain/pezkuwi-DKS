@@ -2555,6 +2555,30 @@ fn expensive_erc20_runs_out_of_gas() {
 	});
 }
 
+/// This chain must be able to receive a teleport at all.
+///
+/// `receive_teleported_asset` carries `u64::MAX` when its benchmark did not produce a
+/// measurement -- which is what the generator writes when the benchmark's `CheckedAccount`
+/// disagrees with the runtime's `TeleportTracking`, as it did on Zagros. An instruction weighted
+/// at `u64::MAX` can never fit in a block, so every incoming teleport would be refused before it
+/// executes, and the failure surfaces elsewhere only as an opaque `Overflow` during weight
+/// calculation.
+///
+/// The fix is never a number typed into the weights file. Re-run
+/// `pezpallet_xcm_benchmarks::fungible` against this runtime and import the result.
+#[test]
+fn this_chain_can_be_teleported_to() {
+	use asset_hub_pezkuwichain_runtime::weights::xcm::pezpallet_xcm_benchmarks_fungible::WeightInfo as XcmFungibleWeight;
+
+	let weight = XcmFungibleWeight::<Runtime>::receive_teleported_asset();
+	assert!(
+		weight.ref_time() < u64::MAX / 2,
+		"receive_teleported_asset is weighted at {} -- the benchmark for it never ran, and \
+		 this chain therefore rejects every teleport into it",
+		weight.ref_time()
+	);
+}
+
 /// EIP-155 chain id. The fork carried an upstream test network's id, so a transaction signed for
 /// that network was valid here and wallets listed this chain under its name. Ids from the upstream
 /// 4204204xx family are refused outright, and the value is pinned to our own.

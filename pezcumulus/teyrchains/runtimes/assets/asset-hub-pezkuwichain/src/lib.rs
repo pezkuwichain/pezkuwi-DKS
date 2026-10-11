@@ -31,7 +31,7 @@ pub mod genesis_config_presets;
 pub mod governance;
 // Public so the integration tests can hold the emission rule to its ceiling.
 pub mod staking;
-mod weights;
+pub mod weights;
 pub mod xcm_config;
 
 // Re-export staking configurations
@@ -2829,7 +2829,15 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 					PeopleLocation::get(),
 					Asset { fun: Fungible(UNITS), id: AssetId(TokenLocation::get()) },
 				));
-				pub const CheckedAccount: Option<(AccountId, xcm_builder::MintLocation)> = None;
+				// Must match this runtime's `TeleportTracking`, which is
+				// `Some((CheckingAccount, MintLocation::Local))`. It was `None` here, left from
+				// when the tracking was off. On Zagros the same mismatch meant
+				// `receive_teleported_asset` could never complete a run and the generator
+				// wrote `u64::MAX` for it -- a weight no block can hold, which barred every
+				// teleport into that chain. The figure in this runtime's weights file predates
+				// the tracking; the next benchmark run would have replaced it with `u64::MAX`.
+				pub CheckedAccount: Option<(AccountId, xcm_builder::MintLocation)> =
+					Some((xcm_config::CheckingAccount::get(), xcm_builder::MintLocation::Local));
 				// AssetHubPezkuwichain trusts AssetHubZagros as reserve for WNDs
 				pub TrustedReserve: Option<(Location, Asset)> = Some(
 					(

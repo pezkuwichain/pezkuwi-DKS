@@ -2160,13 +2160,13 @@ fn expensive_erc20_runs_out_of_gas() {
 /// executes.
 ///
 /// It is not a policy. This runtime sets `TeleportTracking = Some(..)`, which is a chain
-/// saying it means to account for teleports; its twin, asset-hub-pezkuwichain, carries a real
-/// measurement here (21_550_000). One of the two ran the benchmark and one did not.
+/// saying it means to account for teleports. The cause was the benchmark's `CheckedAccount`,
+/// declared `None` while the executor insisted on one; with the two aligned the benchmark
+/// measures again.
 ///
-/// The fix is not a number typed into the weights file -- a fabricated weight is worse than a
-/// red test. Re-run `pezpallet_xcm_benchmarks::fungible` against this runtime and import the
-/// result. Until then this stays red, which is the correct state for a chain that cannot
-/// receive value.
+/// The fix is never a number typed into the weights file -- a fabricated weight is worse than
+/// a red test. Re-run `pezpallet_xcm_benchmarks::fungible` against this runtime and import the
+/// result.
 #[test]
 fn this_chain_can_be_teleported_to() {
 	use asset_hub_zagros_runtime::weights::xcm::pezpallet_xcm_benchmarks_fungible::WeightInfo as XcmFungibleWeight;
