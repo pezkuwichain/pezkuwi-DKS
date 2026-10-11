@@ -38,7 +38,7 @@ ignore = [
 	# patches will come, so each needs a reason it is tolerable to carry.
 	#
 	# Macro crates: they run at compile time and no part of them reaches a binary or a blob.
-	"RUSTSEC-2024-0436", # paste
+	# (paste is gone: vendor/paste serves its API through pastey.)
 	"RUSTSEC-2026-0173", # proc-macro-error2
 	#
 	# Host and build-time tooling, never inside a runtime blob — the same class as git2 below.
@@ -59,19 +59,8 @@ ignore = [
 	# patched release exists.
 
 	# ── webpki ────────────────────────────────────────────────────────────────
-	# All three land on `rustls-webpki` 0.101.7, and nothing a node ships reaches it. The one
-	# path is `kube-client` -> `kube` -> `pezkuwi-zombienet-provider`, the Kubernetes client the
-	# zombienet test harness uses to spawn networks; the versions our own TLS resolves are
-	# `rustls-webpki` 0.103.13, which is the patched release for all three.
-	#
-	# The reason recorded here before was "we do not use CRLs or rely on certificate name
-	# constraints", which was an assertion nobody had checked and is not what makes these safe.
-	# What makes them safe is reachability, and that is measurable:
-	#   cargo tree -i rustls-webpki@0.101.7
-	# This exemption is void the moment that command reports a path that is not test tooling.
-	"RUSTSEC-2026-0098", # webpki: URI name constraints incorrectly accepted
-	"RUSTSEC-2026-0099", # webpki: wildcard name constraints incorrectly accepted
-	"RUSTSEC-2026-0104", # webpki: reachable panic in CRL parsing (onlySomeReasons BIT STRING)
+	# Nothing exempted. The three rustls-webpki 0.101.7 advisories reached us through kube 0.87
+	# (zombienet's Kubernetes provider); kube 4.2 is on rustls 0.23 and the patched webpki.
 
 	# ── git2 / libgit2 ────────────────────────────────────────────────────────
 	# Nothing exempted. The note said "track for upstream git2 bump" -- we are a fork and did
