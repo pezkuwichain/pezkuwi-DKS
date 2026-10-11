@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use libp2p::multiaddr::{self, Multiaddr};
+use multiaddr::{self, Multiaddr};
 use serde::{Deserialize, Deserializer, Serialize};
 
 /// List of telemetry servers we want to talk to. Contains the URL of the server, and the
@@ -55,7 +55,7 @@ impl TelemetryEndpoints {
 	}
 }
 
-/// Parses a WebSocket URL into a libp2p `Multiaddr`.
+/// Parses a WebSocket URL into a `Multiaddr`.
 fn url_to_multiaddr(url: &str) -> Result<Multiaddr, multiaddr::Error> {
 	// First, assume that we have a `Multiaddr`.
 	let parse_error = match url.parse() {

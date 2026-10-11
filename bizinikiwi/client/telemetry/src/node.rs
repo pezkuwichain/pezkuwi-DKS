@@ -16,18 +16,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::TelemetryPayload;
-use futures::{channel::mpsc, prelude::*};
-use libp2p::{
-	core::{
-		transport::{DialOpts, PortUse, Transport},
-		Endpoint,
-	},
-	Multiaddr,
+use crate::{
+	transport::{WsDial, WsStream, WsTransport},
+	TelemetryPayload,
 };
+use futures::{channel::mpsc, prelude::*};
+use multiaddr::Multiaddr;
 use rand::Rng as _;
 use std::{
-	fmt, mem,
+	fmt, io, mem,
 	pin::Pin,
 	task::{Context, Poll},
 	time::Duration,
@@ -54,24 +51,24 @@ pub(crate) fn connection_notifier_channel() -> (ConnectionNotifierSender, Connec
 ///    if the connection could not be established. This is important for the `Dispatcher` `Sink`
 ///    which we don't want to block if one connection is broken.
 #[derive(Debug)]
-pub(crate) struct Node<TTrans: Transport> {
+pub(crate) struct Node {
 	/// Address of the node.
 	addr: Multiaddr,
 	/// State of the connection.
-	socket: NodeSocket<TTrans>,
+	socket: NodeSocket,
 	/// Transport used to establish new connections.
-	transport: TTrans,
+	transport: WsTransport,
 	/// Messages that are sent when the connection (re-)establishes.
 	pub(crate) connection_messages: Vec<TelemetryPayload>,
 	/// Notifier for when the connection (re-)establishes.
 	pub(crate) telemetry_connection_notifier: Vec<ConnectionNotifierSender>,
 }
 
-enum NodeSocket<TTrans: Transport> {
+enum NodeSocket {
 	/// We're connected to the node. This is the normal state.
-	Connected(NodeSocketConnected<TTrans>),
+	Connected(NodeSocketConnected),
 	/// We are currently dialing the node.
-	Dialing(TTrans::Dial),
+	Dialing(WsDial),
 	/// A new connection should be started as soon as possible.
 	ReconnectNow,
 	/// Waiting before attempting to dial again.
@@ -80,8 +77,8 @@ enum NodeSocket<TTrans: Transport> {
 	Poisoned,
 }
 
-impl<TTrans: Transport> NodeSocket<TTrans> {
-	fn wait_reconnect() -> NodeSocket<TTrans> {
+impl NodeSocket {
+	fn wait_reconnect() -> NodeSocket {
 		let random_delay = rand::thread_rng().gen_range(10..20);
 		let delay = Delay::new(Duration::from_secs(random_delay));
 		log::trace!(target: "telemetry", "Pausing for {} secs before reconnecting", random_delay);
@@ -89,17 +86,17 @@ impl<TTrans: Transport> NodeSocket<TTrans> {
 	}
 }
 
-struct NodeSocketConnected<TTrans: Transport> {
+struct NodeSocketConnected {
 	/// Where to send data.
-	sink: TTrans::Output,
+	sink: WsStream,
 	/// Queue of packets to send before accepting new packets.
 	buf: Vec<Vec<u8>>,
 }
 
-impl<TTrans: Transport> Node<TTrans> {
+impl Node {
 	/// Builds a new node handler.
 	pub(crate) fn new(
-		transport: TTrans,
+		transport: WsTransport,
 		addr: Multiaddr,
 		connection_messages: Vec<serde_json::Map<String, serde_json::Value>>,
 		telemetry_connection_notifier: Vec<ConnectionNotifierSender>,
@@ -114,20 +111,14 @@ impl<TTrans: Transport> Node<TTrans> {
 	}
 }
 
-impl<TTrans: Transport, TSinkErr> Node<TTrans>
-where
-	TTrans::Dial: Unpin,
-	TTrans::Output:
-		Sink<Vec<u8>, Error = TSinkErr> + Stream<Item = Result<Vec<u8>, TSinkErr>> + Unpin,
-	TSinkErr: fmt::Debug,
-{
+impl Node {
 	// NOTE: this code has been inspired from `Buffer` (`futures_util::sink::Buffer`).
 	//       https://docs.rs/futures-util/0.3.8/src/futures_util/sink/buffer.rs.html#32
 	fn try_send_connection_messages(
 		self: Pin<&mut Self>,
 		cx: &mut Context<'_>,
-		conn: &mut NodeSocketConnected<TTrans>,
-	) -> Poll<Result<(), TSinkErr>> {
+		conn: &mut NodeSocketConnected,
+	) -> Poll<Result<(), io::Error>> {
 		while let Some(item) = conn.buf.pop() {
 			if let Err(e) = conn.sink.start_send_unpin(item) {
 				return Poll::Ready(Err(e));
@@ -140,14 +131,7 @@ where
 
 pub(crate) enum Infallible {}
 
-impl<TTrans: Transport, TSinkErr> Sink<TelemetryPayload> for Node<TTrans>
-where
-	TTrans: Unpin,
-	TTrans::Dial: Unpin,
-	TTrans::Output:
-		Sink<Vec<u8>, Error = TSinkErr> + Stream<Item = Result<Vec<u8>, TSinkErr>> + Unpin,
-	TSinkErr: fmt::Debug,
-{
+impl Sink<TelemetryPayload> for Node {
 	type Error = Infallible;
 
 	fn poll_ready(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
@@ -235,10 +219,7 @@ where
 				},
 				NodeSocket::ReconnectNow => {
 					let addr = self.addr.clone();
-					match self
-						.transport
-						.dial(addr, DialOpts { role: Endpoint::Dialer, port_use: PortUse::New })
-					{
+					match self.transport.dial(addr) {
 						Ok(d) => {
 							log::trace!(target: "telemetry", "Re-dialing {}", self.addr);
 							socket = NodeSocket::Dialing(d);
@@ -300,9 +281,7 @@ where
 			NodeSocket::Connected(conn) => match conn.sink.poll_flush_unpin(cx) {
 				Poll::Ready(Err(e)) => {
 					// When `telemetry` closes the websocket connection we end
-					// up here, which is sub-optimal. See
-					// https://github.com/libp2p/rust-libp2p/issues/2021 for
-					// what we could do to improve this.
+					// up here.
 					log::trace!(target: "telemetry", "[poll_flush] Error: {:?}", e);
 					self.socket = NodeSocket::wait_reconnect();
 					Poll::Ready(Ok(()))
@@ -322,7 +301,7 @@ where
 	}
 }
 
-impl<TTrans: Transport> fmt::Debug for NodeSocket<TTrans> {
+impl fmt::Debug for NodeSocket {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use NodeSocket::*;
 		f.write_str(match self {

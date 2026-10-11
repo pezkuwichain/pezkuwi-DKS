@@ -1606,7 +1606,7 @@ tokio = { version = "1.45.0", default-features = false }
 tokio-retry = { version = "0.3.0" }
 tokio-stream = { version = "0.1.14" }
 tokio-test = { version = "0.4.4" }
-tokio-tungstenite = { version = "0.26.2" }
+tokio-tungstenite = { version = "0.27.0" }
 tokio-util = { version = "0.7.8" }
 toml = { version = "0.8.12" }
 toml_edit = { version = "0.19" }
@@ -1646,6 +1646,7 @@ wasmtime = { version = "36.0.13", default-features = false }
 wat = { version = "1.0.0" }
 web-sys = { version = "0.3.70" }
 web-time = { version = "1.1", default-features = false }
+webpki-roots = { version = "1.0.5" }
 x25519-dalek = { version = "2.0" }
 xcm = { path = "pezkuwi/xcm", version = "7.0.1", default-features = false, package = "pezstaging-xcm" }
 xcm-builder = { path = "pezkuwi/xcm/xcm-builder", version = "7.0.0", default-features = false, package = "pezstaging-xcm-builder" }
