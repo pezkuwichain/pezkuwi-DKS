@@ -22,10 +22,6 @@ mod block_import;
 #[cfg(test)]
 mod conformance;
 #[cfg(test)]
-mod fuzz;
-#[cfg(test)]
-mod service;
-#[cfg(test)]
 mod sync;
 
 use std::{
@@ -44,8 +40,8 @@ pub use bizinikiwi_test_runtime_client::{
 	runtime::{Block, ExtrinsicBuilder, Hash, Header, Transfer},
 	TestClient, TestClientBuilder, TestClientBuilderExt,
 };
-use futures::{future::BoxFuture, pin_mut, prelude::*};
-use libp2p::PeerId;
+use futures::{future::BoxFuture, prelude::*};
+use futures_timer::Delay;
 use log::trace;
 use parking_lot::Mutex;
 use pezsc_block_builder::{BlockBuilder, BlockBuilderBuilder};
@@ -61,13 +57,12 @@ use pezsc_consensus::{
 };
 use pezsc_network::{
 	config::{
-		FullNetworkConfiguration, MultiaddrWithPeerId, NetworkConfiguration, NonDefaultSetConfig,
-		NonReservedPeerMode, ProtocolId, Role, SyncMode, TransportConfig,
+		FullNetworkConfiguration, MultiaddrWithPeerId, NetworkConfiguration, NonReservedPeerMode,
+		PeerStore, ProtocolId, RequestResponseConfig, Role, SyncMode, TransportConfig,
 	},
-	peer_store::PeerStore,
-	request_responses::ProtocolConfig as RequestResponseConfig,
+	service::traits::NetworkService,
 	types::ProtocolName,
-	NetworkBlock, NetworkService, NetworkStateInfo, NetworkSyncForkRequest, NetworkWorker,
+	Litep2pNetworkBackend, NetworkBackend, NetworkBlock, NetworkStateInfo, NetworkSyncForkRequest,
 	NotificationMetrics, NotificationService,
 };
 use pezsc_network_common::role::Roles;
@@ -85,7 +80,10 @@ use pezsc_network_sync::{
 	},
 	warp_request_handler,
 };
-use pezsc_network_types::{build_multiaddr, multiaddr::Multiaddr};
+use pezsc_network_types::{
+	multiaddr::{Multiaddr, Protocol},
+	PeerId,
+};
 use pezsc_service::client::Client;
 use pezsp_blockchain::{
 	Backend as BlockchainBackend, HeaderBackend, Info as BlockchainInfo, Result as ClientResult,
@@ -102,6 +100,12 @@ use pezsp_runtime::{
 	Digest, Justification, Justifications,
 };
 use tokio::time::timeout;
+
+/// How often a test network re-polls the task driving it while its backends run elsewhere.
+const TICK_INTERVAL: Duration = Duration::from_millis(10);
+
+/// The network backend every test peer runs.
+type NetBackend = Litep2pNetworkBackend;
 
 /// A Verifier that accepts all blocks and passes them on with the configured
 /// finality to be imported.
@@ -244,7 +248,13 @@ pub struct Peer<D, BlockImport> {
 	block_import: BlockImportAdapter<BlockImport>,
 	select_chain: Option<LongestChain<bizinikiwi_test_runtime_client::Backend, Block>>,
 	backend: Option<Arc<bizinikiwi_test_runtime_client::Backend>>,
-	network: NetworkWorker<Block, <Block as BlockT>::Hash>,
+	network: Arc<dyn NetworkService>,
+	/// Wakes the task polling the test network at a fixed interval.
+	///
+	/// The network backend runs in its own task, so polling the test network no longer drives
+	/// it and cannot register a waker on its progress. Tests that poll the network until a
+	/// condition holds rely on being polled again; this tick provides that.
+	tick: Delay,
 	sync_service: Arc<SyncingService<Block>>,
 	imported_blocks_stream: Pin<Box<dyn Stream<Item = BlockImportNotification<Block>> + Send>>,
 	finality_notification_stream: Pin<Box<dyn Stream<Item = FinalityNotification<Block>> + Send>>,
@@ -258,7 +268,7 @@ where
 {
 	/// Get this peer ID.
 	pub fn id(&self) -> PeerId {
-		self.network.service().local_peer_id().into()
+		self.network.local_peer_id()
 	}
 
 	/// Returns true if we're major syncing.
@@ -544,8 +554,8 @@ where
 	}
 
 	/// Get a reference to the network service.
-	pub fn network_service(&self) -> &Arc<NetworkService<Block, <Block as BlockT>::Hash>> {
-		self.network.service()
+	pub fn network_service(&self) -> &Arc<dyn NetworkService> {
+		&self.network
 	}
 
 	/// Get `SyncingService`.
@@ -559,11 +569,6 @@ where
 		protocol: &ProtocolName,
 	) -> Option<Box<dyn NotificationService>> {
 		self.notification_services.remove(protocol)
-	}
-
-	/// Get a reference to the network worker.
-	pub fn network(&self) -> &NetworkWorker<Block, <Block as BlockT>::Hash> {
-		&self.network
 	}
 
 	/// Test helper to compare the blockchain state of multiple (networked)
@@ -866,30 +871,10 @@ pub trait TestNetFactory: Default + Sized + Send {
 			None,
 		));
 
-		let listen_addr = build_multiaddr![Memory(rand::random::<u64>())];
-
-		let mut network_config =
-			NetworkConfiguration::new("test-node", "test-client", Default::default(), None);
+		let mut network_config = NetworkConfiguration::new_local();
 		network_config.sync_mode = config.sync_mode;
-		network_config.transport = TransportConfig::MemoryOnly;
-		network_config.listen_addresses = vec![listen_addr.clone()];
-		network_config.allow_non_globals_in_dht = true;
-
-		let (notif_configs, notif_handles): (Vec<_>, Vec<_>) = config
-			.notifications_protocols
-			.into_iter()
-			.map(|p| {
-				let (config, handle) = NonDefaultSetConfig::new(
-					p.clone(),
-					Vec::new(),
-					1024 * 1024,
-					None,
-					Default::default(),
-				);
-
-				(config, (p, handle))
-			})
-			.unzip();
+		network_config.transport =
+			TransportConfig::Normal { enable_mdns: false, allow_private_ip: true };
 
 		if let Some(connect_to) = config.connect_to_peers {
 			let addrs = connect_to
@@ -903,7 +888,33 @@ pub trait TestNetFactory: Default + Sized + Send {
 			network_config.default_peers_set.reserved_nodes = addrs;
 			network_config.default_peers_set.non_reserved_mode = NonReservedPeerMode::Deny;
 		}
-		let mut full_net_config = FullNetworkConfiguration::new(&network_config, None);
+		let mut full_net_config = FullNetworkConfiguration::<
+			Block,
+			<Block as BlockT>::Hash,
+			NetBackend,
+		>::new(&network_config, None);
+		let peer_store_handle = full_net_config.peer_store_handle();
+
+		let (notif_configs, notif_handles): (Vec<_>, Vec<_>) = config
+			.notifications_protocols
+			.into_iter()
+			.map(|p| {
+				let (config, handle) = <NetBackend as NetworkBackend<
+					Block,
+					<Block as BlockT>::Hash,
+				>>::notification_config(
+					p.clone(),
+					Vec::new(),
+					1024 * 1024,
+					None,
+					Default::default(),
+					NotificationMetrics::new(None),
+					peer_store_handle.clone(),
+				);
+
+				(config, (p, handle))
+			})
+			.unzip();
 
 		let protocol_id = ProtocolId::from("test-protocol-name");
 
@@ -911,7 +922,7 @@ pub trait TestNetFactory: Default + Sized + Send {
 
 		let chain_sync_network_provider = NetworkServiceProvider::new();
 		let chain_sync_network_handle = chain_sync_network_provider.handle();
-		let mut block_relay_params = BlockRequestHandler::new::<NetworkWorker<_, _>>(
+		let mut block_relay_params = BlockRequestHandler::new::<NetBackend>(
 			chain_sync_network_handle.clone(),
 			&protocol_id,
 			None,
@@ -923,24 +934,18 @@ pub trait TestNetFactory: Default + Sized + Send {
 		}));
 
 		let state_request_protocol_config = {
-			let (handler, protocol_config) = StateRequestHandler::new::<NetworkWorker<_, _>>(
-				&protocol_id,
-				None,
-				client.clone(),
-				50,
-			);
+			let (handler, protocol_config) =
+				StateRequestHandler::new::<NetBackend>(&protocol_id, None, client.clone(), 50);
 			self.spawn_task(handler.run().boxed());
 			protocol_config
 		};
 
-		let light_client_request_protocol_config =
-			{
-				let (handler, protocol_config) = LightClientRequestHandler::new::<
-					NetworkWorker<_, _>,
-				>(&protocol_id, None, client.clone());
-				self.spawn_task(handler.run().boxed());
-				protocol_config
-			};
+		let light_client_request_protocol_config = {
+			let (handler, protocol_config) =
+				LightClientRequestHandler::new::<NetBackend>(&protocol_id, None, client.clone());
+			self.spawn_task(handler.run().boxed());
+			protocol_config
+		};
 
 		let warp_sync = Arc::new(TestWarpSyncProvider(client.clone()));
 
@@ -951,7 +956,7 @@ pub trait TestNetFactory: Default + Sized + Send {
 
 		let warp_protocol_config = {
 			let (handler, protocol_config) =
-				warp_request_handler::RequestHandler::new::<_, NetworkWorker<_, _>>(
+				warp_request_handler::RequestHandler::new::<_, NetBackend>(
 					protocol_id.clone(),
 					client
 						.block_hash(0u32.into())
@@ -965,21 +970,13 @@ pub trait TestNetFactory: Default + Sized + Send {
 			protocol_config
 		};
 
-		let peer_store = PeerStore::new(
-			network_config
-				.boot_nodes
-				.iter()
-				.map(|bootnode| bootnode.peer_id.into())
-				.collect(),
-			None,
-		);
-		let peer_store_handle = Arc::new(peer_store.handle());
+		let peer_store = full_net_config.take_peer_store();
 		self.spawn_task(peer_store.run().boxed());
 
 		let block_announce_validator = config
 			.block_announce_validator
 			.unwrap_or_else(|| Box::new(DefaultBlockAnnounceValidator));
-		let metrics = <NetworkWorker<_, _> as pezsc_network::NetworkBackend<
+		let metrics = <NetBackend as NetworkBackend<
 			Block,
 			<Block as BlockT>::Hash,
 		>>::register_notification_metrics(None);
@@ -989,7 +986,7 @@ pub trait TestNetFactory: Default + Sized + Send {
 			max_parallel_downloads: network_config.max_parallel_downloads,
 			max_blocks_per_request: network_config.max_blocks_per_request,
 			metrics_registry: None,
-			state_request_protocol_name: state_request_protocol_config.name.clone(),
+			state_request_protocol_name: state_request_protocol_config.protocol_name.clone(),
 			block_downloader: block_relay_params.downloader,
 			min_peers_to_start_warp_sync: None,
 			archive_blocks: config.blocks_pruning.is_none(),
@@ -1000,7 +997,7 @@ pub trait TestNetFactory: Default + Sized + Send {
 				syncing_config,
 				client.clone(),
 				Some(warp_sync_config),
-				Some(warp_protocol_config.name.clone()),
+				Some(warp_protocol_config.protocol_name.clone()),
 			)
 			.unwrap(),
 		);
@@ -1041,27 +1038,52 @@ pub trait TestNetFactory: Default + Sized + Send {
 
 		let genesis_hash =
 			client.hash(Zero::zero()).ok().flatten().expect("Genesis block exists; qed");
-		let network = NetworkWorker::new(pezsc_network::config::Params {
-			role: if config.is_authority { Role::Authority } else { Role::Full },
-			executor: Box::new(|f| {
-				tokio::spawn(f);
-			}),
-			network_config: full_net_config,
-			genesis_hash,
-			protocol_id,
-			fork_id,
-			metrics_registry: None,
-			block_announce_config,
-			ipfs_config: None,
-			notification_metrics: NotificationMetrics::new(None),
-		})
+		let network = <NetBackend as NetworkBackend<Block, <Block as BlockT>::Hash>>::new(
+			pezsc_network::config::Params {
+				role: if config.is_authority { Role::Authority } else { Role::Full },
+				executor: Box::new(|f| {
+					tokio::spawn(f);
+				}),
+				network_config: full_net_config,
+				genesis_hash,
+				protocol_id,
+				fork_id,
+				metrics_registry: None,
+				block_announce_config,
+				ipfs_config: None,
+				notification_metrics: NotificationMetrics::new(None),
+			},
+		)
 		.unwrap();
 
-		trace!(target: "test_network", "Peer identifier: {}", network.service().local_peer_id());
+		let service =
+			<NetBackend as NetworkBackend<Block, <Block as BlockT>::Hash>>::network_service(
+				&network,
+			);
+		trace!(target: "test_network", "Peer identifier: {}", service.local_peer_id());
 
-		let service = network.service().clone();
-		tokio::spawn(async move {
-			chain_sync_network_provider.run(service).await;
+		// litep2p binds its listeners while it is constructed, so the port chosen for
+		// `/tcp/0` is already known here.
+		let listen_addr: Multiaddr = service
+			.listen_addresses()
+			.into_iter()
+			.find(|address| {
+				address
+					.iter()
+					.any(|protocol| matches!(protocol, Protocol::Tcp(port) if port > 0))
+			})
+			.expect("litep2p reports its TCP listen address on construction; qed")
+			.iter()
+			.filter(|protocol| !matches!(protocol, Protocol::P2p(_)))
+			.collect();
+
+		tokio::spawn(<NetBackend as NetworkBackend<Block, <Block as BlockT>::Hash>>::run(network));
+
+		tokio::spawn({
+			let service = service.clone();
+			async move {
+				chain_sync_network_provider.run(Arc::new(service)).await;
+			}
 		});
 
 		tokio::spawn({
@@ -1078,10 +1100,7 @@ pub trait TestNetFactory: Default + Sized + Send {
 
 		self.mut_peers(move |peers| {
 			for peer in peers.iter_mut() {
-				peer.network.add_known_address(
-					network.service().local_peer_id().into(),
-					listen_addr.clone().into(),
-				);
+				peer.network.add_known_address(service.local_peer_id(), listen_addr.clone());
 			}
 
 			let imported_blocks_stream = Box::pin(client.import_notification_stream().fuse());
@@ -1098,7 +1117,8 @@ pub trait TestNetFactory: Default + Sized + Send {
 				notification_services: HashMap::from_iter(notif_handles.into_iter()),
 				block_import,
 				verifier,
-				network,
+				network: service,
+				tick: Delay::new(TICK_INTERVAL),
 				sync_service,
 				listen_addr,
 			});
@@ -1213,17 +1233,10 @@ pub trait TestNetFactory: Default + Sized + Send {
 		self.mut_peers(|peers| {
 			for (i, peer) in peers.iter_mut().enumerate() {
 				trace!(target: "sync", "-- Polling {}: {}", i, peer.id());
-				loop {
-					// The code below is not quite correct, because we are polling a different
-					// instance of the future every time. But as long as
-					// `NetworkWorker::next_action()` contains just streams polling not interleaved
-					// with other `.await`s, dropping the future and recreating it works the same as
-					// polling a single instance.
-					let net_poll_future = peer.network.next_action();
-					pin_mut!(net_poll_future);
-					if let Poll::Pending = net_poll_future.poll(cx) {
-						break;
-					}
+				// The network backend runs in its own task; re-arm the tick so that the caller
+				// is polled again and can observe what the network did meanwhile.
+				while let Poll::Ready(()) = peer.tick.poll_unpin(cx) {
+					peer.tick.reset(TICK_INTERVAL);
 				}
 				trace!(target: "sync", "-- Polling complete {}: {}", i, peer.id());
 

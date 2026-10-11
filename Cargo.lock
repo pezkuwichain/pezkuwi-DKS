@@ -20598,7 +20598,6 @@ dependencies = [
  "bizinikiwi-test-runtime-client",
  "futures",
  "futures-timer",
- "libp2p",
  "log",
  "parking_lot 0.12.5",
  "pezsc-block-builder",
@@ -20610,13 +20609,11 @@ dependencies = [
  "pezsc-network-sync",
  "pezsc-network-types",
  "pezsc-service",
- "pezsc-utils",
  "pezsp-blockchain",
  "pezsp-consensus",
  "pezsp-core",
  "pezsp-runtime",
  "pezsp-tracing",
- "rand 0.8.6",
  "tokio",
 ]
 
