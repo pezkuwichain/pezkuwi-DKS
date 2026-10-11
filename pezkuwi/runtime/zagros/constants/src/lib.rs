@@ -348,8 +348,5 @@ pub mod xcm {
 		const ROOT_INDEX: u32 = 0;
 		// The bodies corresponding to the Pezkuwi OpenGov Origins.
 		pub const FELLOWSHIP_ADMIN_INDEX: u32 = 1;
-		#[deprecated = "Will be removed after August 2024; Use `xcm::latest::BodyId::Treasury` \
-			instead"]
-		pub const TREASURER_INDEX: u32 = 2;
 	}
 }
