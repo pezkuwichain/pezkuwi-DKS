@@ -22,10 +22,8 @@
 //! See the documentation of [`Params`].
 
 pub use crate::{
-	discovery::DEFAULT_KADEMLIA_REPLICATION_FACTOR,
 	litep2p::RequestResponseConfig,
 	peer_store::PeerStoreProvider,
-	protocol::{notification_service, NotificationsSink, ProtocolHandlePair},
 	request_responses::{IncomingRequest, OutgoingResponse},
 	service::{
 		metrics::NotificationMetrics,
@@ -40,7 +38,7 @@ use pezsc_network_types::{
 	PeerId,
 };
 
-use crate::service::{ensure_addresses_consistent_with_transport, traits::NetworkBackend};
+use crate::{error::Error as NetworkError, service::traits::NetworkBackend};
 use codec::Encode;
 use prometheus_endpoint::Registry;
 use zeroize::Zeroize;
@@ -67,6 +65,10 @@ use std::{
 	sync::Arc,
 	time::Duration,
 };
+
+/// Default value for Kademlia replication factor which  determines to how many closest peers a
+/// record is replicated to.
+pub const DEFAULT_KADEMLIA_REPLICATION_FACTOR: usize = 20;
 
 /// Default timeout for idle connections of 10 seconds is good enough for most networks.
 /// It doesn't make sense to expose it as a CLI parameter on individual nodes, but customizations
@@ -478,136 +480,6 @@ impl Default for SetConfig {
 	}
 }
 
-/// Extension to [`SetConfig`] for sets that aren't the default set.
-///
-/// > **Note**: As new fields might be added in the future, please consider using the `new` method
-/// >			and modifiers instead of creating this struct manually.
-#[derive(Debug)]
-pub struct NonDefaultSetConfig {
-	/// Name of the notifications protocols of this set. A substream on this set will be
-	/// considered established once this protocol is open.
-	///
-	/// > **Note**: This field isn't present for the default set, as this is handled internally
-	/// > by the networking code.
-	protocol_name: ProtocolName,
-
-	/// If the remote reports that it doesn't support the protocol indicated in the
-	/// `notifications_protocol` field, then each of these fallback names will be tried one by
-	/// one.
-	///
-	/// If a fallback is used, it will be reported in
-	/// `pezsc_network::protocol::event::Event::NotificationStreamOpened::negotiated_fallback`
-	fallback_names: Vec<ProtocolName>,
-
-	/// Handshake of the protocol
-	///
-	/// NOTE: Currently custom handshakes are not fully supported. See issue #5685 for more
-	/// details. This field is temporarily used to allow moving the hardcoded block announcement
-	/// protocol out of `protocol.rs`.
-	handshake: Option<NotificationHandshake>,
-
-	/// Maximum allowed size of single notifications.
-	max_notification_size: u64,
-
-	/// Base configuration.
-	set_config: SetConfig,
-
-	/// Notification handle.
-	///
-	/// Notification handle is created during `NonDefaultSetConfig` creation and its other half,
-	/// `Box<dyn NotificationService>` is given to the protocol created the config and
-	/// `ProtocolHandle` is given to `Notifications` when it initializes itself. This handle allows
-	/// `Notifications ` to communicate with the protocol directly without relaying events through
-	/// `pezsc-network.`
-	protocol_handle_pair: ProtocolHandlePair,
-}
-
-impl NonDefaultSetConfig {
-	/// Creates a new [`NonDefaultSetConfig`]. Zero slots and accepts only reserved nodes.
-	/// Also returns an object which allows the protocol to communicate with `Notifications`.
-	pub fn new(
-		protocol_name: ProtocolName,
-		fallback_names: Vec<ProtocolName>,
-		max_notification_size: u64,
-		handshake: Option<NotificationHandshake>,
-		set_config: SetConfig,
-	) -> (Self, Box<dyn NotificationService>) {
-		let (protocol_handle_pair, notification_service) =
-			notification_service(protocol_name.clone());
-		(
-			Self {
-				protocol_name,
-				max_notification_size,
-				fallback_names,
-				handshake,
-				set_config,
-				protocol_handle_pair,
-			},
-			notification_service,
-		)
-	}
-
-	/// Get reference to protocol name.
-	pub fn protocol_name(&self) -> &ProtocolName {
-		&self.protocol_name
-	}
-
-	/// Get reference to fallback protocol names.
-	pub fn fallback_names(&self) -> impl Iterator<Item = &ProtocolName> {
-		self.fallback_names.iter()
-	}
-
-	/// Get reference to handshake.
-	pub fn handshake(&self) -> &Option<NotificationHandshake> {
-		&self.handshake
-	}
-
-	/// Get maximum notification size.
-	pub fn max_notification_size(&self) -> u64 {
-		self.max_notification_size
-	}
-
-	/// Get reference to `SetConfig`.
-	pub fn set_config(&self) -> &SetConfig {
-		&self.set_config
-	}
-
-	/// Take `ProtocolHandlePair` from `NonDefaultSetConfig`
-	pub fn take_protocol_handle(self) -> ProtocolHandlePair {
-		self.protocol_handle_pair
-	}
-
-	/// Modifies the configuration to allow non-reserved nodes.
-	pub fn allow_non_reserved(&mut self, in_peers: u32, out_peers: u32) {
-		self.set_config.in_peers = in_peers;
-		self.set_config.out_peers = out_peers;
-		self.set_config.non_reserved_mode = NonReservedPeerMode::Accept;
-	}
-
-	/// Add a node to the list of reserved nodes.
-	pub fn add_reserved(&mut self, peer: MultiaddrWithPeerId) {
-		self.set_config.reserved_nodes.push(peer);
-	}
-
-	/// Add a list of protocol names used for backward compatibility.
-	///
-	/// See the explanations in [`NonDefaultSetConfig::fallback_names`].
-	pub fn add_fallback_names(&mut self, fallback_names: Vec<ProtocolName>) {
-		self.fallback_names.extend(fallback_names);
-	}
-}
-
-impl NotificationConfig for NonDefaultSetConfig {
-	fn set_config(&self) -> &SetConfig {
-		&self.set_config
-	}
-
-	/// Get reference to protocol name.
-	fn protocol_name(&self) -> &ProtocolName {
-		&self.protocol_name
-	}
-}
-
 /// Network service configuration.
 #[derive(Clone, Debug)]
 pub struct NetworkConfiguration {
@@ -815,10 +687,10 @@ pub struct FullNetworkConfiguration<B: BlockT + 'static, H: ExHashT, N: NetworkB
 	/// Network configuration.
 	pub network_config: NetworkConfiguration,
 
-	/// [`PeerStore`](crate::peer_store::PeerStore),
+	/// The backend's peer store.
 	peer_store: Option<N::PeerStore>,
 
-	/// Handle to [`PeerStore`](crate::peer_store::PeerStore).
+	/// Handle to the backend's peer store.
 	peer_store_handle: Arc<dyn PeerStoreProvider>,
 
 	/// Registry for recording prometheus metrics to.
@@ -961,21 +833,37 @@ impl<B: BlockT + 'static, H: ExHashT, N: NetworkBackend<B, H>> FullNetworkConfig
 }
 
 /// Network backend type.
+///
+/// litep2p is the only P2P stack. The type is kept so that configurations and command lines that
+/// name the backend keep working.
 #[derive(Debug, Clone, Default, Copy)]
 pub enum NetworkBackendType {
 	/// Use litep2p for P2P networking.
-	///
-	/// This is the preferred option for Bizinikiwi-based chains.
 	#[default]
 	Litep2p,
+}
 
-	/// Use libp2p for P2P networking.
-	///
-	/// The libp2p is still used for compatibility reasons until the
-	/// ecosystem switches entirely to litep2p. The backend will enter
-	/// a "best-effort" maintenance mode, where only critical issues will
-	/// get fixed. If you are unsure, please use `NetworkBackendType::Litep2p`.
-	Libp2p,
+/// Verify that every address in `addresses` can be served by `transport`.
+pub(crate) fn ensure_addresses_consistent_with_transport<'a>(
+	addresses: impl Iterator<Item = &'a Multiaddr>,
+	transport: &TransportConfig,
+) -> Result<(), NetworkError> {
+	use pezsc_network_types::multiaddr::Protocol;
+
+	let memory_only = matches!(transport, TransportConfig::MemoryOnly);
+	let addresses: Vec<_> = addresses
+		.filter(|x| x.iter().any(|y| matches!(y, Protocol::Memory(_)) != memory_only))
+		.cloned()
+		.collect();
+
+	if !addresses.is_empty() {
+		return Err(NetworkError::AddressesForAnotherTransport {
+			transport: transport.clone(),
+			addresses,
+		});
+	}
+
+	Ok(())
 }
 
 #[cfg(test)]
@@ -983,26 +871,38 @@ mod tests {
 	use super::*;
 	use tempfile::TempDir;
 
-	/// The default backend has to stay litep2p, and this is a security gate rather than a
-	/// preference.
-	///
-	/// Both stacks are compiled into the node, and the libp2p one carries dependencies with open
-	/// advisories -- `hickory-proto` 0.24.4 (RUSTSEC-2026-0119) through `libp2p-dns`, and `yamux`
-	/// 0.12.1 through `libp2p-yamux`, which selects the 0.12 line for its default config. litep2p
-	/// reaches neither: it resolves `hickory-proto` 0.26.1 and `yamux` 0.13.10, both patched.
-	///
-	/// So the reason those advisories are tolerable is *this default*, and nothing else. The
-	/// exemptions recorded in `deny.toml` name this test as what holds them up. A framework sync
-	/// that flips the default would otherwise move every node onto the vulnerable stack silently,
-	/// with a green advisory gate, because the gate reasons about the graph and not about which
-	/// half of it runs.
 	#[test]
-	fn the_default_network_backend_is_litep2p() {
+	fn memory_transport_rejects_other_addresses() {
+		let tcp: Multiaddr = "/ip4/127.0.0.1/tcp/30333".parse().unwrap();
+		let memory: Multiaddr = "/memory/1".parse().unwrap();
+
+		assert!(ensure_addresses_consistent_with_transport(
+			[memory.clone()].iter(),
+			&TransportConfig::MemoryOnly
+		)
+		.is_ok());
+		assert!(matches!(
+			ensure_addresses_consistent_with_transport(
+				[memory, tcp.clone()].iter(),
+				&TransportConfig::MemoryOnly
+			),
+			Err(NetworkError::AddressesForAnotherTransport { addresses, .. }) if addresses == vec![tcp]
+		));
+	}
+
+	#[test]
+	fn normal_transport_rejects_memory_addresses() {
+		let transport = TransportConfig::Normal { enable_mdns: false, allow_private_ip: true };
+		let tcp: Multiaddr = "/ip4/127.0.0.1/tcp/30333".parse().unwrap();
+		let memory: Multiaddr = "/memory/1".parse().unwrap();
+
 		assert!(
-			matches!(NetworkBackendType::default(), NetworkBackendType::Litep2p),
-			"the libp2p stack pulls hickory-proto 0.24.4 and yamux 0.12.1, both with open \
-			 advisories; see the `webpki`/`hickory` entries in deny.toml"
+			ensure_addresses_consistent_with_transport([tcp.clone()].iter(), &transport).is_ok()
 		);
+		assert!(matches!(
+			ensure_addresses_consistent_with_transport([tcp, memory.clone()].iter(), &transport),
+			Err(NetworkError::AddressesForAnotherTransport { addresses, .. }) if addresses == vec![memory]
+		));
 	}
 
 	fn tempdir_with_prefix(prefix: &str) -> TempDir {

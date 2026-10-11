@@ -20,14 +20,37 @@
 
 //! Signature-related code
 
-pub use libp2p::identity::SigningError;
+use std::fmt;
+
+/// An error during signing of a message.
+#[derive(Debug)]
+pub struct SigningError {
+	msg: String,
+}
+
+impl SigningError {
+	/// Create a new [`SigningError`].
+	pub fn new(msg: impl ToString) -> Self {
+		Self { msg: msg.to_string() }
+	}
+}
+
+impl fmt::Display for SigningError {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "Key signing error: {}", self.msg)
+	}
+}
+
+impl std::error::Error for SigningError {}
+
+/// An error while decoding a protobuf-encoded public key.
+#[derive(Debug, thiserror::Error)]
+#[error("Failed to decode public key: {0}")]
+pub struct DecodingError(String);
 
 /// Public key.
 pub enum PublicKey {
 	/// Litep2p public key.
-	Libp2p(libp2p::identity::PublicKey),
-
-	/// Libp2p public key.
 	Litep2p(litep2p::crypto::PublicKey),
 }
 
@@ -35,15 +58,36 @@ impl PublicKey {
 	/// Protobuf-encode [`PublicKey`].
 	pub fn encode_protobuf(&self) -> Vec<u8> {
 		match self {
-			Self::Libp2p(public) => public.encode_protobuf(),
 			Self::Litep2p(public) => public.to_protobuf_encoding(),
+		}
+	}
+
+	/// Decode a protobuf-encoded ed25519 [`PublicKey`].
+	pub fn try_decode_protobuf(bytes: &[u8]) -> Result<Self, DecodingError> {
+		match litep2p::crypto::RemotePublicKey::from_protobuf_encoding(bytes)
+			.map_err(|error| DecodingError(error.to_string()))?
+		{
+			litep2p::crypto::RemotePublicKey::Ed25519(public) => {
+				Ok(Self::Litep2p(litep2p::crypto::PublicKey::Ed25519(public)))
+			},
+			#[allow(unreachable_patterns)]
+			_ => Err(DecodingError("only ed25519 keys are supported".into())),
+		}
+	}
+
+	/// Verify that `signature` was produced over `message` by the key behind this
+	/// [`PublicKey`].
+	pub fn verify(&self, message: &[u8], signature: &[u8]) -> bool {
+		match self {
+			Self::Litep2p(litep2p::crypto::PublicKey::Ed25519(public)) => {
+				public.verify(message, signature)
+			},
 		}
 	}
 
 	/// Get `PeerId` of the [`PublicKey`].
 	pub fn to_peer_id(&self) -> pezsc_network_types::PeerId {
 		match self {
-			Self::Libp2p(public) => public.to_peer_id().into(),
 			Self::Litep2p(public) => public.to_peer_id().into(),
 		}
 	}
@@ -52,9 +96,6 @@ impl PublicKey {
 /// Keypair.
 pub enum Keypair {
 	/// Litep2p keypair.
-	Libp2p(libp2p::identity::Keypair),
-
-	/// Libp2p keypair.
 	Litep2p(litep2p::crypto::ed25519::Keypair),
 }
 
@@ -67,7 +108,6 @@ impl Keypair {
 	/// Get [`Keypair`]'s public key.
 	pub fn public(&self) -> PublicKey {
 		match self {
-			Keypair::Libp2p(keypair) => PublicKey::Libp2p(keypair.public()),
 			Keypair::Litep2p(keypair) => PublicKey::Litep2p(keypair.public().into()),
 		}
 	}
@@ -96,12 +136,6 @@ impl Signature {
 		keypair: &Keypair,
 	) -> Result<Self, SigningError> {
 		match keypair {
-			Keypair::Libp2p(keypair) => {
-				let public_key = keypair.public();
-				let bytes = keypair.sign(message.as_ref())?;
-
-				Ok(Signature { public_key: PublicKey::Libp2p(public_key), bytes })
-			},
 			Keypair::Litep2p(keypair) => {
 				let public_key = keypair.public();
 				let bytes = keypair.sign(message.as_ref());

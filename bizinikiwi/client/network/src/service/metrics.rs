@@ -31,14 +31,7 @@ use std::{
 	},
 };
 
-pub use prometheus_endpoint::{Histogram, HistogramVec};
-
-/// Registers all networking metrics with the given registry.
-pub fn register(registry: &Registry, sources: MetricSources) -> Result<Metrics, PrometheusError> {
-	BandwidthCounters::register(registry, sources.bandwidth)?;
-	NumConnectedGauge::register(registry, sources.connected_peers)?;
-	Metrics::register(registry)
-}
+pub use prometheus_endpoint::HistogramVec;
 
 // Register `pezsc-network` metrics without bandwidth/connected peer sources.
 pub fn register_without_sources(registry: &Registry) -> Result<Metrics, PrometheusError> {
@@ -46,10 +39,7 @@ pub fn register_without_sources(registry: &Registry) -> Result<Metrics, Promethe
 }
 
 /// Predefined metric sources that are fed directly into prometheus.
-pub struct MetricSources {
-	pub bandwidth: Arc<dyn BandwidthSink>,
-	pub connected_peers: Arc<AtomicUsize>,
-}
+pub struct MetricSources;
 
 impl MetricSources {
 	pub fn register(
@@ -63,7 +53,11 @@ impl MetricSources {
 }
 
 /// Dedicated metrics.
+///
+/// Some of these series were only ever updated by the libp2p backend. They stay registered so
+/// that the set of exported metric names does not change under existing dashboards.
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct Metrics {
 	// This list is ordered alphabetically
 	pub connections_closed_total: CounterVec<U64>,

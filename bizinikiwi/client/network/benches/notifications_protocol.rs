@@ -27,8 +27,7 @@ use pezsc_network::{
 		NotificationHandshake, Params, ProtocolId, Role, SetConfig,
 	},
 	service::traits::{NetworkService, NotificationEvent},
-	Litep2pNetworkBackend, NetworkBackend, NetworkWorker, NotificationMetrics, NotificationService,
-	PeerId, Roles,
+	Litep2pNetworkBackend, NetworkBackend, NotificationMetrics, NotificationService, PeerId, Roles,
 };
 use pezsc_network_common::{sync::message::BlockAnnouncesHandshake, ExHashT};
 use pezsp_core::H256;
@@ -265,26 +264,6 @@ fn run_benchmark(c: &mut Criterion) {
 	let mut group = c.benchmark_group("notifications_protocol");
 	group.plot_config(plot_config);
 	group.sample_size(10);
-
-	let libp2p_setup = setup_workers::<runtime::Block, runtime::Hash, NetworkWorker<_, _>>(&rt);
-	for &(exponent, label) in PAYLOAD.iter() {
-		let size = 2usize.pow(exponent);
-		group.throughput(Throughput::Bytes(NUMBER_OF_NOTIFICATIONS as u64 * size as u64));
-		group.bench_with_input(BenchmarkId::new("libp2p/serially", label), &size, |b, &size| {
-			b.to_async(&rt)
-				.iter(|| run_serially(Arc::clone(&libp2p_setup), size, NUMBER_OF_NOTIFICATIONS));
-		});
-		group.bench_with_input(
-			BenchmarkId::new("libp2p/with_backpressure", label),
-			&size,
-			|b, &size| {
-				b.to_async(&rt).iter(|| {
-					run_with_backpressure(Arc::clone(&libp2p_setup), size, NUMBER_OF_NOTIFICATIONS)
-				});
-			},
-		);
-	}
-	drop(libp2p_setup);
 
 	let litep2p_setup = setup_workers::<runtime::Block, runtime::Hash, Litep2pNetworkBackend>(&rt);
 	for &(exponent, label) in PAYLOAD.iter() {

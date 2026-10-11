@@ -20,10 +20,7 @@
 //!
 //! **Warning**: These APIs are not stable.
 
-use libp2p::{
-	core::{ConnectedPoint, Endpoint as CoreEndpoint},
-	Multiaddr,
-};
+use pezsc_network_types::multiaddr::Multiaddr;
 use serde::{Deserialize, Serialize};
 use std::{
 	collections::{HashMap, HashSet},
@@ -103,24 +100,46 @@ pub enum Endpoint {
 	Listener,
 }
 
-impl From<ConnectedPoint> for PeerEndpoint {
-	fn from(endpoint: ConnectedPoint) -> Self {
-		match endpoint {
-			ConnectedPoint::Dialer { address, role_override, port_use: _ } => {
-				Self::Dialing(address, role_override.into())
-			},
-			ConnectedPoint::Listener { local_addr, send_back_addr } => {
-				Self::Listening { local_addr, send_back_addr }
-			},
-		}
-	}
-}
+#[cfg(test)]
+mod tests {
+	use super::*;
 
-impl From<CoreEndpoint> for Endpoint {
-	fn from(endpoint: CoreEndpoint) -> Self {
-		match endpoint {
-			CoreEndpoint::Dialer => Self::Dialer,
-			CoreEndpoint::Listener => Self::Listener,
-		}
+	/// `system_networkState` returns this struct as JSON. Addresses used to be libp2p's
+	/// `Multiaddr`, which serializes to its string form in human-readable formats; the local
+	/// type has to produce the same bytes.
+	#[test]
+	fn json_shape_is_stable() {
+		let addr: Multiaddr = "/ip4/127.0.0.1/tcp/30333".parse().unwrap();
+		let state = NetworkState {
+			peer_id: "local".into(),
+			listened_addresses: [addr.clone()].into(),
+			external_addresses: Default::default(),
+			connected_peers: [(
+				"remote".to_string(),
+				Peer {
+					endpoint: PeerEndpoint::Dialing(addr.clone(), Endpoint::Dialer),
+					version_string: None,
+					latest_ping_time: Some(Duration::from_millis(5)),
+					known_addresses: [addr.clone()].into(),
+				},
+			)]
+			.into(),
+			not_connected_peers: Default::default(),
+			peerset: serde_json::Value::Null,
+		};
+
+		let json = serde_json::to_string(&state).unwrap();
+		assert_eq!(
+			json,
+			concat!(
+				r#"{"peerId":"local","listenedAddresses":["/ip4/127.0.0.1/tcp/30333"],"#,
+				r#""externalAddresses":[],"connectedPeers":{"remote":{"endpoint":"#,
+				r#"{"dialing":["/ip4/127.0.0.1/tcp/30333","dialer"]},"versionString":null,"#,
+				r#""latestPingTime":{"secs":0,"nanos":5000000},"#,
+				r#""knownAddresses":["/ip4/127.0.0.1/tcp/30333"]}},"notConnectedPeers":{},"#,
+				r#""peerset":null}"#,
+			)
+		);
+		assert_eq!(serde_json::from_str::<NetworkState>(&json).unwrap(), state);
 	}
 }

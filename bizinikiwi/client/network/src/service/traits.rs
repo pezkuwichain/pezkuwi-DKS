@@ -25,8 +25,9 @@ use crate::{
 	error::{self, Error},
 	event::Event,
 	network_state::NetworkState,
+	peer_store::PeerStoreProvider,
 	request_responses::{IfDisconnected, RequestFailure},
-	service::{metrics::NotificationMetrics, signature::Signature, PeerStoreProvider},
+	service::{metrics::NotificationMetrics, signature::Signature},
 	types::ProtocolName,
 	ReputationChange,
 };
@@ -52,7 +53,7 @@ use std::{
 	time::{Duration, Instant},
 };
 
-pub use libp2p::identity::SigningError;
+pub use crate::service::signature::SigningError;
 
 /// Supertrait defining the services provided by [`NetworkBackend`] service handle.
 pub trait NetworkService:
