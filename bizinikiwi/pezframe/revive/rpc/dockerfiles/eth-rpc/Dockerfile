@@ -1,13 +1,19 @@
-FROM docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202511141243 AS builder
+# Debian bullseye's repositories moved to archive.debian.org, so `apt-get update` on the old
+# bullseye CI image fails with 404. The official Rust image on trixie (Debian stable) carries the
+# toolchain rust-toolchain.toml pins; the build needs clang (bindgen) and protoc on top of it.
+FROM docker.io/library/rust:1.96.0-trixie AS builder
 
 WORKDIR /pezkuwi
 COPY . /pezkuwi
 
-# Install build dependencies for wasm-opt-sys (binutils provides 'ar')
+# binutils provides 'ar' for wasm-opt-sys; clang/libclang for bindgen; protoc for prost builds.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     binutils \
     build-essential \
+    clang \
     cmake \
+    libclang-dev \
+    protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
 
 RUN cargo fetch
