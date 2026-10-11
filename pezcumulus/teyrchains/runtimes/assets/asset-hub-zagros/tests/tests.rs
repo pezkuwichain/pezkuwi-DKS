@@ -2306,11 +2306,8 @@ fn the_emission_call_encodes_the_way_welati_builds_it() {
 #[test]
 fn pez_cannot_be_minted_or_destroyed_over_xcm() {
 	use asset_hub_zagros_runtime::{xcm_config::NoTouchingPez, PezAssetId, RuntimeCall};
-	use pezframe_support::traits::{Contains, Get};
+	use pezframe_support::traits::Contains;
 
-	let who = || -> pezsp_runtime::MultiAddress<pezsp_runtime::AccountId32, ()> {
-		pezsp_runtime::MultiAddress::Id(pezsp_runtime::AccountId32::new([0u8; 32]))
-	};
 	let who = || -> pezsp_runtime::MultiAddress<pezsp_runtime::AccountId32, ()> {
 		pezsp_runtime::MultiAddress::Id(pezsp_runtime::AccountId32::new([0u8; 32]))
 	};
@@ -2368,7 +2365,6 @@ mod hez_parameters {
 		dynamic_params::hez, staking::MAX_INFLATION_RATE, Runtime, RuntimeOrigin,
 	};
 	use pezframe_support::{assert_noop, assert_ok, traits::Get};
-	use pezpallet_staking_async::EraPayout as _;
 	use pezsp_runtime::{traits::BadOrigin, BuildStorage, Perbill};
 
 	fn new_test_ext() -> pezsp_io::TestExternalities {
