@@ -1,34 +1,34 @@
-FROM docker.io/library/ubuntu:20.04
+# Based on the Substrate image Dockerfile by Parity Technologies (Apache-2.0).
+FROM docker.io/library/ubuntu:24.04
 
 # metadata
 ARG VCS_REF
 ARG BUILD_DATE
 ARG IMAGE_NAME
 
-LABEL io.parity.image.authors="devops-team@parity.io" \
-	io.parity.image.vendor="Parity Technologies" \
-	io.parity.image.title="${IMAGE_NAME}" \
-	io.parity.image.description="Bizinikiwi: The platform for blockchain innovators." \
-	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-DKS/blob/${VCS_REF}/docker/dockerfiles/bizinikiwi_injected.Dockerfile" \
-	io.parity.image.revision="${VCS_REF}" \
-	io.parity.image.created="${BUILD_DATE}" \
-	io.parity.image.documentation="https://wiki.parity.io/Parity-Bizinikiwi"
+LABEL org.opencontainers.image.title="${IMAGE_NAME}" \
+	org.opencontainers.image.description="Bizinikiwi development node (kitchensink runtime)." \
+	org.opencontainers.image.vendor="pezkuwichain" \
+	org.opencontainers.image.source="https://github.com/pezkuwichain/pezkuwi-DKS" \
+	org.opencontainers.image.revision="${VCS_REF}" \
+	org.opencontainers.image.created="${BUILD_DATE}"
 
 # show backtraces
-ENV RUST_BACKTRACE 1
+ENV RUST_BACKTRACE=1
 
-# install tools and dependencies
+# The binary is built on the runner, so the base has to carry a glibc at least as new as the
+# runner's (Ubuntu 24.04). The `--version` step below fails the build if it does not.
 RUN apt-get update && \
 	DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && \
 	DEBIAN_FRONTEND=noninteractive apt-get install -y \
-		libssl1.1 \
 		ca-certificates \
 		curl && \
 # apt cleanup
 	apt-get autoremove -y && \
 	apt-get clean && \
 	find /var/lib/apt/lists/ -type f -not -name lock -delete; \
-# add user
+# add user (24.04 ships an `ubuntu` user on uid 1000)
+	userdel -r ubuntu 2>/dev/null; \
 	useradd -m -u 1000 -U -s /bin/sh -d /bizinikiwi bizinikiwi
 
 # add bizinikiwi binary to docker image
