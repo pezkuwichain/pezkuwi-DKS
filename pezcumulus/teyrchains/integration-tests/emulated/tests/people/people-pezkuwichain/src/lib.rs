@@ -16,7 +16,7 @@
 #[cfg(test)]
 mod imports {
 	// Bizinikiwi
-	pub(crate) use pezframe_support::pezsp_runtime::DispatchResult;
+	pub(crate) use pezframe_support::{assert_ok, pezsp_runtime::DispatchResult};
 
 	// Pezkuwi
 	pub(crate) use xcm::{latest::PEZKUWICHAIN_GENESIS_HASH, prelude::*};
@@ -30,16 +30,17 @@ mod imports {
 		asset_hub_pezkuwichain_emulated_chain::AssetHubPezkuwichainParaPallet as AssetHubPezkuwichainPallet,
 		people_pezkuwichain_emulated_chain::{
 			people_pezkuwichain_runtime::{
-				xcm_config::XcmConfig as PeoplePezkuwichainXcmConfig,
+				self, xcm_config::XcmConfig as PeoplePezkuwichainXcmConfig,
 				ExistentialDeposit as PeoplePezkuwichainExistentialDeposit,
 			},
 			PeoplePezkuwichainParaPallet as PeoplePezkuwichainPallet,
 		},
+		pez_penpal_emulated_chain::{PenpalAParaPallet as PenpalAPallet, PenpalAssetOwner},
 		pezkuwichain_emulated_chain::{
 			genesis::ED as PEZKUWICHAIN_ED, PezkuwichainRelayPallet as PezkuwichainPallet,
 		},
 		AssetHubPezkuwichainPara as AssetHubPezkuwichain,
-		AssetHubPezkuwichainParaReceiver as AssetHubPezkuwichainReceiver,
+		AssetHubPezkuwichainParaReceiver as AssetHubPezkuwichainReceiver, PenpalAPara as PenpalA,
 		PeoplePezkuwichainPara as PeoplePezkuwichain,
 		PeoplePezkuwichainParaReceiver as PeoplePezkuwichainReceiver,
 		PeoplePezkuwichainParaSender as PeoplePezkuwichainSender,

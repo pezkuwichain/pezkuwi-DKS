@@ -33,7 +33,6 @@ pezframe-system-rpc-runtime-api = { workspace = true }
 pezframe-try-runtime = { optional = true, workspace = true }
 pezkuwi-primitives = { workspace = true }
 pezkuwi-tnpos-primitives = { workspace = true }
-pezpallet-ah-ops = { workspace = true }
 pezpallet-asset-conversion = { workspace = true }
 pezpallet-asset-conversion-ops = { workspace = true }
 pezpallet-asset-conversion-tx-payment = { workspace = true }
@@ -148,14 +147,12 @@ pezbp-bridge-hub-zagros = { workspace = true }
 pezpallet-xcm-bridge-hub-router = { workspace = true }
 
 [dev-dependencies]
-# Needed by the ERC20 tests, which exercise the Revive pallet this chain carries
-# ahead of the mainnet Asset Hub. Mirroring the manifest onto the mainnet one
-# dropped them along with the pallet's XCM plumbing.
+# The ERC20 tests compile their fixtures and decode the contract's ABI.
 alloy-core = { workspace = true, features = ["sol-types"] }
 asset-test-pezutils = { workspace = true, default-features = true }
+pezpallet-revive-fixtures = { workspace = true, default-features = true }
 # Building a genesis preset reaches for host functions, so the preset tests need an
 # externalities environment.
-pezpallet-revive-fixtures = { workspace = true, default-features = true }
 pezsp-io = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
 teyrchains-runtimes-test-utils = { workspace = true, default-features = true }
@@ -198,7 +195,6 @@ runtime-benchmarks = [
 	"pezkuwi-runtime-common/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezkuwichain-runtime-constants/runtime-benchmarks",
-	"pezpallet-ah-ops/runtime-benchmarks",
 	"pezpallet-asset-conversion-ops/runtime-benchmarks",
 	"pezpallet-asset-conversion-tx-payment/runtime-benchmarks",
 	"pezpallet-asset-conversion/runtime-benchmarks",
@@ -307,7 +303,6 @@ try-runtime = [
 	"pezkuwi-runtime-common/try-runtime",
 	"pezkuwi-teyrchain-primitives/try-runtime",
 	"pezkuwichain-runtime-constants/try-runtime",
-	"pezpallet-ah-ops/try-runtime",
 	"pezpallet-asset-conversion-ops/try-runtime",
 	"pezpallet-asset-conversion-tx-payment/try-runtime",
 	"pezpallet-asset-conversion/try-runtime",
@@ -420,7 +415,6 @@ std = [
 	"pezkuwi-teyrchain-primitives/std",
 	"pezkuwi-tnpos-primitives/std",
 	"pezkuwichain-runtime-constants/std",
-	"pezpallet-ah-ops/std",
 	"pezpallet-asset-conversion-ops/std",
 	"pezpallet-asset-conversion-tx-payment/std",
 	"pezpallet-asset-conversion/std",

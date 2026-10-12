@@ -63,6 +63,7 @@ decl_test_teyrchains! {
 			PoolAssets: asset_hub_pezkuwichain_runtime::PoolAssets,
 			AssetConversion: asset_hub_pezkuwichain_runtime::AssetConversion,
 			Balances: asset_hub_pezkuwichain_runtime::Balances,
+			Revive: asset_hub_pezkuwichain_runtime::Revive,
 		}
 	},
 }

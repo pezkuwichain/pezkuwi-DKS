@@ -21,14 +21,13 @@
 //!    threshold) - avoids spamming every poll cycle while humans coordinate.
 
 use anyhow::{anyhow, Context, Result};
+use pezkuwi_subxt::dynamic::{At, Value};
+use pezkuwi_subxt::utils::AccountId32 as SubxtAccountId32;
+use pezkuwi_subxt::{BizinikiwiConfig, OnlineClient};
+use pezsp_core::crypto::Ss58Codec;
 use serde::{Deserialize, Serialize};
-use sp_core::crypto::Ss58Codec;
 use std::path::PathBuf;
 use std::time::Duration;
-use pezkuwi_subxt::dynamic::{At, Value};
-// See the note in main.rs: `BizinikiwConfig` is how the published 0.44.0 spells it.
-use pezkuwi_subxt::utils::AccountId32 as SubxtAccountId32;
-use pezkuwi_subxt::{BizinikiwConfig as BizinikiwiConfig, OnlineClient};
 use tracing::{error, info, warn};
 
 const WUSDT_ASSET_ID: u32 = 1000;
@@ -43,60 +42,61 @@ const PWAP_WEB_OPERATIONS_URL: &str = "https://app.pezkuwichain.io/multisig/pend
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct BotConfig {
-    pezkuwi_rpc: String,
-    serok_chat_id: i64,
-    ops_chat_id: i64,
-    poll_interval_secs: u64,
-    renewal_threshold: u128,
-    topup_amount: u128,
-    state_path: PathBuf,
+	pezkuwi_rpc: String,
+	serok_chat_id: i64,
+	ops_chat_id: i64,
+	poll_interval_secs: u64,
+	renewal_threshold: u128,
+	topup_amount: u128,
+	state_path: PathBuf,
 }
 
 impl Default for BotConfig {
-    fn default() -> Self {
-        Self {
-            pezkuwi_rpc: "wss://asset-hub-rpc.pezkuwichain.io".to_string(),
-            serok_chat_id: 0,
-            ops_chat_id: 0,
-            poll_interval_secs: 600,
-            renewal_threshold: 3_000_000_000, // 3,000 wUSDT
-            topup_amount: 10_000_000_000,     // 10,000 wUSDT
-            state_path: PathBuf::from("pezbridge_bot_state.json"),
-        }
-    }
+	fn default() -> Self {
+		Self {
+			pezkuwi_rpc: "wss://asset-hub-rpc.pezkuwichain.io".to_string(),
+			serok_chat_id: 0,
+			ops_chat_id: 0,
+			poll_interval_secs: 600,
+			renewal_threshold: 3_000_000_000, // 3,000 wUSDT
+			topup_amount: 10_000_000_000,     // 10,000 wUSDT
+			state_path: PathBuf::from("pezbridge_bot_state.json"),
+		}
+	}
 }
 
 fn load_config() -> Result<BotConfig> {
-    let path = std::env::var("PEZBRIDGE_CONFIG").unwrap_or_else(|_| "pezbridge_bot_config.json".to_string());
-    if std::path::Path::new(&path).exists() {
-        let content = std::fs::read_to_string(&path).context("reading config file")?;
-        Ok(serde_json::from_str(&content).context("parsing config file")?)
-    } else {
-        warn!("No config file at {path}, using defaults - serok_chat_id/ops_chat_id MUST be set for this to be useful");
-        Ok(BotConfig::default())
-    }
+	let path = std::env::var("PEZBRIDGE_CONFIG")
+		.unwrap_or_else(|_| "pezbridge_bot_config.json".to_string());
+	if std::path::Path::new(&path).exists() {
+		let content = std::fs::read_to_string(&path).context("reading config file")?;
+		Ok(serde_json::from_str(&content).context("parsing config file")?)
+	} else {
+		warn!("No config file at {path}, using defaults - serok_chat_id/ops_chat_id MUST be set for this to be useful");
+		Ok(BotConfig::default())
+	}
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct BotState {
-    /// Whether a notification has already been sent for the CURRENT low-allowance episode -
-    /// reset back to false once the allowance rises back above threshold (meaning humans
-    /// renewed it via pwap-web), so the next depletion gets its own fresh notification.
-    already_notified: bool,
+	/// Whether a notification has already been sent for the CURRENT low-allowance episode -
+	/// reset back to false once the allowance rises back above threshold (meaning humans
+	/// renewed it via pwap-web), so the next depletion gets its own fresh notification.
+	already_notified: bool,
 }
 
 fn load_state(path: &PathBuf) -> Result<BotState> {
-    if path.exists() {
-        let content = std::fs::read_to_string(path)?;
-        Ok(serde_json::from_str(&content).unwrap_or_default())
-    } else {
-        Ok(BotState::default())
-    }
+	if path.exists() {
+		let content = std::fs::read_to_string(path)?;
+		Ok(serde_json::from_str(&content).unwrap_or_default())
+	} else {
+		Ok(BotState::default())
+	}
 }
 
 fn save_state(path: &PathBuf, state: &BotState) -> Result<()> {
-    std::fs::write(path, serde_json::to_string_pretty(state)?)?;
-    Ok(())
+	std::fs::write(path, serde_json::to_string_pretty(state)?)?;
+	Ok(())
 }
 
 // ============================================================================
@@ -104,66 +104,75 @@ fn save_state(path: &PathBuf, state: &BotState) -> Result<()> {
 // ============================================================================
 
 async fn get_approval_remaining(
-    client: &OnlineClient<BizinikiwiConfig>,
-    asset_id: u32,
-    owner: &str,
-    delegate: &str,
+	client: &OnlineClient<BizinikiwiConfig>,
+	asset_id: u32,
+	owner: &str,
+	delegate: &str,
 ) -> Result<u128> {
-    let owner_bytes = sp_core::crypto::AccountId32::from_ss58check(owner)
-        .map_err(|e| anyhow!("invalid owner address: {e:?}"))?;
-    let delegate_bytes = sp_core::crypto::AccountId32::from_ss58check(delegate)
-        .map_err(|e| anyhow!("invalid delegate address: {e:?}"))?;
+	let owner_bytes = pezsp_core::crypto::AccountId32::from_ss58check(owner)
+		.map_err(|e| anyhow!("invalid owner address: {e:?}"))?;
+	let delegate_bytes = pezsp_core::crypto::AccountId32::from_ss58check(delegate)
+		.map_err(|e| anyhow!("invalid delegate address: {e:?}"))?;
 
-    let storage_query = pezkuwi_subxt::dynamic::storage::<
-        (u32, SubxtAccountId32, SubxtAccountId32),
-        Value,
-    >("Assets", "Approvals");
+	let storage_query = pezkuwi_subxt::dynamic::storage::<
+		(u32, SubxtAccountId32, SubxtAccountId32),
+		Value,
+	>("Assets", "Approvals");
 
-    let at = client.storage().at_latest().await?;
-    let result = at
-        .entry(storage_query)?
-        .try_fetch((
-            asset_id,
-            SubxtAccountId32(*<sp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&owner_bytes)),
-            SubxtAccountId32(*<sp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&delegate_bytes)),
-        ))
-        .await?;
-    if let Some(v) = result {
-        if let Some(amount) = v.decode()?.at("amount").and_then(|a| a.as_u128()) {
-            return Ok(amount);
-        }
-    }
-    // No approval entry at all = the allowance is fully exhausted (or was never granted) -
-    // treat identically to "0 remaining" so it triggers a notification.
-    Ok(0)
+	let at = client.storage().at_latest().await?;
+	let result = at
+		.entry(storage_query)?
+		.try_fetch((
+			asset_id,
+			SubxtAccountId32(*<pezsp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(
+				&owner_bytes,
+			)),
+			SubxtAccountId32(*<pezsp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(
+				&delegate_bytes,
+			)),
+		))
+		.await?;
+	if let Some(v) = result {
+		if let Some(amount) = v.decode()?.at("amount").and_then(|a| a.as_u128()) {
+			return Ok(amount);
+		}
+	}
+	// No approval entry at all = the allowance is fully exhausted (or was never granted) -
+	// treat identically to "0 remaining" so it triggers a notification.
+	Ok(0)
 }
 
 // ============================================================================
 // Telegram (send-only - no polling/callbacks needed anymore, there's no action this bot takes)
 // ============================================================================
 
-async fn tg_send_message(http: &reqwest::Client, token: &str, chat_id: i64, text: &str) -> Result<()> {
-    if chat_id == 0 {
-        return Ok(());
-    }
-    let url = format!("https://api.telegram.org/bot{token}/sendMessage");
-    let body = serde_json::json!({ "chat_id": chat_id, "text": text });
-    let resp = http.post(&url).json(&body).send().await?;
-    let json: serde_json::Value = resp.json().await?;
-    if json["ok"].as_bool() != Some(true) {
-        return Err(anyhow!("sendMessage failed: {json}"));
-    }
-    Ok(())
+async fn tg_send_message(
+	http: &reqwest::Client,
+	token: &str,
+	chat_id: i64,
+	text: &str,
+) -> Result<()> {
+	if chat_id == 0 {
+		return Ok(());
+	}
+	let url = format!("https://api.telegram.org/bot{token}/sendMessage");
+	let body = serde_json::json!({ "chat_id": chat_id, "text": text });
+	let resp = http.post(&url).json(&body).send().await?;
+	let json: serde_json::Value = resp.json().await?;
+	if json["ok"].as_bool() != Some(true) {
+		return Err(anyhow!("sendMessage failed: {json}"));
+	}
+	Ok(())
 }
 
 async fn notify(http: &reqwest::Client, token: &str, config: &BotConfig, msg: &str) {
-    info!("[pezbridge-bot] {msg}");
-    if let Err(e) = tg_send_message(http, token, config.serok_chat_id, msg).await {
-        error!("failed to notify Serok: {e:#}");
-    }
-    if let Err(e) = tg_send_message(http, token, config.ops_chat_id, msg).await {
-        error!("failed to notify ops chat: {e:#}");
-    }
+	info!("[pezbridge-bot] {msg}");
+	if let Err(e) = tg_send_message(http, token, config.serok_chat_id, msg).await {
+		error!("failed to notify Serok: {e:#}");
+	}
+	if let Err(e) = tg_send_message(http, token, config.ops_chat_id, msg).await {
+		error!("failed to notify ops chat: {e:#}");
+	}
 }
 
 // ============================================================================
@@ -171,30 +180,32 @@ async fn notify(http: &reqwest::Client, token: &str, config: &BotConfig, msg: &s
 // ============================================================================
 
 async fn check_allowance_and_maybe_notify(
-    read_client: &OnlineClient<BizinikiwiConfig>,
-    http: &reqwest::Client,
-    token: &str,
-    config: &BotConfig,
-    state: &mut BotState,
+	read_client: &OnlineClient<BizinikiwiConfig>,
+	http: &reqwest::Client,
+	token: &str,
+	config: &BotConfig,
+	state: &mut BotState,
 ) -> Result<()> {
-    let remaining = get_approval_remaining(read_client, WUSDT_ASSET_ID, MULTISIG_ADDR, AUTOMATION_KEY_ADDR).await?;
-    info!("Automation key remaining allowance: {:.2} wUSDT", remaining as f64 / 1_000_000.0);
+	let remaining =
+		get_approval_remaining(read_client, WUSDT_ASSET_ID, MULTISIG_ADDR, AUTOMATION_KEY_ADDR)
+			.await?;
+	info!("Automation key remaining allowance: {:.2} wUSDT", remaining as f64 / 1_000_000.0);
 
-    if remaining >= config.renewal_threshold {
-        if state.already_notified {
-            info!("Allowance is back above threshold - renewal happened, resetting notification state");
-            state.already_notified = false;
-            save_state(&config.state_path, state)?;
-        }
-        return Ok(());
-    }
+	if remaining >= config.renewal_threshold {
+		if state.already_notified {
+			info!("Allowance is back above threshold - renewal happened, resetting notification state");
+			state.already_notified = false;
+			save_state(&config.state_path, state)?;
+		}
+		return Ok(());
+	}
 
-    if state.already_notified {
-        return Ok(()); // already told everyone, don't spam while they coordinate
-    }
+	if state.already_notified {
+		return Ok(()); // already told everyone, don't spam while they coordinate
+	}
 
-    let topup = config.topup_amount;
-    let text = format!(
+	let topup = config.topup_amount;
+	let text = format!(
         "\u{26A0}\u{FE0F} USDT Bridge - otomasyon anahtarı izni azaldı\n\n\
          Kalan izin: {:.2} wUSDT\nEşik: {:.2} wUSDT\n\n\
          Önerilen yenileme: {:.2} wUSDT (Assets.approve_transfer, multisig'den otomasyon anahtarına).\n\n\
@@ -206,40 +217,47 @@ async fn check_allowance_and_maybe_notify(
         PWAP_WEB_OPERATIONS_URL
     );
 
-    notify(http, token, config, &text).await;
+	notify(http, token, config, &text).await;
 
-    state.already_notified = true;
-    save_state(&config.state_path, state)?;
+	state.already_notified = true;
+	save_state(&config.state_path, state)?;
 
-    Ok(())
+	Ok(())
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt().with_env_filter(tracing_subscriber::EnvFilter::from_default_env()).init();
+	tracing_subscriber::fmt()
+		.with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+		.init();
 
-    let config = load_config()?;
-    if config.serok_chat_id == 0 && config.ops_chat_id == 0 {
-        return Err(anyhow!("both serok_chat_id and ops_chat_id are unset - this bot would notify no one"));
-    }
+	let config = load_config()?;
+	if config.serok_chat_id == 0 && config.ops_chat_id == 0 {
+		return Err(anyhow!(
+			"both serok_chat_id and ops_chat_id are unset - this bot would notify no one"
+		));
+	}
 
-    let token = std::env::var("PEZBRIDGE_TELEGRAM_TOKEN").context("PEZBRIDGE_TELEGRAM_TOKEN env var not set")?;
+	let token = std::env::var("PEZBRIDGE_TELEGRAM_TOKEN")
+		.context("PEZBRIDGE_TELEGRAM_TOKEN env var not set")?;
 
-    info!("Connecting to {}...", config.pezkuwi_rpc);
-    let read_client = OnlineClient::<BizinikiwiConfig>::from_url(&config.pezkuwi_rpc)
-        .await
-        .context("failed to connect")?;
+	info!("Connecting to {}...", config.pezkuwi_rpc);
+	let read_client = OnlineClient::<BizinikiwiConfig>::from_url(&config.pezkuwi_rpc)
+		.await
+		.context("failed to connect")?;
 
-    let http = reqwest::Client::new();
-    let mut state = load_state(&config.state_path)?;
+	let http = reqwest::Client::new();
+	let mut state = load_state(&config.state_path)?;
 
-    notify(&http, &token, &config, "PezbridgeBot started (notify-only, holds no key).").await;
+	notify(&http, &token, &config, "PezbridgeBot started (notify-only, holds no key).").await;
 
-    let mut poll_timer = tokio::time::interval(Duration::from_secs(config.poll_interval_secs));
-    loop {
-        poll_timer.tick().await;
-        if let Err(e) = check_allowance_and_maybe_notify(&read_client, &http, &token, &config, &mut state).await {
-            error!("allowance check failed: {e:#}");
-        }
-    }
+	let mut poll_timer = tokio::time::interval(Duration::from_secs(config.poll_interval_secs));
+	loop {
+		poll_timer.tick().await;
+		if let Err(e) =
+			check_allowance_and_maybe_notify(&read_client, &http, &token, &config, &mut state).await
+		{
+			error!("allowance check failed: {e:#}");
+		}
+	}
 }

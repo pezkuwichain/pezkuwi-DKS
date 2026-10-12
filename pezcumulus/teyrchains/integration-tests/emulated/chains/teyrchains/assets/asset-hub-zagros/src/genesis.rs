@@ -78,6 +78,17 @@ pub fn genesis() -> Storage {
 					asset_hub_zagros_runtime::xcm_config::CheckingAccount::get(),
 					ED * 100_000,
 				)))
+				// The collators' pot, which every XCM fee paid here in the native token is
+				// resolved into. A credit smaller than the existential deposit cannot open an
+				// account, so while the pot does not exist such a fee is not paid to anyone: it
+				// is dropped, and the supply shrinks by it (`BurnedDebt`). A teleport's fee is
+				// below ED here, so every teleport into this chain burned its fee and broke the
+				// "issuance does not move" assertion. The live pot exists and holds ED; this
+				// makes the emulated chain start the same way.
+				.chain(std::iter::once((
+					asset_hub_zagros_runtime::xcm_config::StakingPot::get(),
+					ED,
+				)))
 				.collect(),
 			..Default::default()
 		},

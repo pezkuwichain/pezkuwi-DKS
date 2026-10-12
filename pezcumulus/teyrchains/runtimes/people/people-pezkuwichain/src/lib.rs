@@ -1306,7 +1306,13 @@ impl_runtime_apis! {
 				}
 
 				fn alias_origin() -> Result<(Location, Location), BenchmarkError> {
-					Err(BenchmarkError::Skip)
+					// `TrustedAliasers` lets any origin alias into its own child, so a sibling
+					// aliasing into an account under itself is admitted without setup. Skipping
+					// here left `AliasOrigin` with no measured weight on this chain.
+					Ok((
+						Location::new(1, [Teyrchain(1001)]),
+						Location::new(1, [Teyrchain(1001), AccountId32 { id: [111u8; 32], network: None }]),
+					))
 				}
 			}
 

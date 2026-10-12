@@ -219,10 +219,15 @@ fn asset_hub_pezkuwichain_genesis(
 	};
 	let validator_stake = pezkuwichain_runtime_constants::currency::HEZ_GENESIS_VALIDATOR_STAKE;
 	let stakes_here: Balance = genesis_validators.len() as Balance * validator_stake;
+	// The collators' pot, where every fee paid on this chain lands, at its existential deposit.
+	// See `HEZ_COLLATOR_POT_ASSET_HUB`: without it every fee below the deposit is burned.
+	let collator_pot_here: Balance =
+		pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_ASSET_HUB;
 	let checking_account_seed: Balance = TOTAL_SUPPLY
 		- (AIRDROP_ALLOCATION + PRESALE_ALLOCATION + TREASURY_ALLOCATION)
 		- office_here
-		- stakes_here;
+		- stakes_here
+		- collator_pot_here;
 	let checking_account: AccountId = crate::PezkuwiXcm::check_account();
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
@@ -236,6 +241,10 @@ fn asset_hub_pezkuwichain_genesis(
 				.chain(core::iter::once((treasury_pot, TREASURY_ALLOCATION)))
 				.chain(founding_office.clone().map(|office| (office, office_here)))
 				.chain(genesis_validators.iter().cloned().map(|v| (v, validator_stake)))
+				.chain(core::iter::once((
+					crate::CollatorSelection::account_id(),
+					collator_pot_here,
+				)))
 				.chain(core::iter::once((checking_account, checking_account_seed)))
 				.collect(),
 		},
@@ -580,7 +589,9 @@ fn the_asset_hub_mints_exactly_its_share() {
 		+ (40_000_000 * UNITS - pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING)
 		+ pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING
 		// The genesis validators' stakes (spec K5), out of the founder's line on the relay.
-		+ pezkuwichain_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT;
+		+ pezkuwichain_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT
+		// The collators' pot, out of the founder's line on the relay.
+		+ pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_ASSET_HUB;
 	let escrow = 200_000_000 * UNITS - held;
 
 	assert_eq!(
@@ -654,6 +665,7 @@ mod genesis_ledger {
 		let presale = PresalePotPalletId::get().into_account_truncating();
 		let treasury: AccountId = TreasuryPalletId::get().into_account_truncating();
 		let checking = crate::PezkuwiXcm::check_account();
+		let collator_pot: AccountId = crate::CollatorSelection::account_id();
 		let ss58 = |a: &AccountId| -> String {
 			use pezsp_core::crypto::Ss58Codec;
 			a.to_ss58check()
@@ -676,7 +688,11 @@ mod genesis_ledger {
 			("presale", &presale, 100_000_000 * UNITS),
 			("treasury", &treasury, 39_999_000 * UNITS),
 			// 297,000 less again: the genesis validators' stakes are held here too (spec K5).
-			("checking", &checking, 19_703_000 * UNITS),
+			// Less the collators' pot below, which is held here as well.
+			("checking", &checking, 19_703_000 * UNITS - 3_333_333),
+			// The collators' pot at this chain's existential deposit (a tenth of a cent),
+			// out of the founder's line on the relay. Without it every fee below that is burned.
+			("collators'", &collator_pot, 3_333_333),
 		] {
 			let addr = ss58(acc);
 			assert_eq!(
@@ -689,19 +705,19 @@ mod genesis_ledger {
 				"the {name} pot must be keyless -- {addr} is not a modl account"
 			);
 		}
-		// The fifth, and the only one of them that is allowed to have a key.
+		// The sixth, and the only one of them that is allowed to have a key.
 		//
 		// Every pot above is keyless by design: a balance that can only leave through an
 		// approved spend. The founding office is the deliberate opposite -- it exists to sign,
 		// and a keyless account signs nothing. So it is asserted separately rather than added
 		// to the loop, because dropping it into that list would have quietly relaxed the
-		// keyless rule for all four.
-		// Found as "the account that is not one of the four pots" rather than by a copy of its
+		// keyless rule for all five.
+		// Found as "the account that is not one of the five pots" rather than by a copy of its
 		// public key. A second copy of a genesis key is a second thing to update, and the one
 		// that gets missed is always the copy -- *which* key it is is asserted on People, where
 		// the tiki that makes it the founding office actually lives.
 		let pots: alloc::collections::BTreeSet<String> =
-			[ss58(&airdrop), ss58(&presale), ss58(&treasury), ss58(&checking)]
+			[ss58(&airdrop), ss58(&presale), ss58(&treasury), ss58(&checking), ss58(&collator_pot)]
 				.into_iter()
 				.collect();
 		// The genesis validators, each with its stake (spec K5).
@@ -734,8 +750,8 @@ mod genesis_ledger {
 		);
 		assert_eq!(
 			hez.len(),
-			5 + validators.len(),
-			"the Asset Hub mints HEZ into five accounts and the genesis validators, and no more"
+			6 + validators.len(),
+			"the Asset Hub mints HEZ into six accounts and the genesis validators, and no more"
 		);
 		assert_eq!(
 			hez.values().sum::<u128>(),
@@ -877,4 +893,43 @@ fn every_preset_builds_its_genesis() {
 			.unwrap_or_else(|e| panic!("preset {preset:?} does not build: {e}"));
 		});
 	}
+}
+
+/// The collators' pot starts at this chain's existential deposit, and the relay escrows exactly
+/// that.
+///
+/// Every transaction fee, every native XCM fee and the dust of reaped accounts reach the pot
+/// through `resolve`, which refuses a deposit that would leave an account below the existential
+/// deposit. Without the pot, each such credit smaller than the deposit is dropped and the supply
+/// shrinks by it -- measured 2026-10-12, where a teleport's fee here was below the deposit. The
+/// relay carves the seed out of the founder without seeing this chain's deposit, so the two are
+/// pinned together.
+#[test]
+fn the_collators_pot_starts_at_its_existential_deposit() {
+	let ed = <crate::Runtime as pezpallet_balances::Config>::ExistentialDeposit::get();
+	assert_eq!(
+		pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_ASSET_HUB,
+		ed,
+		"the relay escrows what it believes this chain's existential deposit is"
+	);
+
+	let preset = get_preset(&PresetId::from(preset_names::PRESET_GENESIS))
+		.expect("the genesis preset exists");
+	let genesis: serde_json::Value =
+		serde_json::from_slice(&preset).expect("the preset is valid json");
+	let pot = serde_json::to_value(crate::CollatorSelection::account_id())
+		.expect("an account id serialises");
+	let funded: u128 = genesis["balances"]["balances"]
+		.as_array()
+		.expect("the balances patch is an array of (account, amount)")
+		.iter()
+		.filter(|entry| entry[0] == pot)
+		.map(|entry| {
+			entry[1]
+				.as_u64()
+				.map(u128::from)
+				.unwrap_or_else(|| entry[1].to_string().parse().expect("a balance is a number"))
+		})
+		.sum();
+	assert_eq!(funded, ed, "the collators' pot must start at the existential deposit");
 }

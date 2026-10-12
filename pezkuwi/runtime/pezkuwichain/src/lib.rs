@@ -1641,10 +1641,11 @@ construct_runtime! {
 		StateTrieMigration: pezpallet_state_trie_migration = 254,
 
 		// === CUSTOM PEZKUWI PALLETS ===
-		// RIP ValidatorPool 91 - it implemented SessionManager but was never wired to
-		// anything, so its shadow-mode apparatus ran zero times. TNPoS replaces it on
-		// Zagros; it does not land here yet because the staking-score oracle it needs is
-		// still open (M7.0). Index left unused on purpose.
+		// RIP ValidatorPool 91 - it implemented SessionManager but was never wired to anything.
+		// Index left unused on purpose. The validator committee is drawn by TNPoS on the People
+		// chain (`pezpallet_tnpos`, index 83 there); this relay's session manager is
+		// `StakingAhClient`, and it reports each session's performance back to the register
+		// through `StakingXcmToAssetHub::tell_the_register`.
 
 		// Root testing pezpallet.
 		RootTesting: pezpallet_root_testing = 249,
@@ -2673,5 +2674,73 @@ mod remote_tests {
 			.await
 			.unwrap();
 		ext.execute_with(|| Runtime::on_runtime_upgrade(UpgradeCheckSelect::PreAndPost));
+	}
+}
+
+#[cfg(test)]
+mod session_manager_wiring {
+	use super::*;
+
+	/// The relay receives its validator set; it does not elect one.
+	///
+	/// This test used to assert the opposite -- that TNPoS was reachable from session -- and it
+	/// was right to exist, because the pallet it replaced implemented `SessionManager` and was
+	/// wired to nothing, so none of it ever ran. The assertion is inverted rather than deleted
+	/// for the same reason: TNPoS is being placed on the People chain, where the five scores it
+	/// reads actually live, and wiring it back here would silently reintroduce the fault that
+	/// moved it -- a committee drawn from scores that crossed a chain boundary, where three of
+	/// five arriving stale seats a committee whose stratum proportions are wrong while storage
+	/// still says they are right.
+	///
+	/// Exactly one thing may hand this chain a validator set. Today that is `StakingAhClient`,
+	/// which is also what Zagros uses; when TNPoS exports from People it takes that place, and
+	/// the Asset Hub's exporter has to stop at the same moment. Two exporters is the state this
+	/// branch was in for a while: the Asset Hub kept sending a set every era, the relay kept
+	/// receiving it, and nothing used it.
+	#[test]
+	fn the_relay_does_not_elect_its_own_validators() {
+		fn assert_is_manager<M: pezpallet_session::SessionManager<AccountId>>() {}
+		assert_is_manager::<<Runtime as pezpallet_session::Config>::SessionManager>();
+
+		let wired =
+			core::any::type_name::<<Runtime as pezpallet_session::Config>::SessionManager>()
+				.to_lowercase();
+		assert!(
+			!wired.contains("tnpos"),
+			"TNPoS is wired to the relay's session again; it belongs where the register is: {wired}"
+		);
+		assert!(
+			wired.contains("ah_client"),
+			"something other than the Asset Hub's client is seating validators: {wired}"
+		);
+	}
+}
+
+#[cfg(test)]
+mod register_report {
+	use super::*;
+
+	/// The relay addresses the register's `note_session_performance` by hand: pallet index 83,
+	/// call index 10, no type shared with the People runtime to check them. The People side
+	/// pins its own encoding to those literals in
+	/// `the_performance_call_encodes_the_way_the_relay_builds_it`; this pins the relay to the
+	/// same literals, so moving either end alone goes red instead of sending every session's
+	/// record to a call that is not there.
+	#[test]
+	fn the_relay_builds_the_performance_call_the_register_decodes() {
+		let scored: Vec<AccountId> = vec![[1u8; 32].into(), [2u8; 32].into()];
+		let failed: Vec<AccountId> = vec![[3u8; 32].into()];
+
+		let built = PeopleRuntimePallets::Tnpos(TnposCalls::NoteSessionPerformance {
+			scored: scored.clone(),
+			failed: failed.clone(),
+		})
+		.encode();
+
+		assert_eq!(
+			built,
+			(83u8, 10u8, scored, failed).encode(),
+			"the relay's address for the performance call moved"
+		);
 	}
 }

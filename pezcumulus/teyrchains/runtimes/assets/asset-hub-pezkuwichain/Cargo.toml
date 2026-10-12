@@ -40,6 +40,7 @@ pezpallet-asset-rate = { workspace = true }
 pezpallet-asset-rewards = { workspace = true }
 pezpallet-assets = { workspace = true }
 pezpallet-assets-freezer = { workspace = true }
+pezpallet-assets-precompiles = { workspace = true }
 pezpallet-aura = { workspace = true }
 pezpallet-authorship = { workspace = true }
 pezpallet-bags-list = { workspace = true }
@@ -64,6 +65,7 @@ pezpallet-pez-treasury = { workspace = true }
 pezpallet-preimage = { workspace = true }
 pezpallet-proxy = { workspace = true }
 pezpallet-referenda = { workspace = true }
+pezpallet-revive = { workspace = true }
 pezpallet-scheduler = { workspace = true }
 pezpallet-session = { workspace = true }
 pezpallet-staking = { workspace = true }
@@ -79,6 +81,7 @@ pezpallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pezpallet-treasury = { workspace = true }
 pezpallet-uniques = { workspace = true }
 pezpallet-utility = { workspace = true }
+pezpallet-xcm-precompiles = { workspace = true }
 pezsp-api = { workspace = true }
 pezsp-authority-discovery = { workspace = true }
 pezsp-block-builder = { workspace = true }
@@ -142,10 +145,14 @@ pezbp-bridge-hub-zagros = { workspace = true }
 pezpallet-xcm-bridge-hub-router = { workspace = true }
 
 [dev-dependencies]
+# The ERC20 tests compile their fixtures and decode the contract's ABI.
+alloy-core = { workspace = true, features = ["sol-types"] }
 asset-test-pezutils = { workspace = true, default-features = true }
+pezpallet-revive-fixtures = { workspace = true, default-features = true }
 # Building a genesis preset reaches for host functions, so the preset tests need an
 # externalities environment.
 pezsp-io = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
 teyrchains-runtimes-test-utils = { workspace = true, default-features = true }
 
 [build-dependencies]
@@ -190,6 +197,7 @@ runtime-benchmarks = [
 	"pezpallet-asset-rate/runtime-benchmarks",
 	"pezpallet-asset-rewards/runtime-benchmarks",
 	"pezpallet-assets-freezer/runtime-benchmarks",
+	"pezpallet-assets-precompiles/runtime-benchmarks",
 	"pezpallet-assets/runtime-benchmarks",
 	"pezpallet-aura/runtime-benchmarks",
 	"pezpallet-authorship/runtime-benchmarks",
@@ -216,6 +224,8 @@ runtime-benchmarks = [
 	"pezpallet-preimage/runtime-benchmarks",
 	"pezpallet-proxy/runtime-benchmarks",
 	"pezpallet-referenda/runtime-benchmarks",
+	"pezpallet-revive-fixtures/runtime-benchmarks",
+	"pezpallet-revive/runtime-benchmarks",
 	"pezpallet-scheduler/runtime-benchmarks",
 	"pezpallet-session/runtime-benchmarks",
 	"pezpallet-staking-async-rc-client/runtime-benchmarks",
@@ -231,6 +241,7 @@ runtime-benchmarks = [
 	"pezpallet-utility/runtime-benchmarks",
 	"pezpallet-xcm-benchmarks/runtime-benchmarks",
 	"pezpallet-xcm-bridge-hub-router/runtime-benchmarks",
+	"pezpallet-xcm-precompiles/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",
 	"pezsp-api/runtime-benchmarks",
 	"pezsp-authority-discovery/runtime-benchmarks",
@@ -292,6 +303,7 @@ try-runtime = [
 	"pezpallet-asset-rate/try-runtime",
 	"pezpallet-asset-rewards/try-runtime",
 	"pezpallet-assets-freezer/try-runtime",
+	"pezpallet-assets-precompiles/try-runtime",
 	"pezpallet-assets/try-runtime",
 	"pezpallet-aura/try-runtime",
 	"pezpallet-authorship/try-runtime",
@@ -318,6 +330,7 @@ try-runtime = [
 	"pezpallet-preimage/try-runtime",
 	"pezpallet-proxy/try-runtime",
 	"pezpallet-referenda/try-runtime",
+	"pezpallet-revive/try-runtime",
 	"pezpallet-scheduler/try-runtime",
 	"pezpallet-session/try-runtime",
 	"pezpallet-staking-async-rc-client/try-runtime",
@@ -332,6 +345,7 @@ try-runtime = [
 	"pezpallet-utility/try-runtime",
 	"pezpallet-xcm-benchmarks?/try-runtime",
 	"pezpallet-xcm-bridge-hub-router/try-runtime",
+	"pezpallet-xcm-precompiles/try-runtime",
 	"pezpallet-xcm/try-runtime",
 	"pezsp-api/try-runtime",
 	"pezsp-authority-discovery/try-runtime",
@@ -360,6 +374,7 @@ try-runtime = [
 	"xcm/try-runtime",
 ]
 std = [
+	"alloy-core/std",
 	"bizinikiwi-wasm-builder",
 	"bizinikiwi-wasm-builder?/std",
 	"codec/std",
@@ -398,6 +413,7 @@ std = [
 	"pezpallet-asset-rate/std",
 	"pezpallet-asset-rewards/std",
 	"pezpallet-assets-freezer/std",
+	"pezpallet-assets-precompiles/std",
 	"pezpallet-assets/std",
 	"pezpallet-aura/std",
 	"pezpallet-authorship/std",
@@ -424,6 +440,7 @@ std = [
 	"pezpallet-preimage/std",
 	"pezpallet-proxy/std",
 	"pezpallet-referenda/std",
+	"pezpallet-revive/std",
 	"pezpallet-scheduler/std",
 	"pezpallet-session/std",
 	"pezpallet-staking-async-rc-client/std",
@@ -439,6 +456,7 @@ std = [
 	"pezpallet-utility/std",
 	"pezpallet-xcm-benchmarks?/std",
 	"pezpallet-xcm-bridge-hub-router/std",
+	"pezpallet-xcm-precompiles/std",
 	"pezpallet-xcm/std",
 	"pezsp-api/std",
 	"pezsp-authority-discovery/std",

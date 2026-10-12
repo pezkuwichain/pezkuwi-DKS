@@ -252,11 +252,10 @@ pub type PoolFungiblesTransactor = FungiblesAdapter<
 	CheckingAccount,
 >;
 
-// Zagros carries `pezpallet-revive` (index 66); the mainnet Asset Hub does not yet.
-// Mirroring this chain onto the mainnet Asset Hub took the pallet's XCM plumbing with
-// it and left the pallet itself in place — a contract pallet whose assets could not be
-// moved by XCM. Since promoting Revive to the mainnet Asset Hub is the plan, the
-// testnet has to exercise the whole path, not just the pallet.
+// `pezpallet-revive` (index 66) holds ERC20 balances inside contracts. Without a transactor for
+// them, XCM could not move those assets at all: the pallet would be on the chain and its tokens
+// stranded there. The mainnet Asset Hub carries the same transactor; this chain exercised the
+// path first.
 parameter_types! {
 	/// Taken from the real gas and deposits of a standard ERC20 transfer call.
 	pub const ERC20TransferGasLimit: Weight = Weight::from_parts(500_000_000_000, 10 * 1024 * 1024);

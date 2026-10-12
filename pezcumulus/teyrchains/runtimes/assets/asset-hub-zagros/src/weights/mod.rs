@@ -22,7 +22,6 @@ pub mod pezcumulus_pezpallet_weight_reclaim;
 pub mod pezcumulus_pezpallet_xcmp_queue;
 pub mod pezframe_system;
 pub mod pezframe_system_extensions;
-pub mod pezpallet_ah_ops;
 pub mod pezpallet_asset_conversion;
 pub mod pezpallet_asset_conversion_ops;
 pub mod pezpallet_asset_conversion_tx_payment;

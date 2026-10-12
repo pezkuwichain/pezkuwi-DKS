@@ -363,25 +363,38 @@ impl<T: pezframe_system::Config> pezpallet_xcm::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `Benchmark::Override` (r:0 w:0)
-	/// Proof: `Benchmark::Override` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	// Not measured on this runtime: the benchmark run that produced this file had
+	// `AuthorizedAliasConsideration = Disabled`, so both alias calls hit `Benchmark::Override`
+	// and came out at `u64::MAX`, which no block can hold. Carried over from the People Zagros
+	// weight file, measured with the hold consideration this runtime now has. Replaced by the
+	// next benchmark run of this runtime.
+	/// Storage: `PezkuwiXcm::AuthorizedAliases` (r:1 w:1)
+	/// Proof: `PezkuwiXcm::AuthorizedAliases` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(283), added: 2758, mode: `MaxEncodedLen`)
 	fn add_authorized_alias() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 18_446_744_073_709_551_000 picoseconds.
-		Weight::from_parts(18_446_744_073_709_551_000, 0)
-			.saturating_add(Weight::from_parts(0, 0))
+		//  Measured:  `160`
+		//  Estimated: `3748`
+		// Minimum execution time: 72_975_000 picoseconds.
+		Weight::from_parts(113_993_000, 0)
+			.saturating_add(Weight::from_parts(0, 3748))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: `Benchmark::Override` (r:0 w:0)
-	/// Proof: `Benchmark::Override` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `PezkuwiXcm::AuthorizedAliases` (r:1 w:1)
+	/// Proof: `PezkuwiXcm::AuthorizedAliases` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(283), added: 2758, mode: `MaxEncodedLen`)
 	fn remove_authorized_alias() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 18_446_744_073_709_551_000 picoseconds.
-		Weight::from_parts(18_446_744_073_709_551_000, 0)
-			.saturating_add(Weight::from_parts(0, 0))
+		//  Measured:  `516`
+		//  Estimated: `3981`
+		// Minimum execution time: 74_909_000 picoseconds.
+		Weight::from_parts(120_856_000, 0)
+			.saturating_add(Weight::from_parts(0, 3981))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
 	fn weigh_message() -> Weight {
 		// Proof Size summary in bytes:

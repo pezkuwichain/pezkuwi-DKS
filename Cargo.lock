@@ -1622,6 +1622,7 @@ dependencies = [
 name = "asset-hub-pezkuwichain-runtime"
 version = "0.11.0"
 dependencies = [
+ "alloy-core",
  "asset-test-pezutils",
  "bizinikiwi-wasm-builder",
  "hex-literal",
@@ -1662,6 +1663,7 @@ dependencies = [
  "pezpallet-asset-rewards",
  "pezpallet-assets",
  "pezpallet-assets-freezer",
+ "pezpallet-assets-precompiles",
  "pezpallet-aura",
  "pezpallet-authorship",
  "pezpallet-bags-list",
@@ -1687,6 +1689,8 @@ dependencies = [
  "pezpallet-preimage",
  "pezpallet-proxy",
  "pezpallet-referenda",
+ "pezpallet-revive",
+ "pezpallet-revive-fixtures",
  "pezpallet-scheduler",
  "pezpallet-session",
  "pezpallet-staking",
@@ -1703,6 +1707,7 @@ dependencies = [
  "pezpallet-xcm",
  "pezpallet-xcm-benchmarks",
  "pezpallet-xcm-bridge-hub-router",
+ "pezpallet-xcm-precompiles",
  "pezsp-api",
  "pezsp-authority-discovery",
  "pezsp-block-builder",
@@ -1721,6 +1726,7 @@ dependencies = [
  "pezsp-session",
  "pezsp-staking",
  "pezsp-storage",
+ "pezsp-tracing",
  "pezsp-transaction-pool",
  "pezsp-version",
  "pezsp-weights",
@@ -1826,7 +1832,6 @@ dependencies = [
  "pezkuwi-teyrchain-primitives",
  "pezkuwi-tnpos-primitives",
  "pezkuwichain-runtime-constants",
- "pezpallet-ah-ops",
  "pezpallet-asset-conversion",
  "pezpallet-asset-conversion-ops",
  "pezpallet-asset-conversion-tx-payment",
@@ -8788,9 +8793,16 @@ version = "0.1.0"
 dependencies = [
  "asset-test-pezutils",
  "emulated-integration-tests-common",
+ "parity-scale-codec",
  "pezframe-support",
  "pezkuwichain-system-emulated-network",
+ "pezpallet-assets",
  "pezpallet-balances",
+ "pezpallet-identity",
+ "pezpallet-identity-kyc",
+ "pezpallet-message-queue",
+ "pezpallet-pez-treasury",
+ "pezpallet-xcm",
  "pezsp-runtime",
  "pezstaging-xcm",
  "pezstaging-xcm-executor",
@@ -26219,6 +26231,25 @@ dependencies = [
  "percent-encoding",
  "serde",
  "serde_derive 1.0.228 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "usdt-bridge"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "hex",
+ "pezkuwi-subxt",
+ "pezkuwi-subxt-signer",
+ "pezsp-core",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

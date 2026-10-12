@@ -583,3 +583,103 @@ mod register_parameters {
 		});
 	}
 }
+
+/// An account can let another location act as it, and take that permission back.
+///
+/// Aliasing is on for this chain: `xcm_config::TrustedAliasers` admits a child of the origin, the
+/// same account on a sibling system chain, the Asset Hub's root, and whatever an account has
+/// authorized for itself. The last of these is the only rule a user controls, so it is the one
+/// asserted here -- that the authorization is what opens the door, that it opens it for exactly
+/// the location named, and that removing it closes it again. The hold behind it is what makes
+/// `add_authorized_alias` succeed at all: with `AuthorizedAliasConsideration = Disabled` the
+/// call is refused and the first `add_authorized_alias` below fails.
+mod authorized_aliases {
+	use super::*;
+	use people_pezkuwichain_runtime::{xcm_config::XcmConfig, Balances, PezkuwiXcm};
+	use pezframe_support::traits::{fungible::Mutate, ContainsPair};
+	use pezsp_runtime::BuildStorage;
+	use testnet_teyrchains_constants::pezkuwichain::currency::UNITS;
+
+	#[test]
+	fn authorized_aliases_work() {
+		let mut ext: pezsp_io::TestExternalities =
+			pezframe_system::GenesisConfig::<Runtime>::default()
+				.build_storage()
+				.unwrap()
+				.into();
+		ext.execute_with(|| {
+			pezframe_system::Pezpallet::<Runtime>::set_block_number(1);
+
+			let alice: AccountId = ALICE.into();
+			let local_alice = Location::new(0, AccountId32 { network: None, id: ALICE });
+			// A user teyrchain: the same-account rule covers system chains only, so nothing
+			// but Alice's own authorization can let this one in.
+			let alice_on_sibling_para =
+				Location::new(1, [Teyrchain(2000), AccountId32 { network: None, id: ALICE }]);
+			let alice_on_relay = Location::new(1, AccountId32 { network: None, id: ALICE });
+			let bob_on_relay = Location::new(1, AccountId32 { network: None, id: [42_u8; 32] });
+
+			assert_ok!(Balances::mint_into(&alice, 2 * UNITS));
+
+			// The same account on a sibling system chain needs no authorization.
+			let alice_on_asset_hub =
+				Location::new(1, [Teyrchain(1000), AccountId32 { network: None, id: ALICE }]);
+			assert!(<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+				&alice_on_asset_hub,
+				&local_alice
+			));
+
+			// None of them may alias into `local_alice` before she says so.
+			for aliaser in [&alice_on_sibling_para, &alice_on_relay, &bob_on_relay] {
+				assert!(!<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+					aliaser,
+					&local_alice
+				));
+			}
+
+			// Alice authorizes `alice_on_sibling_para`.
+			assert_ok!(PezkuwiXcm::add_authorized_alias(
+				RuntimeOrigin::signed(alice.clone()),
+				Box::new(alice_on_sibling_para.clone().into()),
+				None
+			));
+			assert!(<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+				&alice_on_sibling_para,
+				&local_alice
+			));
+			for aliaser in [&alice_on_relay, &bob_on_relay] {
+				assert!(!<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+					aliaser,
+					&local_alice
+				));
+			}
+
+			// Alice authorizes `alice_on_relay` as well.
+			assert_ok!(PezkuwiXcm::add_authorized_alias(
+				RuntimeOrigin::signed(alice.clone()),
+				Box::new(alice_on_relay.clone().into()),
+				None
+			));
+			for aliaser in [&alice_on_relay, &alice_on_sibling_para] {
+				assert!(<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+					aliaser,
+					&local_alice
+				));
+			}
+
+			// Removing one authorization closes that door and leaves the other open.
+			assert_ok!(PezkuwiXcm::remove_authorized_alias(
+				RuntimeOrigin::signed(alice.clone()),
+				Box::new(alice_on_relay.clone().into())
+			));
+			assert!(!<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+				&alice_on_relay,
+				&local_alice
+			));
+			assert!(<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+				&alice_on_sibling_para,
+				&local_alice
+			));
+		});
+	}
+}

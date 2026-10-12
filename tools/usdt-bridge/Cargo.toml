@@ -1,12 +1,17 @@
-[workspace]
-
 [package]
 name = "usdt-bridge"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 description = "Custodial USDT Bridge: Polkadot Asset Hub <-> Pezkuwi Asset Hub (USDT.p)"
 authors = ["Dijital Kurdistan Tech Institute"]
 license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+# A service binary deployed to the fleet, not a library anyone links against.
+publish = false
+
+[lints]
+workspace = true
 
 [[bin]]
 name = "usdt-bridge"
@@ -18,55 +23,46 @@ path = "src/bin/pezbridge_bot.rs"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.36", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 
-# Both chains are reached through Pezkuwi's own subxt fork: `BizinikiwConfig` for Polkadot
-# Asset Hub, `PezkuwiConfig` for ours. Vanilla subxt was also linked here until now, for the
-# Polkadot side and for reads -- two subxt/jsonrpsee/scale stacks in one binary. One library,
-# one lineage, and it is the one this repository vendors and can patch.
+# Both chains are reached through Pezkuwi's own subxt fork: `BizinikiwiConfig` for Polkadot
+# Asset Hub, `PezkuwiConfig` for ours. It is the copy this repository vendors, resolved against
+# the root lockfile, so the bridge runs on the same dependency graph the rest of the tree is
+# audited on rather than on a published 0.44.0 and a lockfile of its own.
 #
 # Not yet enabled: `reconnecting-rpc-client`. It is the feature that would put an
 # application-layer ping under the subscriptions, which is the root cause of the July stall;
 # taking it means reconciling library-level reconnection with the manual reconnect loop the
 # bridge already has.
-pezkuwi-subxt = "0.44.0"
-pezkuwi-subxt-signer = { version = "0.44.0", features = ["sr25519"] }
+pezkuwi-subxt = { workspace = true, default-features = true }
+pezkuwi-subxt-signer = { workspace = true, features = ["sr25519"] }
 
-# Crypto
-sp-core = { version = "39.0.0", default-features = false }
-sp-keyring = { version = "45.0.0" }
-sp-runtime = { version = "45.0.0", default-features = false }
+# Crypto: wallet generation and SS58 rendering. `std` for `Pair::generate_with_phrase`.
+pezsp-core = { workspace = true, features = ["std"] }
 
 # Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde = { workspace = true, default-features = true, features = ["derive"] }
+serde_json = { workspace = true, default-features = true }
 
 # CLI
-clap = { version = "4.4", features = ["derive"] }
+clap = { workspace = true, features = ["derive"] }
 
 # Logging
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing = { workspace = true, default-features = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 # Hex encoding
-hex = "0.4"
-
-# BIP39 mnemonic
-bip39 = "2.0"
+hex = { workspace = true, default-features = true }
 
 # Date/time
-chrono = { version = "0.4", features = ["serde"] }
-
-# Async streams
-futures = "0.3"
+chrono = { workspace = true, features = ["serde"] }
 
 # Telegram Bot API HTTP client (pezbridge-bot only). rustls instead of native-tls/OpenSSL so
 # this cross-compiles cleanly to a static musl binary (no OpenSSL sysroot needed for the target).
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { workspace = true }
 
 # Error handling
-anyhow = "1.0"
-thiserror = "2.0"
+anyhow = { workspace = true, default-features = true }
 
 # Simple file-based storage (no native compilation needed)
 # Database tracking via JSON files for simplicity

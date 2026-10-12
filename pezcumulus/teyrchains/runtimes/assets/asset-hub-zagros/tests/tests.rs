@@ -2160,13 +2160,13 @@ fn expensive_erc20_runs_out_of_gas() {
 /// executes.
 ///
 /// It is not a policy. This runtime sets `TeleportTracking = Some(..)`, which is a chain
-/// saying it means to account for teleports; its twin, asset-hub-pezkuwichain, carries a real
-/// measurement here (21_550_000). One of the two ran the benchmark and one did not.
+/// saying it means to account for teleports. The cause was the benchmark's `CheckedAccount`,
+/// declared `None` while the executor insisted on one; with the two aligned the benchmark
+/// measures again.
 ///
-/// The fix is not a number typed into the weights file -- a fabricated weight is worse than a
-/// red test. Re-run `pezpallet_xcm_benchmarks::fungible` against this runtime and import the
-/// result. Until then this stays red, which is the correct state for a chain that cannot
-/// receive value.
+/// The fix is never a number typed into the weights file -- a fabricated weight is worse than
+/// a red test. Re-run `pezpallet_xcm_benchmarks::fungible` against this runtime and import the
+/// result.
 #[test]
 fn this_chain_can_be_teleported_to() {
 	use asset_hub_zagros_runtime::weights::xcm::pezpallet_xcm_benchmarks_fungible::WeightInfo as XcmFungibleWeight;
@@ -2306,11 +2306,8 @@ fn the_emission_call_encodes_the_way_welati_builds_it() {
 #[test]
 fn pez_cannot_be_minted_or_destroyed_over_xcm() {
 	use asset_hub_zagros_runtime::{xcm_config::NoTouchingPez, PezAssetId, RuntimeCall};
-	use pezframe_support::traits::{Contains, Get};
+	use pezframe_support::traits::Contains;
 
-	let who = || -> pezsp_runtime::MultiAddress<pezsp_runtime::AccountId32, ()> {
-		pezsp_runtime::MultiAddress::Id(pezsp_runtime::AccountId32::new([0u8; 32]))
-	};
 	let who = || -> pezsp_runtime::MultiAddress<pezsp_runtime::AccountId32, ()> {
 		pezsp_runtime::MultiAddress::Id(pezsp_runtime::AccountId32::new([0u8; 32]))
 	};
@@ -2368,7 +2365,6 @@ mod hez_parameters {
 		dynamic_params::hez, staking::MAX_INFLATION_RATE, Runtime, RuntimeOrigin,
 	};
 	use pezframe_support::{assert_noop, assert_ok, traits::Get};
-	use pezpallet_staking_async::EraPayout as _;
 	use pezsp_runtime::{traits::BadOrigin, BuildStorage, Perbill};
 
 	fn new_test_ext() -> pezsp_io::TestExternalities {
@@ -2866,4 +2862,16 @@ fn the_bond_report_names_every_validator_here() {
 		// Sorted, so the same validators always make the same message.
 		assert_eq!(call, (83u8, 11u8, 3u32, vec![b, a]).encode());
 	});
+}
+
+/// EIP-155 chain id. The fork carried an upstream test network's id, so a transaction signed for
+/// that network was valid here and wallets listed this chain under its name. Ids from the upstream
+/// 4204204xx family are refused outright, and the value is pinned to our own.
+#[test]
+fn evm_chain_id_is_our_own() {
+	let id = <<Runtime as pezpallet_revive::Config>::ChainId as pezframe_support::traits::Get<
+		u64,
+	>>::get();
+	assert!(!(420_420_400..420_420_500).contains(&id), "upstream EVM chain id {id}");
+	assert_eq!(id, 1921);
 }

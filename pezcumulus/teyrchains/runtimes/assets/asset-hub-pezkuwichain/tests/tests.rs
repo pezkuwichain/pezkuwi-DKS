@@ -19,16 +19,22 @@
 
 extern crate alloc;
 
+use alloy_core::{
+	primitives::U256,
+	sol_types::{sol_data, SolType},
+};
 use asset_hub_pezkuwichain_runtime::{
 	xcm_config,
 	xcm_config::{
 		bridging, CheckingAccount, GovernanceLocation, LocationToAccountId, StakingPot,
-		TokenLocation, TrustBackedAssetsPalletLocation, XcmConfig,
+		TokenLocation, TrustBackedAssetsPalletLocation, UniquesConvertedConcreteId,
+		UniquesPalletLocation, XcmConfig,
 	},
 	AllPalletsWithoutSystem, AssetConversion, AssetDeposit, Assets, Balances, Block,
 	CollatorSelection, ExistentialDeposit, ForeignAssets, ForeignAssetsInstance,
-	MetadataDepositBase, MetadataDepositPerByte, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
-	SessionKeys, TeyrchainSystem, ToZagrosXcmRouterInstance, TrustBackedAssetsInstance, XcmpQueue,
+	MetadataDepositBase, MetadataDepositPerByte, PezkuwiXcm, Revive, Runtime, RuntimeCall,
+	RuntimeEvent, RuntimeOrigin, SessionKeys, TeyrchainSystem, ToZagrosXcmRouterInstance,
+	TrustBackedAssetsInstance, Uniques, WeightToFee, XcmpQueue,
 };
 use asset_test_pezutils::{
 	test_cases_over_bridge::TestBridgingConfig, CollatorSessionKey, CollatorSessionKeys,
@@ -37,31 +43,64 @@ use asset_test_pezutils::{
 use codec::{Decode, Encode};
 use hex_literal::hex;
 use pezframe_support::{
-	assert_ok, parameter_types,
+	assert_err, assert_noop, assert_ok, parameter_types,
 	traits::{
-		fungible::{Inspect, Mutate},
+		fungible::{self, Inspect, Mutate},
 		fungibles::{
-			Create, Inspect as FungiblesInspect, InspectEnumerable, Mutate as FungiblesMutate,
+			self, Create, Inspect as FungiblesInspect, InspectEnumerable, Mutate as FungiblesMutate,
 		},
+		tokens::asset_ops::{
+			common_strategies::{Bytes, Owner},
+			Inspect as InspectUniqueAsset,
+		},
+		ContainsPair,
 	},
 	weights::{Weight, WeightToFee as WeightToFeeT},
 };
+use pezpallet_revive::{
+	test_utils::builder::{BareInstantiateBuilder, Contract},
+	Code, TransactionLimits,
+};
+use pezpallet_revive_fixtures::{compile_module, compile_module_with_type, FixtureType};
+use pezpallet_uniques::{asset_ops::Item, asset_strategies::Attribute};
 use pezsp_consensus_aura::SlotDuration;
 use pezsp_core::crypto::Ss58Codec;
-use pezsp_runtime::traits::MaybeEquivalence;
+use pezsp_runtime::{traits::MaybeEquivalence, MultiAddress};
 use std::convert::Into;
-use testnet_teyrchains_constants::pezkuwichain::{consensus::*, currency::UNITS, fee::WeightToFee};
+use testnet_teyrchains_constants::pezkuwichain::{consensus::*, currency::UNITS};
 use teyrchains_common::{AccountId, AssetIdForTrustBackedAssets, AuraId, Balance};
-use xcm::latest::{
-	prelude::{Assets as XcmAssets, *},
-	ZAGROS_GENESIS_HASH,
+use xcm::{
+	latest::{
+		prelude::{Assets as XcmAssets, *},
+		ZAGROS_GENESIS_HASH,
+	},
+	VersionedXcm,
 };
-use xcm_builder::WithLatestLocationConverter;
+use xcm_builder::{
+	unique_instances::UniqueInstancesAdapter as NewNftAdapter, MatchInClassInstances, NoChecking,
+	NonFungiblesAdapter as OldNftAdapter, WithLatestLocationConverter,
+};
 use xcm_executor::traits::{JustTry, TransactAsset, WeightTrader};
 use xcm_runtime_pezapis::conversions::LocationToAccountHelper;
 
 const ALICE: [u8; 32] = [1u8; 32];
+const BOB: [u8; 32] = [2u8; 32];
 const SOME_ASSET_ADMIN: [u8; 32] = [5u8; 32];
+
+/// The three ERC20 fixtures, compiled from their Solidity rather than read as bytes.
+///
+/// They used to be `include_bytes!` of three `.polkavm` blobs checked in beside their sources,
+/// and nothing in the tree built them. Editing the `.sol` left the blob untouched, so the test
+/// went on passing against the old binary and said nothing -- and `fake_erc20.polkavm` had no
+/// source at all, a binary in the tree that nobody could regenerate or read.
+///
+/// `compile_module_with_type` is what the rest of the fixtures already use, and the crate
+/// already requires resolc to build its other thirty contracts, so this costs no new tooling.
+fn erc20_code(name: &str) -> Vec<u8> {
+	compile_module_with_type(name, FixtureType::Resolc)
+		.unwrap_or_else(|e| panic!("compiling {name}: {e}"))
+		.0
+}
 
 parameter_types! {
 	pub Governance: GovernanceOrigin<RuntimeOrigin> = GovernanceOrigin::Location(GovernanceLocation::get());
@@ -89,6 +128,12 @@ fn slot_durations() -> SlotDurations {
 		relay: SlotDuration::from_millis(RELAY_CHAIN_SLOT_DURATION_MILLIS.into()),
 		para: SlotDuration::from_millis(SLOT_DURATION),
 	}
+}
+
+/// Build a bare_instantiate call.
+fn bare_instantiate(origin: &AccountId, code: Vec<u8>) -> BareInstantiateBuilder<Runtime> {
+	let origin = RuntimeOrigin::signed(origin.clone());
+	BareInstantiateBuilder::<Runtime>::bare_instantiate(origin, Code::Upload(code))
 }
 
 #[test]
@@ -584,6 +629,177 @@ fn test_asset_xcm_trader_not_possible_for_non_sufficient_assets() {
 		});
 }
 
+fn test_nft_asset_transactor_works<T: TransactAsset>() {
+	ExtBuilder::<Runtime>::default()
+		.with_tracing()
+		.with_collators(vec![AccountId::from(ALICE)])
+		.with_session_keys(vec![(
+			AccountId::from(ALICE),
+			AccountId::from(ALICE),
+			SessionKeys { aura: AuraId::from(pezsp_core::sr25519::Public::from_raw(ALICE)) },
+		)])
+		.build()
+		.execute_with(|| {
+			let collection_id = 42;
+			let item_id = 101;
+
+			let alice = AccountId::from(ALICE);
+			let bob = AccountId::from(BOB);
+			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
+
+			assert_ok!(Balances::mint_into(&alice, 2 * UNITS));
+
+			assert_ok!(Uniques::create(
+				RuntimeHelper::origin_of(alice.clone()),
+				collection_id,
+				MultiAddress::Id(alice.clone()),
+			));
+
+			assert_ok!(Uniques::mint(
+				RuntimeHelper::origin_of(alice.clone()),
+				collection_id,
+				item_id,
+				MultiAddress::Id(bob.clone()),
+			));
+
+			let attr_key = vec![0xA, 0xA, 0xB, 0xB];
+			let attr_value = vec![0xC, 0x0, 0x0, 0x1, 0xF, 0x0, 0x0, 0xD];
+
+			assert_ok!(Uniques::set_attribute(
+				RuntimeHelper::origin_of(alice.clone()),
+				collection_id,
+				Some(item_id),
+				attr_key.clone().try_into().unwrap(),
+				attr_value.clone().try_into().unwrap(),
+			));
+
+			let collection_location = UniquesPalletLocation::get()
+				.appended_with(GeneralIndex(collection_id.into()))
+				.unwrap();
+			let item_asset: Asset =
+				(collection_location.clone(), AssetInstance::Index(item_id.into())).into();
+
+			let alice_account_location: Location = alice.clone().into();
+			let bob_account_location: Location = bob.clone().into();
+
+			// Can't deposit the token that isn't withdrawn
+			let item_holding = xcm_executor::AssetsInHolding::new_from_non_fungible(
+				collection_location.clone().into(),
+				AssetInstance::Index(item_id.into()),
+			);
+			assert!(matches!(
+				T::deposit_asset(item_holding, &alice_account_location, Some(&ctx)),
+				Err((_, XcmError::FailedToTransactAsset("AlreadyExists")))
+			));
+
+			// Alice isn't the owner, she can't withdraw the token
+			assert_noop!(
+				T::withdraw_asset(&item_asset, &alice_account_location, Some(&ctx),),
+				XcmError::FailedToTransactAsset("NoPermission")
+			);
+
+			// Bob, the owner, can withdraw the token. The holding it returns is what the
+			// deposit below consumes -- deposit_asset takes a holding, not an asset.
+			let withdrawn_holding =
+				T::withdraw_asset(&item_asset, &bob_account_location, Some(&ctx))
+					.expect("Bob owns the token");
+
+			// The token is withdrawn
+			assert_eq!(
+				Item::<Uniques>::inspect(&(collection_id, item_id), Owner::default()),
+				Err(pezpallet_uniques::Error::<Runtime>::UnknownItem.into()),
+			);
+
+			// But the attribute data is preserved as the pezpallet-uniques works that way.
+			assert_eq!(
+				Item::<Uniques>::inspect(
+					&(collection_id, item_id),
+					Bytes(Attribute(attr_key.as_slice()))
+				),
+				Ok(attr_value.clone()),
+			);
+
+			// Can't withdraw the already withdrawn token
+			assert_err!(
+				T::withdraw_asset(&item_asset, &bob_account_location, Some(&ctx),),
+				XcmError::FailedToTransactAsset("UnknownCollection")
+			);
+
+			// Deposit the token to alice, using the holding bob's withdraw produced
+			assert_ok!(T::deposit_asset(withdrawn_holding, &alice_account_location, Some(&ctx),));
+
+			// The token is deposited
+			assert_eq!(
+				Item::<Uniques>::inspect(&(collection_id, item_id), Owner::default()),
+				Ok(alice.clone()),
+			);
+
+			// The attribute data is the same
+			assert_eq!(
+				Item::<Uniques>::inspect(
+					&(collection_id, item_id),
+					Bytes(Attribute(attr_key.as_slice()))
+				),
+				Ok(attr_value.clone()),
+			);
+
+			// Can't deposit the token twice
+			let item_holding_again = xcm_executor::AssetsInHolding::new_from_non_fungible(
+				collection_location.clone().into(),
+				AssetInstance::Index(item_id.into()),
+			);
+			assert!(matches!(
+				T::deposit_asset(item_holding_again, &alice_account_location, Some(&ctx)),
+				Err((_, XcmError::FailedToTransactAsset("AlreadyExists")))
+			));
+
+			// Transfer the token directly
+			assert_ok!(T::transfer_asset(
+				&item_asset,
+				&alice_account_location,
+				&bob_account_location,
+				&ctx,
+			));
+
+			// The token's owner has changed
+			assert_eq!(
+				Item::<Uniques>::inspect(&(collection_id, item_id), Owner::default()),
+				Ok(bob.clone()),
+			);
+
+			// The attribute data is the same
+			assert_eq!(
+				Item::<Uniques>::inspect(
+					&(collection_id, item_id),
+					Bytes(Attribute(attr_key.as_slice()))
+				),
+				Ok(attr_value.clone()),
+			);
+		});
+}
+
+#[test]
+fn test_new_nft_config_works_as_the_old_one() {
+	type OldNftTransactor = OldNftAdapter<
+		Uniques,
+		UniquesConvertedConcreteId,
+		LocationToAccountId,
+		AccountId,
+		NoChecking,
+		CheckingAccount,
+	>;
+
+	type NewNftTransactor = NewNftAdapter<
+		AccountId,
+		LocationToAccountId,
+		MatchInClassInstances<UniquesConvertedConcreteId>,
+		Item<Uniques>,
+	>;
+
+	test_nft_asset_transactor_works::<OldNftTransactor>();
+	test_nft_asset_transactor_works::<NewNftTransactor>();
+}
+
 #[test]
 fn test_assets_balances_api_works() {
 	use pez_assets_common::runtime_api::runtime_decl_for_fungibles_api::FungiblesApi;
@@ -693,6 +909,91 @@ fn test_assets_balances_api_works() {
 			)
 				.into())));
 		});
+}
+
+#[test]
+fn authorized_aliases_work() {
+	ExtBuilder::<Runtime>::default()
+		.with_tracing()
+		.with_collators(vec![AccountId::from(ALICE)])
+		.with_session_keys(vec![(
+			AccountId::from(ALICE),
+			AccountId::from(ALICE),
+			SessionKeys { aura: AuraId::from(pezsp_core::sr25519::Public::from_raw(ALICE)) },
+		)])
+		.build()
+		.execute_with(|| {
+			let alice: AccountId = ALICE.into();
+			let local_alice = Location::new(0, AccountId32 { network: None, id: ALICE });
+			let alice_on_sibling_para =
+				Location::new(1, [Teyrchain(42), AccountId32 { network: None, id: ALICE }]);
+			let alice_on_relay = Location::new(1, AccountId32 { network: None, id: ALICE });
+			let bob_on_relay = Location::new(1, AccountId32 { network: None, id: [42_u8; 32] });
+
+			assert_ok!(Balances::mint_into(&alice, 2 * UNITS));
+
+			// neither `alice_on_sibling_para`, `alice_on_relay`, `bob_on_relay` are allowed to
+			// alias into `local_alice`
+			for aliaser in [&alice_on_sibling_para, &alice_on_relay, &bob_on_relay] {
+				assert!(!<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+					aliaser,
+					&local_alice
+				));
+			}
+
+			// Alice explicitly authorizes `alice_on_sibling_para` to alias her local account
+			assert_ok!(PezkuwiXcm::add_authorized_alias(
+				RuntimeHelper::origin_of(alice.clone()),
+				Box::new(alice_on_sibling_para.clone().into()),
+				None
+			));
+
+			// `alice_on_sibling_para` now explicitly allowed to alias into `local_alice`
+			assert!(<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+				&alice_on_sibling_para,
+				&local_alice
+			));
+			// as expected, `alice_on_relay` and `bob_on_relay` still can't alias into `local_alice`
+			for aliaser in [&alice_on_relay, &bob_on_relay] {
+				assert!(!<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+					aliaser,
+					&local_alice
+				));
+			}
+
+			// Alice explicitly authorizes `alice_on_relay` to alias her local account
+			assert_ok!(PezkuwiXcm::add_authorized_alias(
+				RuntimeHelper::origin_of(alice.clone()),
+				Box::new(alice_on_relay.clone().into()),
+				None
+			));
+			// Now both `alice_on_relay` and `alice_on_sibling_para` can alias into her local
+			// account
+			for aliaser in [&alice_on_relay, &alice_on_sibling_para] {
+				assert!(<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+					aliaser,
+					&local_alice
+				));
+			}
+
+			// Alice removes authorization for `alice_on_relay` to alias her local account
+			assert_ok!(PezkuwiXcm::remove_authorized_alias(
+				RuntimeHelper::origin_of(alice.clone()),
+				Box::new(alice_on_relay.clone().into())
+			));
+
+			// `alice_on_relay` no longer allowed to alias into `local_alice`
+			assert!(!<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+				&alice_on_relay,
+				&local_alice
+			));
+
+			// `alice_on_sibling_para` still allowed to alias into `local_alice`
+			assert!(<XcmConfig as xcm_executor::Config>::Aliasers::contains(
+				&alice_on_sibling_para,
+				&local_alice
+			));
+		})
 }
 
 asset_test_pezutils::include_teleports_for_native_asset_works!(
@@ -1645,11 +1946,8 @@ fn the_emission_call_encodes_the_way_welati_builds_it() {
 #[test]
 fn pez_cannot_be_minted_or_destroyed_over_xcm() {
 	use asset_hub_pezkuwichain_runtime::{xcm_config::NoTouchingPez, PezAssetId, RuntimeCall};
-	use pezframe_support::traits::{Contains, Get};
+	use pezframe_support::traits::Contains;
 
-	let who = || -> pezsp_runtime::MultiAddress<pezsp_runtime::AccountId32, ()> {
-		pezsp_runtime::MultiAddress::Id(pezsp_runtime::AccountId32::new([0u8; 32]))
-	};
 	let who = || -> pezsp_runtime::MultiAddress<pezsp_runtime::AccountId32, ()> {
 		pezsp_runtime::MultiAddress::Id(pezsp_runtime::AccountId32::new([0u8; 32]))
 	};
@@ -1707,7 +2005,6 @@ mod hez_parameters {
 		dynamic_params::hez, staking::MAX_INFLATION_RATE, Runtime, RuntimeOrigin,
 	};
 	use pezframe_support::{assert_noop, assert_ok, traits::Get};
-	use pezpallet_staking_async::EraPayout as _;
 	use pezsp_runtime::{traits::BadOrigin, BuildStorage, Perbill};
 
 	fn new_test_ext() -> pezsp_io::TestExternalities {
@@ -2207,4 +2504,351 @@ fn the_bond_report_names_every_validator_here() {
 		// Sorted, so the same validators always make the same message.
 		assert_eq!(call, (83u8, 11u8, 3u32, vec![b, a]).encode());
 	});
+}
+
+#[test]
+fn weight_of_message_increases_when_dealing_with_erc20s() {
+	use xcm::VersionedXcm;
+	use xcm_runtime_pezapis::fees::runtime_decl_for_xcm_payment_api::XcmPaymentApiV2;
+	let message = Xcm::<()>::builder_unsafe().withdraw_asset((Parent, 100u128)).build();
+	let versioned = VersionedXcm::<()>::V5(message);
+	let regular_asset_weight = Runtime::query_xcm_weight(versioned).unwrap();
+
+	let message = Xcm::<()>::builder_unsafe()
+		.withdraw_asset((AccountKey20 { network: None, key: [1u8; 20] }, 100u128))
+		.build();
+	let versioned = VersionedXcm::<()>::V5(message);
+	let weight = Runtime::query_xcm_weight(versioned).unwrap();
+	assert!(
+		weight.ref_time() > regular_asset_weight.ref_time()
+			// The proof size really blows up.
+			&& weight.proof_size() > 10 * regular_asset_weight.proof_size()
+	);
+	assert_eq!(weight, crate::xcm_config::ERC20TransferGasLimit::get());
+}
+
+#[test]
+fn withdraw_and_deposit_erc20s() {
+	let sender: AccountId = ALICE.into();
+	let beneficiary: AccountId = BOB.into();
+	let revive_account = pezpallet_revive::Pezpallet::<Runtime>::account_id();
+	let checking_account =
+		asset_hub_pezkuwichain_runtime::xcm_config::ERC20TransfersCheckingAccount::get();
+	let initial_hez_amount = 100_000_000_000_000_000u128;
+	pezsp_tracing::init_for_tests();
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		// Bring the revive account to life.
+		assert_ok!(Balances::mint_into(&revive_account, initial_hez_amount));
+		// We need to give enough funds for every account involved so they
+		// can call `Revive::map_account`.
+		assert_ok!(Balances::mint_into(&sender, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&beneficiary, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&checking_account, initial_hez_amount));
+
+		// We need to map all accounts.
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(checking_account.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
+
+		let code = erc20_code("MyToken");
+
+		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
+		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
+		let Contract { addr: erc20_address, .. } = bare_instantiate(&sender, code)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
+			.data(constructor_data)
+			.build_and_unwrap_contract();
+
+		let sender_balance_before = <Balances as fungible::Inspect<_>>::balance(&sender);
+
+		let erc20_transfer_amount = 100u128;
+		let hez_amount_for_fees = 10_000_000_000_000u128;
+		// Actual XCM to execute locally.
+		let message = Xcm::<RuntimeCall>::builder()
+			.withdraw_asset((Parent, hez_amount_for_fees))
+			.pay_fees((Parent, hez_amount_for_fees))
+			.withdraw_asset((
+				AccountKey20 { key: erc20_address.into(), network: None },
+				erc20_transfer_amount,
+			))
+			.deposit_asset(AllCounted(1), beneficiary.clone())
+			.refund_surplus()
+			.deposit_asset(AllCounted(1), sender.clone())
+			.build();
+		assert_ok!(PezkuwiXcm::execute(
+			RuntimeOrigin::signed(sender.clone()),
+			Box::new(VersionedXcm::V5(message)),
+			Weight::from_parts(600_000_000_000, 15 * 1024 * 1024),
+		));
+
+		// Revive is not taking any fees.
+		let sender_balance_after = <Balances as fungible::Inspect<_>>::balance(&sender);
+		// Balance after is larger than the difference between balance before and transferred
+		// amount because of the refund.
+		assert!(sender_balance_after > sender_balance_before - hez_amount_for_fees);
+
+		// Beneficiary receives the ERC20.
+		let beneficiary_amount =
+			<Revive as fungibles::Inspect<_>>::balance(erc20_address, &beneficiary);
+		assert_eq!(beneficiary_amount, erc20_transfer_amount);
+	});
+}
+
+#[test]
+fn non_existent_erc20_will_error() {
+	let sender: AccountId = ALICE.into();
+	let beneficiary: AccountId = BOB.into();
+	let revive_account = pezpallet_revive::Pezpallet::<Runtime>::account_id();
+	let checking_account =
+		asset_hub_pezkuwichain_runtime::xcm_config::ERC20TransfersCheckingAccount::get();
+	let initial_hez_amount = 10_000_000_000_000u128;
+	// We try to withdraw an ERC20 token but the address doesn't exist.
+	let non_existent_contract_address = [1u8; 20];
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		// Bring the revive account to life.
+		assert_ok!(Balances::mint_into(&revive_account, initial_hez_amount));
+		// We need to give enough funds for every account involved so they
+		// can call `Revive::map_account`.
+		assert_ok!(Balances::mint_into(&sender, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&beneficiary, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&checking_account, initial_hez_amount));
+
+		// We need to map all accounts.
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(checking_account.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
+
+		let hez_amount_for_fees = 1_000_000_000_000u128;
+		let erc20_transfer_amount = 100u128;
+		let message = Xcm::<RuntimeCall>::builder()
+			.withdraw_asset((Parent, hez_amount_for_fees))
+			.pay_fees((Parent, hez_amount_for_fees))
+			.withdraw_asset((
+				AccountKey20 { key: non_existent_contract_address, network: None },
+				erc20_transfer_amount,
+			))
+			.deposit_asset(AllCounted(1), beneficiary.clone())
+			.build();
+		// Execution fails but doesn't panic.
+		assert!(PezkuwiXcm::execute(
+			RuntimeOrigin::signed(sender.clone()),
+			Box::new(VersionedXcm::V5(message)),
+			Weight::from_parts(2_500_000_000, 120_000),
+		)
+		.is_err());
+	});
+}
+
+#[test]
+fn smart_contract_not_erc20_will_error() {
+	let sender: AccountId = ALICE.into();
+	let beneficiary: AccountId = BOB.into();
+	let revive_account = pezpallet_revive::Pezpallet::<Runtime>::account_id();
+	let checking_account =
+		asset_hub_pezkuwichain_runtime::xcm_config::ERC20TransfersCheckingAccount::get();
+	let initial_hez_amount = 10_000_000_000_000u128;
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		// Bring the revive account to life.
+		assert_ok!(Balances::mint_into(&revive_account, initial_hez_amount));
+
+		// We need to give enough funds for every account involved so they
+		// can call `Revive::map_account`.
+		assert_ok!(Balances::mint_into(&sender, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&beneficiary, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&checking_account, initial_hez_amount));
+
+		// We need to map all accounts.
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(checking_account.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
+
+		let (code, _) = compile_module("dummy").unwrap();
+
+		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
+			.build_and_unwrap_contract();
+
+		let hez_amount_for_fees = 1_000_000_000_000u128;
+		let erc20_transfer_amount = 100u128;
+		let message = Xcm::<RuntimeCall>::builder()
+			.withdraw_asset((Parent, hez_amount_for_fees))
+			.pay_fees((Parent, hez_amount_for_fees))
+			.withdraw_asset((
+				AccountKey20 { key: non_erc20_address.into(), network: None },
+				erc20_transfer_amount,
+			))
+			.deposit_asset(AllCounted(1), beneficiary.clone())
+			.build();
+		// Execution fails but doesn't panic.
+		assert!(PezkuwiXcm::execute(
+			RuntimeOrigin::signed(sender.clone()),
+			Box::new(VersionedXcm::V5(message)),
+			Weight::from_parts(2_500_000_000, 120_000),
+		)
+		.is_err());
+	});
+}
+
+// Here the contract returns a number but because it can be cast to true
+// it still succeeds.
+#[test]
+fn smart_contract_does_not_return_bool_fails() {
+	let sender: AccountId = ALICE.into();
+	let beneficiary: AccountId = BOB.into();
+	let revive_account = pezpallet_revive::Pezpallet::<Runtime>::account_id();
+	let checking_account =
+		asset_hub_pezkuwichain_runtime::xcm_config::ERC20TransfersCheckingAccount::get();
+	let initial_hez_amount = 10_000_000_000_000u128;
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		// Bring the revive account to life.
+		assert_ok!(Balances::mint_into(&revive_account, initial_hez_amount));
+
+		// We need to give enough funds for every account involved so they
+		// can call `Revive::map_account`.
+		assert_ok!(Balances::mint_into(&sender, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&beneficiary, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&checking_account, initial_hez_amount));
+
+		// We need to map all accounts.
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(checking_account.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
+
+		// This contract implements the ERC20 interface for `transfer` except it returns a uint256.
+		let code = erc20_code("MyTokenFake");
+
+		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
+		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
+
+		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
+			.data(constructor_data)
+			.build_and_unwrap_contract();
+
+		let hez_amount_for_fees = 1_000_000_000_000u128;
+		let erc20_transfer_amount = 100u128;
+		let message = Xcm::<RuntimeCall>::builder()
+			.withdraw_asset((Parent, hez_amount_for_fees))
+			.pay_fees((Parent, hez_amount_for_fees))
+			.withdraw_asset((
+				AccountKey20 { key: non_erc20_address.into(), network: None },
+				erc20_transfer_amount,
+			))
+			.deposit_asset(AllCounted(1), beneficiary.clone())
+			.build();
+		// Execution fails but doesn't panic.
+		assert!(PezkuwiXcm::execute(
+			RuntimeOrigin::signed(sender.clone()),
+			Box::new(VersionedXcm::V5(message)),
+			Weight::from_parts(2_500_000_000, 220_000),
+		)
+		.is_err());
+	});
+}
+
+#[test]
+fn expensive_erc20_runs_out_of_gas() {
+	let sender: AccountId = ALICE.into();
+	let beneficiary: AccountId = BOB.into();
+	let revive_account = pezpallet_revive::Pezpallet::<Runtime>::account_id();
+	let checking_account =
+		asset_hub_pezkuwichain_runtime::xcm_config::ERC20TransfersCheckingAccount::get();
+	let initial_hez_amount = 10_000_000_000_000u128;
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		// Bring the revive account to life.
+		assert_ok!(Balances::mint_into(&revive_account, initial_hez_amount));
+
+		// We need to give enough funds for every account involved so they
+		// can call `Revive::map_account`.
+		assert_ok!(Balances::mint_into(&sender, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&beneficiary, initial_hez_amount));
+		assert_ok!(Balances::mint_into(&checking_account, initial_hez_amount));
+
+		// We need to map all accounts.
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(checking_account.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
+		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
+
+		// This contract does a lot more storage writes in `transfer`.
+		let code = erc20_code("MyTokenExpensive");
+
+		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
+		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
+		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
+			.data(constructor_data)
+			.build_and_unwrap_contract();
+
+		let hez_amount_for_fees = 1_000_000_000_000u128;
+		let erc20_transfer_amount = 100u128;
+		let message = Xcm::<RuntimeCall>::builder()
+			.withdraw_asset((Parent, hez_amount_for_fees))
+			.pay_fees((Parent, hez_amount_for_fees))
+			.withdraw_asset((
+				AccountKey20 { key: non_erc20_address.into(), network: None },
+				erc20_transfer_amount,
+			))
+			.deposit_asset(AllCounted(1), beneficiary.clone())
+			.build();
+		// Execution fails but doesn't panic.
+		assert!(PezkuwiXcm::execute(
+			RuntimeOrigin::signed(sender.clone()),
+			Box::new(VersionedXcm::V5(message)),
+			Weight::from_parts(2_500_000_000, 120_000),
+		)
+		.is_err());
+	});
+}
+
+/// This chain must be able to receive a teleport at all.
+///
+/// `receive_teleported_asset` carries `u64::MAX` when its benchmark did not produce a
+/// measurement -- which is what the generator writes when the benchmark's `CheckedAccount`
+/// disagrees with the runtime's `TeleportTracking`, as it did on Zagros. An instruction weighted
+/// at `u64::MAX` can never fit in a block, so every incoming teleport would be refused before it
+/// executes, and the failure surfaces elsewhere only as an opaque `Overflow` during weight
+/// calculation.
+///
+/// The fix is never a number typed into the weights file. Re-run
+/// `pezpallet_xcm_benchmarks::fungible` against this runtime and import the result.
+#[test]
+fn this_chain_can_be_teleported_to() {
+	use asset_hub_pezkuwichain_runtime::weights::xcm::pezpallet_xcm_benchmarks_fungible::WeightInfo as XcmFungibleWeight;
+
+	let weight = XcmFungibleWeight::<Runtime>::receive_teleported_asset();
+	assert!(
+		weight.ref_time() < u64::MAX / 2,
+		"receive_teleported_asset is weighted at {} -- the benchmark for it never ran, and \
+		 this chain therefore rejects every teleport into it",
+		weight.ref_time()
+	);
+}
+
+/// EIP-155 chain id. The fork carried an upstream test network's id, so a transaction signed for
+/// that network was valid here and wallets listed this chain under its name. Ids from the upstream
+/// 4204204xx family are refused outright, and the value is pinned to our own.
+#[test]
+fn evm_chain_id_is_our_own() {
+	let id = <<Runtime as pezpallet_revive::Config>::ChainId as pezframe_support::traits::Get<
+		u64,
+	>>::get();
+	assert!(!(420_420_400..420_420_500).contains(&id), "upstream EVM chain id {id}");
+	assert_eq!(id, 1920);
 }

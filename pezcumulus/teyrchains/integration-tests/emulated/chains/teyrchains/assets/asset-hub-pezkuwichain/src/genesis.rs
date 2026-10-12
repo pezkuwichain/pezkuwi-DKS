@@ -74,6 +74,13 @@ pub fn genesis() -> Storage {
 					asset_hub_pezkuwichain_runtime::xcm_config::CheckingAccount::get(),
 					ED * 100_000,
 				)))
+				// The collators' pot, which native XCM fees are resolved into. Without it a fee
+				// below ED is dropped rather than paid, and the supply shrinks by it. The
+				// Zagros twin explains how the teleport tests found it.
+				.chain(std::iter::once((
+					asset_hub_pezkuwichain_runtime::xcm_config::StakingPot::get(),
+					ED,
+				)))
 				.collect(),
 			..Default::default()
 		},
