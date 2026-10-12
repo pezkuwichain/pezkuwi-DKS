@@ -21,6 +21,10 @@ on:
       - .github/workflows/dev-node-image.yml
       - docker/dockerfiles/bizinikiwi_injected.Dockerfile
 
+# Read-only unless a job says otherwise; only `image` writes, and only to packages.
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
