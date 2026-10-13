@@ -92,4 +92,15 @@
 # Measured (run 38003454834): messaging `register_encryption_key` and `send_message` came back at
 # ~1.8-2x the stubbed figures (reads 2->4, 4->7: `IdentityKyc::KycStatuses`, `Trust::TrustScores`),
 # trust `force_recalculate_trust_score` at ~1.4x (reads 3->4). The files are in the tree.
-runs: []
+# 2026-10-13: weights that had never been measured on these runtimes, asked for before genesis.
+# Revive and the permit precompile were running on the kitchensink reference figures on both
+# Asset Hubs. The mainnet Asset Hub's fungible XCM weights predate its teleport checking account
+# and the revive account mapper, and the mainnet People chain's alias weights were copied from
+# its twin rather than measured. Both twins each time, so they cannot drift.
+runs:
+  - runtime: asset-hub-zagros asset-hub-pezkuwichain
+    pallet: pezpallet_revive pezpallet_assets_precompiles::permit pezpallet_xcm_benchmarks::fungible
+    why: revive and permit never measured here; mainnet fungible predates CheckedAccount and AutoMapper
+  - runtime: people-zagros people-pezkuwichain
+    pallet: pezpallet_xcm pezpallet_xcm_benchmarks::generic
+    why: mainnet People alias weights were copied from the twin, not measured
