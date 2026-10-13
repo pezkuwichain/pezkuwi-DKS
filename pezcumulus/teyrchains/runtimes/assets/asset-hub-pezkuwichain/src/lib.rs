@@ -1289,7 +1289,9 @@ impl pezpallet_treasury::Config for Runtime {
 	// somebody else's hardware -- the same caveat every weight file here carries
 	// -- and a wrong non-zero number is not in the same class as no number.
 	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
-	type SpendFunds = ();
+	// Approved bounties are funded in the treasury's spend period, through this hook. With `()`
+	// a bounty could be approved and would never leave `Approved`.
+	type SpendFunds = Bounties;
 	// Root, or a spender the economic franchise elected to trust with an amount.
 	//
 	// Root alone meant there was no governance path to this treasury at all: the five
@@ -1303,8 +1305,7 @@ impl pezpallet_treasury::Config for Runtime {
 	type AssetKind = ();
 	type Beneficiary = AccountId;
 	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
-	type Paymaster =
-		pezframe_support::traits::tokens::pay::PayFromAccount<Balances, TreasuryAccount>;
+	type Paymaster = pez_assets_common::treasury::PayFromPot<Balances, TreasuryAccount>;
 	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
 	type PayoutPeriod = PayoutSpendPeriod;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
@@ -1382,15 +1383,14 @@ impl pezpallet_treasury::Config<AirdropPotInstance> for Runtime {
 	// origin may spend" into "this origin may spend up to this much", and the amount it
 	// returns is what the pallet checks the spend against.
 	type SpendOrigin = pezframe_system::EnsureWithSuccess<
-		EnsureXcm<Equals<PeopleLocation>>,
+		pez_assets_common::treasury::EnsureXcmFrom<PeopleLocation>,
 		AccountId,
 		AirdropSpendCeiling,
 	>;
 	type AssetKind = ();
 	type Beneficiary = AccountId;
 	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
-	type Paymaster =
-		pezframe_support::traits::tokens::pay::PayFromAccount<Balances, AirdropPotAccount>;
+	type Paymaster = pez_assets_common::treasury::PayFromPot<Balances, AirdropPotAccount>;
 	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
 	type PayoutPeriod = PayoutSpendPeriod;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
@@ -1419,15 +1419,14 @@ impl pezpallet_treasury::Config<PresalePotInstance> for Runtime {
 	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
 	type SpendFunds = ();
 	type SpendOrigin = pezframe_system::EnsureWithSuccess<
-		EnsureXcm<Equals<PeopleLocation>>,
+		pez_assets_common::treasury::EnsureXcmFrom<PeopleLocation>,
 		AccountId,
 		PresaleSpendCeiling,
 	>;
 	type AssetKind = ();
 	type Beneficiary = AccountId;
 	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
-	type Paymaster =
-		pezframe_support::traits::tokens::pay::PayFromAccount<Balances, PresalePotAccount>;
+	type Paymaster = pez_assets_common::treasury::PayFromPot<Balances, PresalePotAccount>;
 	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
 	type PayoutPeriod = PresalePayoutPeriod;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;

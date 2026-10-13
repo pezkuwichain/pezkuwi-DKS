@@ -24,6 +24,7 @@ pub mod local_and_foreign_assets;
 pub mod matching;
 pub mod migrations;
 pub mod runtime_api;
+pub mod treasury;
 
 pub use erc20_transactor::ERC20Transactor;
 
