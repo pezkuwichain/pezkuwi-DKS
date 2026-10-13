@@ -288,9 +288,12 @@ pub fn para_to_system_para_receiver_assertions(t: ParaToSystemParaTest) {
 
 fn system_para_to_para_assets_sender_assertions(t: SystemParaToParaTest) {
 	type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
-	// Measured against this runtime's weights.
+	// Measured against this runtime's weights, which are the reference box's since
+	// "Take the reference-box weights for ten runtimes". The figure moves whenever the Asset
+	// Hub's XCM weights are re-measured; the assertion tolerates a third either way, so a
+	// change past that is meant to be looked at and the number re-measured here.
 	AssetHubZagros::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(
-		1_155_268_000,
+		1_834_598_000,
 		12_416,
 	)));
 	assert_expected_events!(
