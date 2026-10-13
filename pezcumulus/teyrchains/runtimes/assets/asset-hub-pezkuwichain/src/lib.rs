@@ -2097,6 +2097,18 @@ mod benches {
 		[pezpallet_asset_conversion_ops, AssetConversionMigration]
 		[pezpallet_assets_precompiles::permit, AssetsPrecompilesPermit]
 		[pezpallet_revive, Revive]
+		// Treasury, bounties and OpenGov run on this chain; without these entries their weights
+		// stay the pallets' own defaults, measured on a different machine.
+		[pezpallet_treasury, Treasury]
+		[pezpallet_treasury, AirdropPot]
+		[pezpallet_treasury, PresalePot]
+		[pezpallet_asset_rate, AssetRate]
+		[pezpallet_bounties, Bounties]
+		[pezpallet_child_bounties, ChildBounties]
+		[pezpallet_nis, Nis]
+		[pezpallet_scheduler, Scheduler]
+		[pezpallet_preimage, Preimage]
+		[pezpallet_conviction_voting, ConvictionVoting]
 		// XCM
 		[pezpallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		// NOTE: Make sure you point to the individual modules below.
