@@ -1477,7 +1477,7 @@ parameter_types! {
 // and domain separator. Without it the precompile set does not satisfy its bounds.
 impl pezpallet_assets_precompiles::PermitConfig for Runtime {
 	type ChainId = <Runtime as pezpallet_revive::Config>::ChainId;
-	type WeightInfo = pezpallet_assets_precompiles::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = pezpallet_assets_precompiles::permit_weights::BizinikiwiWeight<Runtime>;
 }
 
 impl pezpallet_bounties::Config for Runtime {
@@ -2111,6 +2111,8 @@ mod benches {
 		[pezcumulus_pezpallet_xcmp_queue, XcmpQueue]
 		[pezpallet_xcm_bridge_hub_router, ToPezkuwichain]
 		[pezpallet_asset_conversion_ops, AssetConversionMigration]
+		[pezpallet_assets_precompiles::permit, AssetsPrecompilesPermit]
+		[pezpallet_revive, Revive]
 		// XCM
 		[pezpallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		// NOTE: Make sure you point to the individual modules below.
