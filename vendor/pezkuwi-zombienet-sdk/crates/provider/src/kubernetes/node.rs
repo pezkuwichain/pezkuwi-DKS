@@ -254,7 +254,7 @@ where
 			.await
 			.map_err(|err| ProviderError::NodeSpawningFailed(self.name.clone(), err.into()))?;
 
-		let serialized_manifest = serde_yaml::to_string(&manifest)
+		let serialized_manifest = serde_saphyr::to_string(&manifest)
 			.map_err(|err| ProviderError::NodeSpawningFailed(self.name.to_string(), err.into()))?;
 
 		let dest_path = PathBuf::from_iter([
@@ -301,7 +301,7 @@ where
 			.await
 			.map_err(|err| ProviderError::FileServerSetupError(err.into()))?;
 
-		let serialized_service_manifest = serde_yaml::to_string(&service_manifest)
+		let serialized_service_manifest = serde_saphyr::to_string(&service_manifest)
 			.map_err(|err| ProviderError::FileServerSetupError(err.into()))?;
 
 		let service_dest_path = PathBuf::from_iter([

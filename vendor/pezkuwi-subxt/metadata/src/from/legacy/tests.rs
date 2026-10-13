@@ -35,8 +35,18 @@ fn legacy_dicle_metadata(version: u8) -> (u64, RuntimeMetadata) {
 /// Load our dicle types.
 /// TODO: This is WRONG at the moment; change to point to dicle types when they exist:
 fn dicle_types() -> scale_info_legacy::ChainTypeRegistry {
-	// frame-decode is an external crate (v0.15.0) that uses original naming
-	frame_decode::legacy_types::polkadot::relay_chain()
+	// The same file `frame_decode::legacy_types::polkadot::relay_chain()` embeds (frame-decode
+	// 0.15.0), read here with serde-saphyr: that function needs frame-decode's `legacy-types`
+	// feature, which parses it with serde_yaml and so pulls in the unmaintained unsafe-libyaml.
+	// The file maps `ChangesTrieConfiguration` twice. serde_yaml kept the later entry without a
+	// word; serde-saphyr refuses unless told, so it is told to do what serde_yaml did.
+	serde_saphyr::from_str_with_options(
+		include_str!("../../../../artifacts/legacy-types/polkadot_relay_types.yaml"),
+		serde_saphyr::options! {
+			duplicate_keys: serde_saphyr::options::DuplicateKeyPolicy::LastWins,
+		},
+	)
+	.expect("legacy relay chain types are valid YAML")
 }
 
 /// Sanitizing paths changes things between old and new, so disable this in tests by default

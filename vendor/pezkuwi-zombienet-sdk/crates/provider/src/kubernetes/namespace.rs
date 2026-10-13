@@ -185,7 +185,7 @@ where
 				ProviderError::CreateNamespaceFailed(self.name.to_string(), err.into())
 			})?;
 
-		let serialized_manifest = serde_yaml::to_string(&manifest).map_err(|err| {
+		let serialized_manifest = serde_saphyr::to_string(&manifest).map_err(|err| {
 			ProviderError::CreateNamespaceFailed(self.name.to_string(), err.into())
 		})?;
 
@@ -262,7 +262,7 @@ where
 			.map_err(|err| ProviderError::FileServerSetupError(err.into()))?;
 
 		// TODO: remove duplication across methods
-		let pod_serialized_manifest = serde_yaml::to_string(&pod_manifest)
+		let pod_serialized_manifest = serde_saphyr::to_string(&pod_manifest)
 			.map_err(|err| ProviderError::FileServerSetupError(err.into()))?;
 
 		let pod_dest_path =
@@ -282,7 +282,7 @@ where
 			.await
 			.map_err(|err| ProviderError::FileServerSetupError(err.into()))?;
 
-		let serialized_service_manifest = serde_yaml::to_string(&service_manifest)
+		let serialized_service_manifest = serde_saphyr::to_string(&service_manifest)
 			.map_err(|err| ProviderError::FileServerSetupError(err.into()))?;
 
 		let service_dest_path = PathBuf::from_iter([
@@ -331,7 +331,7 @@ where
 				ProviderError::CreateNamespaceFailed(self.name.to_string(), err.into())
 			})?;
 
-		let serializer_manifest = serde_yaml::to_string(&manifest).map_err(|err| {
+		let serializer_manifest = serde_saphyr::to_string(&manifest).map_err(|err| {
 			ProviderError::CreateNamespaceFailed(self.name.to_string(), err.into())
 		})?;
 

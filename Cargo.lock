@@ -5523,7 +5523,6 @@ dependencies = [
  "scale-info",
  "scale-info-legacy",
  "scale-type-resolver",
- "serde_yaml",
  "sp-crypto-hashing",
  "thiserror 2.0.18",
 ]
@@ -14003,8 +14002,8 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rand_distr",
  "serde",
+ "serde-saphyr",
  "serde_json",
- "serde_yaml",
  "sha1 0.10.6",
  "strum 0.26.3",
  "tikv-jemallocator",
@@ -14142,6 +14141,7 @@ dependencies = [
  "scale-info",
  "scale-info-legacy",
  "scale-type-resolver",
+ "serde-saphyr",
  "thiserror 1.0.69",
 ]
 
@@ -14548,8 +14548,8 @@ dependencies = [
  "regex",
  "reqwest 0.12.28",
  "serde",
+ "serde-saphyr",
  "serde_json",
- "serde_yaml",
  "sha2 0.10.9",
  "tar",
  "thiserror 1.0.69",
@@ -24095,19 +24095,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_yaml"
-version = "0.9.34+deprecated"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a8b1a1a2ebf674015cc02edccce75287f1a0130d394307b36743c2f5d504b47"
-dependencies = [
- "indexmap 2.14.0",
- "itoa",
- "ryu",
- "serde",
- "unsafe-libyaml",
-]
-
-[[package]]
 name = "serdect"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -26165,12 +26152,6 @@ dependencies = [
  "crypto-common 0.1.7",
  "subtle 2.6.1",
 ]
-
-[[package]]
-name = "unsafe-libyaml"
-version = "0.2.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
 
 [[package]]
 name = "unsigned-varint"
