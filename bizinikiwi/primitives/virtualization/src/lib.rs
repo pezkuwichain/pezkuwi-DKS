@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! This crate is intended for use by runtime code (e.g. pezpallet-contracts) to spawn PolkaVM
+//! This crate is intended for use by runtime code (e.g. pezpallet-revive) to spawn PolkaVM
 //! instances and execute calls into them. Its purpose is to add one layer of abstraction so that
 //! it works transparently from the actual runtime (via the host functions defined in this crate)
 //! but also from tests (which run natively).

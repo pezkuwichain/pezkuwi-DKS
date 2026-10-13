@@ -20,7 +20,7 @@
 //! #### Smart Contracts in Bizinikiwi
 //! Smart Contracts are autonomous, programmable constructs deployed on the blockchain.
 //! In [FRAME](crate::pezkuwi_sdk::frame_runtime), Smart Contracts infrastructure is implemented by the
-//! [`pezpallet_contracts`] for WASM-based contracts or the
+//! [`pezpallet_revive`](::pezkuwi_sdk::pezpallet_revive) for PolkaVM- and EVM-bytecode contracts or the
 //! [`pezpallet_evm`](https://github.com/polkadot-evm/frontier/tree/master/frame/evm) for EVM-compatible contracts. These pallets
 //! enable Smart Contract developers to build applications and systems on top of a Bizinikiwi-based
 //! blockchain.
@@ -108,7 +108,7 @@
 //! - **Deployment and Iteration**: Smart Contracts, by nature, are designed for more
 //!   straightforward deployment and iteration. Developers can quickly deploy contracts.
 //! - **Contract Code Updates**: Once deployed, although typically immutable, Smart Contracts can be
-//!   upgraded, but lack of migration logic. The [`pezpallet_contracts`]
+//!   upgraded, but lack of migration logic. The [`pezpallet_revive`](::pezkuwi_sdk::pezpallet_revive)
 //!   allows for contracts to be upgraded by exposing the `set_code` dispatchable. More details on this
 //!   can be found in [Ink! documentation on upgradeable contracts](https://use.ink/basics/upgradeable-contracts).
 //! - **Isolated Impact**: Upgrades or changes to a smart contract generally impact only that

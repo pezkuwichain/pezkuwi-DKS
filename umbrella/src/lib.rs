@@ -731,26 +731,6 @@ pub use pezpallet_collective;
 #[cfg(feature = "pezpallet-collective-content")]
 pub use pezpallet_collective_content;
 
-/// FRAME pezpallet for WASM contracts.
-#[cfg(feature = "pezpallet-contracts")]
-pub use pezpallet_contracts;
-
-/// Fixtures for testing contracts pezpallet.
-#[cfg(feature = "pezpallet-contracts-fixtures")]
-pub use pezpallet_contracts_fixtures;
-
-/// A mock network for testing pezpallet-contracts.
-#[cfg(feature = "pezpallet-contracts-mock-network")]
-pub use pezpallet_contracts_mock_network;
-
-/// Procedural macros used in pezpallet_contracts.
-#[cfg(feature = "pezpallet-contracts-proc-macro")]
-pub use pezpallet_contracts_proc_macro;
-
-/// Exposes all the host functions that a contract can import.
-#[cfg(feature = "pezpallet-contracts-uapi")]
-pub use pezpallet_contracts_uapi;
-
 /// FRAME pezpallet for conviction voting in referenda.
 #[cfg(feature = "pezpallet-conviction-voting")]
 pub use pezpallet_conviction_voting;

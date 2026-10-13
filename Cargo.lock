@@ -4706,12 +4706,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1435fa1053d8b2fbbe9be7e97eca7f33d37b28409959813daefc1446a14247f1"
 
 [[package]]
-name = "downcast-rs"
-version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
-
-[[package]]
 name = "drawille"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6710,12 +6704,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "indexmap-nostd"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e04e2fd2b8188ea827b32ef11de88377086d690286ab35747ef7f9bf3ccb590"
-
-[[package]]
 name = "indicatif"
 version = "0.18.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8075,12 +8063,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "multi-stash"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "685a9ac4b61f4e728e1d2c6a7844609c16527aeb5e6c865915c08e619c16410f"
-
-[[package]]
 name = "multiaddr"
 version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8354,17 +8336,6 @@ name = "num-conv"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf97ec579c3c42f953ef76dbf8d55ac91fb219dde70e49aa4a6b7d74e9919050"
-
-[[package]]
-name = "num-derive"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
-dependencies = [
- "proc-macro2 1.0.106",
- "quote 1.0.46",
- "syn 2.0.118",
-]
 
 [[package]]
 name = "num-format"
@@ -13417,11 +13388,6 @@ dependencies = [
  "pezpallet-collator-selection",
  "pezpallet-collective",
  "pezpallet-collective-content",
- "pezpallet-contracts",
- "pezpallet-contracts-fixtures",
- "pezpallet-contracts-mock-network",
- "pezpallet-contracts-proc-macro",
- "pezpallet-contracts-uapi",
  "pezpallet-conviction-voting",
  "pezpallet-core-fellowship",
  "pezpallet-dap",
@@ -13684,7 +13650,6 @@ dependencies = [
  "pezpallet-babe",
  "pezpallet-balances",
  "pezpallet-collective",
- "pezpallet-contracts",
  "pezpallet-default-config-example",
  "pezpallet-democracy",
  "pezpallet-example-authorization-tx-extension",
@@ -15511,111 +15476,6 @@ dependencies = [
  "pezsp-core",
  "pezsp-io",
  "pezsp-runtime",
- "scale-info",
-]
-
-[[package]]
-name = "pezpallet-contracts"
-version = "27.0.0"
-dependencies = [
- "array-bytes 6.2.3",
- "assert_matches",
- "environmental",
- "impl-trait-for-tuples",
- "log",
- "parity-scale-codec",
- "paste",
- "pezframe-benchmarking",
- "pezframe-support",
- "pezframe-system",
- "pezpallet-balances",
- "pezpallet-contracts-fixtures",
- "pezpallet-contracts-proc-macro",
- "pezpallet-contracts-uapi",
- "pezpallet-insecure-randomness-collective-flip",
- "pezpallet-proxy",
- "pezpallet-timestamp",
- "pezpallet-utility",
- "pezsp-api",
- "pezsp-core",
- "pezsp-io",
- "pezsp-keystore",
- "pezsp-runtime",
- "pezsp-tracing",
- "pezstaging-xcm",
- "pezstaging-xcm-builder",
- "pretty_assertions",
- "rand 0.8.6",
- "rand_pcg 0.3.1",
- "scale-info",
- "serde",
- "smallvec",
- "wasm-encoder 0.236.1",
- "wasmi",
- "wat",
-]
-
-[[package]]
-name = "pezpallet-contracts-fixtures"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "pezframe-system",
- "pezsp-runtime",
- "tempfile",
- "toml 0.8.23",
- "twox-hash",
- "wasm-encoder 0.236.1",
- "wasmparser 0.236.1",
-]
-
-[[package]]
-name = "pezpallet-contracts-mock-network"
-version = "3.0.0"
-dependencies = [
- "parity-scale-codec",
- "pezframe-support",
- "pezframe-system",
- "pezkuwi-primitives",
- "pezkuwi-runtime-teyrchains",
- "pezkuwi-teyrchain-primitives",
- "pezpallet-assets",
- "pezpallet-balances",
- "pezpallet-contracts",
- "pezpallet-contracts-fixtures",
- "pezpallet-contracts-uapi",
- "pezpallet-message-queue",
- "pezpallet-timestamp",
- "pezpallet-xcm",
- "pezsp-api",
- "pezsp-core",
- "pezsp-io",
- "pezsp-keystore",
- "pezsp-runtime",
- "pezsp-tracing",
- "pezstaging-xcm",
- "pezstaging-xcm-builder",
- "pezstaging-xcm-executor",
- "scale-info",
- "xcm-pez-simulator",
-]
-
-[[package]]
-name = "pezpallet-contracts-proc-macro"
-version = "18.0.0"
-dependencies = [
- "proc-macro2 1.0.106",
- "quote 1.0.46",
- "syn 2.0.118",
-]
-
-[[package]]
-name = "pezpallet-contracts-uapi"
-version = "5.0.0"
-dependencies = [
- "bitflags 1.3.2",
- "parity-scale-codec",
- "paste",
  "scale-info",
 ]
 
@@ -21387,7 +21247,6 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-util",
- "wat",
 ]
 
 [[package]]
@@ -22508,7 +22367,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59cad018caf63deb318e5a4586d99a24424a364f40f1e5778c29aca23f4fc73e"
 dependencies = [
  "rand_core 0.6.4",
- "serde",
 ]
 
 [[package]]
@@ -24687,17 +24545,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "string-interner"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c6a0d765f5807e98a091107bae0a56ea3799f66a5de47b2c84c94a39c09974e"
-dependencies = [
- "cfg-if",
- "hashbrown 0.14.5",
- "serde",
-]
-
-[[package]]
 name = "stringprep"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -26604,46 +26451,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasmi"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50386c99b9c32bd2ed71a55b6dd4040af2580530fae8bdb9a6576571a80d0cca"
-dependencies = [
- "arrayvec",
- "multi-stash",
- "num-derive",
- "num-traits",
- "smallvec",
- "spin",
- "wasmi_collections",
- "wasmi_core",
- "wasmparser-nostd",
-]
-
-[[package]]
-name = "wasmi_collections"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c128c039340ffd50d4195c3f8ce31aac357f06804cfc494c8b9508d4b30dca4"
-dependencies = [
- "ahash 0.8.12",
- "hashbrown 0.14.5",
- "string-interner",
-]
-
-[[package]]
-name = "wasmi_core"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a23b3a7f6c8c3ceeec6b83531ee61f0013c56e51cbf2b14b0f213548b23a4b41"
-dependencies = [
- "downcast-rs",
- "libm",
- "num-traits",
- "paste",
-]
-
-[[package]]
 name = "wasmparser"
 version = "0.236.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -26665,15 +26472,6 @@ dependencies = [
  "bitflags 2.10.0",
  "indexmap 2.14.0",
  "semver 1.0.27",
-]
-
-[[package]]
-name = "wasmparser-nostd"
-version = "0.100.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5a015fe95f3504a94bb1462c717aae75253e39b9dd6c3fb1062c934535c64aa"
-dependencies = [
- "indexmap-nostd",
 ]
 
 [[package]]

@@ -1482,52 +1482,8 @@ parameter_types! {
 	pub const DepositPerItem: Balance = deposit(1, 0);
 	pub const DepositPerChildTrieItem: Balance = deposit(1, 0) / 100;
 	pub const DepositPerByte: Balance = deposit(0, 1);
-	pub const DefaultDepositLimit: Balance = deposit(1024, 1024 * 1024);
-	pub Schedule: pezpallet_contracts::Schedule<Runtime> = Default::default();
 	pub CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(30);
 	pub const MaxEthExtrinsicWeight: FixedU128 = FixedU128::from_rational(9, 10);
-}
-
-impl pezpallet_contracts::Config for Runtime {
-	type Time = Timestamp;
-	type Randomness = RandomnessCollectiveFlip;
-	type Currency = Balances;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	/// The safest default is to allow no calls at all.
-	///
-	/// Runtimes should whitelist dispatchables that are allowed to be called from contracts
-	/// and make sure they are stable. Dispatchables exposed to contracts are not allowed to
-	/// change because that would break already deployed contracts. The `Call` structure itself
-	/// is not allowed to change the indices of existing pallets, too.
-	type CallFilter = Nothing;
-	type DepositPerItem = DepositPerItem;
-	type DepositPerByte = DepositPerByte;
-	type DefaultDepositLimit = DefaultDepositLimit;
-	type CallStack = [pezpallet_contracts::Frame<Self>; 5];
-	type WeightPrice = pezpallet_transaction_payment::Pezpallet<Self>;
-	type WeightInfo = pezpallet_contracts::weights::BizinikiwiWeight<Self>;
-	type ChainExtension = ();
-	type Schedule = Schedule;
-	type AddressGenerator = pezpallet_contracts::DefaultAddressGenerator;
-	type MaxCodeLen = ConstU32<{ 123 * 1024 }>;
-	type MaxStorageKeyLen = ConstU32<128>;
-	type UnsafeUnstableInterface = ConstBool<false>;
-	type UploadOrigin = EnsureSigned<Self::AccountId>;
-	type InstantiateOrigin = EnsureSigned<Self::AccountId>;
-	type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
-	type MaxTransientStorageSize = ConstU32<{ 1 * 1024 * 1024 }>;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type Migrations = ();
-	#[cfg(feature = "runtime-benchmarks")]
-	type Migrations = pezpallet_contracts::migration::codegen::BenchMigrations;
-	type MaxDelegateDependencies = ConstU32<32>;
-	type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
-	type Debug = ();
-	type Environment = ();
-	type ApiVersion = ();
-	type Xcm = ();
 }
 
 // The ERC20 precompiles gained EIP-2612 permits, which need somewhere to keep the nonces that
@@ -2719,9 +2675,6 @@ mod runtime {
 	#[runtime::pezpallet_index(20)]
 	pub type AssetRate = pezpallet_asset_rate::Pezpallet<Runtime>;
 
-	#[runtime::pezpallet_index(21)]
-	pub type Contracts = pezpallet_contracts::Pezpallet<Runtime>;
-
 	#[runtime::pezpallet_index(22)]
 	pub type Sudo = pezpallet_sudo::Pezpallet<Runtime>;
 
@@ -3017,14 +2970,8 @@ const IDENTITY_MIGRATION_KEY_LIMIT: u64 = u64::MAX;
 type Migrations = (
 	pezpallet_nomination_pools::migration::versioned::V6ToV7<Runtime>,
 	pezpallet_alliance::migration::Migration<Runtime>,
-	pezpallet_contracts::Migration<Runtime>,
 	pezpallet_identity::migration::versioned::V0ToV1<Runtime, IDENTITY_MIGRATION_KEY_LIMIT>,
 );
-
-type EventRecord = pezframe_system::EventRecord<
-	<Runtime as pezframe_system::Config>::RuntimeEvent,
-	<Runtime as pezframe_system::Config>::Hash,
->;
 
 parameter_types! {
 	pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
@@ -3182,7 +3129,6 @@ mod benches {
 		[pezpallet_child_bounties, ChildBounties]
 		[pezpallet_collective, Council]
 		[pezpallet_conviction_voting, ConvictionVoting]
-		[pezpallet_contracts, Contracts]
 		[pezpallet_revive, Revive]
 		[pezpallet_core_fellowship, CoreFellowship]
 		[pezpallet_example_tasks, TasksExample]
@@ -3500,80 +3446,6 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 	{
 		fn account_balances(account: AccountId) -> Vec<(u32, Balance)> {
 			Assets::account_balances(account)
-		}
-	}
-
-	impl pezpallet_contracts::ContractsApi<Block, AccountId, Balance, BlockNumber, Hash, EventRecord> for Runtime
-	{
-		fn call(
-			origin: AccountId,
-			dest: AccountId,
-			value: Balance,
-			gas_limit: Option<Weight>,
-			storage_deposit_limit: Option<Balance>,
-			input_data: Vec<u8>,
-		) -> pezpallet_contracts::ContractExecResult<Balance, EventRecord> {
-			let gas_limit = gas_limit.unwrap_or(RuntimeBlockWeights::get().max_block);
-			Contracts::bare_call(
-				origin,
-				dest,
-				value,
-				gas_limit,
-				storage_deposit_limit,
-				input_data,
-				pezpallet_contracts::DebugInfo::UnsafeDebug,
-				pezpallet_contracts::CollectEvents::UnsafeCollect,
-				pezpallet_contracts::Determinism::Enforced,
-			)
-		}
-
-		fn instantiate(
-			origin: AccountId,
-			value: Balance,
-			gas_limit: Option<Weight>,
-			storage_deposit_limit: Option<Balance>,
-			code: pezpallet_contracts::Code<Hash>,
-			data: Vec<u8>,
-			salt: Vec<u8>,
-		) -> pezpallet_contracts::ContractInstantiateResult<AccountId, Balance, EventRecord>
-		{
-			let gas_limit = gas_limit.unwrap_or(RuntimeBlockWeights::get().max_block);
-			Contracts::bare_instantiate(
-				origin,
-				value,
-				gas_limit,
-				storage_deposit_limit,
-				code,
-				data,
-				salt,
-				pezpallet_contracts::DebugInfo::UnsafeDebug,
-				pezpallet_contracts::CollectEvents::UnsafeCollect,
-			)
-		}
-
-		fn upload_code(
-			origin: AccountId,
-			code: Vec<u8>,
-			storage_deposit_limit: Option<Balance>,
-			determinism: pezpallet_contracts::Determinism,
-		) -> pezpallet_contracts::CodeUploadResult<Hash, Balance>
-		{
-			Contracts::bare_upload_code(
-				origin,
-				code,
-				storage_deposit_limit,
-				determinism,
-			)
-		}
-
-		fn get_storage(
-			address: AccountId,
-			key: Vec<u8>,
-		) -> pezpallet_contracts::GetStorageResult {
-			Contracts::get_storage(
-				address,
-				key
-			)
 		}
 	}
 

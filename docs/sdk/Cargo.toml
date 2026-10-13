@@ -21,7 +21,6 @@ pezframe = { features = [
 	"experimental",
 	"runtime",
 ], workspace = true, default-features = true }
-pezpallet-contracts = { workspace = true }
 pezpallet-default-config-example = { workspace = true, default-features = true }
 pezpallet-example-offchain-worker = { workspace = true, default-features = true }
 pezpallet-examples = { workspace = true }
@@ -167,7 +166,6 @@ runtime-benchmarks = [
 	"pezpallet-babe/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-collective/runtime-benchmarks",
-	"pezpallet-contracts/runtime-benchmarks",
 	"pezpallet-default-config-example/runtime-benchmarks",
 	"pezpallet-democracy/runtime-benchmarks",
 	"pezpallet-example-authorization-tx-extension/runtime-benchmarks",
@@ -225,7 +223,6 @@ std = [
 	"pezframe-support/std",
 	"pezframe-system/std",
 	"pezkuwi-omni-node-lib/std",
-	"pezpallet-contracts/std",
 	"pezpallet-xcm/std",
 	"pezsc-chain-spec/std",
 	"pezsc-cli/std",
@@ -273,7 +270,6 @@ try-runtime = [
 	"pezpallet-babe/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-collective/try-runtime",
-	"pezpallet-contracts/try-runtime",
 	"pezpallet-default-config-example/try-runtime",
 	"pezpallet-democracy/try-runtime",
 	"pezpallet-example-authorization-tx-extension/try-runtime",

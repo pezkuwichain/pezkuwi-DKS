@@ -189,7 +189,6 @@ tokio = { features = [
 	"time",
 ], workspace = true, default-features = true }
 tokio-util = { features = ["compat"], workspace = true }
-wat = { workspace = true }
 
 # These testing-only dependencies are not exported by the Pezkuwi-SDK crate:
 bizinikiwi-cli-test-utils = { workspace = true }

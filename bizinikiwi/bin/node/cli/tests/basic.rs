@@ -25,9 +25,7 @@ use pezframe_support::{
 use pezframe_system::{self, AccountInfo, DispatchEventInfo, EventRecord, Phase};
 use pezkuwi_sdk::*;
 use pezsp_core::{storage::well_known_keys, traits::Externalities};
-use pezsp_runtime::{
-	traits::Hash as HashT, transaction_validity::InvalidTransaction, ApplyExtrinsicResult,
-};
+use pezsp_runtime::{transaction_validity::InvalidTransaction, ApplyExtrinsicResult};
 
 use pez_kitchensink_runtime::{
 	constants::{currency::*, time::SLOT_DURATION},
@@ -37,7 +35,6 @@ use pez_kitchensink_runtime::{
 use pez_node_primitives::{Balance, Hash};
 use pez_node_testing::keyring::*;
 use pretty_assertions::assert_eq;
-use wat;
 
 pub mod common;
 use self::common::{sign, *};
@@ -601,161 +598,6 @@ fn full_wasm_block_import_works() {
 			alice_last_known_balance - 10 * DOLLARS - fees_after_refund,
 		);
 		assert_eq!(Balances::total_balance(&bob()), 179 * DOLLARS - 1 * fees_after_refund);
-	});
-}
-
-const CODE_TRANSFER: &str = r#"
-(module
-;; seal_call(
-;;    callee_ptr: u32,
-;;    callee_len: u32,
-;;    gas: u64,
-;;    value_ptr: u32,
-;;    value_len: u32,
-;;    input_data_ptr: u32,
-;;    input_data_len: u32,
-;;    output_ptr: u32,
-;;    output_len_ptr: u32
-;; ) -> u32
-(import "seal0" "seal_call" (func $seal_call (param i32 i32 i64 i32 i32 i32 i32 i32 i32) (result i32)))
-(import "seal0" "seal_input" (func $seal_input (param i32 i32)))
-(import "env" "memory" (memory 1 1))
-(func (export "deploy")
-)
-(func (export "call")
-	(block $fail
-		;; Load input data to contract memory
-		(call $seal_input
-			(i32.const 0)
-			(i32.const 52)
-		)
-
-		;; fail if the input size is not != 4
-		(br_if $fail
-			(i32.ne
-				(i32.const 4)
-				(i32.load (i32.const 52))
-			)
-		)
-
-		(br_if $fail
-			(i32.ne
-				(i32.load8_u (i32.const 0))
-				(i32.const 0)
-			)
-		)
-		(br_if $fail
-			(i32.ne
-				(i32.load8_u (i32.const 1))
-				(i32.const 1)
-			)
-		)
-		(br_if $fail
-			(i32.ne
-				(i32.load8_u (i32.const 2))
-				(i32.const 2)
-			)
-		)
-		(br_if $fail
-			(i32.ne
-				(i32.load8_u (i32.const 3))
-				(i32.const 3)
-			)
-		)
-
-		(drop
-			(call $seal_call
-				(i32.const 4)  ;; Pointer to "callee" address.
-				(i32.const 32)  ;; Length of "callee" address.
-				(i64.const 0)  ;; How much gas to devote for the execution. 0 = all.
-				(i32.const 36)  ;; Pointer to the buffer with value to transfer
-				(i32.const 16)   ;; Length of the buffer with value to transfer.
-				(i32.const 0)   ;; Pointer to input data buffer address
-				(i32.const 0)   ;; Length of input data buffer
-				(i32.const 4294967295) ;; u32 max value is the sentinel value: do not copy output
-				(i32.const 0) ;; Length is ignored in this case
-			)
-		)
-
-		(return)
-	)
-	unreachable
-)
-;; Destination AccountId to transfer the funds.
-;; Represented by H256 (32 bytes long) in little endian.
-(data (i32.const 4)
-	"\09\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00"
-	"\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00"
-	"\00\00\00\00"
-)
-;; Amount of value to transfer.
-;; Represented by u128 (16 bytes long) in little endian.
-(data (i32.const 36)
-	"\06\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00"
-	"\00\00"
-)
-;; Length of the input buffer
-(data (i32.const 52) "\04")
-)
-"#;
-
-#[test]
-fn deploying_wasm_contract_should_work() {
-	let transfer_code = wat::parse_str(CODE_TRANSFER).unwrap();
-	let transfer_ch = <Runtime as pezframe_system::Config>::Hashing::hash(&transfer_code);
-
-	let addr = pezpallet_contracts::Pezpallet::<Runtime>::contract_address(
-		&charlie(),
-		&transfer_ch,
-		&[],
-		&[],
-	);
-
-	let time = 42 * 1000;
-	let b = construct_block(
-		&mut new_test_ext(compact_code_unwrap()),
-		1,
-		GENESIS_HASH.into(),
-		vec![
-			CheckedExtrinsic {
-				format: pezsp_runtime::generic::ExtrinsicFormat::Bare,
-				function: RuntimeCall::Timestamp(pezpallet_timestamp::Call::set { now: time }),
-			},
-			CheckedExtrinsic {
-				format: pezsp_runtime::generic::ExtrinsicFormat::Signed(charlie(), tx_ext(0, 0)),
-				function: RuntimeCall::Contracts(
-					pezpallet_contracts::Call::instantiate_with_code::<Runtime> {
-						value: 0,
-						gas_limit: Weight::from_parts(500_000_000, 0),
-						storage_deposit_limit: None,
-						code: transfer_code,
-						data: Vec::new(),
-						salt: Vec::new(),
-					},
-				),
-			},
-			CheckedExtrinsic {
-				format: pezsp_runtime::generic::ExtrinsicFormat::Signed(charlie(), tx_ext(1, 0)),
-				function: RuntimeCall::Contracts(pezpallet_contracts::Call::call::<Runtime> {
-					dest: pezsp_runtime::MultiAddress::Id(addr.clone()),
-					value: 10,
-					gas_limit: Weight::from_parts(500_000_000, 0),
-					storage_deposit_limit: None,
-					data: vec![0x00, 0x01, 0x02, 0x03],
-				}),
-			},
-		],
-		(time / SLOT_DURATION).into(),
-	);
-
-	let mut t = new_test_ext(compact_code_unwrap());
-
-	executor_call(&mut t, "Core_execute_block", &b.0).0.unwrap();
-
-	t.execute_with(|| {
-		// Verify that the contract does exist by querying some of its storage items
-		// It does not matter that the storage item itself does not exist.
-		assert!(&pezpallet_contracts::Pezpallet::<Runtime>::get_storage(addr, vec![]).is_ok());
 	});
 }
 
