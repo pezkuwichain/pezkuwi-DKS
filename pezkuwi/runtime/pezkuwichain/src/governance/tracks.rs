@@ -194,8 +194,6 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 				// Referendum admins
 				origins::Origin::ReferendumCanceller => Ok(20),
 				origins::Origin::ReferendumKiller => Ok(21),
-				// Limited treasury spenders
-				_ => Err(()),
 			}
 		} else {
 			Err(())
