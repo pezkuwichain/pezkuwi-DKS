@@ -14844,26 +14844,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pezpallet-ah-ops"
-version = "0.1.0"
-dependencies = [
- "log",
- "parity-scale-codec",
- "pezframe-benchmarking",
- "pezframe-support",
- "pezframe-system",
- "pezpallet-balances",
- "pezpallet-timestamp",
- "pezpallet-utility",
- "pezsp-application-crypto",
- "pezsp-core",
- "pezsp-io",
- "pezsp-runtime",
- "pezsp-std",
- "scale-info",
-]
-
-[[package]]
 name = "pezpallet-ahm-test"
 version = "1.0.0"
 dependencies = [

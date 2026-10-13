@@ -1985,24 +1985,13 @@ pub type TxExtension = pezcumulus_pezpallet_weight_reclaim::StorageWeightReclaim
 pub type UncheckedExtrinsic =
 	pezpallet_revive::evm::runtime::UncheckedExtrinsic<Address, Signature, EthExtraImpl>;
 
-parameter_types! {
-	/// `AhOps` (index 254) served the relay-to-Asset-Hub migration: it unlocks lease and
-	/// crowdloan reserves that the migrator crates write into its storage. Neither migrator is in
-	/// this tree, so nothing ever wrote there; the live chain held only the pallet's storage
-	/// version. The pallet is gone and this clears that key. Once a release carrying it has run
-	/// on Zagros, the entry and this parameter can go.
-	pub const AhOpsPalletName: &'static str = "AhOps";
-}
-
 /// Migrations to apply on runtime upgrade.
 ///
-/// Only the permanent ones remain, and the removal of `AhOps`, which the live chain still
-/// carries. The one-off entries were removed with the genesis reset: each converted state that
-/// only the chain before the reset had, and a chain born from this runtime's genesis starts with
-/// every pallet at its in-code storage version and none of that state.
+/// Only the permanent ones remain. The one-off entries were removed with the genesis reset: each
+/// converted state that only the chain before the reset had, and a chain born from this
+/// runtime's genesis starts with every pallet at its in-code storage version and none of that
+/// state.
 pub type Migrations = (
-	// unreleased
-	pezframe_support::migrations::RemovePallet<AhOpsPalletName, RocksDbWeight>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 );
