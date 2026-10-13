@@ -64,7 +64,7 @@ use pezkuwi_subxt::{
 use pezkuwi_subxt_signer::bip39::{Mnemonic, Mnemonic as PezkuwiMnemonic};
 use pezkuwi_subxt_signer::sr25519::{Keypair as PezkuwiKeypair, Keypair as PolkadotKeypair};
 use tokio::sync::Mutex as AsyncMutex;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 // The automation key is a deliberately limited, server-held delegate: it can only ever move
 // funds the multisig has explicitly pre-approved via `Assets.approve_transfer`, up to whatever
@@ -162,6 +162,15 @@ pub struct BridgeConfig {
 	pub multisig_signatories: Vec<String>,
 	#[serde(default = "default_multisig_threshold")]
 	pub multisig_threshold: u16,
+	/// How often the deposit side checks Polkadot for movement of custody state (see
+	/// `deposit_pass`). Polkadot Asset Hub finalizes a block every ~2.2s; following each one
+	/// costs several RPC calls per block, past a free-tier provider's daily budget.
+	#[serde(default = "default_deposit_poll_seconds")]
+	pub deposit_poll_seconds: u64,
+}
+
+fn default_deposit_poll_seconds() -> u64 {
+	30
 }
 
 fn default_multisig_signatories() -> Vec<String> {
@@ -232,6 +241,7 @@ impl Default for BridgeConfig {
 			notify_threshold: default_notify_threshold(),
 			multisig_signatories: default_multisig_signatories(),
 			multisig_threshold: default_multisig_threshold(),
+			deposit_poll_seconds: default_deposit_poll_seconds(),
 		}
 	}
 }
@@ -1702,18 +1712,30 @@ struct CatchUpStats {
 /// Brings a side from `last_processed` up to `to`: ranges whose custody fingerprint did not
 /// change are skipped, the rest is halved down to single blocks that are scanned. Ranges are
 /// taken left-first, so blocks are processed - and the checkpoint advances - in block order.
+///
+/// `known` is the fingerprint at `last_processed` when the caller already has it - a finalized
+/// block's state never changes, so polling only has to read the new head. Returns the
+/// fingerprint at `to` for the next call.
 async fn catch_up_ranges<S: CatchUpSource>(
 	source: &mut S,
 	last_processed: u64,
+	known: Option<CustodyFingerprint>,
 	to: u64,
-) -> Result<CatchUpStats> {
+) -> Result<(CatchUpStats, Option<CustodyFingerprint>)> {
 	let mut stats = CatchUpStats::default();
 	if to <= last_processed {
-		return Ok(stats);
+		return Ok((stats, known));
 	}
-	let lo = source.fingerprint(last_processed).await?;
+	let lo = match known {
+		Some(fp) => fp,
+		None => {
+			stats.fingerprints += 1;
+			source.fingerprint(last_processed).await?
+		},
+	};
 	let hi = source.fingerprint(to).await?;
-	stats.fingerprints = 2;
+	stats.fingerprints += 1;
+	let at_to = hi.clone();
 
 	// (a, b] with the fingerprints at a and b.
 	let mut pending = vec![(last_processed, lo, to, hi)];
@@ -1732,7 +1754,7 @@ async fn catch_up_ranges<S: CatchUpSource>(
 			pending.push((a, fa, m, fm));
 		}
 	}
-	Ok(stats)
+	Ok((stats, Some(at_to)))
 }
 
 struct ChainCatchUp<'a> {
@@ -1779,10 +1801,17 @@ async fn catch_up(
 	watch: &CustodyWatch,
 	side: Side,
 	last_processed: u64,
+	known: Option<CustodyFingerprint>,
 	to: u64,
-) -> Result<()> {
+) -> Result<Option<CustodyFingerprint>> {
 	let mut source = ChainCatchUp { config, automation, client, legacy_rpc, watch, side };
-	let stats = catch_up_ranges(&mut source, last_processed, to).await?;
+	let (stats, at_to) = catch_up_ranges(&mut source, last_processed, known, to).await?;
+	// A poll that found nothing is the normal case every few seconds; only say so at debug.
+	let level_info = stats.scanned > 0 || to - last_processed > 10_000;
+	if !level_info {
+		debug!("{} blocks {}..={to} unchanged custody state", side.chain(), last_processed + 1);
+		return Ok(at_to);
+	}
 	info!(
 		"Caught up {} blocks {}..={to}: {} scanned, {} skipped with unchanged custody state, {} fingerprints read",
 		side.chain(),
@@ -1791,7 +1820,7 @@ async fn catch_up(
 		stats.skipped,
 		stats.fingerprints
 	);
-	Ok(())
+	Ok(at_to)
 }
 
 /// Fetches block `block_number` by hash and runs it through `process_deposit_block`, then
@@ -1883,98 +1912,75 @@ async fn deposit_pass(
 	let mut last_seen = if last_processed == 0 {
 		info!("No checkpoint found - starting from current head (block {head_number}), not scanning full history");
 		head_number
-	} else if head_number > last_processed {
-		info!("Catching up Polkadot blocks {} to {head_number} before going live (resuming from checkpoint)", last_processed + 1);
-		// A public/shared RPC endpoint (or a metered provider's free tier) can rate-limit a
-		// tight burst of per-block calls hard enough to poison the whole connection
-		// ("background task closed... restart required") - observed live 2026-07-16 - so the
-		// blocks catch_up does scan keep a small pause between them.
-		catch_up(
+	} else {
+		last_processed
+	};
+	save_checkpoint(config, Side::Deposits, last_seen).await?;
+
+	// No block subscription on this side. Polkadot Asset Hub finalizes a block every ~2.2s
+	// (38.5k a day, measured 2026-09-09..10-13) and following each costs several RPC calls -
+	// over 100k a day, more than the free-tier provider allows, which disabled the key every
+	// afternoon. A deposit is a movement of custody state, so polling the finalized head and
+	// handing the range since the last poll to catch_up finds every one of them: a quiet poll
+	// costs one fingerprint (~11 calls), ~32k a day at 30s, and detection waits at most one
+	// interval. The first pass below is the catch-up from the checkpoint.
+	let poll = Duration::from_secs(config.deposit_poll_seconds.max(1));
+	let mut known: Option<CustodyFingerprint> = None;
+	let mut last_advance = std::time::Instant::now();
+	let mut first = true;
+	println!("Watching deposits (custody state every {}s)...\n", poll.as_secs());
+
+	loop {
+		if !first {
+			tokio::time::sleep(poll).await;
+		}
+		let head_hash = legacy_rpc.chain_get_finalized_head().await?;
+		let head_number = legacy_rpc
+			.chain_get_header(Some(head_hash))
+			.await?
+			.ok_or_else(|| anyhow!("no header for the finalized Polkadot head"))?
+			.number as u64;
+
+		if head_number <= last_seen {
+			// The endpoint answers but finality does not move: treat it like the stalled
+			// subscription it replaces and reconnect, in case it is this endpoint that is stuck.
+			if last_advance.elapsed() > LIVE_SUBSCRIPTION_STALL_TIMEOUT {
+				warn!(
+					"Polkadot finalized head stuck at #{head_number} for {}s - reconnecting",
+					last_advance.elapsed().as_secs()
+				);
+				notify_telegram(config, &format!(
+					"⚠️ usdt-bridge: Polkadot finalized head has not moved past #{head_number} for {}s - reconnecting now. Catch-up covers anything after the checkpoint.",
+					last_advance.elapsed().as_secs()
+				)).await;
+				return Ok(());
+			}
+			first = false;
+			continue;
+		}
+
+		if first && head_number > last_seen + 1 {
+			info!(
+				"Catching up Polkadot blocks {} to {head_number} (resuming from checkpoint)",
+				last_seen + 1
+			);
+		}
+		known = catch_up(
 			config,
 			automation,
 			&client,
 			&legacy_rpc,
-			&watch,
+			watch,
 			Side::Deposits,
-			last_processed,
+			last_seen,
+			known,
 			head_number,
 		)
 		.await?;
-		head_number
-	} else {
-		last_processed
-	};
-
-	{
-		let _guard = DB_LOCK.lock().await;
-		let mut db = BridgeDatabase::load(&config.db_path)?;
-		db.stats.last_polkadot_block = last_seen;
-		db.save(&config.db_path)?;
+		last_seen = head_number;
+		last_advance = std::time::Instant::now();
+		first = false;
 	}
-
-	println!("Listening for deposits...\n");
-
-	let mut blocks = client.blocks().subscribe_finalized().await?;
-
-	loop {
-		let next = match tokio::time::timeout(LIVE_SUBSCRIPTION_STALL_TIMEOUT, blocks.next()).await
-		{
-			Ok(next) => next,
-			Err(_) => {
-				warn!("No new finalized Polkadot block in {}s - live subscription looks stalled, forcing a reconnect", LIVE_SUBSCRIPTION_STALL_TIMEOUT.as_secs());
-				notify_telegram(config, &format!(
-                        "⚠️ usdt-bridge: Polkadot deposit subscription produced nothing for {}s - reconnecting now. Checkpoint backfill will catch up anything missed during the stall.",
-                        LIVE_SUBSCRIPTION_STALL_TIMEOUT.as_secs()
-                    )).await;
-				break;
-			},
-		};
-
-		let Some(block) = next else {
-			warn!("Polkadot block subscription ended - reconnecting");
-			notify_telegram(config, "⚠️ usdt-bridge: Polkadot deposit subscription ended unexpectedly - reconnecting now.").await;
-			break;
-		};
-
-		let block = match block {
-			Ok(block) => block,
-			Err(e) => {
-				warn!("Polkadot block subscription yielded an error ({e}) - reconnecting");
-				notify_telegram(config, &format!("⚠️ usdt-bridge: Polkadot deposit subscription errored ({e}) - reconnecting now.")).await;
-				break;
-			},
-		};
-
-		let block_number = block.number() as u64;
-
-		if block_number > last_seen + 1 {
-			warn!("Gap detected in live Polkadot subscription: last processed {last_seen}, current {block_number} - backfilling {} missing block(s)", block_number - last_seen - 1);
-			notify_telegram(config, &format!(
-                    "⚠️ usdt-bridge: gap detected in live Polkadot block subscription ({} block(s) between #{last_seen} and #{block_number}) - backfilling now, no deposit should be lost, but this is worth knowing about.",
-                    block_number - last_seen - 1
-                )).await;
-			catch_up(
-				config,
-				automation,
-				&client,
-				&legacy_rpc,
-				&watch,
-				Side::Deposits,
-				last_seen,
-				block_number - 1,
-			)
-			.await?;
-		}
-
-		process_deposit_block(config, automation, &block).await?;
-		last_seen = block_number;
-
-		let _guard = DB_LOCK.lock().await;
-		let mut db = BridgeDatabase::load(&config.db_path)?;
-		db.stats.last_polkadot_block = block_number;
-		db.save(&config.db_path)?;
-	}
-	Ok(())
 }
 
 /// Watches Pezkuwi Asset Hub for wUSDT sent to the bridge's own Pezkuwi account (a user
@@ -2425,6 +2431,7 @@ async fn withdrawal_pass(
 			&watch,
 			Side::Withdrawals,
 			last_processed,
+			None,
 			head_number,
 		)
 		.await?;
@@ -2489,6 +2496,7 @@ async fn withdrawal_pass(
 				&watch,
 				Side::Withdrawals,
 				last_seen,
+				None,
 				block_number - 1,
 			)
 			.await?;
@@ -2747,7 +2755,7 @@ mod tests {
 	#[tokio::test]
 	async fn a_quiet_gap_costs_two_fingerprints_and_no_scan() {
 		let mut chain = ScriptedChain::new(&[]);
-		let stats = catch_up_ranges(&mut chain, 20_487_302, 21_487_302).await.unwrap();
+		let stats = catch_up_ranges(&mut chain, 20_487_302, None, 21_487_302).await.unwrap().0;
 		assert_eq!(stats, CatchUpStats { scanned: 0, skipped: 1_000_000, fingerprints: 2 });
 		assert_checkpoints_end_at(&chain, 21_487_302);
 	}
@@ -2758,7 +2766,7 @@ mod tests {
 	async fn every_block_where_custody_moved_is_scanned_in_order() {
 		let moves = [1, 17, 500_000, 999_999, 1_000_000];
 		let mut chain = ScriptedChain::new(&moves);
-		let stats = catch_up_ranges(&mut chain, 0, 1_000_000).await.unwrap();
+		let stats = catch_up_ranges(&mut chain, 0, None, 1_000_000).await.unwrap().0;
 		assert_eq!(
 			chain.scanned, moves,
 			"a block that moved custody was missed or one that did not was scanned"
@@ -2777,15 +2785,29 @@ mod tests {
 	async fn a_range_that_moves_in_every_block_is_scanned_whole() {
 		let moves: Vec<u64> = (101..=108).collect();
 		let mut chain = ScriptedChain::new(&moves);
-		catch_up_ranges(&mut chain, 100, 108).await.unwrap();
+		catch_up_ranges(&mut chain, 100, None, 108).await.unwrap();
 		assert_eq!(chain.scanned, moves);
 		assert_checkpoints_end_at(&chain, 108);
+	}
+
+	/// The deposit side polls; between polls only the new head's fingerprint is read, which is
+	/// what keeps a quiet day inside a free-tier budget.
+	#[tokio::test]
+	async fn a_quiet_poll_reads_one_fingerprint() {
+		let mut chain = ScriptedChain::new(&[1_050]);
+		let (first, known) = catch_up_ranges(&mut chain, 1_000, None, 1_010).await.unwrap();
+		assert_eq!(first.fingerprints, 2);
+		let (quiet, known) = catch_up_ranges(&mut chain, 1_010, known, 1_024).await.unwrap();
+		assert_eq!(quiet, CatchUpStats { scanned: 0, skipped: 14, fingerprints: 1 });
+		let (moved, _) = catch_up_ranges(&mut chain, 1_024, known, 1_060).await.unwrap();
+		assert_eq!(chain.scanned, vec![1_050], "{moved:?}");
+		assert_checkpoints_end_at(&chain, 1_060);
 	}
 
 	#[tokio::test]
 	async fn nothing_to_do_when_the_checkpoint_is_at_the_head() {
 		let mut chain = ScriptedChain::new(&[5]);
-		let stats = catch_up_ranges(&mut chain, 10, 10).await.unwrap();
+		let stats = catch_up_ranges(&mut chain, 10, None, 10).await.unwrap().0;
 		assert_eq!(stats, CatchUpStats::default());
 		assert!(chain.checkpoints.is_empty());
 	}
