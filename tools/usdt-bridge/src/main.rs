@@ -1200,263 +1200,275 @@ async fn process_deposit_block(
 		// Check for Assets.Transferred event
 		if event.pallet_name() == "Assets" && event.variant_name() == "Transferred" {
 			// Parse event data
-			if let Ok(fields) =
-				event.decode_as_fields::<pezkuwi_subxt::ext::scale_value::Value<()>>()
-			{
-				// Fields: asset_id, from, to, amount
-				let asset_id = fields.at("asset_id").and_then(|v| v.as_u128()).unwrap_or(0) as u32;
+			// A transfer this process cannot read is an error, not a skip: skipping it would drop
+			// a deposit without a record, and the checkpoint would move past it.
+			let fields = event
+				.decode_as_fields::<pezkuwi_subxt::ext::scale_value::Value<()>>()
+				.with_context(|| format!("decoding Assets.Transferred in block #{block_number}"))?;
+			// Fields: asset_id, from, to, amount
+			let asset_id = fields.at("asset_id").and_then(|v| v.as_u128()).ok_or_else(|| {
+				anyhow!("Assets.Transferred in block #{block_number} has no `asset_id`")
+			})? as u32;
 
-				if asset_id != config.polkadot_usdt_asset_id {
-					continue;
-				}
+			if asset_id != config.polkadot_usdt_asset_id {
+				continue;
+			}
 
-				let to_field = fields.at("to");
-				let from_field = fields.at("from");
-				let amount = fields.at("amount").and_then(|v| v.as_u128()).unwrap_or(0);
+			let to_field = fields.at("to");
+			let from_field = fields.at("from");
+			let amount = fields.at("amount").and_then(|v| v.as_u128()).ok_or_else(|| {
+				anyhow!("Assets.Transferred in block #{block_number} has no `amount`")
+			})?;
 
-				// Check if transfer is to bridge address - real byte comparison, not string
-				// matching (see account_id_from_dynamic's doc comment for why the previous
-				// Debug-string approach was not just fragile but provably broken).
-				let target_bytes = pezsp_core::crypto::AccountId32::from_ss58check(polkadot_addr)
-					.map(|a| Into::<[u8; 32]>::into(a))
-					.ok();
-				let to_bytes = to_field.and_then(account_id_from_dynamic);
+			// Check if transfer is to bridge address - real byte comparison, not string
+			// matching (see account_id_from_dynamic's doc comment for why the previous
+			// Debug-string approach was not just fragile but provably broken).
+			let target_bytes = pezsp_core::crypto::AccountId32::from_ss58check(polkadot_addr)
+				.map(|a| Into::<[u8; 32]>::into(a))
+				.ok();
+			let to_bytes = to_field.and_then(account_id_from_dynamic);
 
-				if to_bytes.is_some() && to_bytes == target_bytes {
-					{
-						let from_bytes_opt = from_field.and_then(account_id_from_dynamic);
-						let from_str =
-							from_bytes_opt.map(|b| account_bytes_to_ss58(b, 0)).unwrap_or_default();
-						let tx_hash = format!("block-{}-{}", block_number, from_str);
+			if to_bytes.is_some() && to_bytes == target_bytes {
+				{
+					let from_bytes_opt = from_field.and_then(account_id_from_dynamic);
+					let from_str =
+						from_bytes_opt.map(|b| account_bytes_to_ss58(b, 0)).unwrap_or_default();
+					// Keyed by event, so two transfers from one sender in one block are two records.
+					// Records written before the event index was added carry the old key, which
+					// is checked too so a rescan of an old block cannot record it twice.
+					let tx_hash = format!("block-{}-e{}-{}", block_number, event.index(), from_str);
+					let legacy_hash = format!("block-{}-{}", block_number, from_str);
 
-						info!("📥 DEPOSIT DETECTED!");
-						info!("   Block: #{}", block_number);
-						info!("   From: {}", from_str);
-						info!("   Amount: {} USDT", amount as f64 / 1_000_000.0);
+					info!("📥 DEPOSIT DETECTED!");
+					info!("   Block: #{}", block_number);
+					info!("   From: {}", from_str);
+					info!("   Amount: {} USDT", amount as f64 / 1_000_000.0);
 
-						let _guard = DB_LOCK.lock().await;
-						let mut db = BridgeDatabase::load(&config.db_path)?;
+					let _guard = DB_LOCK.lock().await;
+					let mut db = BridgeDatabase::load(&config.db_path)?;
 
-						if db.is_deposit_processed(&tx_hash) {
-							warn!(
-								"   ⚠️ Already processed ({}), skipping - refusing to mint twice",
-								tx_hash
-							);
-						} else if amount > config.max_single_tx {
-							warn!(
+					if db.is_deposit_processed(&tx_hash) || db.is_deposit_processed(&legacy_hash) {
+						warn!(
+							"   ⚠️ Already processed ({}), skipping - refusing to mint twice",
+							tx_hash
+						);
+					} else if amount > config.max_single_tx {
+						warn!(
                                     "   ⚠️ Amount {} exceeds max_single_tx cap {} - recording as pending_multisig_approval_amount_exceeds_cap, needs manual multi-party review",
                                     amount as f64 / 1_000_000.0,
                                     config.max_single_tx as f64 / 1_000_000.0
                                 );
-							notify_telegram(config, &format!(
+						notify_telegram(config, &format!(
                                     "📥 Deposit {} USDT from {} exceeds max_single_tx ({} USDT) - recorded, needs manual multi-party review.",
                                     amount as f64 / 1_000_000.0, from_str, config.max_single_tx as f64 / 1_000_000.0
                                 )).await;
-							let fee = calculate_fee(amount, config.fee_basis_points);
-							let net_amount = amount - fee;
-							db.add_deposit(DepositRecord {
-								id: db.next_deposit_id(),
-								polkadot_tx_hash: tx_hash.clone(),
-								polkadot_block: block_number as u64,
-								sender_address: from_str.clone(),
-								amount,
-								fee,
-								net_amount,
-								pezkuwi_tx_hash: None,
-								status: "pending_multisig_approval_amount_exceeds_cap".to_string(),
-								created_at: Utc::now().to_rfc3339(),
-								processed_at: None,
-							});
-							db.save(&config.db_path)?;
-						} else if amount >= config.min_deposit {
-							let fee = calculate_fee(amount, config.fee_basis_points);
-							let net_amount = amount - fee;
+						let fee = calculate_fee(amount, config.fee_basis_points);
+						let net_amount = amount - fee;
+						db.add_deposit(DepositRecord {
+							id: db.next_deposit_id(),
+							polkadot_tx_hash: tx_hash.clone(),
+							polkadot_block: block_number as u64,
+							sender_address: from_str.clone(),
+							amount,
+							fee,
+							net_amount,
+							pezkuwi_tx_hash: None,
+							status: "pending_multisig_approval_amount_exceeds_cap".to_string(),
+							created_at: Utc::now().to_rfc3339(),
+							processed_at: None,
+						});
+						db.save(&config.db_path)?;
+					} else if amount >= config.min_deposit {
+						let fee = calculate_fee(amount, config.fee_basis_points);
+						let net_amount = amount - fee;
 
-							// Same AccountId32, re-encoded under Pezkuwi's SS58 prefix -
-							// see convert_ss58_prefix's doc comment for why this is
-							// correct rather than a placeholder.
-							match convert_ss58_prefix(&from_str, 42) {
-								Ok(pezkuwi_recipient) => {
-									let now = Utc::now();
-									let auto_pay_attempt = match (
-										from_bytes_opt,
-										&automation.pezkuwi_signing_client,
-										&automation.pezkuwi_keypair,
-									) {
-										(Some(dest_bytes), Some(client), Some(keypair)) => {
-											match check_auto_pay_eligible(
-												&db,
-												config,
-												LEG_DEPOSIT_WUSDT_PAYOUT,
-												net_amount,
-												now,
-											) {
-												Ok(()) => {
-													let owner_bytes = pezsp_core::crypto::AccountId32::from_ss58check(&config.custody_multisig_pezkuwi)
+						// Same AccountId32, re-encoded under Pezkuwi's SS58 prefix -
+						// see convert_ss58_prefix's doc comment for why this is
+						// correct rather than a placeholder.
+						match convert_ss58_prefix(&from_str, 42) {
+							Ok(pezkuwi_recipient) => {
+								let now = Utc::now();
+								let auto_pay_attempt = match (
+									from_bytes_opt,
+									&automation.pezkuwi_signing_client,
+									&automation.pezkuwi_keypair,
+								) {
+									(Some(dest_bytes), Some(client), Some(keypair)) => {
+										match check_auto_pay_eligible(
+											&db,
+											config,
+											LEG_DEPOSIT_WUSDT_PAYOUT,
+											net_amount,
+											now,
+										) {
+											Ok(()) => {
+												let owner_bytes = pezsp_core::crypto::AccountId32::from_ss58check(&config.custody_multisig_pezkuwi)
                                                             .map(Into::<[u8; 32]>::into)
                                                             .map_err(|e| format!("bad custody_multisig_pezkuwi config: {e:?}"));
-													match owner_bytes {
-														Ok(owner_bytes) => {
-															let first = execute_wusdt_auto_payout(
-																client,
-																keypair,
-																config.pezkuwi_wusdt_asset_id,
-																owner_bytes,
-																dest_bytes,
-																net_amount,
+												match owner_bytes {
+													Ok(owner_bytes) => {
+														let first = execute_wusdt_auto_payout(
+															client,
+															keypair,
+															config.pezkuwi_wusdt_asset_id,
+															owner_bytes,
+															dest_bytes,
+															net_amount,
+														)
+														.await;
+														// A cached signing client's WS connection can die silently between
+														// uses (same failure class as the listener's live subscription -
+														// see LIVE_SUBSCRIPTION_STALL_TIMEOUT's doc) with no error until the
+														// next real use - retry once against a genuinely fresh connection
+														// before falling back to manual review, rather than requiring a
+														// full process restart to recover auto-pay.
+														let result = if first.is_err() {
+															warn!("   ⚠️ Auto-pay attempt failed ({:?}) - retrying once with a fresh connection", first.as_ref().err());
+															match PezkuwiSigningClient::<
+																PezkuwiConfig,
+															>::from_insecure_url(
+																&config.pezkuwi_rpc
 															)
-															.await;
-															// A cached signing client's WS connection can die silently between
-															// uses (same failure class as the listener's live subscription -
-															// see LIVE_SUBSCRIPTION_STALL_TIMEOUT's doc) with no error until the
-															// next real use - retry once against a genuinely fresh connection
-															// before falling back to manual review, rather than requiring a
-															// full process restart to recover auto-pay.
-															let result = if first.is_err() {
-																warn!("   ⚠️ Auto-pay attempt failed ({:?}) - retrying once with a fresh connection", first.as_ref().err());
-																match PezkuwiSigningClient::<
-																	PezkuwiConfig,
-																>::from_insecure_url(
-																	&config.pezkuwi_rpc
-																)
-																.await
-																{
-																	Ok(fresh_client) => {
-																		execute_wusdt_auto_payout(
-																			&fresh_client,
-																			keypair,
-																			config
-																				.pezkuwi_wusdt_asset_id,
-																			owner_bytes,
-																			dest_bytes,
-																			net_amount,
-																		)
-																		.await
-																	},
-																	Err(_) => first,
-																}
-															} else {
-																first
-															};
-															Some(result)
-														},
-														Err(reason) => {
-															warn!(
-																"   ⚠️ Auto-pay skipped: {reason}"
-															);
-															None
-														},
-													}
-												},
-												Err(reason) => {
-													info!("   ℹ️ Not auto-paying (falls back to manual): {reason}");
-													None
-												},
-											}
-										},
-										_ => None, // automation not configured/connected - always-manual fallback
-									};
+															.await
+															{
+																Ok(fresh_client) => {
+																	execute_wusdt_auto_payout(
+																		&fresh_client,
+																		keypair,
+																		config
+																			.pezkuwi_wusdt_asset_id,
+																		owner_bytes,
+																		dest_bytes,
+																		net_amount,
+																	)
+																	.await
+																},
+																Err(_) => first,
+															}
+														} else {
+															first
+														};
+														Some(result)
+													},
+													Err(reason) => {
+														warn!("   ⚠️ Auto-pay skipped: {reason}");
+														None
+													},
+												}
+											},
+											Err(reason) => {
+												info!("   ℹ️ Not auto-paying (falls back to manual): {reason}");
+												None
+											},
+										}
+									},
+									_ => None, // automation not configured/connected - always-manual fallback
+								};
 
-									match auto_pay_attempt {
-										Some(Ok(pezkuwi_tx_hash)) => {
-											info!(
-												"   ✅ AUTO-PAID: {} wUSDT -> {} (tx {})",
-												net_amount as f64 / 1_000_000.0,
-												pezkuwi_recipient,
-												pezkuwi_tx_hash
-											);
-											db.record_auto_payout(
-												LEG_DEPOSIT_WUSDT_PAYOUT,
-												net_amount,
-												now,
-											);
-											let breaker_tripped = maybe_trip_circuit_breaker(
-												&mut db,
-												config,
-												LEG_DEPOSIT_WUSDT_PAYOUT,
-												now,
-											);
-											db.add_deposit(DepositRecord {
-												id: db.next_deposit_id(),
-												polkadot_tx_hash: tx_hash.clone(),
-												polkadot_block: block_number as u64,
-												sender_address: from_str.clone(),
-												amount,
-												fee,
-												net_amount,
-												pezkuwi_tx_hash: Some(pezkuwi_tx_hash.clone()),
-												status: "auto_completed".to_string(),
-												created_at: now.to_rfc3339(),
-												processed_at: Some(now.to_rfc3339()),
-											});
-											db.save(&config.db_path)?;
-											if let Some(reason) = breaker_tripped {
-												notify_telegram(config, &format!("🚨 CIRCUIT BREAKER TRIPPED (deposit/wUSDT leg): {reason}. All further deposits now queue for manual 3-of-5 review until `reset-circuit-breaker` is run after human review.")).await;
-											} else if amount >= config.notify_threshold {
-												notify_telegram(config, &format!(
+								match auto_pay_attempt {
+									Some(Ok(pezkuwi_tx_hash)) => {
+										info!(
+											"   ✅ AUTO-PAID: {} wUSDT -> {} (tx {})",
+											net_amount as f64 / 1_000_000.0,
+											pezkuwi_recipient,
+											pezkuwi_tx_hash
+										);
+										db.record_auto_payout(
+											LEG_DEPOSIT_WUSDT_PAYOUT,
+											net_amount,
+											now,
+										);
+										let breaker_tripped = maybe_trip_circuit_breaker(
+											&mut db,
+											config,
+											LEG_DEPOSIT_WUSDT_PAYOUT,
+											now,
+										);
+										db.add_deposit(DepositRecord {
+											id: db.next_deposit_id(),
+											polkadot_tx_hash: tx_hash.clone(),
+											polkadot_block: block_number as u64,
+											sender_address: from_str.clone(),
+											amount,
+											fee,
+											net_amount,
+											pezkuwi_tx_hash: Some(pezkuwi_tx_hash.clone()),
+											status: "auto_completed".to_string(),
+											created_at: now.to_rfc3339(),
+											processed_at: Some(now.to_rfc3339()),
+										});
+										db.save(&config.db_path)?;
+										if let Some(reason) = breaker_tripped {
+											notify_telegram(config, &format!("🚨 CIRCUIT BREAKER TRIPPED (deposit/wUSDT leg): {reason}. All further deposits now queue for manual 3-of-5 review until `reset-circuit-breaker` is run after human review.")).await;
+										} else if amount >= config.notify_threshold {
+											notify_telegram(config, &format!(
                                                         "✅ Auto-paid deposit: {} USDT from {} -> {} wUSDT (net of fee) to {}. tx {}",
                                                         amount as f64 / 1_000_000.0, from_str, net_amount as f64 / 1_000_000.0, pezkuwi_recipient, pezkuwi_tx_hash
                                                     )).await;
-											}
-										},
-										Some(Err(e)) => {
-											error!("   ❌ Auto-pay execution FAILED, falling back to manual review: {e:#}");
-											notify_telegram(config, &format!(
+										}
+									},
+									Some(Err(e)) => {
+										error!("   ❌ Auto-pay execution FAILED, falling back to manual review: {e:#}");
+										notify_telegram(config, &format!(
                                                     "⚠️ Auto-pay attempt failed for deposit {} USDT from {} - falling back to manual 3-of-5 review. Error: {e:#}",
                                                     amount as f64 / 1_000_000.0, from_str
                                                 )).await;
-											db.add_deposit(DepositRecord {
-												id: db.next_deposit_id(),
-												polkadot_tx_hash: tx_hash.clone(),
-												polkadot_block: block_number as u64,
-												sender_address: from_str.clone(),
-												amount,
-												fee,
-												net_amount,
-												pezkuwi_tx_hash: None,
-												status: "pending_multisig_approval".to_string(),
-												created_at: now.to_rfc3339(),
-												processed_at: None,
-											});
-											db.save(&config.db_path)?;
-										},
-										None => {
-											info!("   ⏳ AWAITING MULTISIG APPROVAL - not auto-minting.");
-											info!(
+										db.add_deposit(DepositRecord {
+											id: db.next_deposit_id(),
+											polkadot_tx_hash: tx_hash.clone(),
+											polkadot_block: block_number as u64,
+											sender_address: from_str.clone(),
+											amount,
+											fee,
+											net_amount,
+											pezkuwi_tx_hash: None,
+											status: "pending_multisig_approval".to_string(),
+											created_at: now.to_rfc3339(),
+											processed_at: None,
+										});
+										db.save(&config.db_path)?;
+									},
+									None => {
+										info!(
+											"   ⏳ AWAITING MULTISIG APPROVAL - not auto-minting."
+										);
+										info!(
                                                     "      3 of 5 signatories must approve: Assets.transfer({}, {}, {}) from the multisig's seed pool",
                                                     config.pezkuwi_wusdt_asset_id, pezkuwi_recipient, net_amount
                                                 );
-											info!("      (fee: {} USDT, net: {} USDT) - use pwap-web's multisig UI.",
+										info!("      (fee: {} USDT, net: {} USDT) - use pwap-web's multisig UI.",
                                                     fee as f64 / 1_000_000.0, net_amount as f64 / 1_000_000.0);
 
-											db.add_deposit(DepositRecord {
-												id: db.next_deposit_id(),
-												polkadot_tx_hash: tx_hash.clone(),
-												polkadot_block: block_number as u64,
-												sender_address: from_str.clone(),
-												amount,
-												fee,
-												net_amount,
-												pezkuwi_tx_hash: None,
-												status: "pending_multisig_approval".to_string(),
-												created_at: now.to_rfc3339(),
-												processed_at: None,
-											});
-											db.save(&config.db_path)?;
-											notify_telegram(config, &format!(
+										db.add_deposit(DepositRecord {
+											id: db.next_deposit_id(),
+											polkadot_tx_hash: tx_hash.clone(),
+											polkadot_block: block_number as u64,
+											sender_address: from_str.clone(),
+											amount,
+											fee,
+											net_amount,
+											pezkuwi_tx_hash: None,
+											status: "pending_multisig_approval".to_string(),
+											created_at: now.to_rfc3339(),
+											processed_at: None,
+										});
+										db.save(&config.db_path)?;
+										notify_telegram(config, &format!(
                                                     "📥 New deposit pending approval: {} USDT from {} -> mint {} wUSDT (net of fee) to {}. Sign at pwap-web's /multisig/pending.",
                                                     amount as f64 / 1_000_000.0, from_str, net_amount as f64 / 1_000_000.0, pezkuwi_recipient
                                                 )).await;
-										},
-									}
-								},
-								Err(e) => {
-									error!("   ❌ Could not derive Pezkuwi recipient from sender {}: {}", from_str, e);
-								},
-							}
-						} else {
-							warn!("   ⚠️ Amount below minimum, skipping");
+									},
+								}
+							},
+							Err(e) => {
+								error!(
+									"   ❌ Could not derive Pezkuwi recipient from sender {}: {}",
+									from_str, e
+								);
+							},
 						}
+					} else {
+						warn!("   ⚠️ Amount below minimum, skipping");
 					}
 				}
 			}
@@ -1988,121 +2000,134 @@ async fn process_withdrawal_block(
 		let event = event?;
 
 		if event.pallet_name() == "Assets" && event.variant_name() == "Transferred" {
-			if let Ok(fields) =
-				event.decode_as_fields::<pezkuwi_subxt::ext::scale_value::Value<()>>()
-			{
-				let asset_id = fields.at("asset_id").and_then(|v| v.as_u128()).unwrap_or(0) as u32;
+			// A transfer this process cannot read is an error, not a skip: skipping it would drop
+			// a withdrawal without a record, and the checkpoint would move past it.
+			let fields = event
+				.decode_as_fields::<pezkuwi_subxt::ext::scale_value::Value<()>>()
+				.with_context(|| format!("decoding Assets.Transferred in block #{block_number}"))?;
+			let asset_id = fields.at("asset_id").and_then(|v| v.as_u128()).ok_or_else(|| {
+				anyhow!("Assets.Transferred in block #{block_number} has no `asset_id`")
+			})? as u32;
 
-				if asset_id != config.pezkuwi_wusdt_asset_id {
-					continue;
-				}
+			if asset_id != config.pezkuwi_wusdt_asset_id {
+				continue;
+			}
 
-				let to_field = fields.at("to");
-				let from_field = fields.at("from");
-				let amount = fields.at("amount").and_then(|v| v.as_u128()).unwrap_or(0);
+			let to_field = fields.at("to");
+			let from_field = fields.at("from");
+			let amount = fields.at("amount").and_then(|v| v.as_u128()).ok_or_else(|| {
+				anyhow!("Assets.Transferred in block #{block_number} has no `amount`")
+			})?;
 
-				let target_bytes =
-					pezsp_core::crypto::AccountId32::from_ss58check(pezkuwi_bridge_addr)
-						.map(|a| Into::<[u8; 32]>::into(a))
-						.ok();
-				let to_bytes = to_field.and_then(account_id_from_dynamic);
+			let target_bytes = pezsp_core::crypto::AccountId32::from_ss58check(pezkuwi_bridge_addr)
+				.map(|a| Into::<[u8; 32]>::into(a))
+				.ok();
+			let to_bytes = to_field.and_then(account_id_from_dynamic);
 
-				if to_bytes.is_some() && to_bytes == target_bytes {
+			if to_bytes.is_some() && to_bytes == target_bytes {
+				{
+					let from_bytes_opt = from_field.and_then(account_id_from_dynamic);
+					let from_str =
+						from_bytes_opt.map(|b| account_bytes_to_ss58(b, 42)).unwrap_or_default();
+					// Keyed by event, so two transfers from one sender in one block are two records.
+					// Records written before the event index was added carry the old key, which
+					// is checked too so a rescan of an old block cannot record it twice.
+					let tx_hash = format!("block-{}-e{}-{}", block_number, event.index(), from_str);
+					let legacy_hash = format!("block-{}-{}", block_number, from_str);
+
+					info!("📤 WITHDRAWAL DETECTED!");
+					info!("   Block: #{}", block_number);
+					info!("   From: {}", from_str);
+					info!("   Amount: {} USDT", amount as f64 / 1_000_000.0);
+
+					let _guard = DB_LOCK.lock().await;
+					let mut db = BridgeDatabase::load(&config.db_path)?;
+
+					if db.is_withdrawal_processed(&tx_hash)
+						|| db.is_withdrawal_processed(&legacy_hash)
 					{
-						let from_bytes_opt = from_field.and_then(account_id_from_dynamic);
-						let from_str = from_bytes_opt
-							.map(|b| account_bytes_to_ss58(b, 42))
-							.unwrap_or_default();
-						let tx_hash = format!("block-{}-{}", block_number, from_str);
+						warn!(
+							"   ⚠️ Already processed ({}), skipping - refusing to release twice",
+							tx_hash
+						);
+						continue;
+					}
 
-						info!("📤 WITHDRAWAL DETECTED!");
-						info!("   Block: #{}", block_number);
-						info!("   From: {}", from_str);
-						info!("   Amount: {} USDT", amount as f64 / 1_000_000.0);
+					if amount < config.min_withdraw {
+						warn!("   ⚠️ Amount below minimum, skipping");
+						continue;
+					}
 
-						let _guard = DB_LOCK.lock().await;
-						let mut db = BridgeDatabase::load(&config.db_path)?;
+					let fee = calculate_fee(amount, config.fee_basis_points);
+					let net_amount = amount - fee;
 
-						if db.is_withdrawal_processed(&tx_hash) {
-							warn!("   ⚠️ Already processed ({}), skipping - refusing to release twice", tx_hash);
-							continue;
-						}
-
-						if amount < config.min_withdraw {
-							warn!("   ⚠️ Amount below minimum, skipping");
-							continue;
-						}
-
-						let fee = calculate_fee(amount, config.fee_basis_points);
-						let net_amount = amount - fee;
-
-						if amount > config.max_single_tx {
-							warn!(
+					if amount > config.max_single_tx {
+						warn!(
                                     "   ⚠️ Amount {} exceeds max_single_tx cap {} - recording as pending_multisig_approval_amount_exceeds_cap, needs manual multi-party review",
                                     amount as f64 / 1_000_000.0,
                                     config.max_single_tx as f64 / 1_000_000.0
                                 );
-							notify_telegram(config, &format!(
+						notify_telegram(config, &format!(
                                     "📤 Withdrawal {} USDT from {} exceeds max_single_tx ({} USDT) - recorded, needs manual multi-party review.",
                                     amount as f64 / 1_000_000.0, from_str, config.max_single_tx as f64 / 1_000_000.0
                                 )).await;
-							let destination_address =
-								convert_ss58_prefix(&from_str, 0).unwrap_or_default();
-							db.add_withdrawal(WithdrawalRecord {
-								id: db.next_withdrawal_id(),
-								pezkuwi_tx_hash: tx_hash.clone(),
-								pezkuwi_block: block_number as u64,
-								sender_address: from_str.clone(),
-								destination_address,
-								amount,
-								fee,
-								net_amount,
-								polkadot_tx_hash: None,
-								status: "pending_multisig_approval_amount_exceeds_cap".to_string(),
-								created_at: Utc::now().to_rfc3339(),
-								processed_at: None,
-							});
-							db.save(&config.db_path)?;
-							continue;
-						}
+						let destination_address =
+							convert_ss58_prefix(&from_str, 0).unwrap_or_default();
+						db.add_withdrawal(WithdrawalRecord {
+							id: db.next_withdrawal_id(),
+							pezkuwi_tx_hash: tx_hash.clone(),
+							pezkuwi_block: block_number as u64,
+							sender_address: from_str.clone(),
+							destination_address,
+							amount,
+							fee,
+							net_amount,
+							polkadot_tx_hash: None,
+							status: "pending_multisig_approval_amount_exceeds_cap".to_string(),
+							created_at: Utc::now().to_rfc3339(),
+							processed_at: None,
+						});
+						db.save(&config.db_path)?;
+						continue;
+					}
 
-						// Circuit breaker: never release more real USDT than the custody
-						// wallet actually holds. If this ever trips, the peg is already
-						// under-collateralized (e.g. wUSDT minted without a matching real
-						// deposit) - that must halt and page someone, not degrade silently.
-						//
-						// Note this reserve check is best-effort only: the withdrawal itself
-						// is already finalized on Pezkuwi by the time we get here, so a
-						// transient RPC hiccup while trying to verify the Polkadot-side
-						// reserve must NEVER `continue` past recording it - that would drop
-						// a real, already-committed withdrawal on the floor with no
-						// pending_multisig_approval entry anywhere (exactly the silent-loss
-						// failure mode fixed for the subscription-stall bug). The signatories
-						// verify the real reserve themselves in pwap-web before approving, so
-						// an unverified reserve here just means "never auto-pay, always
-						// human-review" - it does not block recording the request.
-						let polkadot_client = connect_to_chain(&config.polkadot_rpc).await.ok();
-						let reserve_known = polkadot_client.is_some();
+					// Circuit breaker: never release more real USDT than the custody
+					// wallet actually holds. If this ever trips, the peg is already
+					// under-collateralized (e.g. wUSDT minted without a matching real
+					// deposit) - that must halt and page someone, not degrade silently.
+					//
+					// Note this reserve check is best-effort only: the withdrawal itself
+					// is already finalized on Pezkuwi by the time we get here, so a
+					// transient RPC hiccup while trying to verify the Polkadot-side
+					// reserve must NEVER `continue` past recording it - that would drop
+					// a real, already-committed withdrawal on the floor with no
+					// pending_multisig_approval entry anywhere (exactly the silent-loss
+					// failure mode fixed for the subscription-stall bug). The signatories
+					// verify the real reserve themselves in pwap-web before approving, so
+					// an unverified reserve here just means "never auto-pay, always
+					// human-review" - it does not block recording the request.
+					let polkadot_client = connect_to_chain(&config.polkadot_rpc).await.ok();
+					let reserve_known = polkadot_client.is_some();
 
-						let reserve = match &polkadot_client {
-							Some(client) => get_asset_balance(
-								client,
-								config.polkadot_usdt_asset_id,
-								polkadot_bridge_addr,
-							)
-							.await
-							.unwrap_or(0),
-							None => 0,
-						};
+					let reserve = match &polkadot_client {
+						Some(client) => get_asset_balance(
+							client,
+							config.polkadot_usdt_asset_id,
+							polkadot_bridge_addr,
+						)
+						.await
+						.unwrap_or(0),
+						None => 0,
+					};
 
-						if !reserve_known {
-							error!("   ❌ Failed to connect to Polkadot to verify reserve - recording withdrawal as pending_multisig_approval anyway (reserve NOT confirmed, signatories must check manually)");
-							notify_telegram(config, &format!(
+					if !reserve_known {
+						error!("   ❌ Failed to connect to Polkadot to verify reserve - recording withdrawal as pending_multisig_approval anyway (reserve NOT confirmed, signatories must check manually)");
+						notify_telegram(config, &format!(
                                     "⚠️ Could not verify Polkadot reserve for a {} USDT withdrawal from {} (RPC connect failed). Recorded as pending_multisig_approval - reserve NOT confirmed, signatories must check manually before approving.",
                                     amount as f64 / 1_000_000.0, from_str
                                 )).await;
-						} else if reserve < net_amount {
-							let shortfall_msg = format!(
+					} else if reserve < net_amount {
+						let shortfall_msg = format!(
                                     "🚨 RESERVE SHORTFALL: custody holds {} USDT, need {} USDT to honor a pending {} USDT withdrawal from {}. \
                                      This must be reviewed by the signatories before any approval - do NOT approve as-is.",
                                     reserve as f64 / 1_000_000.0,
@@ -2110,200 +2135,197 @@ async fn process_withdrawal_block(
                                     amount as f64 / 1_000_000.0,
                                     from_str,
                                 );
-							notify_telegram(config, &shortfall_msg).await;
-						}
+						notify_telegram(config, &shortfall_msg).await;
+					}
 
-						match convert_ss58_prefix(&from_str, 0) {
-							Ok(polkadot_recipient) => {
-								let now = Utc::now();
-								// Never attempt auto-pay against an unverified or known-short reserve -
-								// both cases must always go to human review.
-								let auto_pay_attempt = if !reserve_known || reserve < net_amount {
-									None
-								} else {
-									match (
-										from_bytes_opt,
-										&automation.polkadot_signing_client,
-										&automation.polkadot_keypair,
-									) {
-										(Some(dest_bytes), Some(client), Some(keypair)) => {
-											match check_auto_pay_eligible(
-												&db,
-												config,
-												LEG_WITHDRAWAL_USDT_PAYOUT,
-												net_amount,
-												now,
-											) {
-												Ok(()) => {
-													let owner_bytes = pezsp_core::crypto::AccountId32::from_ss58check(polkadot_bridge_addr)
+					match convert_ss58_prefix(&from_str, 0) {
+						Ok(polkadot_recipient) => {
+							let now = Utc::now();
+							// Never attempt auto-pay against an unverified or known-short reserve -
+							// both cases must always go to human review.
+							let auto_pay_attempt = if !reserve_known || reserve < net_amount {
+								None
+							} else {
+								match (
+									from_bytes_opt,
+									&automation.polkadot_signing_client,
+									&automation.polkadot_keypair,
+								) {
+									(Some(dest_bytes), Some(client), Some(keypair)) => {
+										match check_auto_pay_eligible(
+											&db,
+											config,
+											LEG_WITHDRAWAL_USDT_PAYOUT,
+											net_amount,
+											now,
+										) {
+											Ok(()) => {
+												let owner_bytes = pezsp_core::crypto::AccountId32::from_ss58check(polkadot_bridge_addr)
                                                             .map(Into::<[u8; 32]>::into)
                                                             .map_err(|e| format!("bad custody_multisig_polkadot config: {e:?}"));
-													match owner_bytes {
-														Ok(owner_bytes) => {
-															let first = execute_usdt_auto_payout(
-																client,
-																keypair,
-																config.polkadot_usdt_asset_id,
-																owner_bytes,
-																dest_bytes,
-																net_amount,
-															)
-															.await;
-															// Same reconnect-and-retry as the wUSDT leg - see its comment. This
-															// exact failure ("Connection reset by peer... restart required")
-															// was observed live twice on this leg before this fix.
-															let result = if first.is_err() {
-																warn!("   ⚠️ Auto-pay attempt failed ({:?}) - retrying once with a fresh connection", first.as_ref().err());
-																match OnlineClient::<BizinikiwiConfig>::from_url(&config.polkadot_rpc).await {
+												match owner_bytes {
+													Ok(owner_bytes) => {
+														let first = execute_usdt_auto_payout(
+															client,
+															keypair,
+															config.polkadot_usdt_asset_id,
+															owner_bytes,
+															dest_bytes,
+															net_amount,
+														)
+														.await;
+														// Same reconnect-and-retry as the wUSDT leg - see its comment. This
+														// exact failure ("Connection reset by peer... restart required")
+														// was observed live twice on this leg before this fix.
+														let result = if first.is_err() {
+															warn!("   ⚠️ Auto-pay attempt failed ({:?}) - retrying once with a fresh connection", first.as_ref().err());
+															match OnlineClient::<BizinikiwiConfig>::from_url(&config.polkadot_rpc).await {
                                                                         Ok(fresh_client) => execute_usdt_auto_payout(&fresh_client, keypair, config.polkadot_usdt_asset_id, owner_bytes, dest_bytes, net_amount).await,
                                                                         Err(_) => first,
                                                                     }
-															} else {
-																first
-															};
-															Some(result)
-														},
-														Err(reason) => {
-															warn!(
-																"   ⚠️ Auto-pay skipped: {reason}"
-															);
-															None
-														},
-													}
-												},
-												Err(reason) => {
-													info!("   ℹ️ Not auto-paying (falls back to manual): {reason}");
-													None
-												},
-											}
-										},
-										_ => None,
-									}
-								};
+														} else {
+															first
+														};
+														Some(result)
+													},
+													Err(reason) => {
+														warn!("   ⚠️ Auto-pay skipped: {reason}");
+														None
+													},
+												}
+											},
+											Err(reason) => {
+												info!("   ℹ️ Not auto-paying (falls back to manual): {reason}");
+												None
+											},
+										}
+									},
+									_ => None,
+								}
+							};
 
-								match auto_pay_attempt {
-									Some(Ok(polkadot_tx_hash)) => {
-										// The wUSDT the user sent in is NOT burned here - burn is
-										// Owner/Admin-only (multisig-only, no delegation exists for
-										// it). Paying the user out is what's time-critical; the
-										// matching burn is deferred bookkeeping the signatories batch
-										// periodically via pwap-web - tracked explicitly by this
-										// status so it can never be silently forgotten.
-										info!("   ✅ AUTO-PAID: {} USDT -> {} (tx {}); wUSDT burn still pending (multisig-only)", net_amount as f64 / 1_000_000.0, polkadot_recipient, polkadot_tx_hash);
-										db.record_auto_payout(
-											LEG_WITHDRAWAL_USDT_PAYOUT,
-											net_amount,
-											now,
-										);
-										let breaker_tripped = maybe_trip_circuit_breaker(
-											&mut db,
-											config,
-											LEG_WITHDRAWAL_USDT_PAYOUT,
-											now,
-										);
-										db.add_withdrawal(WithdrawalRecord {
-											id: db.next_withdrawal_id(),
-											pezkuwi_tx_hash: tx_hash.clone(),
-											pezkuwi_block: block_number as u64,
-											sender_address: from_str.clone(),
-											destination_address: polkadot_recipient.clone(),
-											amount,
-											fee,
-											net_amount,
-											polkadot_tx_hash: Some(polkadot_tx_hash.clone()),
-											status: "auto_paid_burn_pending".to_string(),
-											created_at: now.to_rfc3339(),
-											processed_at: Some(now.to_rfc3339()),
-										});
-										db.save(&config.db_path)?;
-										if let Some(reason) = breaker_tripped {
-											notify_telegram(config, &format!("🚨 CIRCUIT BREAKER TRIPPED (withdrawal/USDT leg): {reason}. All further withdrawals now queue for manual 3-of-5 review until `reset-circuit-breaker` is run after human review.")).await;
-										} else if amount >= config.notify_threshold {
-											notify_telegram(config, &format!(
+							match auto_pay_attempt {
+								Some(Ok(polkadot_tx_hash)) => {
+									// The wUSDT the user sent in is NOT burned here - burn is
+									// Owner/Admin-only (multisig-only, no delegation exists for
+									// it). Paying the user out is what's time-critical; the
+									// matching burn is deferred bookkeeping the signatories batch
+									// periodically via pwap-web - tracked explicitly by this
+									// status so it can never be silently forgotten.
+									info!("   ✅ AUTO-PAID: {} USDT -> {} (tx {}); wUSDT burn still pending (multisig-only)", net_amount as f64 / 1_000_000.0, polkadot_recipient, polkadot_tx_hash);
+									db.record_auto_payout(
+										LEG_WITHDRAWAL_USDT_PAYOUT,
+										net_amount,
+										now,
+									);
+									let breaker_tripped = maybe_trip_circuit_breaker(
+										&mut db,
+										config,
+										LEG_WITHDRAWAL_USDT_PAYOUT,
+										now,
+									);
+									db.add_withdrawal(WithdrawalRecord {
+										id: db.next_withdrawal_id(),
+										pezkuwi_tx_hash: tx_hash.clone(),
+										pezkuwi_block: block_number as u64,
+										sender_address: from_str.clone(),
+										destination_address: polkadot_recipient.clone(),
+										amount,
+										fee,
+										net_amount,
+										polkadot_tx_hash: Some(polkadot_tx_hash.clone()),
+										status: "auto_paid_burn_pending".to_string(),
+										created_at: now.to_rfc3339(),
+										processed_at: Some(now.to_rfc3339()),
+									});
+									db.save(&config.db_path)?;
+									if let Some(reason) = breaker_tripped {
+										notify_telegram(config, &format!("🚨 CIRCUIT BREAKER TRIPPED (withdrawal/USDT leg): {reason}. All further withdrawals now queue for manual 3-of-5 review until `reset-circuit-breaker` is run after human review.")).await;
+									} else if amount >= config.notify_threshold {
+										notify_telegram(config, &format!(
                                                     "✅ Auto-paid withdrawal: {} wUSDT from {} -> {} USDT (net of fee) to {}. tx {}. wUSDT burn still pending - batch via pwap-web when convenient.",
                                                     amount as f64 / 1_000_000.0, from_str, net_amount as f64 / 1_000_000.0, polkadot_recipient, polkadot_tx_hash
                                                 )).await;
-										}
-									},
-									Some(Err(e)) => {
-										error!("   ❌ Auto-pay execution FAILED, falling back to manual review: {e:#}");
-										notify_telegram(config, &format!(
+									}
+								},
+								Some(Err(e)) => {
+									error!("   ❌ Auto-pay execution FAILED, falling back to manual review: {e:#}");
+									notify_telegram(config, &format!(
                                                 "⚠️ Auto-pay attempt failed for withdrawal {} USDT from {} - falling back to manual 3-of-5 review. Error: {e:#}",
                                                 amount as f64 / 1_000_000.0, from_str
                                             )).await;
-										db.add_withdrawal(WithdrawalRecord {
-											id: db.next_withdrawal_id(),
-											pezkuwi_tx_hash: tx_hash.clone(),
-											pezkuwi_block: block_number as u64,
-											sender_address: from_str.clone(),
-											destination_address: polkadot_recipient,
-											amount,
-											fee,
-											net_amount,
-											polkadot_tx_hash: None,
-											status: "pending_multisig_approval".to_string(),
-											created_at: now.to_rfc3339(),
-											processed_at: None,
-										});
-										db.save(&config.db_path)?;
-									},
-									None => {
-										info!("   ⏳ AWAITING MULTISIG APPROVAL - not auto-burning/releasing.");
-										info!(
+									db.add_withdrawal(WithdrawalRecord {
+										id: db.next_withdrawal_id(),
+										pezkuwi_tx_hash: tx_hash.clone(),
+										pezkuwi_block: block_number as u64,
+										sender_address: from_str.clone(),
+										destination_address: polkadot_recipient,
+										amount,
+										fee,
+										net_amount,
+										polkadot_tx_hash: None,
+										status: "pending_multisig_approval".to_string(),
+										created_at: now.to_rfc3339(),
+										processed_at: None,
+									});
+									db.save(&config.db_path)?;
+								},
+								None => {
+									info!("   ⏳ AWAITING MULTISIG APPROVAL - not auto-burning/releasing.");
+									info!(
                                                 "      3 of 5 signatories must approve: burn {} wUSDT, then Assets.transfer({}, {}, {}) on Polkadot",
                                                 amount as f64 / 1_000_000.0, config.polkadot_usdt_asset_id, polkadot_recipient, net_amount
                                             );
-										if reserve_known {
-											info!("      Reserve check at detection time: {} USDT available. Use pwap-web's multisig UI.",
+									if reserve_known {
+										info!("      Reserve check at detection time: {} USDT available. Use pwap-web's multisig UI.",
                                                     reserve as f64 / 1_000_000.0);
+									} else {
+										info!("      Reserve could NOT be verified (Polkadot RPC unreachable at detection time) - signatories must check manually via pwap-web.");
+									}
+
+									db.add_withdrawal(WithdrawalRecord {
+										id: db.next_withdrawal_id(),
+										pezkuwi_tx_hash: tx_hash.clone(),
+										pezkuwi_block: block_number as u64,
+										sender_address: from_str.clone(),
+										destination_address: polkadot_recipient.clone(),
+										amount,
+										fee,
+										net_amount,
+										polkadot_tx_hash: None,
+										status: if !reserve_known {
+											"pending_multisig_approval_reserve_unverified"
+												.to_string()
+										} else if reserve < net_amount {
+											"pending_multisig_approval_reserve_shortfall"
+												.to_string()
 										} else {
-											info!("      Reserve could NOT be verified (Polkadot RPC unreachable at detection time) - signatories must check manually via pwap-web.");
-										}
+											"pending_multisig_approval".to_string()
+										},
+										created_at: now.to_rfc3339(),
+										processed_at: None,
+									});
+									db.save(&config.db_path)?;
 
-										db.add_withdrawal(WithdrawalRecord {
-											id: db.next_withdrawal_id(),
-											pezkuwi_tx_hash: tx_hash.clone(),
-											pezkuwi_block: block_number as u64,
-											sender_address: from_str.clone(),
-											destination_address: polkadot_recipient.clone(),
-											amount,
-											fee,
-											net_amount,
-											polkadot_tx_hash: None,
-											status: if !reserve_known {
-												"pending_multisig_approval_reserve_unverified"
-													.to_string()
-											} else if reserve < net_amount {
-												"pending_multisig_approval_reserve_shortfall"
-													.to_string()
-											} else {
-												"pending_multisig_approval".to_string()
-											},
-											created_at: now.to_rfc3339(),
-											processed_at: None,
-										});
-										db.save(&config.db_path)?;
-
-										// Unlike the two branches above (reserve_unverified/reserve_shortfall already
-										// notify further up), the plain "automation not configured/eligible" case had no
-										// notification at all until now - a withdrawal needing manual 3-of-5 review must
-										// always page someone, the same as the deposit leg already does.
-										if reserve_known && reserve >= net_amount {
-											notify_telegram(config, &format!(
+									// Unlike the two branches above (reserve_unverified/reserve_shortfall already
+									// notify further up), the plain "automation not configured/eligible" case had no
+									// notification at all until now - a withdrawal needing manual 3-of-5 review must
+									// always page someone, the same as the deposit leg already does.
+									if reserve_known && reserve >= net_amount {
+										notify_telegram(config, &format!(
                                                     "📤 New withdrawal pending approval: {} USDT from {} -> release {} USDT (net of fee) to {}. Sign at pwap-web's /multisig/pending.",
                                                     amount as f64 / 1_000_000.0, from_str, net_amount as f64 / 1_000_000.0, polkadot_recipient
                                                 )).await;
-										}
-									},
-								}
-							},
-							Err(e) => {
-								error!(
-									"   ❌ Could not derive Polkadot recipient from sender {}: {}",
-									from_str, e
-								);
-							},
-						}
+									}
+								},
+							}
+						},
+						Err(e) => {
+							error!(
+								"   ❌ Could not derive Polkadot recipient from sender {}: {}",
+								from_str, e
+							);
+						},
 					}
 				}
 			}
