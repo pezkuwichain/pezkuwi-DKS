@@ -1477,7 +1477,7 @@ parameter_types! {
 // and domain separator. Without it the precompile set does not satisfy its bounds.
 impl pezpallet_assets_precompiles::PermitConfig for Runtime {
 	type ChainId = <Runtime as pezpallet_revive::Config>::ChainId;
-	type WeightInfo = pezpallet_assets_precompiles::permit_weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_assets_precompiles_permit::WeightInfo<Runtime>;
 }
 
 impl pezpallet_bounties::Config for Runtime {
@@ -1714,7 +1714,7 @@ impl pezpallet_revive::Config for Runtime {
 	type DepositPerItem = DepositPerItem;
 	type DepositPerChildTrieItem = DepositPerChildTrieItem;
 	type DepositPerByte = DepositPerByte;
-	type WeightInfo = pezpallet_revive::weights::BizinikiwiWeight<Self>;
+	type WeightInfo = weights::pezpallet_revive::WeightInfo<Self>;
 	type Precompiles = (
 		ERC20<Self, InlineIdConfig<0x120>, TrustBackedAssetsInstance>,
 		ERC20<Self, InlineIdConfig<0x320>, PoolAssetsInstance>,
