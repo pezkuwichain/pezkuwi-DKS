@@ -12,9 +12,8 @@
 //! - Custody is a 3-of-5 multisig, NOT a single keypair. On Pezkuwi Asset Hub the multisig
 //!   (5GvwxmCDp3PC33KHoeWSgj3S7ocE7nzk1jiCCZMPSDBFeNcj) now owns wUSDT (asset 1000) - it holds
 //!   a seed pool of 1,000,000 wUSDT and is the sole issuer/admin/freezer. On Polkadot Asset Hub
-//!   the same account (15sF76THfpefUaKomHZSpssayRbsp6Yt6ESgMrLjzJCmpe66) is the designated
-//!   deposit address, though it currently holds no real USDT - nobody has deposited real value
-//!   into this bridge yet.
+//!   the same account (15sF76THfpefUaKomHZSpssayRbsp6Yt6ESgMrLjzJCmpe66) is the deposit
+//!   address and holds the real USDT that backs wUSDT in circulation.
 //! - Because of this, `listen_deposits`/`listen_withdrawals` below can no longer sign and
 //!   submit mint/transfer calls automatically - no key this process holds has authority over
 //!   the multisig account. They now only DETECT on-chain events and record them as
@@ -155,6 +154,31 @@ pub struct BridgeConfig {
 	/// only the routine "everything worked, nothing to look at" case is gated by this.
 	#[serde(default = "default_notify_threshold")]
 	pub notify_threshold: u128,
+	/// The custody multisig's signatories (any SS58 encoding) and threshold. Catch-up skips a
+	/// block range only when the custody balance, the automation allowance and every signatory's
+	/// nonce are unchanged across it (see `catch_up`), so this has to be the real list: startup
+	/// re-derives the custody account from it and refuses to run if the two disagree.
+	#[serde(default = "default_multisig_signatories")]
+	pub multisig_signatories: Vec<String>,
+	#[serde(default = "default_multisig_threshold")]
+	pub multisig_threshold: u16,
+}
+
+fn default_multisig_signatories() -> Vec<String> {
+	[
+		"5EfUVZ4HXG65WuqeG24z4Pmt11cNQTUacR3CKymKcsv1UTFU", // Serok
+		"5CrB5BWJfLNWEZAsAXDKXdJUGzFMXKvYnwRX4DVMcgBwxSdx", // SerokiMeclise
+		"5GipBJs2uNWTCazyZQ2vG3DEqLz4tXNmNZtBAT1Mtm1orZ5i", // Xezinedar
+		"5HWFZbhkZuTUySXu6ZXYKrTHBnWXHvWRKLozE22zhnwXGGxk", // Berdevk
+		"5ELgySrX5ZyK7EWXjj6bAedyTCcTNWDANbiiipsT5gnpoCEp", // Noter
+	]
+	.iter()
+	.map(|s| s.to_string())
+	.collect()
+}
+
+fn default_multisig_threshold() -> u16 {
+	3
 }
 
 fn default_max_single_tx() -> u128 {
@@ -206,6 +230,8 @@ impl Default for BridgeConfig {
 			circuit_breaker_window_minutes: default_circuit_breaker_window_minutes(),
 			circuit_breaker_fraction: default_circuit_breaker_fraction(),
 			notify_threshold: default_notify_threshold(),
+			multisig_signatories: default_multisig_signatories(),
+			multisig_threshold: default_multisig_threshold(),
 		}
 	}
 }
@@ -584,9 +610,10 @@ fn init_db(db_path: &PathBuf) -> Result<()> {
 async fn connect_to_chain(url: &str) -> Result<OnlineClient<BizinikiwiConfig>> {
 	const MAX_ATTEMPTS: u32 = 6;
 	let mut delay = Duration::from_secs(2);
+	let shown = redact_rpc_url(url);
 
 	for attempt in 1..=MAX_ATTEMPTS {
-		info!("Connecting to {}... (attempt {attempt}/{MAX_ATTEMPTS})", url);
+		info!("Connecting to {shown}... (attempt {attempt}/{MAX_ATTEMPTS})");
 
 		match OnlineClient::<BizinikiwiConfig>::from_url(url).await {
 			Ok(client) => {
@@ -594,18 +621,35 @@ async fn connect_to_chain(url: &str) -> Result<OnlineClient<BizinikiwiConfig>> {
 				return Ok(client);
 			},
 			Err(e) if attempt < MAX_ATTEMPTS => {
-				warn!("Connect attempt {attempt}/{MAX_ATTEMPTS} to {url} failed: {e} - retrying in {}s", delay.as_secs());
+				warn!("Connect attempt {attempt}/{MAX_ATTEMPTS} to {shown} failed: {e} - retrying in {}s", delay.as_secs());
 				tokio::time::sleep(delay).await;
 				delay = (delay * 2).min(Duration::from_secs(60));
 			},
 			Err(e) => {
-				return Err(e)
-					.context(format!("Failed to connect to {url} after {MAX_ATTEMPTS} attempts"));
+				return Err(e).context(format!(
+					"Failed to connect to {shown} after {MAX_ATTEMPTS} attempts"
+				));
 			},
 		}
 	}
 
 	unreachable!("loop always returns via Ok or the final Err arm")
+}
+
+/// A metered provider puts its API key in the URL path (the Polkadot endpoint here does), and
+/// these log lines go to the journal. Keeps the scheme and host - enough to tell which endpoint
+/// is failing - and drops credentials and everything after the host.
+fn redact_rpc_url(url: &str) -> String {
+	let Some((scheme, rest)) = url.split_once("://") else {
+		return "<unparseable rpc url>".to_string();
+	};
+	let authority = rest.split(['/', '?', '#']).next().unwrap_or(rest);
+	let host = authority.rsplit_once('@').map_or(authority, |(_, host)| host);
+	if host.len() == rest.len() {
+		format!("{scheme}://{host}")
+	} else {
+		format!("{scheme}://{host}/<redacted>")
+	}
 }
 
 /// Get asset balance using dynamic API
@@ -1432,6 +1476,312 @@ async fn connect_legacy_rpc(url: &str) -> Result<LegacyRpcMethods<BizinikiwiConf
 	Ok(LegacyRpcMethods::<BizinikiwiConfig>::new(rpc_client))
 }
 
+// ============================================================================
+// Catch-up: skip what provably holds nothing, scan only where custody moved
+// ============================================================================
+//
+// Both listeners used to scan every block between the checkpoint and the head before going
+// live. After the 2026-09 outage that was 1.28M Polkadot blocks at ~6k an hour on a metered
+// endpoint whose daily quota ran out within hours, so the deposit side could not go live for
+// weeks - and the gap held no deposit at all (custody balance, allowance and every signatory's
+// nonce were the same at both ends).
+//
+// Everything this bridge acts on moves custody state, so a range in which that state did not
+// move holds nothing to act on:
+// - a deposit or withdrawal is a transfer INTO the custody account: the balance rises;
+// - the only ways out are the automation key's `transfer_approved` (the allowance falls, and
+//   it can only be refilled by the multisig) and a multisig call (3 signatories sign, so their
+//   nonces rise);
+// - allowance and nonces never go back, so equal values at both ends mean nothing left, and
+//   then an unchanged balance means nothing came in.
+// The one move outside this model is the asset's own admin forcing a transfer out of custody
+// (on Polkadot Asset Hub that is USDT's issuer, not us); that would break the reserve as well
+// and is not something a block scan would undo.
+//
+// Where the fingerprint did change, the range is halved until single blocks remain, and those
+// go through the same per-block processing as before. A quiet gap of any length costs two
+// fingerprints; each block that moved costs about two per halving.
+
+/// Custody state at one block: see the section comment for why equality across a range proves
+/// the range holds nothing to act on.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CustodyFingerprint {
+	balance: u128,
+	allowance: u128,
+	nonces: Vec<u128>,
+}
+
+/// What a fingerprint reads on one chain: the custody account's balance of `asset_id`, its
+/// allowance to the automation key, and the nonces of `accounts` (the signatories and the
+/// automation key).
+struct CustodyWatch {
+	asset_id: u32,
+	custody: [u8; 32],
+	automation: [u8; 32],
+	accounts: Vec<[u8; 32]>,
+}
+
+/// The pallet-multisig account for `signatories` and `threshold`:
+/// blake2_256("modlpy/utilisuba" ++ SCALE(sorted signatories) ++ SCALE(threshold)).
+fn multisig_account_id(signatories: &[[u8; 32]], threshold: u16) -> Result<[u8; 32]> {
+	let mut who = signatories.to_vec();
+	who.sort();
+	who.dedup();
+	if who.len() != signatories.len() || who.len() >= 64 {
+		return Err(anyhow!("multisig signatories must be distinct and fewer than 64"));
+	}
+	let mut preimage = b"modlpy/utilisuba".to_vec();
+	// SCALE compact length; one byte holds any length below 64.
+	preimage.push((who.len() as u8) << 2);
+	for w in &who {
+		preimage.extend_from_slice(w);
+	}
+	preimage.extend_from_slice(&threshold.to_le_bytes());
+	Ok(<pezsp_core::Blake2Hasher as pezsp_core::Hasher>::hash(&preimage).0)
+}
+
+fn account_bytes(ss58: &str) -> Result<[u8; 32]> {
+	let id = pezsp_core::crypto::AccountId32::from_ss58check(ss58)
+		.map_err(|e| anyhow!("invalid account {ss58}: {e:?}"))?;
+	Ok(*<pezsp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&id))
+}
+
+/// Builds the fingerprint inputs for one side and checks that the configured signatories
+/// really are the custody account's - a wrong list would make skipped ranges unsound, so a
+/// mismatch stops the bridge rather than weakening the proof.
+fn custody_watch(config: &BridgeConfig, custody_ss58: &str, asset_id: u32) -> Result<CustodyWatch> {
+	let custody = account_bytes(custody_ss58)?;
+	let signatories = config
+		.multisig_signatories
+		.iter()
+		.map(|s| account_bytes(s))
+		.collect::<Result<Vec<_>>>()?;
+	let derived = multisig_account_id(&signatories, config.multisig_threshold)?;
+	if derived != custody {
+		return Err(anyhow!(
+			"multisig_signatories with threshold {} derive {}, not the custody account {custody_ss58}; \
+			 catch-up cannot prove anything about a range with the wrong signatories - fix the config",
+			config.multisig_threshold,
+			account_bytes_to_ss58(derived, 42)
+		));
+	}
+	let automation = account_bytes(AUTOMATION_KEY_ADDRESS)?;
+	let mut accounts = signatories;
+	accounts.push(automation);
+	Ok(CustodyWatch { asset_id, custody, automation, accounts })
+}
+
+/// Pause after each storage read of a fingerprint. Seven reads back to back, repeated for each
+/// halving, tripped the metered Polkadot endpoint's per-second limit in the first real-chain run
+/// ("Rate limit exceeded", which also poisons the connection) - the same failure the full scan's
+/// per-block pause exists for.
+const FINGERPRINT_READ_PAUSE: Duration = Duration::from_millis(150);
+
+async fn custody_fingerprint(
+	client: &OnlineClient<BizinikiwiConfig>,
+	legacy_rpc: &LegacyRpcMethods<BizinikiwiConfig>,
+	watch: &CustodyWatch,
+	block_number: u64,
+) -> Result<CustodyFingerprint> {
+	let hash = legacy_rpc
+		.chain_get_block_hash(Some(block_number.into()))
+		.await?
+		.ok_or_else(|| anyhow!("no block hash found for block #{block_number}"))?;
+	let at = client.storage().at(hash);
+
+	// An absent entry is a real zero (no balance, no approval, a fresh account). A present entry
+	// without the field is an error: reading it as zero would make every range look unchanged.
+	let account_q =
+		pezkuwi_subxt::dynamic::storage::<(u32, SubxtAccountId32), Value>("Assets", "Account");
+	let balance = match at
+		.entry(account_q)?
+		.try_fetch((watch.asset_id, SubxtAccountId32(watch.custody)))
+		.await?
+	{
+		Some(v) => v.decode()?.at("balance").and_then(|b| b.as_u128()).ok_or_else(|| {
+			anyhow!("Assets.Account at #{block_number} has no u128 `balance` - metadata changed?")
+		})?,
+		None => 0,
+	};
+	tokio::time::sleep(FINGERPRINT_READ_PAUSE).await;
+
+	let approval_q = pezkuwi_subxt::dynamic::storage::<
+		(u32, SubxtAccountId32, SubxtAccountId32),
+		Value,
+	>("Assets", "Approvals");
+	let allowance = match at
+		.entry(approval_q)?
+		.try_fetch((
+			watch.asset_id,
+			SubxtAccountId32(watch.custody),
+			SubxtAccountId32(watch.automation),
+		))
+		.await?
+	{
+		Some(v) => v.decode()?.at("amount").and_then(|a| a.as_u128()).ok_or_else(|| {
+			anyhow!("Assets.Approvals at #{block_number} has no u128 `amount` - metadata changed?")
+		})?,
+		None => 0,
+	};
+	tokio::time::sleep(FINGERPRINT_READ_PAUSE).await;
+
+	let mut nonces = Vec::with_capacity(watch.accounts.len());
+	for who in &watch.accounts {
+		let system_q =
+			pezkuwi_subxt::dynamic::storage::<(SubxtAccountId32,), Value>("System", "Account");
+		let nonce = match at.entry(system_q)?.try_fetch((SubxtAccountId32(*who),)).await? {
+			Some(v) => v.decode()?.at("nonce").and_then(|n| n.as_u128()).ok_or_else(|| {
+				anyhow!("System.Account at #{block_number} has no `nonce` - metadata changed?")
+			})?,
+			None => 0,
+		};
+		nonces.push(nonce);
+		tokio::time::sleep(FINGERPRINT_READ_PAUSE).await;
+	}
+
+	Ok(CustodyFingerprint { balance, allowance, nonces })
+}
+
+#[derive(Clone, Copy)]
+enum Side {
+	/// Polkadot Asset Hub, USDT into custody.
+	Deposits,
+	/// Pezkuwi Asset Hub, wUSDT into custody.
+	Withdrawals,
+}
+
+impl Side {
+	fn chain(self) -> &'static str {
+		match self {
+			Side::Deposits => "Polkadot",
+			Side::Withdrawals => "Pezkuwi",
+		}
+	}
+}
+
+async fn save_checkpoint(config: &BridgeConfig, side: Side, block_number: u64) -> Result<()> {
+	let _guard = DB_LOCK.lock().await;
+	let mut db = BridgeDatabase::load(&config.db_path)?;
+	match side {
+		Side::Deposits => db.stats.last_polkadot_block = block_number,
+		Side::Withdrawals => db.stats.last_pezkuwi_block = block_number,
+	}
+	db.save(&config.db_path)?;
+	Ok(())
+}
+
+/// What `catch_up_ranges` needs from a chain, kept apart from the RPC so the halving can be
+/// tested against a scripted chain.
+trait CatchUpSource {
+	async fn fingerprint(&mut self, block_number: u64) -> Result<CustodyFingerprint>;
+	/// Processes one block that may hold something to act on, and advances the checkpoint to it.
+	async fn scan(&mut self, block_number: u64) -> Result<()>;
+	/// Advances the checkpoint over a range that provably holds nothing.
+	async fn skip_to(&mut self, block_number: u64) -> Result<()>;
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+struct CatchUpStats {
+	scanned: u64,
+	skipped: u64,
+	fingerprints: u64,
+}
+
+/// Brings a side from `last_processed` up to `to`: ranges whose custody fingerprint did not
+/// change are skipped, the rest is halved down to single blocks that are scanned. Ranges are
+/// taken left-first, so blocks are processed - and the checkpoint advances - in block order.
+async fn catch_up_ranges<S: CatchUpSource>(
+	source: &mut S,
+	last_processed: u64,
+	to: u64,
+) -> Result<CatchUpStats> {
+	let mut stats = CatchUpStats::default();
+	if to <= last_processed {
+		return Ok(stats);
+	}
+	let lo = source.fingerprint(last_processed).await?;
+	let hi = source.fingerprint(to).await?;
+	stats.fingerprints = 2;
+
+	// (a, b] with the fingerprints at a and b.
+	let mut pending = vec![(last_processed, lo, to, hi)];
+	while let Some((a, fa, b, fb)) = pending.pop() {
+		if fa == fb {
+			stats.skipped += b - a;
+			source.skip_to(b).await?;
+		} else if b == a + 1 {
+			source.scan(b).await?;
+			stats.scanned += 1;
+		} else {
+			let m = a + (b - a) / 2;
+			let fm = source.fingerprint(m).await?;
+			stats.fingerprints += 1;
+			pending.push((m, fm.clone(), b, fb));
+			pending.push((a, fa, m, fm));
+		}
+	}
+	Ok(stats)
+}
+
+struct ChainCatchUp<'a> {
+	config: &'a BridgeConfig,
+	automation: &'a AutomationContext,
+	client: &'a OnlineClient<BizinikiwiConfig>,
+	legacy_rpc: &'a LegacyRpcMethods<BizinikiwiConfig>,
+	watch: &'a CustodyWatch,
+	side: Side,
+}
+
+impl CatchUpSource for ChainCatchUp<'_> {
+	async fn fingerprint(&mut self, block_number: u64) -> Result<CustodyFingerprint> {
+		custody_fingerprint(self.client, self.legacy_rpc, self.watch, block_number).await
+	}
+
+	async fn scan(&mut self, block_number: u64) -> Result<()> {
+		let (config, automation, client, rpc) =
+			(self.config, self.automation, self.client, self.legacy_rpc);
+		match self.side {
+			Side::Deposits => {
+				backfill_deposit_block(config, automation, client, rpc, block_number).await?;
+				// Same courtesy pause the full scan used - see listen_deposits.
+				tokio::time::sleep(Duration::from_millis(150)).await;
+			},
+			Side::Withdrawals => {
+				backfill_withdrawal_block(config, automation, client, rpc, block_number).await?;
+			},
+		}
+		Ok(())
+	}
+
+	async fn skip_to(&mut self, block_number: u64) -> Result<()> {
+		save_checkpoint(self.config, self.side, block_number).await
+	}
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn catch_up(
+	config: &BridgeConfig,
+	automation: &AutomationContext,
+	client: &OnlineClient<BizinikiwiConfig>,
+	legacy_rpc: &LegacyRpcMethods<BizinikiwiConfig>,
+	watch: &CustodyWatch,
+	side: Side,
+	last_processed: u64,
+	to: u64,
+) -> Result<()> {
+	let mut source = ChainCatchUp { config, automation, client, legacy_rpc, watch, side };
+	let stats = catch_up_ranges(&mut source, last_processed, to).await?;
+	info!(
+		"Caught up {} blocks {}..={to}: {} scanned, {} skipped with unchanged custody state, {} fingerprints read",
+		side.chain(),
+		last_processed + 1,
+		stats.scanned,
+		stats.skipped,
+		stats.fingerprints
+	);
+	Ok(())
+}
+
 /// Fetches block `block_number` by hash and runs it through `process_deposit_block`, then
 /// persists the checkpoint. Used both for startup backfill (resuming after downtime) and for
 /// closing any gap the live subscription itself might open up mid-run.
@@ -1470,108 +1820,149 @@ async fn listen_deposits(config: &BridgeConfig, automation: &AutomationContext) 
 	println!("detected deposits are recorded as pending_multisig_approval. An actual");
 	println!("mint requires 3 of the 5 signatories to approve via pwap-web.\n");
 
+	let watch = custody_watch(config, polkadot_addr, config.polkadot_usdt_asset_id)?;
+
 	// Outer loop: a full reconnect (fresh client + fresh legacy RPC) on every stall or dropped
 	// subscription. Each pass re-derives last_seen from the persisted checkpoint and backfills any
 	// gap before going live again - the same recovery path an ordinary process restart already
 	// gets, just triggered by a detected stall instead of only by systemd.
+	let mut retry = Duration::from_secs(30);
 	loop {
-		let client = connect_to_chain(&config.polkadot_rpc).await?;
-		let legacy_rpc = connect_legacy_rpc(&config.polkadot_rpc).await?;
-
-		// Checkpoint + backfill: a live block subscription alone is not a correctness guarantee - a
-		// transient reconnect or subscription hiccup can silently skip blocks with zero logging (this
-		// is exactly how a real user deposit went undetected in production - see
-		// the operator's custody notes 2026-07-15). On every (re)start, explicitly scan any gap between
-		// the last persisted checkpoint and the current chain head before relying on the live stream.
-		let last_processed = { BridgeDatabase::load(&config.db_path)?.stats.last_polkadot_block };
-		let head_hash = legacy_rpc.chain_get_finalized_head().await?;
-		let head_block = client.blocks().at(head_hash).await?;
-		let head_number = head_block.number() as u64;
-
-		let mut last_seen = if last_processed == 0 {
-			info!("No checkpoint found - starting from current head (block {head_number}), not scanning full history");
-			head_number
-		} else if head_number > last_processed {
-			info!("Backfilling Polkadot blocks {} to {head_number} before going live (resuming from checkpoint)", last_processed + 1);
-			for n in (last_processed + 1)..=head_number {
-				backfill_deposit_block(config, automation, &client, &legacy_rpc, n).await?;
-				// A public/shared RPC endpoint (or a metered provider's free tier) can rate-limit
-				// a tight burst of per-block calls hard enough to poison the whole connection
-				// ("background task closed... restart required"), killing this entire listener
-				// over what would otherwise be a routine catch-up after any real downtime -
-				// observed live 2026-07-16. A small per-block pause costs little against a large
-				// gap and avoids that failure mode entirely.
-				tokio::time::sleep(Duration::from_millis(150)).await;
-			}
-			head_number
-		} else {
-			last_processed
-		};
-
-		{
-			let _guard = DB_LOCK.lock().await;
-			let mut db = BridgeDatabase::load(&config.db_path)?;
-			db.stats.last_polkadot_block = last_seen;
-			db.save(&config.db_path)?;
+		match deposit_pass(config, automation, &watch).await {
+			// The live stream stalled, ended or errored: reconnect straight away.
+			Ok(()) => retry = Duration::from_secs(30),
+			// An RPC failure inside catch-up or processing (a provider closing the connection, a
+			// rate limit) used to take the whole process down, and each restart re-did the same
+			// work against the same refusal. Progress is checkpointed block by block, so wait and
+			// reconnect instead; the delay grows to ten minutes while the failure persists.
+			Err(e) => {
+				warn!(
+					"Polkadot deposit listener pass failed: {e:#} - reconnecting in {}s",
+					retry.as_secs()
+				);
+				notify_telegram(config, &format!("⚠️ usdt-bridge: Polkadot deposit listener failed ({e:#}) - reconnecting in {}s; progress up to the last checkpoint is kept.", retry.as_secs())).await;
+				tokio::time::sleep(retry).await;
+				retry = (retry * 2).min(Duration::from_secs(600));
+			},
 		}
+	}
+}
 
-		println!("Listening for deposits...\n");
+/// One connection's worth of listen_deposits: connect, catch up from the checkpoint, then follow the
+/// live stream until it stalls, ends or errors (`Ok`) or an RPC call fails (`Err`).
+async fn deposit_pass(
+	config: &BridgeConfig,
+	automation: &AutomationContext,
+	watch: &CustodyWatch,
+) -> Result<()> {
+	let client = connect_to_chain(&config.polkadot_rpc).await?;
+	let legacy_rpc = connect_legacy_rpc(&config.polkadot_rpc).await?;
 
-		let mut blocks = client.blocks().subscribe_finalized().await?;
+	// Checkpoint + backfill: a live block subscription alone is not a correctness guarantee - a
+	// transient reconnect or subscription hiccup can silently skip blocks with zero logging (this
+	// is exactly how a real user deposit went undetected in production - see
+	// the operator's custody notes 2026-07-15). On every (re)start, explicitly scan any gap between
+	// the last persisted checkpoint and the current chain head before relying on the live stream.
+	let last_processed = { BridgeDatabase::load(&config.db_path)?.stats.last_polkadot_block };
+	let head_hash = legacy_rpc.chain_get_finalized_head().await?;
+	let head_block = client.blocks().at(head_hash).await?;
+	let head_number = head_block.number() as u64;
 
-		loop {
-			let next = match tokio::time::timeout(LIVE_SUBSCRIPTION_STALL_TIMEOUT, blocks.next())
-				.await
-			{
-				Ok(next) => next,
-				Err(_) => {
-					warn!("No new finalized Polkadot block in {}s - live subscription looks stalled, forcing a reconnect", LIVE_SUBSCRIPTION_STALL_TIMEOUT.as_secs());
-					notify_telegram(config, &format!(
+	let mut last_seen = if last_processed == 0 {
+		info!("No checkpoint found - starting from current head (block {head_number}), not scanning full history");
+		head_number
+	} else if head_number > last_processed {
+		info!("Catching up Polkadot blocks {} to {head_number} before going live (resuming from checkpoint)", last_processed + 1);
+		// A public/shared RPC endpoint (or a metered provider's free tier) can rate-limit a
+		// tight burst of per-block calls hard enough to poison the whole connection
+		// ("background task closed... restart required") - observed live 2026-07-16 - so the
+		// blocks catch_up does scan keep a small pause between them.
+		catch_up(
+			config,
+			automation,
+			&client,
+			&legacy_rpc,
+			&watch,
+			Side::Deposits,
+			last_processed,
+			head_number,
+		)
+		.await?;
+		head_number
+	} else {
+		last_processed
+	};
+
+	{
+		let _guard = DB_LOCK.lock().await;
+		let mut db = BridgeDatabase::load(&config.db_path)?;
+		db.stats.last_polkadot_block = last_seen;
+		db.save(&config.db_path)?;
+	}
+
+	println!("Listening for deposits...\n");
+
+	let mut blocks = client.blocks().subscribe_finalized().await?;
+
+	loop {
+		let next = match tokio::time::timeout(LIVE_SUBSCRIPTION_STALL_TIMEOUT, blocks.next()).await
+		{
+			Ok(next) => next,
+			Err(_) => {
+				warn!("No new finalized Polkadot block in {}s - live subscription looks stalled, forcing a reconnect", LIVE_SUBSCRIPTION_STALL_TIMEOUT.as_secs());
+				notify_telegram(config, &format!(
                         "⚠️ usdt-bridge: Polkadot deposit subscription produced nothing for {}s - reconnecting now. Checkpoint backfill will catch up anything missed during the stall.",
                         LIVE_SUBSCRIPTION_STALL_TIMEOUT.as_secs()
                     )).await;
-					break;
-				},
-			};
-
-			let Some(block) = next else {
-				warn!("Polkadot block subscription ended - reconnecting");
-				notify_telegram(config, "⚠️ usdt-bridge: Polkadot deposit subscription ended unexpectedly - reconnecting now.").await;
 				break;
-			};
+			},
+		};
 
-			let block = match block {
-				Ok(block) => block,
-				Err(e) => {
-					warn!("Polkadot block subscription yielded an error ({e}) - reconnecting");
-					notify_telegram(config, &format!("⚠️ usdt-bridge: Polkadot deposit subscription errored ({e}) - reconnecting now.")).await;
-					break;
-				},
-			};
+		let Some(block) = next else {
+			warn!("Polkadot block subscription ended - reconnecting");
+			notify_telegram(config, "⚠️ usdt-bridge: Polkadot deposit subscription ended unexpectedly - reconnecting now.").await;
+			break;
+		};
 
-			let block_number = block.number() as u64;
+		let block = match block {
+			Ok(block) => block,
+			Err(e) => {
+				warn!("Polkadot block subscription yielded an error ({e}) - reconnecting");
+				notify_telegram(config, &format!("⚠️ usdt-bridge: Polkadot deposit subscription errored ({e}) - reconnecting now.")).await;
+				break;
+			},
+		};
 
-			if block_number > last_seen + 1 {
-				warn!("Gap detected in live Polkadot subscription: last processed {last_seen}, current {block_number} - backfilling {} missing block(s)", block_number - last_seen - 1);
-				notify_telegram(config, &format!(
+		let block_number = block.number() as u64;
+
+		if block_number > last_seen + 1 {
+			warn!("Gap detected in live Polkadot subscription: last processed {last_seen}, current {block_number} - backfilling {} missing block(s)", block_number - last_seen - 1);
+			notify_telegram(config, &format!(
                     "⚠️ usdt-bridge: gap detected in live Polkadot block subscription ({} block(s) between #{last_seen} and #{block_number}) - backfilling now, no deposit should be lost, but this is worth knowing about.",
                     block_number - last_seen - 1
                 )).await;
-				for n in (last_seen + 1)..block_number {
-					backfill_deposit_block(config, automation, &client, &legacy_rpc, n).await?;
-					tokio::time::sleep(Duration::from_millis(150)).await;
-				}
-			}
-
-			process_deposit_block(config, automation, &block).await?;
-			last_seen = block_number;
-
-			let _guard = DB_LOCK.lock().await;
-			let mut db = BridgeDatabase::load(&config.db_path)?;
-			db.stats.last_polkadot_block = block_number;
-			db.save(&config.db_path)?;
+			catch_up(
+				config,
+				automation,
+				&client,
+				&legacy_rpc,
+				&watch,
+				Side::Deposits,
+				last_seen,
+				block_number - 1,
+			)
+			.await?;
 		}
+
+		process_deposit_block(config, automation, &block).await?;
+		last_seen = block_number;
+
+		let _guard = DB_LOCK.lock().await;
+		let mut db = BridgeDatabase::load(&config.db_path)?;
+		db.stats.last_polkadot_block = block_number;
+		db.save(&config.db_path)?;
 	}
+	Ok(())
 }
 
 /// Watches Pezkuwi Asset Hub for wUSDT sent to the bridge's own Pezkuwi account (a user
@@ -1957,96 +2348,139 @@ async fn listen_withdrawals(config: &BridgeConfig, automation: &AutomationContex
 	println!("\nNo key held by this process can burn/release on the multisig's behalf -");
 	println!("detected withdrawal requests are recorded as pending_multisig_approval.\n");
 
+	let watch = custody_watch(config, pezkuwi_bridge_addr, config.pezkuwi_wusdt_asset_id)?;
+
 	// Outer loop: same stall-recovery strategy as listen_deposits - see its comment for why a
 	// live subscription alone (even one that's never restarted) isn't a correctness guarantee.
+	let mut retry = Duration::from_secs(30);
 	loop {
-		let pezkuwi_client = connect_to_chain(&config.pezkuwi_rpc).await?;
-		let legacy_rpc = connect_legacy_rpc(&config.pezkuwi_rpc).await?;
-
-		// Checkpoint + backfill - see listen_deposits for why this replaced pure live-subscription.
-		let last_processed = { BridgeDatabase::load(&config.db_path)?.stats.last_pezkuwi_block };
-		let head_hash = legacy_rpc.chain_get_finalized_head().await?;
-		let head_block = pezkuwi_client.blocks().at(head_hash).await?;
-		let head_number = head_block.number() as u64;
-
-		let mut last_seen = if last_processed == 0 {
-			info!("No checkpoint found - starting from current head (block {head_number}), not scanning full history");
-			head_number
-		} else if head_number > last_processed {
-			info!("Backfilling Pezkuwi blocks {} to {head_number} before going live (resuming from checkpoint)", last_processed + 1);
-			for n in (last_processed + 1)..=head_number {
-				backfill_withdrawal_block(config, automation, &pezkuwi_client, &legacy_rpc, n)
-					.await?;
-			}
-			head_number
-		} else {
-			last_processed
-		};
-
-		{
-			let _guard = DB_LOCK.lock().await;
-			let mut db = BridgeDatabase::load(&config.db_path)?;
-			db.stats.last_pezkuwi_block = last_seen;
-			db.save(&config.db_path)?;
+		match withdrawal_pass(config, automation, &watch).await {
+			// The live stream stalled, ended or errored: reconnect straight away.
+			Ok(()) => retry = Duration::from_secs(30),
+			// An RPC failure inside catch-up or processing (a provider closing the connection, a
+			// rate limit) used to take the whole process down, and each restart re-did the same
+			// work against the same refusal. Progress is checkpointed block by block, so wait and
+			// reconnect instead; the delay grows to ten minutes while the failure persists.
+			Err(e) => {
+				warn!(
+					"Pezkuwi withdrawal listener pass failed: {e:#} - reconnecting in {}s",
+					retry.as_secs()
+				);
+				notify_telegram(config, &format!("⚠️ usdt-bridge: Pezkuwi withdrawal listener failed ({e:#}) - reconnecting in {}s; progress up to the last checkpoint is kept.", retry.as_secs())).await;
+				tokio::time::sleep(retry).await;
+				retry = (retry * 2).min(Duration::from_secs(600));
+			},
 		}
+	}
+}
 
-		println!("Listening for withdrawals...\n");
+/// One connection's worth of listen_withdrawals: connect, catch up from the checkpoint, then follow the
+/// live stream until it stalls, ends or errors (`Ok`) or an RPC call fails (`Err`).
+async fn withdrawal_pass(
+	config: &BridgeConfig,
+	automation: &AutomationContext,
+	watch: &CustodyWatch,
+) -> Result<()> {
+	let pezkuwi_client = connect_to_chain(&config.pezkuwi_rpc).await?;
+	let legacy_rpc = connect_legacy_rpc(&config.pezkuwi_rpc).await?;
 
-		let mut blocks = pezkuwi_client.blocks().subscribe_finalized().await?;
+	// Checkpoint + backfill - see listen_deposits for why this replaced pure live-subscription.
+	let last_processed = { BridgeDatabase::load(&config.db_path)?.stats.last_pezkuwi_block };
+	let head_hash = legacy_rpc.chain_get_finalized_head().await?;
+	let head_block = pezkuwi_client.blocks().at(head_hash).await?;
+	let head_number = head_block.number() as u64;
 
-		loop {
-			let next = match tokio::time::timeout(LIVE_SUBSCRIPTION_STALL_TIMEOUT, blocks.next())
-				.await
-			{
-				Ok(next) => next,
-				Err(_) => {
-					warn!("No new finalized Pezkuwi block in {}s - live subscription looks stalled, forcing a reconnect", LIVE_SUBSCRIPTION_STALL_TIMEOUT.as_secs());
-					notify_telegram(config, &format!(
+	let mut last_seen = if last_processed == 0 {
+		info!("No checkpoint found - starting from current head (block {head_number}), not scanning full history");
+		head_number
+	} else if head_number > last_processed {
+		info!("Catching up Pezkuwi blocks {} to {head_number} before going live (resuming from checkpoint)", last_processed + 1);
+		catch_up(
+			config,
+			automation,
+			&pezkuwi_client,
+			&legacy_rpc,
+			&watch,
+			Side::Withdrawals,
+			last_processed,
+			head_number,
+		)
+		.await?;
+		head_number
+	} else {
+		last_processed
+	};
+
+	{
+		let _guard = DB_LOCK.lock().await;
+		let mut db = BridgeDatabase::load(&config.db_path)?;
+		db.stats.last_pezkuwi_block = last_seen;
+		db.save(&config.db_path)?;
+	}
+
+	println!("Listening for withdrawals...\n");
+
+	let mut blocks = pezkuwi_client.blocks().subscribe_finalized().await?;
+
+	loop {
+		let next = match tokio::time::timeout(LIVE_SUBSCRIPTION_STALL_TIMEOUT, blocks.next()).await
+		{
+			Ok(next) => next,
+			Err(_) => {
+				warn!("No new finalized Pezkuwi block in {}s - live subscription looks stalled, forcing a reconnect", LIVE_SUBSCRIPTION_STALL_TIMEOUT.as_secs());
+				notify_telegram(config, &format!(
                         "⚠️ usdt-bridge: Pezkuwi withdrawal subscription produced nothing for {}s - reconnecting now. Checkpoint backfill will catch up anything missed during the stall.",
                         LIVE_SUBSCRIPTION_STALL_TIMEOUT.as_secs()
                     )).await;
-					break;
-				},
-			};
-
-			let Some(block) = next else {
-				warn!("Pezkuwi block subscription ended - reconnecting");
-				notify_telegram(config, "⚠️ usdt-bridge: Pezkuwi withdrawal subscription ended unexpectedly - reconnecting now.").await;
 				break;
-			};
+			},
+		};
 
-			let block = match block {
-				Ok(block) => block,
-				Err(e) => {
-					warn!("Pezkuwi block subscription yielded an error ({e}) - reconnecting");
-					notify_telegram(config, &format!("⚠️ usdt-bridge: Pezkuwi withdrawal subscription errored ({e}) - reconnecting now.")).await;
-					break;
-				},
-			};
+		let Some(block) = next else {
+			warn!("Pezkuwi block subscription ended - reconnecting");
+			notify_telegram(config, "⚠️ usdt-bridge: Pezkuwi withdrawal subscription ended unexpectedly - reconnecting now.").await;
+			break;
+		};
 
-			let block_number = block.number() as u64;
+		let block = match block {
+			Ok(block) => block,
+			Err(e) => {
+				warn!("Pezkuwi block subscription yielded an error ({e}) - reconnecting");
+				notify_telegram(config, &format!("⚠️ usdt-bridge: Pezkuwi withdrawal subscription errored ({e}) - reconnecting now.")).await;
+				break;
+			},
+		};
 
-			if block_number > last_seen + 1 {
-				warn!("Gap detected in live Pezkuwi subscription: last processed {last_seen}, current {block_number} - backfilling {} missing block(s)", block_number - last_seen - 1);
-				notify_telegram(config, &format!(
+		let block_number = block.number() as u64;
+
+		if block_number > last_seen + 1 {
+			warn!("Gap detected in live Pezkuwi subscription: last processed {last_seen}, current {block_number} - backfilling {} missing block(s)", block_number - last_seen - 1);
+			notify_telegram(config, &format!(
                     "⚠️ usdt-bridge: gap detected in live Pezkuwi block subscription ({} block(s) between #{last_seen} and #{block_number}) - backfilling now, no withdrawal should be lost, but this is worth knowing about.",
                     block_number - last_seen - 1
                 )).await;
-				for n in (last_seen + 1)..block_number {
-					backfill_withdrawal_block(config, automation, &pezkuwi_client, &legacy_rpc, n)
-						.await?;
-				}
-			}
-
-			process_withdrawal_block(config, automation, &block).await?;
-			last_seen = block_number;
-
-			let _guard = DB_LOCK.lock().await;
-			let mut db = BridgeDatabase::load(&config.db_path)?;
-			db.stats.last_pezkuwi_block = block_number;
-			db.save(&config.db_path)?;
+			catch_up(
+				config,
+				automation,
+				&pezkuwi_client,
+				&legacy_rpc,
+				&watch,
+				Side::Withdrawals,
+				last_seen,
+				block_number - 1,
+			)
+			.await?;
 		}
+
+		process_withdrawal_block(config, automation, &block).await?;
+		last_seen = block_number;
+
+		let _guard = DB_LOCK.lock().await;
+		let mut db = BridgeDatabase::load(&config.db_path)?;
+		db.stats.last_pezkuwi_block = block_number;
+		db.save(&config.db_path)?;
 	}
+	Ok(())
 }
 
 async fn process_withdrawals(config: &BridgeConfig) -> Result<()> {
@@ -2244,7 +2678,141 @@ async fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+	use super::*;
 	use pezsp_core::crypto::Ss58Codec;
+
+	/// A chain whose custody state moves exactly at `moves` (a counter, so it never repeats),
+	/// recording what catch-up scanned and every checkpoint it wrote.
+	struct ScriptedChain {
+		moves: Vec<u64>,
+		scanned: Vec<u64>,
+		checkpoints: Vec<u64>,
+	}
+
+	impl ScriptedChain {
+		fn new(moves: &[u64]) -> Self {
+			Self { moves: moves.to_vec(), scanned: vec![], checkpoints: vec![] }
+		}
+	}
+
+	impl CatchUpSource for ScriptedChain {
+		async fn fingerprint(&mut self, block_number: u64) -> Result<CustodyFingerprint> {
+			let moved = self.moves.iter().filter(|&&m| m <= block_number).count() as u128;
+			Ok(CustodyFingerprint { balance: moved, allowance: 0, nonces: vec![] })
+		}
+		async fn scan(&mut self, block_number: u64) -> Result<()> {
+			self.scanned.push(block_number);
+			self.checkpoints.push(block_number);
+			Ok(())
+		}
+		async fn skip_to(&mut self, block_number: u64) -> Result<()> {
+			self.checkpoints.push(block_number);
+			Ok(())
+		}
+	}
+
+	fn assert_checkpoints_end_at(chain: &ScriptedChain, to: u64) {
+		assert!(
+			chain.checkpoints.windows(2).all(|w| w[0] < w[1]),
+			"the checkpoint went backwards or repeated: {:?}",
+			chain.checkpoints
+		);
+		assert_eq!(chain.checkpoints.last(), Some(&to), "catch-up stopped short of the head");
+	}
+
+	/// The 2026-09 outage, reproduced: a million blocks in which custody never moved. The old
+	/// scan read every one of them; this must read two fingerprints and scan nothing.
+	#[tokio::test]
+	async fn a_quiet_gap_costs_two_fingerprints_and_no_scan() {
+		let mut chain = ScriptedChain::new(&[]);
+		let stats = catch_up_ranges(&mut chain, 20_487_302, 21_487_302).await.unwrap();
+		assert_eq!(stats, CatchUpStats { scanned: 0, skipped: 1_000_000, fingerprints: 2 });
+		assert_checkpoints_end_at(&chain, 21_487_302);
+	}
+
+	/// Every block where custody moved is scanned - including the first and the last of the
+	/// range - and nothing else is, in block order.
+	#[tokio::test]
+	async fn every_block_where_custody_moved_is_scanned_in_order() {
+		let moves = [1, 17, 500_000, 999_999, 1_000_000];
+		let mut chain = ScriptedChain::new(&moves);
+		let stats = catch_up_ranges(&mut chain, 0, 1_000_000).await.unwrap();
+		assert_eq!(
+			chain.scanned, moves,
+			"a block that moved custody was missed or one that did not was scanned"
+		);
+		assert_eq!(
+			stats.scanned + stats.skipped,
+			1_000_000,
+			"some blocks were neither scanned nor skipped"
+		);
+		// About two fingerprints per halving per moved block; far below one per block.
+		assert!(stats.fingerprints < 2 + 2 * 20 * moves.len() as u64, "{stats:?}");
+		assert_checkpoints_end_at(&chain, 1_000_000);
+	}
+
+	#[tokio::test]
+	async fn a_range_that_moves_in_every_block_is_scanned_whole() {
+		let moves: Vec<u64> = (101..=108).collect();
+		let mut chain = ScriptedChain::new(&moves);
+		catch_up_ranges(&mut chain, 100, 108).await.unwrap();
+		assert_eq!(chain.scanned, moves);
+		assert_checkpoints_end_at(&chain, 108);
+	}
+
+	#[tokio::test]
+	async fn nothing_to_do_when_the_checkpoint_is_at_the_head() {
+		let mut chain = ScriptedChain::new(&[5]);
+		let stats = catch_up_ranges(&mut chain, 10, 10).await.unwrap();
+		assert_eq!(stats, CatchUpStats::default());
+		assert!(chain.checkpoints.is_empty());
+	}
+
+	/// Skipping is sound only for the custody account's real signatories, so the derivation is
+	/// pinned to the live account on both chains.
+	#[test]
+	fn the_configured_signatories_derive_the_custody_account() {
+		let config = BridgeConfig::default();
+		let signatories: Vec<_> =
+			config.multisig_signatories.iter().map(|s| account_bytes(s).unwrap()).collect();
+		let derived = multisig_account_id(&signatories, config.multisig_threshold).unwrap();
+		assert_eq!(derived, account_bytes(&config.custody_multisig_pezkuwi).unwrap());
+		assert_eq!(derived, account_bytes(&config.custody_multisig_polkadot).unwrap());
+		assert!(custody_watch(&config, &config.custody_multisig_polkadot, 1984).is_ok());
+	}
+
+	#[test]
+	fn a_wrong_signatory_list_stops_the_bridge() {
+		let mut config = BridgeConfig::default();
+		config.multisig_signatories[4] = AUTOMATION_KEY_ADDRESS.to_string();
+		let err = custody_watch(&config, &config.custody_multisig_polkadot, 1984)
+			.err()
+			.expect("a signatory list that does not derive the custody account must be refused");
+		assert!(err.to_string().contains("fix the config"), "{err}");
+
+		let mut config = BridgeConfig::default();
+		config.multisig_threshold = 2;
+		assert!(custody_watch(&config, &config.custody_multisig_pezkuwi, 1000).is_err());
+	}
+
+	#[test]
+	fn rpc_urls_lose_their_key_in_logs() {
+		assert_eq!(
+			redact_rpc_url(
+				"wss://api-asset-hub-polkadot.n.dwellir.com/00000000-1111-2222-3333-444444444444"
+			),
+			"wss://api-asset-hub-polkadot.n.dwellir.com/<redacted>"
+		);
+		assert_eq!(
+			redact_rpc_url("wss://user:secret@rpc.example.org:443/x?k=1"),
+			"wss://rpc.example.org:443/<redacted>"
+		);
+		assert_eq!(
+			redact_rpc_url("wss://asset-hub-rpc.pezkuwichain.io"),
+			"wss://asset-hub-rpc.pezkuwichain.io"
+		);
+		assert_eq!(redact_rpc_url("not a url"), "<unparseable rpc url>");
+	}
 
 	/// The wallet generator and the signer have to agree on what a phrase derives.
 	///

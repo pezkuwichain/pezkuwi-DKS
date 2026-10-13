@@ -18,8 +18,17 @@ ExecStart=<BIN_DIR>/usdt-bridge --config <CONFIG_PATH>/bridge_config.json listen
 Environment=RUST_LOG=info
 EnvironmentFile=<SECRETS_DIR>/telegram_token.env
 EnvironmentFile=-<SECRETS_DIR>/automation_key.env
+# POLKADOT_RPC_URL / PEZKUWI_RPC_URL overrides - a metered endpoint's key lives here, not in the
+# committed config.
+EnvironmentFile=-<SECRETS_DIR>/polkadot_rpc.env
 Restart=on-failure
+# A refused connection (an exhausted provider quota answers 403 until it resets) fails every
+# attempt, so a fixed short delay restarted the bridge 221 times in one night against the same
+# refusal. The delay now grows to 30 minutes over 8 restarts; the count only resets on a manual
+# start/stop, so a later crash also waits up to 30 minutes - catch-up then covers the gap.
 RestartSec=10
+RestartSteps=8
+RestartMaxDelaySec=30min
 
 # Hardening (recommended baseline)
 NoNewPrivileges=yes
