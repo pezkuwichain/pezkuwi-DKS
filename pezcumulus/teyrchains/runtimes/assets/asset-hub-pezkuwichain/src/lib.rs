@@ -122,7 +122,7 @@ use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
 #[cfg(feature = "runtime-benchmarks")]
 use xcm::latest::prelude::{
 	Asset, Assets as XcmAssets, Fungible, Here, InteriorLocation, Junction, Junction::*, Location,
-	NetworkId, NonFungible, ParentThen, Response, WeightLimit, XCM_VERSION,
+	NetworkId, ParentThen, Response, WeightLimit, XCM_VERSION,
 };
 use xcm::{
 	latest::prelude::{AssetId, BodyId},
@@ -2132,6 +2132,11 @@ mod benches {
 	);
 }
 
+// The transaction-payment benchmarks need this. It lives here rather than inside the
+// `Benchmark` runtime API, because an impl inside a function body is a non-local definition.
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
+
 pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 	Runtime,
 	Revive,
@@ -2503,8 +2508,6 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 		) {
 			use pezframe_benchmarking::BenchmarkList;
 			use pezframe_support::traits::StorageInfoTrait;
-			// The pallet's benchmarks are listed above, and they need this implemented.
-			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
 
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;

@@ -626,6 +626,7 @@ fn the_asset_hub_mints_exactly_its_share() {
 // the port the same day -- adding the founding office's balance moved the checking pot by a
 // thousand and changed the account count, and the mainnet copy caught both while this chain
 // noticed neither.
+#[cfg(test)]
 mod genesis_ledger {
 	use super::*;
 

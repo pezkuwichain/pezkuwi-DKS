@@ -1387,6 +1387,11 @@ mod benches {
 	);
 }
 
+// The transaction-payment benchmarks need this. It lives here rather than inside the
+// `Benchmark` runtime API, because an impl inside a function body is a non-local definition.
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
+
 impl_runtime_apis! {
 	impl pezsp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
 		fn slot_duration() -> pezsp_consensus_aura::SlotDuration {
@@ -1906,7 +1911,6 @@ impl_runtime_apis! {
 				}
 			}
 
-			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
 
 			parameter_types! {
 				pub ExistentialDepositAsset: Option<Asset> = Some((

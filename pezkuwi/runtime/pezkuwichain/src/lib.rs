@@ -1801,6 +1801,11 @@ mod benches {
 	);
 }
 
+// The transaction-payment benchmarks need this. It lives here rather than inside the
+// `Benchmark` runtime API, because an impl inside a function body is a non-local definition.
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
+
 pezsp_api::impl_runtime_apis! {
 	impl pezsp_api::Core<Block> for Runtime {
 		fn version() -> RuntimeVersion {
@@ -2385,8 +2390,6 @@ pezsp_api::impl_runtime_apis! {
 			use pezframe_benchmarking::BenchmarkList;
 			use pezframe_support::traits::StorageInfoTrait;
 
-			// The pallet's benchmarks are listed above, and they need this implemented.
-			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
 
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
