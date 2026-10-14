@@ -30,7 +30,6 @@ use pezframe_support::{
 };
 use pezframe_system::EnsureRoot;
 use pezkuwi_runtime_common::xcm_sender::{ChildTeyrchainRouter, ExponentialPrice};
-use pezpallet_xcm::XcmPassthrough;
 use pezsp_core::ConstU32;
 use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
 use xcm_builder::{
@@ -134,17 +133,13 @@ impl xcm_executor::traits::ConvertOrigin<RuntimeOrigin> for StateRegisterAsRoot 
 ///
 /// One body, one authority, and both are named here rather than filtered later. The court may
 /// put a call on the relay's whitelist so that a defect can be patched in hours instead of the
-/// twenty-eight days a root referendum takes; it may do nothing else.
+/// twenty-eight days a root referendum takes; it may do nothing else, because nothing else on
+/// this chain accepts the origin this produces.
 ///
 /// It is separate from `StateRegisterAsRoot` on purpose and the two must not be collapsed. That
 /// one answers *"the whole register decided"* and grants everything; this one answers *"the
 /// court decided"* and grants one call. Matching a plurality there instead would have handed a
 /// ministry the constitution.
-///
-/// It sits above `XcmPassthrough` deliberately. The passthrough would convert this message too,
-/// but it converts every other location as well, and an authority that only exists because a
-/// catch-all did not refuse it is an authority nobody granted. Named first, the grant is
-/// readable here rather than inferred from what the filter downstream happens to allow.
 ///
 /// The two-thirds threshold is not checked here and cannot be: a message carries a body, not a
 /// vote count. It is enforced where the vote happens, by the origin on the People chain that
@@ -175,13 +170,8 @@ type LocalOriginConverter = (
 	SignedAccountId32AsNative<ThisNetwork, RuntimeOrigin>,
 	// A referendum of the whole register, as this chain's Root.
 	StateRegisterAsRoot,
-	// The court of the People chain, for the whitelist and nothing else. Above the passthrough
-	// so the grant is named rather than inherited from a catch-all.
+	// The court of the People chain, for the whitelist and nothing else.
 	CourtOfPeopleAsXcmOrigin,
-	// Xcm origins can be represented natively under the Xcm pezpallet's Xcm origin. Without this
-	// there is no converter for `OriginKind::Xcm` at all, so a `Transact` sent that way is
-	// rejected with `BadOrigin` no matter who sent it, before its origin can be judged.
-	XcmPassthrough<RuntimeOrigin>,
 );
 
 parameter_types! {
