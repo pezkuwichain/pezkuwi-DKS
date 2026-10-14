@@ -1221,7 +1221,7 @@ use pezframe_support::traits::fungible::ItemOf;
 use pezpallet_nis::WithMaximumOf;
 
 impl pezpallet_nis::Config for Runtime {
-	type WeightInfo = pezpallet_nis::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_nis::WeightInfo<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
@@ -1288,7 +1288,7 @@ impl pezpallet_treasury::Config for Runtime {
 	// nothing. These are the pallet's own reference figures, measured on
 	// somebody else's hardware -- the same caveat every weight file here carries
 	// -- and a wrong non-zero number is not in the same class as no number.
-	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_treasury_treasury::WeightInfo<Runtime>;
 	// Approved bounties are funded in the treasury's spend period, through this hook. With `()`
 	// a bounty could be approved and would never leave `Approved`.
 	type SpendFunds = Bounties;
@@ -1377,7 +1377,7 @@ impl pezpallet_treasury::Config<AirdropPotInstance> for Runtime {
 	type Burn = Burn;
 	type BurnDestination = ();
 	type MaxApprovals = MaxApprovals;
-	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_treasury_airdrop_pot::WeightInfo<Runtime>;
 	type SpendFunds = ();
 	// People, and only People -- with a ceiling. `EnsureWithSuccess` is what turns "this
 	// origin may spend" into "this origin may spend up to this much", and the amount it
@@ -1416,7 +1416,7 @@ impl pezpallet_treasury::Config<PresalePotInstance> for Runtime {
 	type Burn = Burn;
 	type BurnDestination = ();
 	type MaxApprovals = MaxApprovals;
-	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_treasury_presale_pot::WeightInfo<Runtime>;
 	type SpendFunds = ();
 	type SpendOrigin = pezframe_system::EnsureWithSuccess<
 		pez_assets_common::treasury::EnsureXcmFrom<PeopleLocation>,
@@ -1442,7 +1442,7 @@ impl pezpallet_asset_rate::Config for Runtime {
 	// nothing. These are the pallet's own reference figures, measured on
 	// somebody else's hardware -- the same caveat every weight file here carries
 	// -- and a wrong non-zero number is not in the same class as no number.
-	type WeightInfo = pezpallet_asset_rate::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_asset_rate::WeightInfo<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
 	type CreateOrigin = EnsureRoot<AccountId>;
 	type RemoveOrigin = EnsureRoot<AccountId>;
@@ -1502,7 +1502,7 @@ impl pezpallet_bounties::Config for Runtime {
 	// nothing. These are the pallet's own reference figures, measured on
 	// somebody else's hardware -- the same caveat every weight file here carries
 	// -- and a wrong non-zero number is not in the same class as no number.
-	type WeightInfo = pezpallet_bounties::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_bounties::WeightInfo<Runtime>;
 	type ChildBountyManager = ChildBounties;
 	type OnSlash = Treasury;
 }
@@ -1523,7 +1523,7 @@ impl pezpallet_child_bounties::Config for Runtime {
 	// nothing. These are the pallet's own reference figures, measured on
 	// somebody else's hardware -- the same caveat every weight file here carries
 	// -- and a wrong non-zero number is not in the same class as no number.
-	type WeightInfo = pezpallet_child_bounties::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_child_bounties::WeightInfo<Runtime>;
 }
 
 // =============================================================================
@@ -1773,7 +1773,7 @@ impl pezpallet_scheduler::Config for Runtime {
 	type MaximumWeight = MaximumSchedulerWeight;
 	type ScheduleOrigin = EnsureRoot<AccountId>;
 	type MaxScheduledPerBlock = EconomicMaxScheduledPerBlock;
-	type WeightInfo = pezpallet_scheduler::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_scheduler::WeightInfo<Runtime>;
 	type OriginPrivilegeCmp = pezframe_support::traits::EqualPrivilegeOnly;
 	type Preimages = Preimage;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
@@ -1793,7 +1793,7 @@ impl pezpallet_preimage::Config for Runtime {
 			Balance,
 		>,
 	>;
-	type WeightInfo = pezpallet_preimage::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_preimage::WeightInfo<Runtime>;
 }
 
 impl pezpallet_custom_origins::Config for Runtime {}
@@ -1816,7 +1816,7 @@ impl pezframe_support::traits::Get<Balance> for VotableIssuance {
 }
 
 impl pezpallet_conviction_voting::Config for Runtime {
-	type WeightInfo = pezpallet_conviction_voting::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_conviction_voting::WeightInfo<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type VoteLockingPeriod = VoteLockingPeriod;
