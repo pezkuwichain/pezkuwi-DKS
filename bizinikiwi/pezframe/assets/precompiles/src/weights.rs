@@ -55,9 +55,6 @@ use core::marker::PhantomData;
 /// Weight functions needed for `pezpallet_assets_precompiles`.
 pub trait WeightInfo {
 	fn migrate_foreign_asset_step() -> Weight;
-	fn nonces() -> Weight;
-	fn domain_separator() -> Weight;
-	fn use_permit() -> Weight;
 }
 
 /// Weights for `pezpallet_assets_precompiles` using the Bizinikiwi node and recommended hardware.
@@ -80,36 +77,6 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
-	/// Storage: `AssetsPrecompilesPermit::Nonces` (r:1 w:0)
-	/// Proof: `AssetsPrecompilesPermit::Nonces` (`max_values`: None, `max_size`: Some(104), added: 2579, mode: `MaxEncodedLen`)
-	fn nonces() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `344`
-		//  Estimated: `3569`
-		// Minimum execution time: 7_296_000 picoseconds.
-		Weight::from_parts(8_019_000, 3569)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-	}
-	fn domain_separator() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 2_526_000 picoseconds.
-		Weight::from_parts(2_677_000, 0)
-	}
-	/// Storage: `Timestamp::Now` (r:1 w:0)
-	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
-	/// Storage: `AssetsPrecompilesPermit::Nonces` (r:1 w:1)
-	/// Proof: `AssetsPrecompilesPermit::Nonces` (`max_values`: None, `max_size`: Some(104), added: 2579, mode: `MaxEncodedLen`)
-	fn use_permit() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `388`
-		//  Estimated: `3569`
-		// Minimum execution time: 58_492_000 picoseconds.
-		Weight::from_parts(59_803_000, 3569)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
 }
 
 // For backwards compatibility and tests.
@@ -130,35 +97,5 @@ impl WeightInfo for () {
 		Weight::from_parts(23_277_000, 6360)
 			.saturating_add(RocksDbWeight::get().reads(4_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
-	}
-	/// Storage: `AssetsPrecompilesPermit::Nonces` (r:1 w:0)
-	/// Proof: `AssetsPrecompilesPermit::Nonces` (`max_values`: None, `max_size`: Some(104), added: 2579, mode: `MaxEncodedLen`)
-	fn nonces() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `344`
-		//  Estimated: `3569`
-		// Minimum execution time: 7_296_000 picoseconds.
-		Weight::from_parts(8_019_000, 3569)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-	}
-	fn domain_separator() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 2_526_000 picoseconds.
-		Weight::from_parts(2_677_000, 0)
-	}
-	/// Storage: `Timestamp::Now` (r:1 w:0)
-	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
-	/// Storage: `AssetsPrecompilesPermit::Nonces` (r:1 w:1)
-	/// Proof: `AssetsPrecompilesPermit::Nonces` (`max_values`: None, `max_size`: Some(104), added: 2579, mode: `MaxEncodedLen`)
-	fn use_permit() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `388`
-		//  Estimated: `3569`
-		// Minimum execution time: 58_492_000 picoseconds.
-		Weight::from_parts(59_803_000, 3569)
-			.saturating_add(RocksDbWeight::get().reads(2_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }

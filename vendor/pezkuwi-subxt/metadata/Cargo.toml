@@ -56,10 +56,10 @@ thiserror = { workspace = true }
 [dev-dependencies]
 bitvec = { workspace = true, features = ["alloc"] }
 criterion = { workspace = true }
-frame-decode = { workspace = true, features = ["legacy-types"] }
 pezkuwi-subxt-codegen = { workspace = true }
 pezkuwi-subxt-utils-stripmetadata = { workspace = true }
 scale-info = { workspace = true, features = ["bit-vec"] }
+serde-saphyr = { workspace = true }
 
 [lib]
 # Without this, libtest cli opts interfere with criterion benches:

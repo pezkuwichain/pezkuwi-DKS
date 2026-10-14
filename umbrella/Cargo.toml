@@ -181,10 +181,6 @@ std = [
 	"pezpallet-collator-selection?/std",
 	"pezpallet-collective-content?/std",
 	"pezpallet-collective?/std",
-	"pezpallet-contracts-fixtures?/std",
-	"pezpallet-contracts-mock-network?/std",
-	"pezpallet-contracts-uapi?/std",
-	"pezpallet-contracts?/std",
 	"pezpallet-conviction-voting?/std",
 	"pezpallet-core-fellowship?/std",
 	"pezpallet-dap?/std",
@@ -561,9 +557,6 @@ runtime-benchmarks = [
 	"pezpallet-collator-selection?/runtime-benchmarks",
 	"pezpallet-collective-content?/runtime-benchmarks",
 	"pezpallet-collective?/runtime-benchmarks",
-	"pezpallet-contracts-fixtures?/runtime-benchmarks",
-	"pezpallet-contracts-mock-network?/runtime-benchmarks",
-	"pezpallet-contracts?/runtime-benchmarks",
 	"pezpallet-conviction-voting?/runtime-benchmarks",
 	"pezpallet-core-fellowship?/runtime-benchmarks",
 	"pezpallet-dap?/runtime-benchmarks",
@@ -852,9 +845,6 @@ try-runtime = [
 	"pezpallet-collator-selection?/try-runtime",
 	"pezpallet-collective-content?/try-runtime",
 	"pezpallet-collective?/try-runtime",
-	"pezpallet-contracts-fixtures?/try-runtime",
-	"pezpallet-contracts-mock-network?/try-runtime",
-	"pezpallet-contracts?/try-runtime",
 	"pezpallet-conviction-voting?/try-runtime",
 	"pezpallet-core-fellowship?/try-runtime",
 	"pezpallet-dap?/try-runtime",
@@ -1181,10 +1171,6 @@ serde = [
 	"pezpallet-collator-selection?/serde",
 	"pezpallet-collective-content?/serde",
 	"pezpallet-collective?/serde",
-	"pezpallet-contracts-fixtures?/serde",
-	"pezpallet-contracts-mock-network?/serde",
-	"pezpallet-contracts-uapi?/serde",
-	"pezpallet-contracts?/serde",
 	"pezpallet-conviction-voting?/serde",
 	"pezpallet-core-fellowship?/serde",
 	"pezpallet-delegated-staking?/serde",
@@ -1459,9 +1445,6 @@ experimental = [
 	"pezpallet-collator-selection?/experimental",
 	"pezpallet-collective-content?/experimental",
 	"pezpallet-collective?/experimental",
-	"pezpallet-contracts-fixtures?/experimental",
-	"pezpallet-contracts-mock-network?/experimental",
-	"pezpallet-contracts?/experimental",
 	"pezpallet-conviction-voting?/experimental",
 	"pezpallet-core-fellowship?/experimental",
 	"pezpallet-delegated-staking?/experimental",
@@ -1642,8 +1625,6 @@ with-tracing = [
 	"pezpallet-collator-selection?/with-tracing",
 	"pezpallet-collective-content?/with-tracing",
 	"pezpallet-collective?/with-tracing",
-	"pezpallet-contracts-mock-network?/with-tracing",
-	"pezpallet-contracts?/with-tracing",
 	"pezpallet-conviction-voting?/with-tracing",
 	"pezpallet-core-fellowship?/with-tracing",
 	"pezpallet-delegated-staking?/with-tracing",
@@ -1830,9 +1811,6 @@ runtime-full = [
 	"pezpallet-collator-selection",
 	"pezpallet-collective",
 	"pezpallet-collective-content",
-	"pezpallet-contracts",
-	"pezpallet-contracts-proc-macro",
-	"pezpallet-contracts-uapi",
 	"pezpallet-conviction-voting",
 	"pezpallet-core-fellowship",
 	"pezpallet-dap",
@@ -2145,8 +2123,6 @@ node = [
 	"pezkuwi-zombienet-support",
 	"pezmmr-gadget",
 	"pezmmr-rpc",
-	"pezpallet-contracts-fixtures",
-	"pezpallet-contracts-mock-network",
 	"pezpallet-transaction-payment-rpc",
 	"pezsc-allocator",
 	"pezsc-authority-discovery",
@@ -2292,8 +2268,6 @@ tuples-96 = [
 	"pezpallet-collator-selection?/tuples-96",
 	"pezpallet-collective-content?/tuples-96",
 	"pezpallet-collective?/tuples-96",
-	"pezpallet-contracts-mock-network?/tuples-96",
-	"pezpallet-contracts?/tuples-96",
 	"pezpallet-conviction-voting?/tuples-96",
 	"pezpallet-core-fellowship?/tuples-96",
 	"pezpallet-delegated-staking?/tuples-96",
@@ -2937,24 +2911,6 @@ default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/pezpallets/collective-content"
 version = "0.6.0"
-
-[dependencies.pezpallet-contracts]
-default-features = false
-optional = true
-path = "../bizinikiwi/pezframe/contracts"
-version = "27.0.0"
-
-[dependencies.pezpallet-contracts-proc-macro]
-default-features = false
-optional = true
-path = "../bizinikiwi/pezframe/contracts/proc-macro"
-version = "18.0.0"
-
-[dependencies.pezpallet-contracts-uapi]
-default-features = false
-optional = true
-path = "../bizinikiwi/pezframe/contracts/uapi"
-version = "5.0.0"
 
 [dependencies.pezpallet-conviction-voting]
 default-features = false
@@ -4407,18 +4363,6 @@ default-features = false
 optional = true
 path = "../bizinikiwi/client/merkle-mountain-range/rpc"
 version = "28.0.0"
-
-[dependencies.pezpallet-contracts-fixtures]
-default-features = false
-optional = true
-path = "../bizinikiwi/pezframe/contracts/fixtures"
-version = "1.0.0"
-
-[dependencies.pezpallet-contracts-mock-network]
-default-features = false
-optional = true
-path = "../bizinikiwi/pezframe/contracts/mock-network"
-version = "3.0.0"
 
 [dependencies.pezpallet-transaction-payment-rpc]
 default-features = false

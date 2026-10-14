@@ -121,11 +121,6 @@ members = [
 	"bizinikiwi/pezframe/broker",
 	"bizinikiwi/pezframe/child-bounties",
 	"bizinikiwi/pezframe/collective",
-	"bizinikiwi/pezframe/contracts",
-	"bizinikiwi/pezframe/contracts/fixtures",
-	"bizinikiwi/pezframe/contracts/mock-network",
-	"bizinikiwi/pezframe/contracts/proc-macro",
-	"bizinikiwi/pezframe/contracts/uapi",
 	"bizinikiwi/pezframe/conviction-voting",
 	"bizinikiwi/pezframe/core-fellowship",
 	"bizinikiwi/pezframe/dap",
@@ -427,7 +422,6 @@ members = [
 	"pezcumulus/pezkuwi-omni-node",
 	"pezcumulus/pezkuwi-omni-node/lib",
 	"pezcumulus/pezkuwi-teyrchain",
-	"pezcumulus/pezpallets/ah-ops",
 	"pezcumulus/pezpallets/aura-ext",
 	"pezcumulus/pezpallets/collator-selection",
 	"pezcumulus/pezpallets/dmp-queue",
@@ -1049,7 +1043,6 @@ pezframe-try-runtime = { path = "bizinikiwi/pezframe/try-runtime", version = "0.
 pezmmr-gadget = { path = "bizinikiwi/client/merkle-mountain-range", version = "29.0.0", default-features = false }
 pezmmr-rpc = { path = "bizinikiwi/client/merkle-mountain-range/rpc", version = "28.0.0", default-features = false }
 pezpallet-accumulate-and-forward = { path = "bizinikiwi/pezframe/accumulate-and-forward", version = "0.4.0", default-features = false }
-pezpallet-ah-ops = { path = "pezcumulus/pezpallets/ah-ops", version = "0.1.0", default-features = false }
 pezpallet-alliance = { path = "bizinikiwi/pezframe/alliance", version = "27.0.0", default-features = false }
 pezpallet-asset-conversion = { path = "bizinikiwi/pezframe/asset-conversion", version = "10.0.0", default-features = false }
 pezpallet-asset-conversion-ops = { path = "bizinikiwi/pezframe/asset-conversion/ops", version = "0.1.0", default-features = false }
@@ -1081,11 +1074,6 @@ pezpallet-child-bounties = { path = "bizinikiwi/pezframe/child-bounties", versio
 pezpallet-collator-selection = { path = "pezcumulus/pezpallets/collator-selection", version = "9.0.0", default-features = false }
 pezpallet-collective = { path = "bizinikiwi/pezframe/collective", version = "28.0.0", default-features = false }
 pezpallet-collective-content = { path = "pezcumulus/teyrchains/pezpallets/collective-content", version = "0.6.0", default-features = false }
-pezpallet-contracts = { path = "bizinikiwi/pezframe/contracts", version = "27.0.0", default-features = false }
-pezpallet-contracts-fixtures = { path = "bizinikiwi/pezframe/contracts/fixtures", version = "1.0.0", default-features = false }
-pezpallet-contracts-mock-network = { default-features = false, version = "3.0.0", path = "bizinikiwi/pezframe/contracts/mock-network" }
-pezpallet-contracts-proc-macro = { path = "bizinikiwi/pezframe/contracts/proc-macro", version = "18.0.0", default-features = false }
-pezpallet-contracts-uapi = { path = "bizinikiwi/pezframe/contracts/uapi", version = "5.0.0", default-features = false }
 pezpallet-conviction-voting = { path = "bizinikiwi/pezframe/conviction-voting", version = "28.0.0", default-features = false }
 pezpallet-core-fellowship = { path = "bizinikiwi/pezframe/core-fellowship", version = "12.0.0", default-features = false }
 pezpallet-dap = { path = "bizinikiwi/pezframe/dap", version = "0.6.0", default-features = false }
@@ -1538,13 +1526,13 @@ secrecy = { version = "0.8.0", default-features = false }
 send_wrapper = { version = "0.6.0" }
 serde = { version = "1.0.228", default-features = false }
 serde-big-array = { version = "0.3.2" }
+serde-saphyr = { version = "0.0.29" }
 serde_derive = { version = "1.0.117" }
 serde_json = { version = "1.0.132", default-features = false }
 serde_with = { version = "3.12.0", default-features = false, features = [
 	"hex",
 	"macros",
 ] }
-serde_yaml = { version = "0.9" }
 sha1 = { version = "0.10.6" }
 sha2 = { version = "0.10.7", default-features = false }
 sha3 = { version = "0.10.0", default-features = false }
@@ -1635,7 +1623,6 @@ wasm-bindgen-futures = { version = "0.4.43" }
 wasm-bindgen-test = { version = "0.3.24" }
 wasm-encoder = { version = "0.236.1", default-features = false }
 wasm-opt = { version = "0.116" }
-wasmi = { version = "0.32.3", default-features = false }
 wasmparser = { version = "0.236.1", default-features = false }
 wasmtime = { version = "36.0.13", default-features = false }
 wat = { version = "1.0.0" }
@@ -1694,7 +1681,6 @@ debug = "line-tables-only"
 ark-vrf = { opt-level = 3 }
 blake2 = { opt-level = 3 }
 blake2b_simd = { opt-level = 3 }
-chacha20poly1305 = { opt-level = 3 }
 cranelift-codegen = { opt-level = 3 }
 crc32fast = { opt-level = 3 }
 crossbeam-deque = { opt-level = 3 }
@@ -1730,7 +1716,6 @@ snow = { opt-level = 3 }
 bizinikiwi-bip39 = { opt-level = 3 }
 twox-hash = { opt-level = 3 }
 uint = { opt-level = 3 }
-wasmi = { opt-level = 3 }
 x25519-dalek = { opt-level = 3 }
 yamux = { opt-level = 3 }
 zeroize = { opt-level = 3 }

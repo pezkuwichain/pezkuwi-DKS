@@ -174,7 +174,9 @@ jobs:
           set -uo pipefail
           dest="$HOME/weights-out/${{ github.sha }}/${{ inputs.runtime || 'all' }}/${{ inputs.pallet || 'all' }}"
           mkdir -p "$dest"
-          changed=$(git diff --name-only -- '*weights*' || true)
+          # Modified and untracked both: a pallet measured for the first time writes a new file,
+          # which `git diff` never lists (2026-10-13: revive and permit were missing from the copy).
+          changed=$(git ls-files --modified --others --exclude-standard -- '*weights*' || true)
           if [ -z "$changed" ]; then
             echo "::warning::no weight file changed; nothing to keep"
           else
@@ -191,7 +193,9 @@ jobs:
         if: always()
         with:
           name: weights-${{ github.sha }}
+          # `**/weights/**` and not `**/weights/*`: XCM weights live one level down, in
+          # `weights/xcm/`, and the shallower glob dropped them from the 2026-10-13 artifact.
           path: |
-            **/weights/*.rs
+            **/weights/**/*.rs
             **/weights.rs
           if-no-files-found: warn

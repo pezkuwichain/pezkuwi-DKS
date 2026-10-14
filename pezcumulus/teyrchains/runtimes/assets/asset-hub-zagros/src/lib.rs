@@ -122,7 +122,7 @@ use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
 #[cfg(feature = "runtime-benchmarks")]
 use xcm::latest::prelude::{
 	Asset, Assets as XcmAssets, Fungible, Here, InteriorLocation, Junction, Junction::*, Location,
-	NetworkId, NonFungible, ParentThen, Response, WeightLimit, XCM_VERSION,
+	NetworkId, ParentThen, Response, WeightLimit, XCM_VERSION,
 };
 use xcm::{
 	latest::prelude::{AssetId, BodyId},
@@ -1289,7 +1289,9 @@ impl pezpallet_treasury::Config for Runtime {
 	// somebody else's hardware -- the same caveat every weight file here carries
 	// -- and a wrong non-zero number is not in the same class as no number.
 	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
-	type SpendFunds = ();
+	// Approved bounties are funded in the treasury's spend period, through this hook. With `()`
+	// a bounty could be approved and would never leave `Approved`.
+	type SpendFunds = Bounties;
 	// Root, or a spender the economic franchise elected to trust with an amount.
 	//
 	// Root alone meant there was no governance path to this treasury at all: the five
@@ -1303,8 +1305,7 @@ impl pezpallet_treasury::Config for Runtime {
 	type AssetKind = ();
 	type Beneficiary = AccountId;
 	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
-	type Paymaster =
-		pezframe_support::traits::tokens::pay::PayFromAccount<Balances, TreasuryAccount>;
+	type Paymaster = pez_assets_common::treasury::PayFromPot<Balances, TreasuryAccount>;
 	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
 	type PayoutPeriod = PayoutSpendPeriod;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
@@ -1382,15 +1383,14 @@ impl pezpallet_treasury::Config<AirdropPotInstance> for Runtime {
 	// origin may spend" into "this origin may spend up to this much", and the amount it
 	// returns is what the pallet checks the spend against.
 	type SpendOrigin = pezframe_system::EnsureWithSuccess<
-		EnsureXcm<Equals<PeopleLocation>>,
+		pez_assets_common::treasury::EnsureXcmFrom<PeopleLocation>,
 		AccountId,
 		AirdropSpendCeiling,
 	>;
 	type AssetKind = ();
 	type Beneficiary = AccountId;
 	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
-	type Paymaster =
-		pezframe_support::traits::tokens::pay::PayFromAccount<Balances, AirdropPotAccount>;
+	type Paymaster = pez_assets_common::treasury::PayFromPot<Balances, AirdropPotAccount>;
 	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
 	type PayoutPeriod = PayoutSpendPeriod;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
@@ -1419,15 +1419,14 @@ impl pezpallet_treasury::Config<PresalePotInstance> for Runtime {
 	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
 	type SpendFunds = ();
 	type SpendOrigin = pezframe_system::EnsureWithSuccess<
-		EnsureXcm<Equals<PeopleLocation>>,
+		pez_assets_common::treasury::EnsureXcmFrom<PeopleLocation>,
 		AccountId,
 		PresaleSpendCeiling,
 	>;
 	type AssetKind = ();
 	type Beneficiary = AccountId;
 	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
-	type Paymaster =
-		pezframe_support::traits::tokens::pay::PayFromAccount<Balances, PresalePotAccount>;
+	type Paymaster = pez_assets_common::treasury::PayFromPot<Balances, PresalePotAccount>;
 	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
 	type PayoutPeriod = PresalePayoutPeriod;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
@@ -1477,7 +1476,7 @@ parameter_types! {
 // and domain separator. Without it the precompile set does not satisfy its bounds.
 impl pezpallet_assets_precompiles::PermitConfig for Runtime {
 	type ChainId = <Runtime as pezpallet_revive::Config>::ChainId;
-	type WeightInfo = pezpallet_assets_precompiles::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_assets_precompiles_permit::WeightInfo<Runtime>;
 }
 
 impl pezpallet_bounties::Config for Runtime {
@@ -1713,7 +1712,7 @@ impl pezpallet_revive::Config for Runtime {
 	type DepositPerItem = DepositPerItem;
 	type DepositPerChildTrieItem = DepositPerChildTrieItem;
 	type DepositPerByte = DepositPerByte;
-	type WeightInfo = pezpallet_revive::weights::BizinikiwiWeight<Self>;
+	type WeightInfo = weights::pezpallet_revive::WeightInfo<Self>;
 	type Precompiles = (
 		ERC20<Self, InlineIdConfig<0x120>, TrustBackedAssetsInstance>,
 		ERC20<Self, InlineIdConfig<0x320>, PoolAssetsInstance>,
@@ -1985,24 +1984,13 @@ pub type TxExtension = pezcumulus_pezpallet_weight_reclaim::StorageWeightReclaim
 pub type UncheckedExtrinsic =
 	pezpallet_revive::evm::runtime::UncheckedExtrinsic<Address, Signature, EthExtraImpl>;
 
-parameter_types! {
-	/// `AhOps` (index 254) served the relay-to-Asset-Hub migration: it unlocks lease and
-	/// crowdloan reserves that the migrator crates write into its storage. Neither migrator is in
-	/// this tree, so nothing ever wrote there; the live chain held only the pallet's storage
-	/// version. The pallet is gone and this clears that key. Once a release carrying it has run
-	/// on Zagros, the entry and this parameter can go.
-	pub const AhOpsPalletName: &'static str = "AhOps";
-}
-
 /// Migrations to apply on runtime upgrade.
 ///
-/// Only the permanent ones remain, and the removal of `AhOps`, which the live chain still
-/// carries. The one-off entries were removed with the genesis reset: each converted state that
-/// only the chain before the reset had, and a chain born from this runtime's genesis starts with
-/// every pallet at its in-code storage version and none of that state.
+/// Only the permanent ones remain. The one-off entries were removed with the genesis reset: each
+/// converted state that only the chain before the reset had, and a chain born from this
+/// runtime's genesis starts with every pallet at its in-code storage version and none of that
+/// state.
 pub type Migrations = (
-	// unreleased
-	pezframe_support::migrations::RemovePallet<AhOpsPalletName, RocksDbWeight>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 );
@@ -2111,6 +2099,20 @@ mod benches {
 		[pezcumulus_pezpallet_xcmp_queue, XcmpQueue]
 		[pezpallet_xcm_bridge_hub_router, ToPezkuwichain]
 		[pezpallet_asset_conversion_ops, AssetConversionMigration]
+		[pezpallet_assets_precompiles::permit, AssetsPrecompilesPermit]
+		[pezpallet_revive, Revive]
+		// Treasury, bounties and OpenGov run on this chain; without these entries their weights
+		// stay the pallets' own defaults, measured on a different machine.
+		[pezpallet_treasury, Treasury]
+		[pezpallet_treasury, AirdropPot]
+		[pezpallet_treasury, PresalePot]
+		[pezpallet_asset_rate, AssetRate]
+		[pezpallet_bounties, Bounties]
+		[pezpallet_child_bounties, ChildBounties]
+		[pezpallet_nis, Nis]
+		[pezpallet_scheduler, Scheduler]
+		[pezpallet_preimage, Preimage]
+		[pezpallet_conviction_voting, ConvictionVoting]
 		// XCM
 		[pezpallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		// NOTE: Make sure you point to the individual modules below.
@@ -2135,6 +2137,11 @@ mod benches {
 		[pezpallet_token_wrapper, TokenWrapper]
 	);
 }
+
+// The transaction-payment benchmarks need this. It lives here rather than inside the
+// `Benchmark` runtime API, because an impl inside a function body is a non-local definition.
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
 
 pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 	Runtime,
@@ -2507,8 +2514,6 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 		) {
 			use pezframe_benchmarking::BenchmarkList;
 			use pezframe_support::traits::StorageInfoTrait;
-			// The pallet's benchmarks are listed above, and they need this implemented.
-			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
 
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;

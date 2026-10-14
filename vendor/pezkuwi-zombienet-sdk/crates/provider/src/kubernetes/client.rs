@@ -474,7 +474,7 @@ impl KubernetesClient {
 		namespace: &str,
 		raw_manifest: &str,
 	) -> Result<()> {
-		let tm: TypeMeta = serde_yaml::from_str(raw_manifest).map_err(|err| {
+		let tm: TypeMeta = serde_saphyr::from_str(raw_manifest).map_err(|err| {
 			Error::from(anyhow!(
 				"error while extracting TypeMeta from manifest: {raw_manifest}: {err}"
 			))
@@ -488,7 +488,7 @@ impl KubernetesClient {
 		let ar = ApiResource::from_gvk(&gvk);
 		let api: Api<DynamicObject> = Api::namespaced_with(self.inner.clone(), namespace, &ar);
 
-		api.create(&PostParams::default(), &serde_yaml::from_str(raw_manifest).unwrap())
+		api.create(&PostParams::default(), &serde_saphyr::from_str(raw_manifest).unwrap())
 			.await
 			.map_err(|err| {
 				Error::from(anyhow!("error while creating static-config {raw_manifest}: {err}"))

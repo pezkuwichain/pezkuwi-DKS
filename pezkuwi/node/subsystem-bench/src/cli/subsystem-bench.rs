@@ -81,7 +81,7 @@ pub struct TestSequence {
 impl TestSequence {
 	fn new_from_file(path: &Path) -> std::io::Result<TestSequence> {
 		let string = String::from_utf8(std::fs::read(path)?).expect("File is valid UTF8");
-		Ok(serde_yaml::from_str(&string).expect("File is valid test sequence YA"))
+		Ok(serde_saphyr::from_str(&string).expect("File is valid test sequence YA"))
 	}
 }
 

@@ -2875,3 +2875,35 @@ fn evm_chain_id_is_our_own() {
 	assert!(!(420_420_400..420_420_500).contains(&id), "upstream EVM chain id {id}");
 	assert_eq!(id, 1921);
 }
+
+/// An approved bounty is funded in the treasury's next spend period, and only through the
+/// treasury's `SpendFunds` hook: bounties has no other way to move the value into the bounty's
+/// account. Both Asset Hubs had `SpendFunds = ()`, so a bounty could be approved and would sit in
+/// `Approved` for ever; the bounties benchmarks found it, failing with `UnexpectedStatus`.
+#[test]
+fn an_approved_bounty_is_funded_in_the_next_spend_period() {
+	use asset_hub_zagros_runtime::{Bounties, SpendPeriod, System, Treasury};
+	use pezframe_support::traits::Hooks;
+	use pezpallet_bounties::BountyStatus;
+
+	ExtBuilder::<Runtime>::default().build().execute_with(|| {
+		let proposer: AccountId = [9u8; 32].into();
+		let value = 10 * UNITS;
+		assert_ok!(Balances::mint_into(&proposer, 100 * UNITS));
+		assert_ok!(Balances::mint_into(&Treasury::account_id(), 1_000 * UNITS));
+
+		assert_ok!(Bounties::propose_bounty(RuntimeOrigin::signed(proposer), value, b"x".to_vec()));
+		assert_ok!(Bounties::approve_bounty(RuntimeOrigin::root(), 0));
+
+		// The first call records the spend period it falls in; the second lands one period later.
+		System::set_block_number(1);
+		Treasury::on_initialize(1);
+		let next = SpendPeriod::get() + 1;
+		System::set_block_number(next);
+		Treasury::on_initialize(next);
+
+		let bounty = pezpallet_bounties::Bounties::<Runtime>::get(0).expect("the bounty exists");
+		assert_eq!(bounty.get_status(), BountyStatus::Funded, "an approved bounty was not funded");
+		assert_eq!(Balances::free_balance(Bounties::bounty_account_id(0)), value);
+	});
+}

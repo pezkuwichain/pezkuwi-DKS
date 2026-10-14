@@ -12,6 +12,9 @@ homepage = "https://www.parity.io/"
 description = "Create type information that can be used to decode historic data from Substrate based chains"
 keywords = ["decoding", "encoding", "parity", "scale"]
 include = ["Cargo.toml", "LICENSE", "README.md", "src/**/*.rs"]
+# Vendored to drop smallstr (see the patch in the root manifest); not ours to publish, and so
+# not re-exported by the umbrella crate.
+publish = false
 
 [features]
 default = []

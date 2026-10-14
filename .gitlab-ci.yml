@@ -156,8 +156,7 @@ check-workspace-integrity:
   script:
     - pip3 install toml "cargo-workspace>=1.2.6" --quiet
     - |
-      python3 .github/scripts/check-workspace.py . \
-        --exclude "bizinikiwi/pezframe/contracts/fixtures/build" "bizinikiwi/pezframe/contracts/fixtures/contracts/common"
+      python3 .github/scripts/check-workspace.py .
     - python3 .github/scripts/deny-git-deps.py .
 
 check-zepter:

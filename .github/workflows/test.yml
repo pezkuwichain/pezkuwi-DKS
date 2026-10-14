@@ -245,9 +245,7 @@ jobs:
           # dev-dependencies, which would bring back what the patch keeps out. See the comments
           # on their patch entries and the `exclude` key in the root Cargo.toml.
           python3 .github/scripts/check-workspace.py . \
-            --exclude "bizinikiwi/pezframe/contracts/fixtures/build" \
-                      "bizinikiwi/pezframe/contracts/fixtures/contracts/common" \
-                      "vendor/revm-precompile" \
+            --exclude "vendor/revm-precompile" \
                       "vendor/ruint"
       - name: Deny git dependencies
         run: python3 .github/scripts/deny-git-deps.py .

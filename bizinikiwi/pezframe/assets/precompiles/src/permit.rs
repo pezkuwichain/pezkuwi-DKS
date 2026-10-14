@@ -35,6 +35,9 @@ use pezpallet_revive::precompiles::H160;
 use pezsp_core::{H256, U256};
 use pezsp_io::{crypto::secp256k1_ecdsa_recover, hashing::keccak_256};
 
+/// The permit weights, under the path a runtime's generated weight file implements
+/// (`pezpallet_assets_precompiles::permit::WeightInfo`).
+pub use crate::permit_weights::WeightInfo;
 pub use pezpallet::*;
 
 /// EIP-712 type hash for the domain separator.
@@ -85,7 +88,7 @@ pub mod pezpallet {
 		type ChainId: Get<u64>;
 
 		/// Weight information for permit operations.
-		type WeightInfo: crate::weights::WeightInfo;
+		type WeightInfo: crate::permit_weights::WeightInfo;
 	}
 
 	#[pezpallet::pezpallet]

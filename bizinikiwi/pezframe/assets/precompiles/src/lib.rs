@@ -22,6 +22,7 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use core::marker::PhantomData;
+use permit_weights::WeightInfo as _;
 use pez_ethereum_standards::{
 	IERC20,
 	IERC20::{IERC20Calls, IERC20Events},
@@ -37,15 +38,17 @@ use pezpallet_revive::precompiles::{
 	AddressMapper, AddressMatcher, Error, Ext, Precompile, RuntimeCosts, H160, H256,
 };
 use pezsp_runtime::traits::{UniqueSaturatedInto, Zero};
-use weights::WeightInfo as _;
 
 pub mod foreign_assets;
 pub mod migration;
 pub mod permit;
+pub mod permit_weights;
 pub mod weights;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub(crate) mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+pub(crate) mod permit_benchmarking;
 
 #[cfg(test)]
 mod foreign_assets_tests;

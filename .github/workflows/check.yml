@@ -181,6 +181,11 @@ jobs:
       - uses: actions/checkout@v7
       - name: Check the bridge tooling
         run: cargo check --locked --all-targets -p usdt-bridge
+      # The workspace jobs compile the bridge's tests but run them only in the weekly suite, so
+      # a change to how the bridge decides what to skip or record could merge with them red.
+      # They are seconds long; run them on every PR.
+      - name: Test the bridge
+        run: cargo test --locked -p usdt-bridge
       - name: Check the chain-spec tooling
         run: cargo check --locked --all-targets --manifest-path tools/chain-spec-tool/Cargo.toml
 

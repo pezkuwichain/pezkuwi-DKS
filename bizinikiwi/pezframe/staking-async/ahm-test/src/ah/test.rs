@@ -2206,11 +2206,20 @@ fn legacy_to_dap_era_payout_e2e() {
 				StakingEvent::SessionRotated { starting_session: 4, active_era: 0, planned_era: 1 },
 				StakingEvent::SessionRotated { starting_session: 5, active_era: 0, planned_era: 1 },
 				StakingEvent::SessionRotated { starting_session: 6, active_era: 0, planned_era: 1 },
-				// 27 blocks × 12_000ms = 324_000ms. 85% = 275_400 staker, 15% = 48_600 treasury.
-				StakingEvent::EraPaid { era_index: 0, validator_payout: 275400, remainder: 48600 },
+				// 27 blocks × 12_000ms = 324_000ms. The legacy curve splits it 85% = 275_400
+				// staker and 15% = 48_600 treasury, but era 0 is the genesis era: no election
+				// backed anyone in it and nothing recorded points in it, so no payout can
+				// ever claim the staker share. An era with no points pays its whole validator
+				// payout to the remainder instead of stranding it in `ErasValidatorReward`.
+				StakingEvent::EraPaid { era_index: 0, validator_payout: 0, remainder: 324000 },
 				StakingEvent::SessionRotated { starting_session: 7, active_era: 1, planned_era: 2 },
 			]
 		);
+		// Why the staker share above went to the remainder: nothing earned points in era 0,
+		// and nothing could have been paid for them, since era 0 has no exposures.
+		assert_eq!(staking_async::ErasRewardPoints::<T>::get(0).total, 0);
+		assert_eq!(staking_async::ErasStakersOverview::<T>::iter_prefix(0).count(), 0);
+		assert_eq!(staking_async::ErasValidatorReward::<T>::get(0), Some(0));
 
 		// -- Switch to DAP 85/0/15 mid-era via runtime upgrade migration --
 		// Emulates what AH will do in a real upgrade: `MigrateV1ToV2` seeds
@@ -2413,8 +2422,9 @@ fn legacy_to_dap_era_payout_e2e() {
 		// -- Key comparisons across eras --
 		// All eras have identical total issuance rate (324_000 tokens/era).
 
-		// 1) Legacy and DAP produce identical staker rewards with same budget. legacy era 0 staker
-		//    payout = DAP era 1 staker payout = 275400.
+		// 1) Legacy and DAP budget the same staker share: the legacy curve split era 0 as 275400
+		//    staker / 48600 treasury, and DAP era 1 paid 275400 to stakers. Era 0's staker share
+		//    reached the remainder only because era 0 had no points to pay it against.
 
 		// 2) Validator reward increases with incentive. era 1: alice got 34425 (staker only). era
 		//    3: alice got 26325 + 16200 = 42525 (staker + incentive). +23.5% increase.
@@ -2428,8 +2438,9 @@ fn legacy_to_dap_era_payout_e2e() {
 		assert_eq!(era3_bob, 26325);
 		assert!(era3_bob < era1_bob);
 
-		// 4) Treasury/buffer portion stays at 15% across all phases. legacy: remainder=48600 (15%
-		//    of 324000). DAP: buffer gets 15% of each era's issuance.
+		// 4) Treasury/buffer portion is 15% across all phases. legacy: the curve's remainder is
+		//    48600 (15% of 324000), and era 0 paid 324000 because its unclaimable staker share
+		//    joined it. DAP: buffer gets 15% of each era's issuance.
 
 		// 5) Total inflation is the same — just distributed differently. era 1 total per-validator:
 		//    34425 + 34425 = 68850. era 3 total per-validator: 42525 + 26325 = 68850. Same!

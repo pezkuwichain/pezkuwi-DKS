@@ -92,4 +92,22 @@
 # Measured (run 38003454834): messaging `register_encryption_key` and `send_message` came back at
 # ~1.8-2x the stubbed figures (reads 2->4, 4->7: `IdentityKyc::KycStatuses`, `Trust::TrustScores`),
 # trust `force_recalculate_trust_score` at ~1.4x (reads 3->4). The files are in the tree.
-runs: []
+# 2026-10-13: weights that had never been measured on these runtimes, asked for before genesis.
+# Revive and the permit precompile were running on the kitchensink reference figures on both
+# Asset Hubs. The mainnet Asset Hub's fungible XCM weights predate its teleport checking account
+# and the revive account mapper, and the mainnet People chain's alias weights were copied from
+# its twin rather than measured. Both twins each time, so they cannot drift.
+#
+# Measured (run 38353445066): revive at about 4x the reference figures, permit at 2.3-3.6x, the
+# People alias weights at 2.7-2.8x what had been copied. The files are in the tree.
+#
+# 2026-10-14: the treasury, bounties and OpenGov pallets on both Asset Hubs were never listed in
+# `define_benchmarks!`, so they ran on the pallets' reference figures. Listing them surfaced three
+# faults the benchmarks could not get past -- bounties were never funded (`SpendFunds = ()`), the
+# People-guarded pots offered a `Here` benchmark origin, and the treasury's 100-unit spend sat
+# below the existential deposit -- all fixed in the commits before this one. Referenda is not
+# asked for: its benchmarks submit with a Root proposal origin, and these hubs give Root no track.
+runs:
+  - runtime: asset-hub-zagros asset-hub-pezkuwichain
+    pallet: pezpallet_treasury pezpallet_asset_rate pezpallet_bounties pezpallet_child_bounties pezpallet_nis pezpallet_scheduler pezpallet_preimage pezpallet_conviction_voting
+    why: treasury, bounties and OpenGov never measured on the Asset Hubs

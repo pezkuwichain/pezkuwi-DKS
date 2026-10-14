@@ -2097,6 +2097,11 @@ mod benches {
 	);
 }
 
+// The transaction-payment benchmarks need this. It lives here rather than inside the
+// `Benchmark` runtime API, because an impl inside a function body is a non-local definition.
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
+
 pezsp_api::impl_runtime_apis! {
 	impl pezsp_api::Core<Block> for Runtime {
 		fn version() -> RuntimeVersion {
@@ -2847,7 +2852,6 @@ pezsp_api::impl_runtime_apis! {
 				}
 			}
 			impl pezframe_system_benchmarking::Config for Runtime {}
-			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
 			impl pezkuwi_runtime_teyrchains::disputes::slashing::benchmarking::Config for Runtime {}
 
 			use xcm::latest::{
