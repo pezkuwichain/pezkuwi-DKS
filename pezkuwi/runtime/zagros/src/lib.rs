@@ -166,7 +166,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("zagros"),
 	authoring_version: 0,
-	spec_version: 1_020_013,
+	spec_version: 1_020_014,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 26,
