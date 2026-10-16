@@ -19,11 +19,10 @@ on:
         description: "Git ref to build (defaults to the triggering ref)"
         required: false
 
+# Read-only by default; each job is given the one write it needs, so a step compromised in
+# one job cannot dispatch workflows or mint attestations from another.
 permissions:
   contents: read
-  actions: write # full-ci-gate may dispatch test.yml
-  id-token: write # build-provenance attestation
-  attestations: write # build-provenance attestation
 
 concurrency:
   group: release-testnet-${{ github.ref }}
@@ -47,6 +46,9 @@ jobs:
   # cut because a ten-second query had nowhere to run. The blobs are built on the self-hosted
   # pool; the permission to build them now comes from the same place.
   full-ci-gate:
+    permissions:
+      contents: read
+      actions: write # may dispatch test.yml
     # The pool, not one box. This was pinned to `dks-runner-1` only because hosted runners had
     # stopped being allocated -- it is two `curl` calls against the API and needs nothing a build
     # needs, so any runner serves. `dks-runner-1`'s host was suspended for non-payment on
@@ -87,6 +89,10 @@ jobs:
           exit 1
 
   build-runtime:
+    permissions:
+      contents: read
+      id-token: write # build-provenance attestation
+      attestations: write # build-provenance attestation
     needs: full-ci-gate
     # Any runner in the pool: the build is hermetic (fixed path + remapped homes below), so
     # the published hash does not depend on which box picked the job up.
@@ -221,6 +227,10 @@ jobs:
   # builds while an upgrade waited on it. Ordering costs nothing when the work is serial
   # anyway; it only decides what comes out first.
   build-node:
+    permissions:
+      contents: read
+      id-token: write # build-provenance attestation
+      attestations: write # build-provenance attestation
     needs: build-runtime
     runs-on: [self-hosted, bizinikiwi-build]
     strategy:
@@ -299,6 +309,10 @@ jobs:
   # Identity matters beyond cosmetics — the node derives the chain it thinks it is
   # from the spec `id` prefix, so the testnet must not carry the mainnet's id.
   chain-specs:
+    permissions:
+      contents: read
+      id-token: write # build-provenance attestation
+      attestations: write # build-provenance attestation
     needs: build-runtime
     runs-on: [self-hosted, bizinikiwi-build]
     steps:

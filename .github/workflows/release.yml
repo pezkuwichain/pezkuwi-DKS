@@ -22,10 +22,10 @@ on:
         description: "Git ref to build (defaults to the triggering ref)"
         required: false
 
+# Read-only by default; each job is given the one write it needs, so only `publish` can
+# create the release, only `build-runtime` can attest and only `full-ci-gate` can dispatch.
 permissions:
-  contents: write # create the GitHub release
-  id-token: write # build-provenance attestation
-  attestations: write # build-provenance attestation
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -43,6 +43,11 @@ jobs:
   # run for this exact commit*. If there is none, trigger it and stop: the operator
   # re-runs the release once it is green.
   full-ci-gate:
+    # `actions: write` for the dispatch below. Without it the dispatch was refused and `|| true`
+    # hid that, so a release on an untested commit never started the suite it asked for.
+    permissions:
+      contents: read
+      actions: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -67,6 +72,10 @@ jobs:
           exit 1
 
   build-runtime:
+    permissions:
+      contents: read
+      id-token: write # build-provenance attestation
+      attestations: write # build-provenance attestation
     needs: full-ci-gate
     # Any runner in the pool: the build is hermetic (fixed path + remapped homes below), so
     # the published hash does not depend on which box picked the job up.
@@ -172,6 +181,8 @@ jobs:
         run: rm -rf "/tmp/pezkuwi-build/${{ matrix.runtime }}"
 
   publish:
+    permissions:
+      contents: write # create the GitHub release
     needs: build-runtime
     runs-on: ubuntu-latest
     steps:
