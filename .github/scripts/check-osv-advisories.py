@@ -35,12 +35,19 @@ Two things it is careful about, each of which reads as a detail and is not:
     a new advisory fails, and an entry that stops applying fails too, so the record cannot
     quietly outlive what it describes.
 
+It also reads every committed npm lockfile (`package-lock.json`, `bun.lock`). Those are test
+and tooling harnesses, not the node, but they are in the tree, OpenSSF Scorecard scores them, and
+on 2026-10-16 Scorecard reported seventeen advisories in `staking-async/runtimes/papi-tests`
+while this gate, reading Cargo only, said zero. A gate narrower than what is scored is a gate
+that reports clean on a tree that is not.
+
 Usage: check-osv-advisories.py [--verbose] [--update-baseline]
 Exit 1 on an advisory outside the baseline, on a stale baseline entry, or if the scan cannot
 run at all -- a query that fails is not the same as a graph that is clean.
 """
 
 import json
+import re
 import subprocess
 import sys
 import urllib.error
@@ -111,14 +118,52 @@ def resolved_packages_in(root):
     return found
 
 
-def query_osv(pkgs):
+def npm_lockfiles():
+    """Every committed npm or bun lockfile, read from git for the same reason as `lock_roots`."""
+    out = subprocess.run(
+        ["git", "ls-files", "--", "package-lock.json", "*/package-lock.json", "bun.lock", "*/bun.lock"],
+        cwd=REPO, capture_output=True, text=True, check=True,
+    )
+    return sorted(REPO / f for f in out.stdout.split())
+
+
+# bun.lock package entries: `"key": ["name@version", ...` where name may be scoped. Local
+# `file:`/`workspace:` entries have no registry version and are ours, like path+ crates.
+BUN_ENTRY = re.compile(r'^\s*"[^"]+":\s*\["((?:@[^@"/]+/)?[^@"]+)@([^"]+)"', re.M)
+
+
+def npm_packages_in(lock):
+    found = set()
+    if lock.name == "package-lock.json":
+        for key, meta in (json.loads(lock.read_text()).get("packages") or {}).items():
+            if not key or meta.get("link") or "version" not in meta:
+                continue
+            found.add((key.rsplit("node_modules/", 1)[-1], meta["version"]))
+    else:
+        for name, version in BUN_ENTRY.findall(lock.read_text()):
+            if not re.match(r"^\d", version):
+                continue
+            found.add((name, version))
+    if not found:
+        sys.exit(f"{lock.relative_to(REPO)} resolved no packages -- nothing was audited")
+    return found
+
+
+def npm_packages():
+    found = set()
+    for lock in npm_lockfiles():
+        found |= npm_packages_in(lock)
+    return sorted(found)
+
+
+def query_osv(pkgs, ecosystem="crates.io", prefix=""):
     """Ask OSV about every package. Raises rather than returning a hopeful empty set."""
     hits = {}
     for i in range(0, len(pkgs), CHUNK):
         chunk = pkgs[i : i + CHUNK]
         body = json.dumps(
             {"queries": [
-                {"package": {"name": n, "ecosystem": "crates.io"}, "version": v}
+                {"package": {"name": n, "ecosystem": ecosystem}, "version": v}
                 for n, v in chunk
             ]}
         ).encode()
@@ -133,7 +178,7 @@ def query_osv(pkgs):
             vulns = r.get("vulns") or []
             if vulns:
                 name, version = chunk[j]
-                hits[f"{name}@{version}"] = sorted(v["id"] for v in vulns)
+                hits[f"{prefix}{name}@{version}"] = sorted(v["id"] for v in vulns)
     return hits
 
 
@@ -143,7 +188,9 @@ def main():
     if len(pkgs) < 100:
         sys.exit(f"only {len(pkgs)} packages resolved -- that is not this workspace")
 
+    npm = npm_packages()
     hits = query_osv(pkgs)
+    hits.update(query_osv(npm, ecosystem="npm", prefix="npm:"))
     baseline = json.loads(BASELINE.read_text()) if BASELINE.is_file() else {}
 
     if "--update-baseline" in sys.argv:
@@ -176,7 +223,7 @@ def main():
         return 1
 
     total = sum(len(v) for v in hits.values())
-    print(f"{len(pkgs)} resolved packages queried against OSV; "
+    print(f"{len(pkgs)} resolved crates and {len(npm)} locked npm packages queried against OSV; "
           f"{len(hits)} carry an advisory, {total} advisories, all in the recorded baseline")
     if verbose:
         for k, ids in sorted(hits.items()):

@@ -122,6 +122,12 @@ compiled from the sdk.
 
 > verified compatible zombienet version: 1.3.126
 
+`package.json` overrides two transitive packages that their parents pin below the fixed release:
+`deepmerge-ts` (`^8`, GHSA-ggr8-5vv4-36mx; `write-package` asks for `^7`) and `esbuild`
+(`^0.28.1`, GHSA-g7r4-m6w7-qqqr; `tsup` asks for `^0.27`). Both are reached through
+`@polkadot-api/cli`; `papi add` compiled descriptors with them and a typed query ran against
+Zagros. Drop an override once its parent's range admits the fix.
+
 ### Quick Start
 
 For first-time setup, run:

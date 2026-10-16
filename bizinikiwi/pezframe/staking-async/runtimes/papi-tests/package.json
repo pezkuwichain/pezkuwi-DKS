@@ -19,5 +19,9 @@
   },
   "optionalDependencies": {
     "@polkadot-api/descriptors": "file:.papi/descriptors"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.0",
+    "esbuild": "^0.28.1"
   }
 }
