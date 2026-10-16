@@ -56,11 +56,14 @@
 //!
 //! ### User Extrinsics
 //!
-//! - `initiate_referral(referred)` - Invite a new user to the ecosystem
+//! - `initiate_referral(referred)` - Claim to have brought a newcomer to the state
+//! - `withdraw_referral(referred)` - Take back a claim of your own
 //!
 //! ### Storage
 //!
-//! - `PendingReferrals` - Invited users awaiting KYC approval (referred → referrer)
+//! - `Invitations` - Open claims of having brought somebody (referred, claimant → ())
+//! - `CleanupQueue` / `CleanupHead` / `CleanupTail` - Citizens whose leftover claims the chain
+//!   clears with spare block weight
 //! - `ReferralCount` - Number of successful referrals per user (referrer → count)
 //! - `Referrals` - Confirmed referral records with metadata (referred → ReferralInfo)
 //!
@@ -121,6 +124,13 @@ mod tests;
 mod benchmarking;
 extern crate alloc;
 
+/// How many claim rows one step of the idle-time cleanup removes.
+///
+/// The bound that makes the cleanup safe to run at all: one step costs at most this many rows
+/// whatever an attacker piled on an account, so a step is either affordable in the weight a
+/// block has left or not taken.
+pub const CLAIMS_PER_STEP: u32 = 64;
+
 /// The ceiling of the tiered referral score: what somebody who has brought in a hundred or
 /// more citizens is worth. Named because it is both the top tier and the maximum this
 /// component reports for weighting.
@@ -161,7 +171,7 @@ impl<AccountId> TrustScoreUpdater<AccountId> for () {
 pub mod pezpallet {
 	use super::*;
 	use crate::types::{InviterProvider, RawScore, ReferralScoreProvider, ReferrerStats};
-	use pezframe_support::pezpallet_prelude::*;
+	use pezframe_support::{pezpallet_prelude::*, weights::WeightMeter};
 	use pezframe_system::pezpallet_prelude::*;
 	use pezpallet_identity_kyc::types::{KycStatus, OnCitizenshipRevoked, OnKycApproved};
 
@@ -178,6 +188,17 @@ pub mod pezpallet {
 
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
+		/// Clear the claims left about citizens, with whatever weight the block has spare.
+		///
+		/// Settlement removes only the claim it settles, so that approving a citizen costs the
+		/// same however many strangers claimed them. The rest are inert from that moment -- no
+		/// new claim about a citizen is accepted and none of the old ones can change anything
+		/// -- and they are cleared here, a bounded step at a time, in the order the citizens
+		/// were approved.
+		fn on_idle(_n: BlockNumberFor<T>, remaining_weight: Weight) -> Weight {
+			Self::clean_up_claims(remaining_weight)
+		}
+
 		/// Three records of the same referrals have to agree.
 		///
 		/// `Referrals` says who vouched for each citizen, `ReferralCount` says how many each
@@ -225,6 +246,12 @@ pub mod pezpallet {
 					"the invitation count does not match who was actually invited"
 				);
 			}
+
+			// The cleanup queue is a window `[head, tail)`; the head never passes the tail.
+			ensure!(
+				CleanupHead::<T>::get() <= CleanupTail::<T>::get(),
+				"the claim cleanup queue's head has passed its tail"
+			);
 
 			Ok(())
 		}
@@ -318,6 +345,12 @@ pub mod pezpallet {
 	/// existence, which nobody could clear and which stopped the person who had actually
 	/// invited them from recording it. Since a claim carries no weight until it is confirmed,
 	/// letting several stand costs nothing and takes the race away.
+	///
+	/// How many may stand is not bounded -- each costs its claimant a transaction fee -- so
+	/// nothing that has to fit in a block walks them. A claim lives until the person it is
+	/// about is approved, and is inert from then on: no new claim about a citizen is accepted,
+	/// the one the newcomer named is removed at settlement, and the rest are removed by the
+	/// chain's idle-time cleanup (`CleanupQueue`) or by their claimant (`withdraw_referral`).
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn invitation_claim)]
 	pub type Invitations<T: Config> = StorageDoubleMap<
@@ -329,6 +362,24 @@ pub mod pezpallet {
 		(),
 		OptionQuery,
 	>;
+
+	/// Citizens whose leftover claims are still to be cleared, oldest approval first.
+	///
+	/// A queue rather than a walk of `Invitations`, because the claims are keyed by the person
+	/// they are about and the cleanup needs to know which prefixes still hold rows without
+	/// reading the map. Indexed by position so that a push and a pop are one write each,
+	/// whatever the length. The account stored is the one the rows are keyed by: a citizenship
+	/// reissued afterwards does not move the rows, so they are cleared under the old account.
+	#[pezpallet::storage]
+	pub type CleanupQueue<T: Config> = StorageMap<_, Twox64Concat, u64, T::AccountId, OptionQuery>;
+
+	/// The position of the oldest entry in `CleanupQueue`; equal to `CleanupTail` when empty.
+	#[pezpallet::storage]
+	pub type CleanupHead<T: Config> = StorageValue<_, u64, ValueQuery>;
+
+	/// The position the next entry in `CleanupQueue` is written to.
+	#[pezpallet::storage]
+	pub type CleanupTail<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	/// Who actually brought each citizen in, once both sides have said so.
 	///
@@ -401,6 +452,8 @@ pub mod pezpallet {
 			new_penalty_score: u32,
 			total_revoked: u32,
 		},
+		/// A claimant took back their claim of having brought somebody here.
+		ReferralWithdrawn { referrer: T::AccountId, referred: T::AccountId },
 	}
 
 	// --- Errors ---
@@ -410,6 +463,10 @@ pub mod pezpallet {
 		SelfReferral,
 		/// This user has already been invited by someone else.
 		AlreadyReferred,
+		/// This account is already a citizen; a claim about them can no longer change anything.
+		AlreadyCitizen,
+		/// There is no claim by you about this account to withdraw.
+		NoSuchClaim,
 	}
 
 	// --- Extrinsics ---
@@ -422,12 +479,22 @@ pub mod pezpallet {
 		/// may claim the same newcomer, and the newcomer settles it. The version this replaced
 		/// let whoever called first hold the only slot for any address at all, which meant a
 		/// stranger could take the place of the person who had actually done the inviting.
+		///
+		/// Claims are not limited in number; each one costs its fee. What is refused is a claim
+		/// that could not matter: about an account whose invitation has settled, or about an
+		/// account that is already a citizen. Settlement happens once, at approval, so a claim
+		/// made after it would only be a row for the chain to clear.
 		#[pezpallet::call_index(0)]
 		#[pezpallet::weight(<T as Config>::WeightInfo::initiate_referral())]
 		pub fn initiate_referral(origin: OriginFor<T>, referred: T::AccountId) -> DispatchResult {
 			let inviter = ensure_signed(origin)?;
 			ensure!(inviter != referred, Error::<T>::SelfReferral);
 			ensure!(InvitedBy::<T>::get(&referred).is_none(), Error::<T>::AlreadyReferred);
+			ensure!(
+				pezpallet_identity_kyc::Pezpallet::<T>::get_kyc_status(&referred)
+					!= pezpallet_identity_kyc::types::KycLevel::Approved,
+				Error::<T>::AlreadyCitizen
+			);
 
 			Invitations::<T>::insert(&referred, &inviter, ());
 			Self::deposit_event(Event::ReferralInitiated { referrer: inviter, referred });
@@ -439,6 +506,24 @@ pub mod pezpallet {
 		// incremented the count. It was there to repair historical data. Both chains start
 		// again from genesis, so there is no history to repair -- and a call that can write a
 		// referral out of nothing is a call that can write a trust score out of nothing.
+		// Its index, 1, is left unused rather than given to a different call.
+
+		/// Take back your own claim of having brought somebody here.
+		///
+		/// A claim is the claimant's statement, so the claimant may withdraw it -- before the
+		/// newcomer is approved, to stop it being settled, or after, to clear a row that no
+		/// longer means anything without waiting for the chain to get to it. Only your own:
+		/// the row is addressed by the caller, so there is no way to name somebody else's.
+		#[pezpallet::call_index(2)]
+		#[pezpallet::weight(<T as Config>::WeightInfo::withdraw_referral())]
+		pub fn withdraw_referral(origin: OriginFor<T>, referred: T::AccountId) -> DispatchResult {
+			let referrer = ensure_signed(origin)?;
+			ensure!(Invitations::<T>::contains_key(&referred, &referrer), Error::<T>::NoSuchClaim);
+
+			Invitations::<T>::remove(&referred, &referrer);
+			Self::deposit_event(Event::ReferralWithdrawn { referrer, referred });
+			Ok(())
+		}
 	}
 
 	// --- Trait Implementations ---
@@ -456,7 +541,11 @@ pub mod pezpallet {
 			{
 				// Check if this referral already exists (prevent double-counting)
 				if Referrals::<T>::contains_key(who) {
-					return; // Already processed
+					// Already processed. A citizenship renounced and applied for again passes
+					// through here a second time, and claims made while the account was not a
+					// citizen are as inert now as the first time; queue them the same way.
+					Self::queue_leftover_claims(who);
+					return;
 				}
 
 				// UPDATED (Gemini suggestion): Use referrer from parameter directly
@@ -467,8 +556,14 @@ pub mod pezpallet {
 				// somebody; that account has to have claimed them. Either statement alone
 				// proves nothing -- one is a person crediting whoever they like, the other is
 				// a stranger crediting themselves.
+				//
+				// Nothing here walks the claims. Their number is set by whoever chose to pay
+				// for them, and a walk over them here would let a stranger price somebody's
+				// approval out of a block. The settled claim is removed at once -- its fact
+				// now lives in `InvitedBy` -- and the rest, inert from this moment, are queued
+				// for the idle-time cleanup.
 				if let Some(inviter) = inviter {
-					if Invitations::<T>::contains_key(who, inviter) {
+					if Invitations::<T>::take(who, inviter).is_some() {
 						InvitedBy::<T>::insert(who, inviter);
 						InvitationCount::<T>::mutate(inviter, |n| *n = n.saturating_add(1));
 						Self::deposit_event(Event::InvitationSettled {
@@ -477,8 +572,7 @@ pub mod pezpallet {
 						});
 					}
 				}
-				// The claims have done their work either way; only the settled one is kept.
-				let _ = Invitations::<T>::clear_prefix(who, u32::MAX, None);
+				Self::queue_leftover_claims(who);
 
 				// Increment referrer's count
 				let new_count = ReferralCount::<T>::get(referrer).saturating_add(1);
@@ -627,6 +721,64 @@ pub mod pezpallet {
 	}
 
 	impl<T: Config> Pezpallet<T> {
+		/// Queue `who` for the idle-time cleanup if any claim about them is still standing.
+		///
+		/// One read to find out, whatever the number of claims: the first key under the prefix,
+		/// not a count.
+		pub(crate) fn queue_leftover_claims(who: &T::AccountId) {
+			if Invitations::<T>::iter_key_prefix(who).next().is_some() {
+				let tail = CleanupTail::<T>::get();
+				CleanupQueue::<T>::insert(tail, who);
+				CleanupTail::<T>::put(tail.saturating_add(1));
+			}
+		}
+
+		/// Work through `CleanupQueue` within `limit`, and report what it cost.
+		///
+		/// A step clears at most `CLAIMS_PER_STEP` rows under the account at the head, and is
+		/// taken only if its worst case fits in what is left -- so the weight reported never
+		/// exceeds `limit`. The head is popped once its prefix is empty.
+		///
+		/// A step that leaves rows behind ends the call. The removal underneath ignores the
+		/// cursor it is given (`unhashed::clear_prefix` hands back the prefix itself as one),
+		/// and rows removed earlier in the block are still visible to the backend iterator, so a
+		/// second removal under the same prefix in the same block would walk the same rows again
+		/// and never reach the end. Once per prefix per block is the only progress there is; the
+		/// next block starts from the backend, where those rows are gone. Every pass of the loop
+		/// therefore either pops the head or returns, so it ends within the queue's length
+		/// whatever the weight given.
+		pub(crate) fn clean_up_claims(limit: Weight) -> Weight {
+			let mut meter = WeightMeter::with_limit(limit);
+			// Whether there is anything to do at all: the two ends of the queue.
+			if meter.try_consume(T::DbWeight::get().reads(2)).is_err() {
+				return Weight::zero();
+			}
+			let mut head = CleanupHead::<T>::get();
+			let tail = CleanupTail::<T>::get();
+			let worst_step = <T as Config>::WeightInfo::clean_claims(CLAIMS_PER_STEP);
+
+			while head < tail && meter.can_consume(worst_step) {
+				let (removed, finished) = match CleanupQueue::<T>::get(head) {
+					Some(who) => {
+						let result = Invitations::<T>::clear_prefix(&who, CLAIMS_PER_STEP, None);
+						(result.loops.max(result.unique), result.maybe_cursor.is_none())
+					},
+					// Cannot happen while every position below the tail was written by a push;
+					// treated as an empty prefix so the queue still moves past it.
+					None => (0, true),
+				};
+				meter
+					.consume(<T as Config>::WeightInfo::clean_claims(removed.min(CLAIMS_PER_STEP)));
+				if !finished {
+					break;
+				}
+				CleanupQueue::<T>::remove(head);
+				head = head.saturating_add(1);
+				CleanupHead::<T>::put(head);
+			}
+			meter.consumed()
+		}
+
 		/// Award the roles this account's record now entitles them to.
 		///
 		/// Called after the count changes rather than on a schedule, so a role arrives when it
@@ -672,22 +824,16 @@ impl<T: Config> Pezpallet<T> {
 	/// account that did it is the account that did it. Nothing is lost by leaving them: every
 	/// path that acts on a named referrer resolves through `account_answering_for` first.
 	///
-	/// `Invitations` is a claim waiting to be settled rather than a record of anything, so the
-	/// rows keyed by the account move with it and any claim still naming it as the inviter is
-	/// resolved at settlement like every other reference.
+	/// `Invitations` does not move. A claim only matters until the person it is about is
+	/// approved, and a reissue is for somebody who already is a citizen -- so every claim
+	/// keyed by `from` is already inert, and moving them would be a walk of a set whose size a
+	/// stranger chooses. Rows left under `from` when it was approved were queued under
+	/// `from`, and the idle-time cleanup clears them under that key. A claim naming `from`
+	/// as the claimant is resolved at settlement like every other reference.
 	pub fn rebind_account(
 		from: &T::AccountId,
 		to: &T::AccountId,
 	) -> pezframe_support::pezpallet_prelude::DispatchResult {
-		// `alloc::` spelled out: this impl block sits outside the pallet module, so the
-		// prelude that would have brought `Vec` in does not reach it -- and a std-only check
-		// never notices, because std has it either way.
-		let claims: alloc::vec::Vec<T::AccountId> =
-			Invitations::<T>::iter_key_prefix(from).collect();
-		for inviter in claims {
-			Invitations::<T>::remove(from, &inviter);
-			Invitations::<T>::insert(to, &inviter, ());
-		}
 		if let Some(v) = InvitedBy::<T>::take(from) {
 			InvitedBy::<T>::insert(to, v);
 		}

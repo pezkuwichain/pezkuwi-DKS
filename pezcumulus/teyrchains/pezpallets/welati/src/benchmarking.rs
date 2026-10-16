@@ -700,8 +700,10 @@ mod benchmarks {
 		pezpallet_referral::ReferrerStatsStorage::<T>::mutate(&from, |stats| {
 			stats.total_referrals = 1
 		});
-		// One open claim, so the walk over them runs. The number of claims naming an account
-		// is not bounded by anything this call can see.
+		// One open claim left about the account. A reissue no longer moves these -- claims are
+		// inert once their subject is a citizen and the referral pallet's idle-time cleanup
+		// clears them where they are -- so this is here to show the call's cost does not
+		// depend on them.
 		pezpallet_referral::Invitations::<T>::insert(&from, &referrer, ());
 
 		pezpallet_trust::TrustScores::<T>::insert(

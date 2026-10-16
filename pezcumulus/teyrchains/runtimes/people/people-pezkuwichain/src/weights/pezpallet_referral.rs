@@ -54,14 +54,42 @@ impl<T: pezframe_system::Config> pezpallet_referral::WeightInfo for WeightInfo<T
 	/// Proof: `Referral::InvitedBy` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
 	/// Storage: `Referral::Invitations` (r:0 w:1)
 	/// Proof: `Referral::Invitations` (`max_values`: None, `max_size`: Some(96), added: 2571, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:1 w:0)
+	/// The `KycStatuses` read was added after this was measured; its read and proof are added
+	/// by hand until the weights run measures it.
 	fn initiate_referral() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `4`
 		//  Estimated: `3545`
 		// Minimum execution time: 15_229_000 picoseconds.
 		Weight::from_parts(26_931_000, 0)
-			.saturating_add(Weight::from_parts(0, 3545))
+			.saturating_add(Weight::from_parts(0, 6069))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	/// Placeholder until the weights run measures it.
+	/// Storage: `Referral::Invitations` (r:1 w:1)
+	/// Proof: `Referral::Invitations` (`max_values`: None, `max_size`: Some(96), added: 2571, mode: `MaxEncodedLen`)
+	fn withdraw_referral() -> Weight {
+		Weight::from_parts(26_931_000, 0)
+			.saturating_add(Weight::from_parts(0, 3561))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	/// Placeholder until the weights run measures it.
+	/// Storage: `Referral::CleanupHead` (r:1 w:1)
+	/// Storage: `Referral::CleanupTail` (r:1 w:0)
+	/// Storage: `Referral::CleanupQueue` (r:1 w:1)
+	/// Storage: `Referral::Invitations` (r:`n` w:`n`)
+	/// The range of component `n` is `[1, 64]`.
+	fn clean_claims(n: u32, ) -> Weight {
+		Weight::from_parts(30_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 3513))
+			.saturating_add(Weight::from_parts(10_000_000, 0).saturating_mul(n.into()))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
+			.saturating_add(T::DbWeight::get().writes(2))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(n.into())))
+			.saturating_add(Weight::from_parts(0, 2571).saturating_mul(n.into()))
 	}
 }
