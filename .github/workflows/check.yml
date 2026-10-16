@@ -23,7 +23,7 @@ jobs:
   compliance:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
       - name: Ensure license & attribution files present
@@ -49,7 +49,7 @@ jobs:
   chain-identity:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: No foreign network named, no foreign host dialled
         run: .github/scripts/check-chain-identity.sh
 
@@ -59,8 +59,7 @@ jobs:
   twin-runtimes:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      # The other checks here are stdlib-only; the solc one reads workflow YAML. Installed
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # rather than assumed present on the image -- PyYAML was already an undeclared
       # dependency of two scripts in this tree and the runs only worked because something
       # else had pulled it in.
@@ -156,7 +155,7 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: The agreed design has not gone backwards
         run: python3 .github/scripts/plan.py --work
       - name: Every cross-chain path still has its three gates open
@@ -167,7 +166,7 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: rustfmt
         run: |
           rustup component add rustfmt
@@ -182,7 +181,7 @@ jobs:
   tool-workspaces:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Check the bridge tooling
         run: cargo check --locked --all-targets -p usdt-bridge
       # The workspace jobs compile the bridge's tests but run them only in the weekly suite, so
@@ -206,8 +205,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, bizinikiwi-build]
     steps:
-      - uses: actions/checkout@v7
-      # Needed since this job gained the integration-test step below: those tests pull crates
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # whose build script compiles Solidity, so without solc the job stops before it runs
       # anything. Installed rather than skipped with `SKIP_PALLET_REVIVE_FIXTURES=1`, for the
       # reason recorded on the `workspace` job -- skipping leaves a gate reporting success over
@@ -292,8 +290,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, bizinikiwi-build]
     steps:
-      - uses: actions/checkout@v7
-      # pez-revive-dev-runtime pulls in pallet-revive's fixtures, which compile Solidity from a
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # build script.
       - uses: ./.github/actions/install-solidity
       - name: Toolchain & targets
@@ -340,7 +337,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, bizinikiwi-build]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Toolchain & targets
         run: |
           rustup show
@@ -367,8 +364,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, bizinikiwi-build]
     steps:
-      - uses: actions/checkout@v7
-      # Same eleven as the WASM job above; every one of them declares the feature.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - run: |
           cargo check --locked --features try-runtime \
             -p pezkuwichain-runtime -p zagros-runtime \
@@ -394,8 +390,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, bizinikiwi-build]
     steps:
-      - uses: actions/checkout@v7
-      # `pallet-revive` compiles Solidity fixtures in a build script, and without solc the job
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # stops before checking anything. Installed, not skipped with
       # `SKIP_PALLET_REVIVE_FIXTURES=1`, for the reason the `workspace` job records: skipping
       # leaves a gate reporting success over code it never built. This job was added without
@@ -437,8 +432,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, bizinikiwi-build]
     steps:
-      - uses: actions/checkout@v7
-      # Same reason as `check-runtime-benchmarks`: the feature reaches `pallet-revive`'s
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # Solidity fixtures, and skipping them would report green over code it never built.
       - uses: ./.github/actions/install-solidity
       - name: Tests with runtime-benchmarks, our pallets
@@ -470,8 +464,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, bizinikiwi-build]
     steps:
-      - uses: actions/checkout@v7
-      # pallet-revive's fixtures compile Solidity contracts from their build script, so this
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # job needs solc on PATH or it stops there. test.yml installs it in every job that
       # reaches those crates; this one reaches them too and was the only place it was missing.
       # Skipping the fixtures instead (SKIP_PALLET_REVIVE_FIXTURES=1) would leave a gate that

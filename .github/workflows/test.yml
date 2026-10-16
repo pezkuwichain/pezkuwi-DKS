@@ -64,7 +64,7 @@ jobs:
       matrix:
         partition: [1, 2]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # Heaviest job — compiles the whole workspace's test binaries. The persistent
@@ -118,7 +118,7 @@ jobs:
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
@@ -157,7 +157,7 @@ jobs:
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
@@ -194,7 +194,7 @@ jobs:
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
@@ -231,8 +231,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with: { python-version: '3.x' }
       - name: Install tooling
         run: pip3 install -r .github/scripts/requirements.txt --quiet
@@ -254,7 +254,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Check feature combinations
         run: bash .gitlab/rust-features.sh .
 
@@ -262,7 +262,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Every source file carries a licence header
         run: |
           FAIL=0
@@ -282,8 +282,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with: { python-version: '3.x' }
       - name: Install tooling
         run: |
@@ -317,7 +317,7 @@ jobs:
     runs-on: [self-hosted, bizinikiwi-build]
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/install-solidity
       - name: Feature variants of the core crypto primitives
         run: |
@@ -331,7 +331,7 @@ jobs:
     runs-on: [self-hosted, bizinikiwi-build]
     timeout-minutes: 720
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/install-solidity
       - name: Runtime compiles for the WASM target
         run: |
@@ -350,7 +350,7 @@ jobs:
       matrix:
         partition: [1, 2]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/install-solidity
       - name: Tests with the experimental and ci-only features
         # The `test` job above runs the suite with no `--features` at all. This one adds
@@ -380,7 +380,7 @@ jobs:
     runs-on: [self-hosted, bizinikiwi-build]
     timeout-minutes: 720
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/install-solidity
       - name: Build rustdoc
         run: |
@@ -394,7 +394,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install mdbook
         # The whole toolchain is pinned to the 0.4 line, not just mdbook. Every preprocessor
         # and renderer here speaks a protocol tied to mdbook's version, and book.toml declares
