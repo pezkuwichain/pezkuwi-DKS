@@ -116,6 +116,12 @@ const WHEZ_ASSET_ID: u32 = 2;
 /// How long to wait for a block number to be reached on People.
 const BLOCK_POLL_SECS: u64 = 6;
 
+/// The most People blocks the referral stage waits for a citizen's leftover claims to clear.
+///
+/// The cleanup runs with the weight a block has spare, and a rehearsal chain is nearly idle, so
+/// one block is the expectation; the rest is room for a block that happened to be full.
+const CLAIM_CLEANUP_BUDGET_BLOCKS: u128 = 10;
+
 // ---------------------------------------------------------------------------------------
 // Small readers
 // ---------------------------------------------------------------------------------------
@@ -1161,7 +1167,12 @@ pub(crate) async fn the_referral_graph_is_recorded_and_an_invitation_settles(
 			 {stranger_before} -> {stranger_after}; only the named claimant may be credited"
 		));
 	}
-	if storage_value(
+	// The stranger's claim is not removed by the settlement: approval touches only the claim it
+	// settles, so that its cost does not depend on how many strangers claimed the newcomer. The
+	// rest are cleared by the chain with the weight a block has spare, which on an idle
+	// rehearsal chain is the next block or two.
+	let cleanup_deadline = block_number(people).await? + CLAIM_CLEANUP_BUDGET_BLOCKS;
+	while storage_value(
 		people,
 		"Referral",
 		"Invitations",
@@ -1170,10 +1181,15 @@ pub(crate) async fn the_referral_graph_is_recorded_and_an_invitation_settles(
 	.await?
 	.is_some()
 	{
-		return Err(anyhow!(
-			"the stranger's claim outlived the settlement -- a claim nobody confirmed is left \
-			 standing against an account that is already a citizen"
-		));
+		let now = block_number(people).await?;
+		if now > cleanup_deadline {
+			return Err(anyhow!(
+				"the stranger's claim outlived the cleanup -- a claim nobody confirmed is still \
+				 standing against an account that has been a citizen for \
+				 {CLAIM_CLEANUP_BUDGET_BLOCKS} blocks (now block {now})"
+			));
+		}
+		tokio::time::sleep(std::time::Duration::from_secs(BLOCK_POLL_SECS)).await;
 	}
 	let record = storage_value(people, "Referral", "Referrals", vec![account_key(&newcomer)])
 		.await?
