@@ -86,14 +86,16 @@ runs:
           echo "resolc $RESOLC_VERSION already present"
         else
           # Our own mirror of upstream's release, byte-identical and pinned by the hash below.
-          # It had pointed at pezkuwichain/revive before with no such release published -- only
-          # v0.5.0 -- so the download 404d. Nobody noticed because the step skips downloading
-          # when a matching resolc is already on the runner, and every runner had one from
-          # before the URL changed; a fresh runner would have failed with nothing explaining it.
-          # The mirror exists so our builds do not depend on another organisation keeping a
-          # release URL alive. The checksum is what makes it honest: we host the bytes, we do
-          # not claim to have built them.
-          fetch "https://github.com/pezkuwichain/revive/releases/download/v${RESOLC_VERSION}/resolc-x86_64-unknown-linux-musl" \
+          # pezkuwichain/resolc-releases holds only release binaries and upstream's checksums.txt;
+          # it replaced a full fork of paritytech/revive whose source we never built but whose
+          # dependencies, workflows and alerts we would have had to keep current. It had pointed at
+          # that fork with no such release published -- only v0.5.0 -- so the download 404d.
+          # Nobody noticed because the step skips downloading when a matching resolc is already on
+          # the runner, and every runner had one from before the URL changed; a fresh runner would
+          # have failed with nothing explaining it. The mirror exists so our builds do not depend
+          # on another organisation keeping a release URL alive. The checksum is what makes it
+          # honest: we host the bytes, we do not claim to have built them.
+          fetch "https://github.com/pezkuwichain/resolc-releases/releases/download/v${RESOLC_VERSION}/resolc-x86_64-unknown-linux-musl" \
             "$HOME/.local/bin/resolc" "$RESOLC_SHA256"
         fi
 

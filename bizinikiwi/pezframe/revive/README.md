@@ -84,7 +84,7 @@ documentation](https://docs.pezkuwichain.io/sdk/master/pezpallet_revive/pezpalle
 ## Usage
 
 This module executes PolkaVM smart contracts. These can potentially be written in any language that compiles to
-RISC-V. For now, the only officially supported languages are Solidity (via [`revive`](https://github.com/pezkuwichain/revive))
+RISC-V. For now, the only officially supported languages are Solidity (via [`revive`](https://github.com/paritytech/revive))
 and Rust (check the `fixtures` directory for Rust examples).
 
 ## Host function tracing
