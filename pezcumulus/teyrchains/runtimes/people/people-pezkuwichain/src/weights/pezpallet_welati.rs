@@ -393,4 +393,140 @@ impl<T: pezframe_system::Config> pezpallet_welati::WeightInfo for WeightInfo<T> 
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
+	// Placeholders until the weights run measures these calls. How each figure is composed,
+	// and the one cost none of them covers, is noted on the trait in `pezpallet_welati::weights`.
+	/// Placeholder: `pay_airdrop` for the XCM send, plus the treasurer and the rate on record.
+	fn set_emission_rate() -> Weight {
+		Weight::from_parts(108_302_000, 4_058)
+			.saturating_add(T::DbWeight::get().reads(10_u64))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn court_check_in() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated, and the bench relayed to its
+	/// collective.
+	fn vacate_inactive_court_seat() -> Weight {
+		Weight::from_parts(884_309_000, 277_261)
+			.saturating_add(T::DbWeight::get().reads(73_u64))
+			.saturating_add(T::DbWeight::get().writes(60_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn office_check_in() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated.
+	fn vacate_silent_office() -> Weight {
+		Weight::from_parts(284_309_000, 17_261)
+			.saturating_add(T::DbWeight::get().reads(21_u64))
+			.saturating_add(T::DbWeight::get().writes(8_u64))
+	}
+	/// Placeholder: `nominate_official`, plus both rosters relayed, and the records seven pallets
+	/// move: 50 reads and 80 writes, and 3 reads and 5 writes for each of the 20 tikis an account
+	/// may hold.
+	fn reissue_citizenship() -> Weight {
+		Weight::from_parts(2_927_053_000, 1_399_638)
+			.saturating_add(T::DbWeight::get().reads(270_u64))
+			.saturating_add(T::DbWeight::get().writes(337_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn claim_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn attest_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn withdraw_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn revoke_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn mark_dormant() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `pay_airdrop`, for the XCM send.
+	fn court_whitelists_on_the_relay() -> Weight {
+		Weight::from_parts(108_302_000, 4_058)
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office seated, the bench relayed, and the
+	/// qualification asked of fourteen tikis.
+	fn appoint_diwan_member() -> Weight {
+		Weight::from_parts(884_309_000, 312_877)
+			.saturating_add(T::DbWeight::get().reads(87_u64))
+			.saturating_add(T::DbWeight::get().writes(62_u64))
+	}
+	/// Placeholder: `nominate_official`, the house's records and its collective, and per member
+	/// its share of the collective's `set_members` plus a read and a write.
+	fn seat_founding_parliament(m: u32) -> Weight {
+		Weight::from_parts(89_699_000, 19_308)
+			.saturating_add(Weight::from_parts(6_000_000, 2_100).saturating_mul(m.into()))
+			.saturating_add(T::DbWeight::get().reads(12_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(m.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(m.into())))
+	}
+	/// Placeholder: `nominate_official`.
+	fn appoint_prime_minister() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated and one seated.
+	fn confirm_prime_minister() -> Weight {
+		Weight::from_parts(491_565_000, 30_884)
+			.saturating_add(T::DbWeight::get().reads(36_u64))
+			.saturating_add(T::DbWeight::get().writes(13_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn reject_prime_minister() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated.
+	fn dismiss_prime_minister() -> Weight {
+		Weight::from_parts(284_309_000, 17_261)
+			.saturating_add(T::DbWeight::get().reads(21_u64))
+			.saturating_add(T::DbWeight::get().writes(8_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated and one seated.
+	fn appoint_minister() -> Weight {
+		Weight::from_parts(491_565_000, 30_884)
+			.saturating_add(T::DbWeight::get().reads(36_u64))
+			.saturating_add(T::DbWeight::get().writes(13_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated.
+	fn dismiss_minister() -> Weight {
+		Weight::from_parts(284_309_000, 17_261)
+			.saturating_add(T::DbWeight::get().reads(21_u64))
+			.saturating_add(T::DbWeight::get().writes(8_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn set_confirmation_requirement() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
 }

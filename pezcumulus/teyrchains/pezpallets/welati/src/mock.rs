@@ -1037,6 +1037,9 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 	/// `RecordingXcmSender` accepts everything, so there is no route to open.
 	fn ensure_treasury_reachable() {}
 
+	/// Nor one to the relay.
+	fn ensure_relay_reachable() {}
+
 	fn make_citizen(who: &AccountId) {
 		if pezpallet_tiki::CitizenNft::<Test>::get(who).is_none() {
 			pezpallet_tiki::Pezpallet::<Test>::mint_citizen_nft_for_user(who)
