@@ -111,9 +111,11 @@ CALL_ADDRESSES = {
 # out of the pattern is how two of these were first read as pointing at nothing.
 ENTRY = re.compile(r"^\s*(\w+)\s*:\s*[\w:<>]+\s*=\s*(\d+)\s*,", re.M)
 # `#[pezpallet::call_index(3)]` ... `pub fn pay_from_incentive_pot(`, with the weight attribute
-# and any number of doc comments in between.
+# and any number of doc comments in between. Each alternative starts on a different character
+# (whitespace, `/`, `#`), so a run of text can be split between them one way only; when two of
+# them could both begin with whitespace, a line of empty attributes took exponential time.
 CALL = re.compile(
-    r"#\[pezpallet::call_index\((\d+)\)\](?:\s*//[^\n]*\n|\s*#\[[^\]]*\]\s*|\s)*?pub fn (\w+)",
+    r"#\[pezpallet::call_index\((\d+)\)\](?:\s|//[^\n]*\n|#\[[^\]]*\])*?pub fn (\w+)",
     re.S,
 )
 

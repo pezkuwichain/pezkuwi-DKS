@@ -22,10 +22,10 @@ on:
         description: "Git ref to build (defaults to the triggering ref)"
         required: false
 
+# Read-only by default; each job is given the one write it needs, so only `publish` can
+# create the release, only `build-runtime` can attest and only `full-ci-gate` can dispatch.
 permissions:
-  contents: write # create the GitHub release
-  id-token: write # build-provenance attestation
-  attestations: write # build-provenance attestation
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -43,6 +43,11 @@ jobs:
   # run for this exact commit*. If there is none, trigger it and stop: the operator
   # re-runs the release once it is green.
   full-ci-gate:
+    # `actions: write` for the dispatch below. Without it the dispatch was refused and `|| true`
+    # hid that, so a release on an untested commit never started the suite it asked for.
+    permissions:
+      contents: read
+      actions: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -67,6 +72,10 @@ jobs:
           exit 1
 
   build-runtime:
+    permissions:
+      contents: read
+      id-token: write # build-provenance attestation
+      attestations: write # build-provenance attestation
     needs: full-ci-gate
     # Any runner in the pool: the build is hermetic (fixed path + remapped homes below), so
     # the published hash does not depend on which box picked the job up.
@@ -80,7 +89,7 @@ jobs:
           - asset-hub-pezkuwichain-runtime
           - people-pezkuwichain-runtime
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
@@ -156,11 +165,11 @@ jobs:
           echo "blake2_256=0x${b2}" >> "$GITHUB_OUTPUT"
 
       - name: Attest build provenance (SLSA)
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
           subject-path: ${{ steps.wasm.outputs.wasm }}
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: ${{ matrix.runtime }}
           path: artifacts/*
@@ -172,10 +181,12 @@ jobs:
         run: rm -rf "/tmp/pezkuwi-build/${{ matrix.runtime }}"
 
   publish:
+    permissions:
+      contents: write # create the GitHub release
     needs: build-runtime
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           path: dl
       - name: Assemble release notes
@@ -191,7 +202,7 @@ jobs:
           echo "" >> NOTES.md
           cat $(find dl -name '*.digest.md' | sort) >> NOTES.md
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           body_path: NOTES.md
           files: release/*

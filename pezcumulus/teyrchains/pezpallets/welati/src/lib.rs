@@ -222,12 +222,20 @@ pub trait BenchmarkHelper<AccountId> {
 	/// pallet does not depend on and should not start depending on to make a measurement
 	/// possible. The runtime has both pallets already.
 	fn make_citizen(who: &AccountId);
+
+	/// Open whatever the sender needs so a message addressed to the relay leaves.
+	///
+	/// `court_whitelists_on_the_relay` sends upward, and a bare genesis has no host
+	/// configuration for the router to check the message against -- the same refusal, for
+	/// the same reason, as the treasury's.
+	fn ensure_relay_reachable();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<AccountId> BenchmarkHelper<AccountId> for () {
 	fn ensure_treasury_reachable() {}
 	fn make_citizen(_who: &AccountId) {}
+	fn ensure_relay_reachable() {}
 }
 
 /// `pezpallet_treasury::spend` on the Asset Hub's airdrop instance, by call index.
@@ -2033,7 +2041,7 @@ pub mod pezpallet {
 		/// The rate the treasury chain will *apply* is still clamped there. This call is the
 		/// target; the ceiling is the last word.
 		#[pezpallet::call_index(14)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::set_emission_rate())]
 		pub fn set_emission_rate(
 			origin: OriginFor<T>,
 			rate: pezsp_runtime::Perbill,
@@ -2436,7 +2444,7 @@ pub mod pezpallet {
 		/// rule. That separation is the whole design. If keeping the seat required agreeing with
 		/// anybody, the court would answer to whoever set the test.
 		#[pezpallet::call_index(63)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::court_check_in())]
 		pub fn court_check_in(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(Self::is_diwan_member(&who), Error::<T>::NotOnTheCourt);
@@ -2459,7 +2467,7 @@ pub mod pezpallet {
 		/// its own, the President re-appoints their own -- so this removes a member and never
 		/// shifts the balance between the two halves.
 		#[pezpallet::call_index(64)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vacate_inactive_court_seat())]
 		pub fn vacate_inactive_court_seat(
 			origin: OriginFor<T>,
 			who: T::AccountId,
@@ -2506,7 +2514,7 @@ pub mod pezpallet {
 		/// The court's check-in, for the two elected offices one person holds. It decides
 		/// nothing and is not a vote; it only keeps the office from being read as empty.
 		#[pezpallet::call_index(72)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::office_check_in())]
 		pub fn office_check_in(origin: OriginFor<T>, office: Tiki) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(
@@ -2530,7 +2538,7 @@ pub mod pezpallet {
 		/// by-election at once and, for the presidency, makes the Speaker acting President --
 		/// the rules that already existed for a vacancy and were never reached by a silent one.
 		#[pezpallet::call_index(73)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vacate_silent_office())]
 		pub fn vacate_silent_office(origin: OriginFor<T>, office: Tiki) -> DispatchResult {
 			ensure_signed(origin)?;
 			let election_type = Self::silence_vacatable_office(&office)
@@ -2580,7 +2588,7 @@ pub mod pezpallet {
 		/// The old account is retired permanently and can be neither reissued again nor
 		/// reissued to, which is what stops a chain of accounts being used to launder standing.
 		#[pezpallet::call_index(65)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::reissue_citizenship())]
 		pub fn reissue_citizenship(
 			origin: OriginFor<T>,
 			from: T::AccountId,
@@ -2604,7 +2612,7 @@ pub mod pezpallet {
 		/// from the moment it is made so that a false claim is visible before it is attested
 		/// rather than after.
 		#[pezpallet::call_index(68)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::claim_region())]
 		pub fn claim_region(origin: OriginFor<T>, region: Region) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(
@@ -2632,7 +2640,7 @@ pub mod pezpallet {
 		/// Nobody attests their own claim. The check is the same one `grant_tiki` makes for the
 		/// same reason: an attestation has two parties and neither is both of them.
 		#[pezpallet::call_index(69)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::attest_region())]
 		pub fn attest_region(
 			origin: OriginFor<T>,
 			who: T::AccountId,
@@ -2667,7 +2675,7 @@ pub mod pezpallet {
 		/// this removes the register's answer, not the record that it was once given. A
 		/// document that implied otherwise would be promising something no chain can do.
 		#[pezpallet::call_index(71)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::withdraw_region())]
 		pub fn withdraw_region(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let claimed = ClaimedRegion::<T>::take(&who);
@@ -2684,7 +2692,7 @@ pub mod pezpallet {
 		/// undo their attestations, the whole mark would be his and this stratum would answer
 		/// to the same office the community stratum does.
 		#[pezpallet::call_index(70)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::revoke_region())]
 		pub fn revoke_region(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
 			T::GeographicRevokeOrigin::ensure_origin(origin)?;
 			let region = AttestedRegion::<T>::take(&who).ok_or(Error::<T>::NoRegionAttested)?;
@@ -2703,7 +2711,7 @@ pub mod pezpallet {
 		/// stay, and using any of them puts the citizen back in the count in the same block --
 		/// so the worst a wrongly-timed call can do is be undone by its subject for free.
 		#[pezpallet::call_index(67)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::mark_dormant())]
 		pub fn mark_dormant(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
 			ensure_signed(origin)?;
 			ensure!(
@@ -2740,7 +2748,7 @@ pub mod pezpallet {
 		/// body most likely to be the reason. It is the court's narrowest power by some way:
 		/// it names a hash, and a hash names a call that this chain never sees.
 		#[pezpallet::call_index(66)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::court_whitelists_on_the_relay())]
 		pub fn court_whitelists_on_the_relay(
 			origin: OriginFor<T>,
 			call_hash: T::Hash,
@@ -3089,7 +3097,7 @@ pub mod pezpallet {
 		/// ends when its nine years run out, when the Diwan itself removes the holder, or
 		/// when the holder stops being a citizen.
 		#[pezpallet::call_index(35)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::appoint_diwan_member())]
 		pub fn appoint_diwan_member(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
 			Self::ensure_root_or_serok(origin)?;
 			Self::a_court_seat_is_open_for(&who)?;
@@ -3141,8 +3149,15 @@ pub mod pezpallet {
 		/// that chain's own referenda and never the relay's sudo. On the founding day the roll
 		/// is far too small for a referendum, which is why this call is the Serok's in
 		/// practice: genesis seats the holder of `Tiki::Serok`, and that holder signs this.
+		///
+		/// Charged by the length of the list it is given. Every name is written into the house,
+		/// queued for seating and relayed to the collective, and the list is not checked against
+		/// the house's size until after it has been decoded -- so a fixed fee would price two
+		/// hundred and one names, or ten thousand, the same as one.
 		#[pezpallet::call_index(34)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::seat_founding_parliament(
+			members.len() as u32
+		))]
 		pub fn seat_founding_parliament(
 			origin: OriginFor<T>,
 			members: Vec<T::AccountId>,
@@ -3191,7 +3206,7 @@ pub mod pezpallet {
 		/// Root is accepted for as long as sudo exists. When it goes, this reads as Serok
 		/// alone, and the line below is the only thing that has to change.
 		#[pezpallet::call_index(30)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::appoint_prime_minister())]
 		pub fn appoint_prime_minister(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
 			Self::ensure_root_or_serok(origin)?;
 			PendingPrimeMinister::<T>::put(who.clone());
@@ -3201,7 +3216,7 @@ pub mod pezpallet {
 
 		/// Confirm the President's nominee for Prime Minister, and seat him.
 		#[pezpallet::call_index(38)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::confirm_prime_minister())]
 		pub fn confirm_prime_minister(origin: OriginFor<T>) -> DispatchResult {
 			T::ConfirmationOrigin::ensure_origin(origin)?;
 
@@ -3216,7 +3231,7 @@ pub mod pezpallet {
 		/// Saying no out loud, rather than by never saying yes. A nomination left standing
 		/// forever is a refusal the record cannot see.
 		#[pezpallet::call_index(39)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::reject_prime_minister())]
 		pub fn reject_prime_minister(origin: OriginFor<T>) -> DispatchResult {
 			T::ConfirmationOrigin::ensure_origin(origin)?;
 
@@ -3232,7 +3247,7 @@ pub mod pezpallet {
 		/// -- the finance minister above all -- would go dark at the moment there is nobody to
 		/// refill them.
 		#[pezpallet::call_index(31)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::dismiss_prime_minister())]
 		pub fn dismiss_prime_minister(origin: OriginFor<T>) -> DispatchResult {
 			Self::ensure_root_or_serok(origin)?;
 			Self::vacate_unique_tiki(Tiki::SerokWeziran)?;
@@ -3242,7 +3257,7 @@ pub mod pezpallet {
 
 		/// Appoint a minister. The Prime Minister's call.
 		#[pezpallet::call_index(32)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::appoint_minister())]
 		pub fn appoint_minister(
 			origin: OriginFor<T>,
 			who: T::AccountId,
@@ -3267,7 +3282,7 @@ pub mod pezpallet {
 		/// people at once; naming only the post would be ambiguous for exactly the ministries
 		/// the generic tiki exists to cover.
 		#[pezpallet::call_index(33)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::dismiss_minister())]
 		pub fn dismiss_minister(
 			origin: OriginFor<T>,
 			who: T::AccountId,
@@ -4001,7 +4016,7 @@ pub mod pezpallet {
 		/// goalposts under a pending nomination is how a confirmation requirement gets erased
 		/// one nomination at a time.
 		#[pezpallet::call_index(13)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::set_confirmation_requirement())]
 		pub fn set_confirmation_requirement(
 			origin: OriginFor<T>,
 			role: OfficialRole,

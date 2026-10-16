@@ -19,11 +19,10 @@ on:
         description: "Git ref to build (defaults to the triggering ref)"
         required: false
 
+# Read-only by default; each job is given the one write it needs, so a step compromised in
+# one job cannot dispatch workflows or mint attestations from another.
 permissions:
   contents: read
-  actions: write # full-ci-gate may dispatch test.yml
-  id-token: write # build-provenance attestation
-  attestations: write # build-provenance attestation
 
 concurrency:
   group: release-testnet-${{ github.ref }}
@@ -47,6 +46,9 @@ jobs:
   # cut because a ten-second query had nowhere to run. The blobs are built on the self-hosted
   # pool; the permission to build them now comes from the same place.
   full-ci-gate:
+    permissions:
+      contents: read
+      actions: write # may dispatch test.yml
     # The pool, not one box. This was pinned to `dks-runner-1` only because hosted runners had
     # stopped being allocated -- it is two `curl` calls against the API and needs nothing a build
     # needs, so any runner serves. `dks-runner-1`'s host was suspended for non-payment on
@@ -87,6 +89,10 @@ jobs:
           exit 1
 
   build-runtime:
+    permissions:
+      contents: read
+      id-token: write # build-provenance attestation
+      attestations: write # build-provenance attestation
     needs: full-ci-gate
     # Any runner in the pool: the build is hermetic (fixed path + remapped homes below), so
     # the published hash does not depend on which box picked the job up.
@@ -103,7 +109,7 @@ jobs:
           - coretime-zagros-runtime
           - collectives-zagros-runtime
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
@@ -182,7 +188,7 @@ jobs:
           echo "blake2_256=0x${b2}" >> "$GITHUB_OUTPUT"
 
       - name: Attest build provenance (SLSA)
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
           subject-path: ${{ steps.wasm.outputs.wasm }}
 
@@ -199,7 +205,7 @@ jobs:
           test -s "$keep/${{ matrix.runtime }}.compact.compressed.wasm"
           echo "kept in $keep"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: ${{ matrix.runtime }}
           path: artifacts/*
@@ -221,6 +227,10 @@ jobs:
   # builds while an upgrade waited on it. Ordering costs nothing when the work is serial
   # anyway; it only decides what comes out first.
   build-node:
+    permissions:
+      contents: read
+      id-token: write # build-provenance attestation
+      attestations: write # build-provenance attestation
     needs: build-runtime
     runs-on: [self-hosted, bizinikiwi-build]
     strategy:
@@ -232,7 +242,7 @@ jobs:
           # `cargo build -p pezkuwi-teyrchain` matches no package at all.
           - pezkuwi-teyrchain-bin
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
@@ -272,7 +282,7 @@ jobs:
           done
 
       - name: Attest build provenance (SLSA)
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
           subject-path: artifacts/*
 
@@ -286,7 +296,7 @@ jobs:
           test -s "$keep/${{ matrix.package }}.digest.md"
           echo "kept in $keep"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: node-${{ matrix.package }}
           path: artifacts/*
@@ -299,14 +309,18 @@ jobs:
   # Identity matters beyond cosmetics — the node derives the chain it thinks it is
   # from the spec `id` prefix, so the testnet must not carry the mainnet's id.
   chain-specs:
+    permissions:
+      contents: read
+      id-token: write # build-provenance attestation
+      attestations: write # build-provenance attestation
     needs: build-runtime
     runs-on: [self-hosted, bizinikiwi-build]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: "*-runtime"
           path: wasm
@@ -425,7 +439,7 @@ jobs:
           cat chain-specs/digest.md
 
       - name: Attest build provenance (SLSA)
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
           subject-path: chain-specs/*.json
 
@@ -439,7 +453,7 @@ jobs:
           test -s "$keep/digest.md"
           echo "kept in $keep"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: chain-specs
           path: chain-specs/*

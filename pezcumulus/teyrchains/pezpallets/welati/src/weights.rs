@@ -77,6 +77,46 @@ pub trait WeightInfo {
 	fn propose_presale() -> Weight;
 	fn execute_presale() -> Weight;
 	fn cancel_presale() -> Weight;
+	// The twenty-one calls below borrowed `nominate_official`'s weight until they had
+	// benchmarks of their own. Nothing has measured them yet, so every impl gives them a
+	// placeholder, composed so that none is below what the call can cost, with the one
+	// exception at the end of this note:
+	//
+	// - every call starts from `nominate_official` as measured on the People runtimes:
+	//   77_053_000 ps, 3_638 bytes, 6 reads, 3 writes;
+	// - each office seated or unseated adds `approve_appointment`, which does that same work
+	//   on the register NFT and the trust score: 207_256_000 ps, 13_623 bytes, 15 r, 5 w;
+	// - an XCM send is `pay_airdrop` instead: 108_302_000 ps, 4_058 bytes, 7 r, 5 w;
+	// - relaying the bench or the house adds that collective's `set_members` at the roster's
+	//   size with its motion queue full -- 50 on the court (600_000_000 ps, 260_000 bytes,
+	//   52 r, 52 w), 100 in the house (2_250_000_000 ps, 850_000 bytes, 102 r, 102 w).
+	//
+	// The motion queues are what make `reissue_citizenship` and the two bench calls dear. A
+	// benchmark from a bare genesis has no open motions, so the measured figures that replace
+	// these will not include them. `reissue_citizenship` also walks every referral claim that
+	// names the retired account, and nothing bounds those; no figure here covers that walk.
+	fn set_emission_rate() -> Weight;
+	fn court_check_in() -> Weight;
+	fn vacate_inactive_court_seat() -> Weight;
+	fn office_check_in() -> Weight;
+	fn vacate_silent_office() -> Weight;
+	fn reissue_citizenship() -> Weight;
+	fn claim_region() -> Weight;
+	fn attest_region() -> Weight;
+	fn withdraw_region() -> Weight;
+	fn revoke_region() -> Weight;
+	fn mark_dormant() -> Weight;
+	fn court_whitelists_on_the_relay() -> Weight;
+	fn appoint_diwan_member() -> Weight;
+	/// `m` is how many members the founding list names.
+	fn seat_founding_parliament(m: u32) -> Weight;
+	fn appoint_prime_minister() -> Weight;
+	fn confirm_prime_minister() -> Weight;
+	fn reject_prime_minister() -> Weight;
+	fn dismiss_prime_minister() -> Weight;
+	fn appoint_minister() -> Weight;
+	fn dismiss_minister() -> Weight;
+	fn set_confirmation_requirement() -> Weight;
 }
 
 /// Weights for `pezpallet_welati` using the Bizinikiwi node and recommended hardware.
@@ -287,6 +327,142 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
+	// Placeholders until the weights run measures these calls. How each figure is composed,
+	// and the one cost none of them covers, is noted on the trait in `pezpallet_welati::weights`.
+	/// Placeholder: `pay_airdrop` for the XCM send, plus the treasurer and the rate on record.
+	fn set_emission_rate() -> Weight {
+		Weight::from_parts(108_302_000, 4_058)
+			.saturating_add(T::DbWeight::get().reads(10_u64))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn court_check_in() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated, and the bench relayed to its
+	/// collective.
+	fn vacate_inactive_court_seat() -> Weight {
+		Weight::from_parts(884_309_000, 277_261)
+			.saturating_add(T::DbWeight::get().reads(73_u64))
+			.saturating_add(T::DbWeight::get().writes(60_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn office_check_in() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated.
+	fn vacate_silent_office() -> Weight {
+		Weight::from_parts(284_309_000, 17_261)
+			.saturating_add(T::DbWeight::get().reads(21_u64))
+			.saturating_add(T::DbWeight::get().writes(8_u64))
+	}
+	/// Placeholder: `nominate_official`, plus both rosters relayed, and the records seven pallets
+	/// move: 50 reads and 80 writes, and 3 reads and 5 writes for each of the 20 tikis an account
+	/// may hold.
+	fn reissue_citizenship() -> Weight {
+		Weight::from_parts(2_927_053_000, 1_399_638)
+			.saturating_add(T::DbWeight::get().reads(270_u64))
+			.saturating_add(T::DbWeight::get().writes(337_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn claim_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn attest_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn withdraw_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn revoke_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn mark_dormant() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `pay_airdrop`, for the XCM send.
+	fn court_whitelists_on_the_relay() -> Weight {
+		Weight::from_parts(108_302_000, 4_058)
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office seated, the bench relayed, and the
+	/// qualification asked of fourteen tikis.
+	fn appoint_diwan_member() -> Weight {
+		Weight::from_parts(884_309_000, 312_877)
+			.saturating_add(T::DbWeight::get().reads(87_u64))
+			.saturating_add(T::DbWeight::get().writes(62_u64))
+	}
+	/// Placeholder: `nominate_official`, the house's records and its collective, and per member
+	/// its share of the collective's `set_members` plus a read and a write.
+	fn seat_founding_parliament(m: u32) -> Weight {
+		Weight::from_parts(89_699_000, 19_308)
+			.saturating_add(Weight::from_parts(6_000_000, 2_100).saturating_mul(m.into()))
+			.saturating_add(T::DbWeight::get().reads(12_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(m.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(m.into())))
+	}
+	/// Placeholder: `nominate_official`.
+	fn appoint_prime_minister() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated and one seated.
+	fn confirm_prime_minister() -> Weight {
+		Weight::from_parts(491_565_000, 30_884)
+			.saturating_add(T::DbWeight::get().reads(36_u64))
+			.saturating_add(T::DbWeight::get().writes(13_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn reject_prime_minister() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated.
+	fn dismiss_prime_minister() -> Weight {
+		Weight::from_parts(284_309_000, 17_261)
+			.saturating_add(T::DbWeight::get().reads(21_u64))
+			.saturating_add(T::DbWeight::get().writes(8_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated and one seated.
+	fn appoint_minister() -> Weight {
+		Weight::from_parts(491_565_000, 30_884)
+			.saturating_add(T::DbWeight::get().reads(36_u64))
+			.saturating_add(T::DbWeight::get().writes(13_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated.
+	fn dismiss_minister() -> Weight {
+		Weight::from_parts(284_309_000, 17_261)
+			.saturating_add(T::DbWeight::get().reads(21_u64))
+			.saturating_add(T::DbWeight::get().writes(8_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn set_confirmation_requirement() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -495,5 +671,141 @@ impl WeightInfo for () {
 			.saturating_add(Weight::from_parts(0, 4677))
 			.saturating_add(RocksDbWeight::get().reads(2))
 			.saturating_add(RocksDbWeight::get().writes(1))
+	}
+	// Placeholders until the weights run measures these calls. How each figure is composed,
+	// and the one cost none of them covers, is noted on the trait in `pezpallet_welati::weights`.
+	/// Placeholder: `pay_airdrop` for the XCM send, plus the treasurer and the rate on record.
+	fn set_emission_rate() -> Weight {
+		Weight::from_parts(108_302_000, 4_058)
+			.saturating_add(RocksDbWeight::get().reads(10_u64))
+			.saturating_add(RocksDbWeight::get().writes(6_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn court_check_in() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated, and the bench relayed to its
+	/// collective.
+	fn vacate_inactive_court_seat() -> Weight {
+		Weight::from_parts(884_309_000, 277_261)
+			.saturating_add(RocksDbWeight::get().reads(73_u64))
+			.saturating_add(RocksDbWeight::get().writes(60_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn office_check_in() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated.
+	fn vacate_silent_office() -> Weight {
+		Weight::from_parts(284_309_000, 17_261)
+			.saturating_add(RocksDbWeight::get().reads(21_u64))
+			.saturating_add(RocksDbWeight::get().writes(8_u64))
+	}
+	/// Placeholder: `nominate_official`, plus both rosters relayed, and the records seven pallets
+	/// move: 50 reads and 80 writes, and 3 reads and 5 writes for each of the 20 tikis an account
+	/// may hold.
+	fn reissue_citizenship() -> Weight {
+		Weight::from_parts(2_927_053_000, 1_399_638)
+			.saturating_add(RocksDbWeight::get().reads(270_u64))
+			.saturating_add(RocksDbWeight::get().writes(337_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn claim_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn attest_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn withdraw_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn revoke_region() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn mark_dormant() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `pay_airdrop`, for the XCM send.
+	fn court_whitelists_on_the_relay() -> Weight {
+		Weight::from_parts(108_302_000, 4_058)
+			.saturating_add(RocksDbWeight::get().reads(7_u64))
+			.saturating_add(RocksDbWeight::get().writes(5_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office seated, the bench relayed, and the
+	/// qualification asked of fourteen tikis.
+	fn appoint_diwan_member() -> Weight {
+		Weight::from_parts(884_309_000, 312_877)
+			.saturating_add(RocksDbWeight::get().reads(87_u64))
+			.saturating_add(RocksDbWeight::get().writes(62_u64))
+	}
+	/// Placeholder: `nominate_official`, the house's records and its collective, and per member
+	/// its share of the collective's `set_members` plus a read and a write.
+	fn seat_founding_parliament(m: u32) -> Weight {
+		Weight::from_parts(89_699_000, 19_308)
+			.saturating_add(Weight::from_parts(6_000_000, 2_100).saturating_mul(m.into()))
+			.saturating_add(RocksDbWeight::get().reads(12_u64))
+			.saturating_add(RocksDbWeight::get().writes(9_u64))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(m.into())))
+			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(m.into())))
+	}
+	/// Placeholder: `nominate_official`.
+	fn appoint_prime_minister() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated and one seated.
+	fn confirm_prime_minister() -> Weight {
+		Weight::from_parts(491_565_000, 30_884)
+			.saturating_add(RocksDbWeight::get().reads(36_u64))
+			.saturating_add(RocksDbWeight::get().writes(13_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn reject_prime_minister() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated.
+	fn dismiss_prime_minister() -> Weight {
+		Weight::from_parts(284_309_000, 17_261)
+			.saturating_add(RocksDbWeight::get().reads(21_u64))
+			.saturating_add(RocksDbWeight::get().writes(8_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated and one seated.
+	fn appoint_minister() -> Weight {
+		Weight::from_parts(491_565_000, 30_884)
+			.saturating_add(RocksDbWeight::get().reads(36_u64))
+			.saturating_add(RocksDbWeight::get().writes(13_u64))
+	}
+	/// Placeholder: `nominate_official`, plus one office unseated.
+	fn dismiss_minister() -> Weight {
+		Weight::from_parts(284_309_000, 17_261)
+			.saturating_add(RocksDbWeight::get().reads(21_u64))
+			.saturating_add(RocksDbWeight::get().writes(8_u64))
+	}
+	/// Placeholder: `nominate_official`.
+	fn set_confirmation_requirement() -> Weight {
+		Weight::from_parts(77_053_000, 3_638)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 }

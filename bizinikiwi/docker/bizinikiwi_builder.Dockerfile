@@ -1,12 +1,12 @@
 # This is the build stage for Bizinikiwi. Here we create the binary.
-FROM docker.io/paritytech/ci-linux:production as builder
+FROM docker.io/paritytech/ci-linux:production@sha256:dc9abf9e877c5bad94828245406dac8a186530e1ad6a1b5f2072e5e19e1f64b4 as builder
 
 WORKDIR /bizinikiwi
 COPY . /bizinikiwi
 RUN cargo build --locked --release
 
 # This is the 2nd stage: a very small image where we copy the Bizinikiwi binary."
-FROM docker.io/library/ubuntu:20.04
+FROM docker.io/library/ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214
 LABEL description="Multistage Docker image for Bizinikiwi: a platform for web3" \
 	io.parity.image.type="builder" \
 	io.parity.image.authors="chevdor@gmail.com, devops-team@parity.io" \

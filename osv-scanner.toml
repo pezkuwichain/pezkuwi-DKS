@@ -1,0 +1,8 @@
+# Advisories osv-scanner (and OpenSSF Scorecard, which runs it) reports against this tree that do
+# not apply to what is built. Each entry says why; add one only with that reason.
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2024-0436"
+reason = """paste is unmaintained, and 26 crates in the graph still ask for it by name. The crate
+Cargo resolves as `paste` is vendor/paste, a re-export of pastey (its maintained successor) under
+the old name, patched in at the workspace root. The advisory matches the name, not the code."""

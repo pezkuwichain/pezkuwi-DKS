@@ -1499,7 +1499,7 @@ rstest = { version = "0.18.2" }
 rustc-hash = { version = "1.1.0" }
 rustc-hex = { version = "2.1.0", default-features = false }
 rustix = { version = "1.0.3", default-features = false }
-rustls = { version = "0.23.18", default-features = false, features = [
+rustls = { version = "0.23.46", default-features = false, features = [
 	"logging",
 	"ring",
 	"std",
@@ -1624,7 +1624,7 @@ wasm-bindgen-test = { version = "0.3.24" }
 wasm-encoder = { version = "0.236.1", default-features = false }
 wasm-opt = { version = "0.116" }
 wasmparser = { version = "0.236.1", default-features = false }
-wasmtime = { version = "36.0.13", default-features = false }
+wasmtime = { version = "36.0.18", default-features = false }
 wat = { version = "1.0.0" }
 web-sys = { version = "0.3.70" }
 web-time = { version = "1.1", default-features = false }

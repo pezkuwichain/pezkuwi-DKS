@@ -2421,6 +2421,12 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 			testnet_teyrchains_constants::zagros::locations::AssetHubParaId::get(),
 		);
 	}
+
+	/// Give the router a host configuration, without which it refuses every upward message.
+	fn ensure_relay_reachable() {
+		use pezcumulus_primitives_core::UpwardMessageSender;
+		<crate::TeyrchainSystem as UpwardMessageSender>::ensure_successful_delivery();
+	}
 }
 
 #[cfg(test)]

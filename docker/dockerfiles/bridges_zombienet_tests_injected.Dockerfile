@@ -46,7 +46,7 @@ COPY ./artifacts/bridges-pezkuwi-sdk /home/nonroot/bridges-pezkuwi-sdk
 # also prepare `generate_hex_encoded_call` for running
 RUN set -eux; \
 	cd /home/nonroot/bridges-pezkuwi-sdk/pezbridges/testing/framework/utils/generate_hex_encoded_call; \
-	npm install
+	npm ci
 
 # use the non-root user
 USER node

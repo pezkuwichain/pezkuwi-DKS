@@ -1,4 +1,4 @@
-FROM docker.io/paritytech/ci-unified:latest as builder
+FROM docker.io/paritytech/ci-unified:latest@sha256:e2b580514e943dd979e08bc69943f51515dab1eceef2c9ad2fddffe364aa1377 as builder
 
 WORKDIR /pezkuwi
 COPY . /pezkuwi
@@ -6,7 +6,7 @@ COPY . /pezkuwi
 RUN cargo fetch
 RUN cargo build --workspace --locked --release
 
-FROM docker.io/parity/base-bin:latest
+FROM docker.io/parity/base-bin:latest@sha256:2391554e30053b07d0c22127df137b66e48282c201ec8e1e4634e3ffd29ec6fd
 
 COPY --from=builder /pezkuwi/target/release/minimal-template-node /usr/local/bin
 

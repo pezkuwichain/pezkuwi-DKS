@@ -1,4 +1,4 @@
-FROM docker.io/paritytech/base-bin
+FROM docker.io/paritytech/base-bin@sha256:3cc9f78373117bcaae8a18fce86e30f3b94b03e58046b86ef57f584b5fc1942e
 
 # metadata
 ARG VCS_REF

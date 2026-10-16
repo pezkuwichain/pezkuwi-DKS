@@ -4,9 +4,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{mock::*, Error, Event, Invitations, ReferralCount, Referrals, ReferrerStatsStorage};
-use pezframe_support::{assert_noop, assert_ok};
+use pezframe_support::{
+	assert_noop, assert_ok,
+	traits::{Get, Hooks},
+	weights::Weight,
+};
 use pezpallet_identity_kyc::types::{OnCitizenshipRevoked, OnKycApproved};
-use pezsp_runtime::DispatchError;
 
 type ReferralPallet = crate::Pezpallet<Test>;
 
@@ -90,8 +93,10 @@ fn on_kyc_approved_hook_works() {
 		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
 
 		// Verification
-		// 1. Pending referral record is deleted
-		assert!(Invitations::<Test>::iter_prefix(REFERRED).next().is_none());
+		// 1. The claim was not named, so it is not settled -- and approval does not walk the
+		//    claims to remove it. It stays, inert, queued for the idle-time cleanup.
+		assert!(Invitations::<Test>::contains_key(REFERRED, REFERRER));
+		assert_eq!(crate::CleanupQueue::<Test>::get(0), Some(REFERRED));
 		// 2. Referrer's referral count increases by 1
 		assert_eq!(ReferralCount::<Test>::get(REFERRER), 1);
 		// 3. Permanent referral information is created
@@ -533,7 +538,7 @@ mod invitations {
 	}
 
 	#[test]
-	fn only_the_claim_the_newcomer_named_survives() {
+	fn only_the_claim_the_newcomer_named_is_credited() {
 		new_test_ext().execute_with(|| {
 			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(INVITER), REFERRED));
 			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(USER_3), REFERRED));
@@ -543,8 +548,18 @@ mod invitations {
 
 			assert_eq!(InvitedBy::<Test>::get(REFERRED), Some(INVITER));
 			assert_eq!(InvitationCount::<Test>::get(USER_3), 0);
-			// The losing claims are cleared; they cannot be reused.
+			// The settled claim is removed at once; its fact lives in `InvitedBy`.
+			assert!(!crate::Invitations::<Test>::contains_key(REFERRED, INVITER));
+			// The losing claim is left for the idle-time cleanup, and is inert in the meantime:
+			// nothing settles a citizen twice.
+			assert!(crate::Invitations::<Test>::contains_key(REFERRED, USER_3));
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, Some(&USER_3));
+			assert_eq!(InvitationCount::<Test>::get(USER_3), 0);
+			assert_eq!(InvitedBy::<Test>::get(REFERRED), Some(INVITER));
+
+			<ReferralPallet as Hooks<u64>>::on_idle(1, Weight::MAX);
 			assert!(crate::Invitations::<Test>::iter_prefix(REFERRED).next().is_none());
+			assert_eq!(InvitationCount::<Test>::get(USER_3), 0);
 		});
 	}
 
@@ -577,6 +592,326 @@ mod invitations {
 			// invitation at exactly the moment it started to mean something.
 			assert!(crate::Invitations::<Test>::iter_prefix(REFERRED).next().is_none());
 			assert_eq!(InvitedBy::<Test>::get(REFERRED), Some(INVITER));
+			// Nothing was left over, so nothing was queued.
+			assert_eq!(crate::CleanupTail::<Test>::get(), 0);
+		});
+	}
+}
+
+// ============================================================================
+// CLAIMS ABOUT CITIZENS, AND THE CLEANUP OF WHAT IS LEFT
+// ============================================================================
+//
+// Claims are unlimited and each costs its fee. Before this, approving a citizen cleared every
+// claim about them in one go, so a stranger could pile claims on somebody until their approval
+// -- or a court-ordered reissue -- no longer fitted in a block. Now nothing that has to fit in a
+// block walks them: settlement touches one row, and the rest are cleared with spare weight.
+
+mod cleanup {
+	use super::*;
+	use crate::{
+		weights::WeightInfo, CleanupHead, CleanupQueue, CleanupTail, InvitationCount, InvitedBy,
+		CLAIMS_PER_STEP,
+	};
+
+	const INVITER: u64 = 7;
+	/// Claimants for the piles, well clear of the named accounts.
+	const PILE_START: u64 = 10_000;
+	const PILE: u64 = 1_000;
+
+	fn approved(who: u64) {
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+			who,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
+	}
+
+	fn claims_about(who: u64) -> usize {
+		Invitations::<Test>::iter_key_prefix(who).count()
+	}
+
+	fn db() -> pezframe_support::weights::RuntimeDbWeight {
+		<<Test as pezframe_system::Config>::DbWeight as Get<_>>::get()
+	}
+
+	fn on_idle(limit: Weight) -> Weight {
+		<ReferralPallet as Hooks<u64>>::on_idle(1, limit)
+	}
+
+	fn one_step() -> Weight {
+		<() as WeightInfo>::clean_claims(CLAIMS_PER_STEP).saturating_add(db().reads(2))
+	}
+
+	/// A newcomer with `PILE` strangers' claims and the inviter's, approved naming the inviter,
+	/// and the result committed so that later reads and removals go to the backend the way they
+	/// do in a following block.
+	///
+	/// The commits matter. Rows written in the same block are still in the overlay, and the
+	/// overlay drops a whole prefix at once whatever the limit -- a test that never commits
+	/// would show every step clearing everything.
+	fn piled_and_approved() -> pezsp_io::TestExternalities {
+		let mut ext = new_test_ext();
+		ext.execute_with(|| {
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(INVITER), REFERRED));
+			for claimant in PILE_START..PILE_START + PILE {
+				assert_ok!(ReferralPallet::initiate_referral(
+					RuntimeOrigin::signed(claimant),
+					REFERRED
+				));
+			}
+		});
+		ext.commit_all().unwrap();
+		ext.execute_with(|| {
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, Some(&INVITER));
+		});
+		ext.commit_all().unwrap();
+		ext
+	}
+
+	#[test]
+	fn a_claim_about_a_citizen_is_refused() {
+		// Settlement happens once, at approval. A claim made after it could change nothing, and
+		// would only be a row for the chain to clear -- which is exactly what an attacker wants.
+		new_test_ext().execute_with(|| {
+			approved(REFERRED);
+			assert_noop!(
+				ReferralPallet::initiate_referral(RuntimeOrigin::signed(USER_3), REFERRED),
+				Error::<Test>::AlreadyCitizen
+			);
+			// A founding citizen likewise.
+			assert_noop!(
+				ReferralPallet::initiate_referral(RuntimeOrigin::signed(USER_3), REFERRER),
+				Error::<Test>::AlreadyCitizen
+			);
+		});
+	}
+
+	#[test]
+	fn settlement_touches_only_the_named_claim_however_many_there_are() {
+		let mut ext = piled_and_approved();
+		ext.execute_with(|| {
+			// Settled and credited as before.
+			assert_eq!(InvitedBy::<Test>::get(REFERRED), Some(INVITER));
+			assert_eq!(InvitationCount::<Test>::get(INVITER), 1);
+			// Only the settled row went. The other thousand are still there: approval did not
+			// walk them, which is the whole point -- the old code cleared them all in the
+			// approving transaction.
+			assert!(!Invitations::<Test>::contains_key(REFERRED, INVITER));
+			assert_eq!(claims_about(REFERRED), PILE as usize);
+			// And the citizen is queued, once, for the cleanup.
+			assert_eq!(CleanupHead::<Test>::get(), 0);
+			assert_eq!(CleanupTail::<Test>::get(), 1);
+			assert_eq!(CleanupQueue::<Test>::get(0), Some(REFERRED));
+			// None of the strangers was credited.
+			assert_eq!(InvitationCount::<Test>::get(PILE_START), 0);
+		});
+	}
+
+	/// Run `on_idle` with unlimited weight one block at a time until the queue is empty, and
+	/// say how many blocks it took.
+	fn drain(ext: &mut pezsp_io::TestExternalities) -> u64 {
+		let mut blocks = 0;
+		loop {
+			ext.commit_all().unwrap();
+			blocks += 1;
+			let done = ext.execute_with(|| {
+				on_idle(Weight::MAX);
+				CleanupHead::<Test>::get() == CleanupTail::<Test>::get()
+			});
+			if done {
+				return blocks;
+			}
+			assert!(blocks < 100, "the cleanup is not converging");
+		}
+	}
+
+	#[test]
+	fn idle_time_with_ample_weight_clears_everything() {
+		let mut ext = piled_and_approved();
+		// One prefix advances once per block, however much weight there is: removal ignores a
+		// cursor, so a second pass in the same block would only walk the rows it just removed.
+		ext.execute_with(|| {
+			on_idle(Weight::MAX);
+			assert_eq!(claims_about(REFERRED), (PILE - CLAIMS_PER_STEP as u64) as usize);
+		});
+		let blocks = drain(&mut ext) + 1;
+		assert_eq!(blocks, PILE.div_ceil(CLAIMS_PER_STEP as u64));
+		ext.execute_with(|| {
+			assert_eq!(claims_about(REFERRED), 0);
+			assert_eq!(CleanupQueue::<Test>::get(0), None);
+		});
+	}
+
+	#[test]
+	fn idle_time_moves_on_to_the_next_citizen_in_the_same_block() {
+		// A prefix that empties is popped and the next one is taken in the same call.
+		new_test_ext().execute_with(|| {
+			for who in [20u64, 21, 22] {
+				assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(USER_3), who));
+				approved(who);
+				ReferralPallet::on_kyc_approved(&who, &REFERRER, None);
+			}
+			assert_eq!(CleanupTail::<Test>::get(), 3);
+			on_idle(Weight::MAX);
+			assert_eq!(CleanupHead::<Test>::get(), 3);
+			for who in [20u64, 21, 22] {
+				assert_eq!(claims_about(who), 0);
+			}
+		});
+	}
+
+	#[test]
+	fn idle_time_with_room_for_one_step_takes_one_step() {
+		let mut ext = piled_and_approved();
+		let limit = one_step();
+		ext.execute_with(|| {
+			let used = on_idle(limit);
+			assert!(used.all_lte(limit), "reported {used:?} with only {limit:?} to spend");
+			// At most one step's worth went, and the citizen is still at the head.
+			assert_eq!(claims_about(REFERRED), (PILE - CLAIMS_PER_STEP as u64) as usize);
+			assert_eq!(CleanupHead::<Test>::get(), 0);
+			assert_eq!(CleanupQueue::<Test>::get(0), Some(REFERRED));
+		});
+		ext.commit_all().unwrap();
+		// The next block picks up where this one stopped, without a cursor.
+		ext.execute_with(|| {
+			on_idle(limit);
+			assert_eq!(claims_about(REFERRED), (PILE - 2 * CLAIMS_PER_STEP as u64) as usize);
+		});
+		// And enough blocks finish the job.
+		let mut blocks = 2;
+		loop {
+			ext.commit_all().unwrap();
+			let done = ext.execute_with(|| {
+				on_idle(limit);
+				CleanupHead::<Test>::get() == CleanupTail::<Test>::get()
+			});
+			blocks += 1;
+			if done {
+				break;
+			}
+			assert!(blocks < 100, "the cleanup is not converging");
+		}
+		ext.execute_with(|| assert_eq!(claims_about(REFERRED), 0));
+	}
+
+	#[test]
+	fn idle_time_never_reports_more_than_it_was_given() {
+		let step = one_step();
+		for limit in [
+			Weight::zero(),
+			Weight::from_parts(1, 1),
+			step.saturating_sub(Weight::from_parts(1, 0)),
+			step,
+			step.saturating_mul(3).saturating_add(step.saturating_div(2)),
+			Weight::from_parts(u64::MAX, step.proof_size()),
+			Weight::MAX,
+		] {
+			let mut ext = piled_and_approved();
+			ext.execute_with(|| {
+				let used = on_idle(limit);
+				assert!(used.all_lte(limit), "reported {used:?} with only {limit:?} to spend");
+			});
+		}
+	}
+
+	#[test]
+	fn idle_time_with_nothing_queued_does_next_to_nothing() {
+		new_test_ext().execute_with(|| {
+			let used = on_idle(Weight::MAX);
+			assert!(used.all_lte(db().reads(2)));
+			assert_eq!(CleanupHead::<Test>::get(), 0);
+			assert_eq!(CleanupTail::<Test>::get(), 0);
+			// And with nothing to spend, nothing is spent.
+			assert_eq!(on_idle(Weight::zero()), Weight::zero());
+		});
+	}
+
+	#[test]
+	fn a_claimant_may_withdraw_their_own_claim() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(INVITER), REFERRED));
+			assert_ok!(ReferralPallet::withdraw_referral(RuntimeOrigin::signed(INVITER), REFERRED));
+			assert!(!Invitations::<Test>::contains_key(REFERRED, INVITER));
+			System::assert_last_event(
+				Event::ReferralWithdrawn { referrer: INVITER, referred: REFERRED }.into(),
+			);
+		});
+	}
+
+	#[test]
+	fn withdrawing_a_claim_that_does_not_exist_is_an_error() {
+		new_test_ext().execute_with(|| {
+			assert_noop!(
+				ReferralPallet::withdraw_referral(RuntimeOrigin::signed(INVITER), REFERRED),
+				Error::<Test>::NoSuchClaim
+			);
+		});
+	}
+
+	#[test]
+	fn nobody_withdraws_somebody_elses_claim() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(INVITER), REFERRED));
+			assert_noop!(
+				ReferralPallet::withdraw_referral(RuntimeOrigin::signed(USER_3), REFERRED),
+				Error::<Test>::NoSuchClaim
+			);
+			assert!(Invitations::<Test>::contains_key(REFERRED, INVITER));
+		});
+	}
+
+	#[test]
+	fn a_claimant_may_withdraw_a_leftover_claim_after_approval() {
+		// Inert by then, but theirs: they need not wait for the chain to get to it.
+		let mut ext = piled_and_approved();
+		ext.execute_with(|| {
+			assert_ok!(ReferralPallet::withdraw_referral(
+				RuntimeOrigin::signed(PILE_START),
+				REFERRED
+			));
+			assert_eq!(claims_about(REFERRED), (PILE - 1) as usize);
+		});
+	}
+
+	#[test]
+	fn a_reissue_does_not_move_claims() {
+		// Claims matter only before approval, and a reissue is for a citizen; moving them would
+		// be a walk of a set a stranger chose the size of. They are cleared where they are.
+		const SUCCESSOR: u64 = 9;
+		let mut ext = piled_and_approved();
+		ext.execute_with(|| {
+			assert_ok!(ReferralPallet::rebind_account(&REFERRED, &SUCCESSOR));
+			assert_eq!(claims_about(REFERRED), PILE as usize);
+			assert_eq!(claims_about(SUCCESSOR), 0);
+			// What is keyed by the account still moves.
+			assert_eq!(InvitedBy::<Test>::get(SUCCESSOR), Some(INVITER));
+		});
+		// And the queue, which names the account the rows are keyed by, still clears them.
+		drain(&mut ext);
+		ext.execute_with(|| assert_eq!(claims_about(REFERRED), 0));
+	}
+
+	#[test]
+	fn claims_made_before_a_second_approval_are_queued_too() {
+		// A citizenship renounced and applied for again: the account is not a citizen in
+		// between, so claims may be made, and the second approval does not settle anything.
+		// They are left exactly as inert as the first time, and queued the same way.
+		new_test_ext().execute_with(|| {
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
+			assert_eq!(CleanupTail::<Test>::get(), 0);
+
+			pezpallet_identity_kyc::KycStatuses::<Test>::remove(REFERRED);
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(USER_3), REFERRED));
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, Some(&USER_3));
+
+			assert_eq!(InvitationCount::<Test>::get(USER_3), 0);
+			assert_eq!(CleanupQueue::<Test>::get(0), Some(REFERRED));
+			on_idle(Weight::MAX);
+			assert_eq!(claims_about(REFERRED), 0);
 		});
 	}
 }

@@ -56,6 +56,8 @@ use core::marker::PhantomData;
 /// Weight functions needed for `pezpallet_referral`.
 pub trait WeightInfo {
 	fn initiate_referral() -> Weight;
+	fn withdraw_referral() -> Weight;
+	fn clean_claims(n: u32, ) -> Weight;
 }
 
 /// Weights for `pezpallet_referral` using the Bizinikiwi node and recommended hardware.
@@ -74,6 +76,28 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Placeholder until the weights run measures it.
+	/// Storage: `Referral::Invitations` (r:1 w:1)
+	/// Proof: `Referral::Invitations` (`max_values`: None, `max_size`: Some(96), added: 2571, mode: `MaxEncodedLen`)
+	fn withdraw_referral() -> Weight {
+		Weight::from_parts(26_089_000, 3561)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	/// Placeholder until the weights run measures it.
+	/// Storage: `Referral::CleanupHead` (r:1 w:1)
+	/// Storage: `Referral::CleanupTail` (r:1 w:0)
+	/// Storage: `Referral::CleanupQueue` (r:1 w:1)
+	/// Storage: `Referral::Invitations` (r:`n` w:`n`)
+	/// The range of component `n` is `[1, 64]`.
+	fn clean_claims(n: u32, ) -> Weight {
+		Weight::from_parts(30_000_000, 3513)
+			.saturating_add(Weight::from_parts(10_000_000, 2571).saturating_mul(n.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(n.into())))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -90,5 +114,27 @@ impl WeightInfo for () {
 		Weight::from_parts(11_696_000, 3549)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Placeholder until the weights run measures it.
+	/// Storage: `Referral::Invitations` (r:1 w:1)
+	/// Proof: `Referral::Invitations` (`max_values`: None, `max_size`: Some(96), added: 2571, mode: `MaxEncodedLen`)
+	fn withdraw_referral() -> Weight {
+		Weight::from_parts(26_089_000, 3561)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Placeholder until the weights run measures it.
+	/// Storage: `Referral::CleanupHead` (r:1 w:1)
+	/// Storage: `Referral::CleanupTail` (r:1 w:0)
+	/// Storage: `Referral::CleanupQueue` (r:1 w:1)
+	/// Storage: `Referral::Invitations` (r:`n` w:`n`)
+	/// The range of component `n` is `[1, 64]`.
+	fn clean_claims(n: u32, ) -> Weight {
+		Weight::from_parts(30_000_000, 3513)
+			.saturating_add(Weight::from_parts(10_000_000, 2571).saturating_mul(n.into()))
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(n.into())))
 	}
 }
