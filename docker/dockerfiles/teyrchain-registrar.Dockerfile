@@ -1,4 +1,4 @@
-FROM node:latest AS pjs
+FROM node:latest@sha256:1b84b89ada025e3b14543cbb837ffaa1c1b5273b841c5b94dd1a8f9c1d8cf7fe AS pjs
 
 # It would be great to depend on a more stable tag, but we need some
 # as-yet-unreleased features.

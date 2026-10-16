@@ -1,5 +1,5 @@
 # This file is sourced from https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docker/dockerfiles/test-teyrchain-collator.Dockerfile
-FROM docker.io/paritytech/ci-linux:production as builder
+FROM docker.io/paritytech/ci-linux:production@sha256:dc9abf9e877c5bad94828245406dac8a186530e1ad6a1b5f2072e5e19e1f64b4 as builder
 
 WORKDIR /pezcumulus
 COPY . /pezcumulus
@@ -14,7 +14,7 @@ RUN cargo build --release --locked -p pezkuwi-teyrchain
 #   --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/PEER_ID
 #
 # with the appropriate ip and ID for both Alice and Bob
-FROM debian:buster-slim as collator
+FROM debian:buster-slim@sha256:bb3dc79fddbca7e8903248ab916bb775c96ec61014b3d02b4f06043b604726dc as collator
 RUN apt-get update && apt-get install jq curl bash -y && \
     curl -sSo /wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh && \
     chmod +x /wait-for-it.sh && \
@@ -33,13 +33,13 @@ HEALTHCHECK --interval=300s --timeout=75s --start-period=30s --retries=3 \
 # the runtime stage is normally built once, cached, and ignored, but can be
 # specified with the --target build flag. This just preserves one of the builder's
 # outputs, which can then be moved into a volume at runtime
-FROM debian:buster-slim as runtime
+FROM debian:buster-slim@sha256:bb3dc79fddbca7e8903248ab916bb775c96ec61014b3d02b4f06043b604726dc as runtime
 COPY --from=builder \
     /paritytech/pezcumulus/target/release/wbuild/pezcumulus-test-teyrchain-runtime/pezcumulus_test_teyrchain_runtime.compact.wasm \
     /var/opt/
 CMD ["cp", "-v", "/var/opt/pezcumulus_test_teyrchain_runtime.compact.wasm", "/runtime/"]
 
-FROM debian:buster-slim
+FROM debian:buster-slim@sha256:bb3dc79fddbca7e8903248ab916bb775c96ec61014b3d02b4f06043b604726dc
 COPY --from=builder \
     /paritytech/pezcumulus/target/release/pezkuwi-teyrchain /usr/bin
 

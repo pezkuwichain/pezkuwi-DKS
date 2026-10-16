@@ -1,5 +1,5 @@
 # This is the build stage for Pezkuwi. Here we create the binary in a temporary image.
-FROM docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507112050 as builder
+FROM docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202507112050@sha256:d839cfc57f49fb802571533488316d7b4b6538f5a82ad3683c9561e6be8a3376 as builder
 
 WORKDIR /pezkuwi
 COPY . /pezkuwi
@@ -7,7 +7,7 @@ COPY . /pezkuwi
 RUN cargo build --locked --release
 
 # This is the 2nd stage: a very small image where we copy the Pezkuwi binary."
-FROM docker.io/paritytech/base-bin:latest
+FROM docker.io/paritytech/base-bin:latest@sha256:3cc9f78373117bcaae8a18fce86e30f3b94b03e58046b86ef57f584b5fc1942e
 
 LABEL description="Multistage Docker image for Pezkuwi: a platform for web3" \
 	io.parity.image.type="builder" \

@@ -1,7 +1,7 @@
 # Debian bullseye's repositories moved to archive.debian.org, so `apt-get update` on the old
 # bullseye CI image fails with 404. The official Rust image on trixie (Debian stable) carries the
 # toolchain rust-toolchain.toml pins; the build needs clang (bindgen) and protoc on top of it.
-FROM docker.io/library/rust:1.96.0-trixie AS builder
+FROM docker.io/library/rust:1.96.0-trixie@sha256:58fe97504a0e4cbba5d85599619a589923d3e779472a6fb0840d58d1c4ba99d7 AS builder
 
 WORKDIR /pezkuwi
 COPY . /pezkuwi
@@ -20,7 +20,7 @@ RUN cargo fetch
 # SKIP_WASM_BUILD=1 avoids serde_core + build-std conflict (upstream issue: serde-rs/serde#3021)
 RUN SKIP_WASM_BUILD=1 cargo build --locked --profile production -p pezpallet-revive-eth-rpc --bin eth-rpc
 
-FROM docker.io/parity/base-bin:latest
+FROM docker.io/parity/base-bin:latest@sha256:2391554e30053b07d0c22127df137b66e48282c201ec8e1e4634e3ffd29ec6fd
 COPY --from=builder /pezkuwi/target/production/eth-rpc /usr/local/bin
 
 USER root
