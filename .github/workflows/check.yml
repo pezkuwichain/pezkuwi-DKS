@@ -63,7 +63,7 @@ jobs:
       # rather than assumed present on the image -- PyYAML was already an undeclared
       # dependency of two scripts in this tree and the runs only worked because something
       # else had pulled it in.
-      - run: python3 -m pip install --quiet PyYAML==6.0.2
+      - run: python3 -m pip install --quiet --require-hashes -r .github/scripts/requirements.txt
       - name: Zagros and Pezkuwichain carry the same pallet index map
         run: python3 .github/scripts/check-twin-runtimes.py
       # The franchise separation from the other end. `no_subject_is_decided_by_two_different_

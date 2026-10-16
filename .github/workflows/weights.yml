@@ -81,7 +81,7 @@ jobs:
 
       - name: Tooling
         run: |
-          python3 -m pip install --break-system-packages --quiet -r .github/scripts/requirements.txt
+          python3 -m pip install --break-system-packages --quiet --require-hashes -r .github/scripts/requirements.txt
 
       # This host is not in the build pool and its runner does not start from a login shell,
       # so rustup's PATH entry never arrives -- the first run of this workflow got as far as
