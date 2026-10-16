@@ -136,7 +136,15 @@ if command -v rustc >/dev/null 2>&1; then
 else
     if prompt_default_yes "\n🦀 Rust is not installed. Install it?"; then
         printf "🦀 Installing via rustup.\n"
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        # The installer is pinned to a rustup release and checked before it runs; sh.rustup.rs
+        # serves whatever is current, which nothing here has read.
+        rustup_init=$(mktemp)
+        curl --proto '=https' --tlsv1.2 -sSf -o "$rustup_init" \
+            https://raw.githubusercontent.com/rust-lang/rustup/1.29.1/rustup-init.sh
+        echo "7d0ea0f8eba7fa1ebfe998091cd7ec4501e33ec5ca6b884eb4d894d7da5170af  $rustup_init" |
+            shasum -a 256 -c - >/dev/null
+        sh "$rustup_init" -y
+        rm -f "$rustup_init"
         . "$HOME/.cargo/env"
     else
         printf "Aborting.\n"
