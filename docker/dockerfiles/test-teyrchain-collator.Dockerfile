@@ -16,7 +16,8 @@ RUN cargo build --release --locked -p pezkuwi-teyrchain
 # with the appropriate ip and ID for both Alice and Bob
 FROM debian:buster-slim@sha256:bb3dc79fddbca7e8903248ab916bb775c96ec61014b3d02b4f06043b604726dc as collator
 RUN apt-get update && apt-get install jq curl bash -y && \
-    curl -sSo /wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh && \
+    curl -sSo /wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/81b1373f17855a4dc21156cfe1694c31d7d1792e/wait-for-it.sh && \
+    echo "b7a04f38de1e51e7455ecf63151c8c7e405bd2d45a2d4e16f6419db737a125d6  /wait-for-it.sh" | sha256sum -c - && \
     chmod +x /wait-for-it.sh && \
     curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
     apt-get install -y nodejs && \

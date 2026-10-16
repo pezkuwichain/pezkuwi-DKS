@@ -43,7 +43,8 @@ function ensure_pezkuwi_js_api() {
         echo "-------------------"
         echo "Installing (nodejs) sub module: ${BASH_SOURCE%/*}/generate_hex_encoded_call"
         pushd ${BASH_SOURCE%/*}/generate_hex_encoded_call
-        npm install
+        # `ci`, not `install`: the lockfile pins every package and its integrity hash.
+        npm ci
         popd
     fi
 }
