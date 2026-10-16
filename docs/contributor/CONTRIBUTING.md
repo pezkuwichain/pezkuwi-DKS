@@ -26,38 +26,26 @@ There are a few basic ground-rules for contributors (including the maintainer(s)
 5. Contributors should adhere to the [house coding style](./STYLE_GUIDE.md).
 6. Contributors should adhere to the [house documenting style](./DOCUMENTATION_GUIDELINES.md), when applicable.
 
-## Branch Naming Conventions
+## Branches
 
-All branches must follow these naming patterns:
+- `main` is the release branch. It changes only through a pull request, and only once CI on that pull request is green.
+  Force-pushes and deletion are blocked by the repository rules.
+- `development` is the maintainers' working branch. Maintainers commit there and open the pull request from
+  `development` to `main`.
+- Contributors outside the organization fork the repository and open a pull request from any branch of their fork.
 
-| Pattern | Purpose | Example |
-| --- | --- | --- |
-| `feature/<name>` | New features | `feature/parliamentary-nft-voting` |
-| `fix/<name>` | Bug fixes | `fix/presale-overflow-check` |
-| `pezpallet/<name>` | Pezpallet-specific changes | `pezpallet/welati-liquid-democracy` |
-| `runtime/<name>` | Runtime configuration changes | `runtime/xcm-v5-upgrade` |
-| `docs/<name>` | Documentation updates | `docs/token-economics` |
-| `ci/<name>` | CI/CD changes | `ci/benchmark-workflow` |
-| `refactor/<name>` | Code refactoring | `refactor/treasury-cleanup` |
-| `test/<name>` | Test additions/fixes | `test/presale-edge-cases` |
-| `hotfix/<name>` | Urgent production fixes | `hotfix/critical-security-patch` |
+## Tests
 
-**Branch name rules:**
-- Use lowercase letters, numbers, and hyphens only
-- Keep names concise but descriptive
-- No spaces or special characters
-- Maximum 50 characters for branch name
-
-**Protected branches:**
-- `main` - Production branch, requires PR with review
-- `staging` - Pre-production testing
-- `develop` - Integration branch (if used)
+New functionality lands with tests that exercise it, and a bug fix lands with a test that fails without the fix. Put the
+test next to the code it covers (a pallet's `tests.rs`, a runtime's integration tests, or a zombienet scenario for
+behaviour that needs several nodes), and say in the pull request which test proves the change. A pull request is not
+merged until the test suite passes in CI.
 
 ## Merge Process
 
 ### In General
 
-- A Pull Request (PR) needs to be reviewed and approved by project maintainers.
+- A pull request from a contributor is reviewed and approved by a maintainer before it is merged.
 - If a change does not alter any logic (e.g. comments, dependencies, docs), then it may be tagged `A1-insubstantial` and
 merged faster.
 - No PR should be merged until all reviews' comments are addressed.
@@ -121,7 +109,7 @@ are creating a new crate.
 ### Is the Crate chain-specific?
 
 Chain-specific crates, for example
-[`bp-bridge-hub-pezkuwichain`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/4014b9bf2bf8f74862f63e7114e5c78009529be5/bridges/chains/chain-bridge-hub-rococo/Cargo.toml#L10-L11)
+[`pezbp-bridge-hub-pezcumulus`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/pezbridges/chains/chain-pezcumulus/Cargo.toml#L12-L13)
 , should not be released as part of the Pezkuwi-SDK umbrella crate. We have a custom metadata
 attribute that is picked up by the [generate-umbrella.py](../../scripts/generate-umbrella.py)
 script, that should be applied to all chain-specific crates like such:
@@ -139,7 +127,7 @@ exclude-from-umbrella = true
 ### Is the Crate a Test, Example or Fuzzer?
 
 Test or example crates, like
-[`pezpallet-example-task`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/9b4acf27b869d7cbb07b03f0857763b8c8cc7566/bizinikiwi/pezframe/examples/tasks/Cargo.toml#L9)
+[`pezpallet-example-tasks`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/bizinikiwi/pezframe/examples/tasks/Cargo.toml#L9)
 , should not be released to crates.io. To ensure this, you must add `publish = false` to your
 crate's `package` section:
 

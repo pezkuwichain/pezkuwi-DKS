@@ -7,6 +7,7 @@
 **Sovereign blockchain infrastructure · maintained by Dijital Kurdistan Tech Institute**
 
 [![check](https://github.com/pezkuwichain/pezkuwi-DKS/actions/workflows/check.yml/badge.svg)](https://github.com/pezkuwichain/pezkuwi-DKS/actions/workflows/check.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15542/badge)](https://www.bestpractices.dev/projects/15542)
 [![license](https://img.shields.io/badge/license-Apache--2.0%20%7C%20GPL--3.0-blue.svg)](#license--attribution)
 [![rust](https://img.shields.io/badge/rust-1.96-orange.svg)](./rust-toolchain.toml)
 [![website](https://img.shields.io/badge/web-pezkuwichain.io-018000.svg)](https://pezkuwichain.io)
