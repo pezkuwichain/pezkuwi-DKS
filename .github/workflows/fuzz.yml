@@ -1,0 +1,139 @@
+name: fuzz
+
+# The fuzz targets in this tree had never been run by anything. One of them,
+# bizinikiwi/primitives/state-machine/fuzz, could not even be parsed by cargo, and nothing
+# noticed, because a target that is never built cannot fail. This runs every one of them:
+# weekly for a long stretch, and briefly on any pull request that touches a fuzzer or this
+# file, so a target that stops building goes red where it was broken.
+#
+# GitHub-hosted runners, not the self-hosted pool: fuzzing needs no secrets and no chain
+# access, and a long CPU-bound run does not belong on boxes that also carry validators.
+
+on:
+  schedule:
+    - cron: "0 3 * * 6" # weekly Saturday 03:00 UTC
+  pull_request:
+    paths:
+      - ".github/workflows/fuzz.yml"
+      - "**/fuzz/**"
+      - "**/fuzzer/**"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: "Seconds to fuzz each target"
+        required: false
+        default: "900"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  SKIP_WASM_BUILD: "1"
+  # A pull request only has to prove every target still builds and runs; the weekly run is
+  # the one that searches.
+  FUZZ_SECONDS: ${{ github.event_name == 'pull_request' && '60' || inputs.seconds || '900' }}
+
+jobs:
+  honggfuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        # A crate whose checks live behind a feature names it; see that crate's Cargo.toml.
+        include:
+          - crate: pezcumulus/teyrchains/pezpallets/referral/fuzzer
+            features: try-runtime
+        crate:
+          - bizinikiwi/pezframe/bags-list/fuzzer
+          - bizinikiwi/pezframe/election-provider-support/solution-type/fuzzer
+          - bizinikiwi/pezframe/nomination-pools/fuzzer
+          - bizinikiwi/pezframe/paged-list/fuzzer
+          - bizinikiwi/primitives/arithmetic/fuzzer
+          - bizinikiwi/primitives/npos-elections/fuzzer
+          - pezkuwi/erasure-coding/fuzzer
+          - pezkuwi/xcm/xcm-pez-simulator/fuzzer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install honggfuzz
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q binutils-dev libunwind-dev libblocksruntime-dev liblzma-dev
+          # The version the lockfile resolves, so the runtime and the cargo subcommand agree.
+          cargo install honggfuzz --version 0.5.58 --locked
+      - name: Fuzz every target in ${{ matrix.crate }}
+        working-directory: ${{ matrix.crate }}
+        env:
+          HFUZZ_RUN_ARGS: --run_time ${{ env.FUZZ_SECONDS }} --exit_upon_crash --exit_code_upon_crash 1 --timeout 10
+          HFUZZ_BUILD_ARGS: ${{ matrix.features && format('--features {0}', matrix.features) || '' }}
+        run: |
+          targets=$(cargo metadata --no-deps --format-version 1 --locked | python3 -c '
+          import json, os, sys
+          here = os.path.realpath("Cargo.toml")
+          for p in json.load(sys.stdin)["packages"]:
+              if os.path.realpath(p["manifest_path"]) == here:
+                  print(" ".join(t["name"] for t in p["targets"] if "bin" in t["kind"]))')
+          [ -n "$targets" ] || { echo "::error::no fuzz targets found in ${{ matrix.crate }}"; exit 1; }
+          for t in $targets; do
+            echo "::group::$t (${FUZZ_SECONDS}s)"
+            cargo hfuzz run "$t" || { echo "::error::$t found a crash"; failed=1; }
+            echo "::endgroup::"
+          done
+          # honggfuzz discards the target's stderr, so a crash arrives as a bare SIGABRT. Replay
+          # each crashing input once in the `fuzzing_debug` build, which runs the closure on the
+          # file named by CARGO_HONGGFUZZ_CRASH_FILENAME and nothing else, so the panic message
+          # and backtrace land in this log. (`run-debug` would do the same under a debugger.)
+          if ls hfuzz_workspace/*/*.fuzz >/dev/null 2>&1; then
+            cargo hfuzz build-debug
+            for f in hfuzz_workspace/*/*.fuzz; do
+              t=$(basename "$(dirname "$f")")
+              bin=$(find hfuzz_target -path "*/debug/$t" -type f -executable | head -1)
+              echo "::group::replay $f"
+              CARGO_HONGGFUZZ_CRASH_FILENAME="$f" RUST_BACKTRACE=1 timeout 300 "$bin" 2>&1 |
+                grep -v '^reconstructed \|^++ \|^iter = ' | tail -60 || true
+              echo "::endgroup::"
+            done
+          fi
+          exit ${failed:-0}
+      - name: Keep the crashing inputs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: crashes-${{ strategy.job-index }}
+          path: ${{ matrix.crate }}/hfuzz_workspace/*/*.fuzz
+          if-no-files-found: ignore
+
+  libfuzzer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - fuzz-dir: bizinikiwi/primitives/core/fuzz
+            target: fuzz_address_uri
+          - fuzz-dir: bizinikiwi/primitives/state-machine/fuzz
+            target: fuzz_append
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --version 0.13.1 --locked
+      - name: Fuzz ${{ matrix.target }}
+        # `-s none`: these crates are safe Rust, and without a sanitizer the pinned stable
+        # toolchain builds them; a panic is still a crash and still fails the step.
+        run: |
+          cargo fuzz run --fuzz-dir ${{ matrix.fuzz-dir }} -s none ${{ matrix.target }} -- \
+            "-max_total_time=${FUZZ_SECONDS}" -timeout=10
+      - name: Keep the crashing inputs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: crashes-${{ matrix.target }}
+          path: ${{ matrix.fuzz-dir }}/artifacts/
+          if-no-files-found: ignore

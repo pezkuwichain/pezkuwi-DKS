@@ -26,7 +26,7 @@
 use honggfuzz::fuzz;
 use pezframe_support::{
 	assert_ok,
-	traits::{Currency, GetCallName, UnfilteredDispatchable},
+	traits::{Currency, UnfilteredDispatchable},
 };
 use pezpallet_nomination_pools::{
 	log,
@@ -86,12 +86,13 @@ fn random_existing_pool<R: Rng>(mut rng: &mut R) -> Option<PoolId> {
 }
 
 fn random_call<R: Rng>(mut rng: &mut R) -> (pools::Call<T>, RuntimeOrigin) {
-	let op = rng.gen::<usize>();
-	let mut op_count = <pools::Call<T> as GetCallName>::get_call_names().len();
-	// Exclude set_state, set_metadata, set_configs, update_roles and chill.
-	op_count -= 5;
+	// The calls generated below, one arm each. This used to be derived from the pallet's call
+	// count minus the five it skips, which stopped matching the arms once the pallet grew: every
+	// index past the last arm hit `unreachable!()`, and the fuzzer died on its second input
+	// without having exercised the pallet.
+	const GENERATED_CALLS: usize = 8;
 
-	match op % op_count {
+	match rng.gen_range(0..GENERATED_CALLS) {
 		0 => {
 			// join
 			let pool_id = random_existing_pool(&mut rng).unwrap_or_default();

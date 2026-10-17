@@ -18,8 +18,8 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use pezsp_state_machine::fuzzing::{fuzz_append, FuzzAppendPayload};
 use pezsp_runtime::traits::BlakeTwo256;
+use pezsp_state_machine::fuzzing::{fuzz_append, FuzzAppendPayload};
 
 fuzz_target!(|data: FuzzAppendPayload| {
 	fuzz_append::<BlakeTwo256>(data);

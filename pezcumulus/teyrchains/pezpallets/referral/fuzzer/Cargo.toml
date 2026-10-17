@@ -1,0 +1,49 @@
+[package]
+name = "pezpallet-referral-fuzzer"
+version = "0.0.0"
+publish = false
+license = "Apache-2.0"
+description = "Fuzzer for the citizenship path: identity-kyc and referral together"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "citizenship"
+path = "src/citizenship.rs"
+
+[dependencies]
+honggfuzz = { workspace = true }
+
+pezpallet-identity-kyc = { workspace = true, default-features = true }
+pezpallet-referral = { features = [
+	"fuzzing",
+], workspace = true, default-features = true }
+
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+rand = { features = ["small_rng"], workspace = true, default-features = true }
+
+[features]
+# The invariants this fuzzer checks are the pallets' `try_state`, which only exists under
+# `try-runtime`. It is a feature rather than always on because a workspace member that enabled it
+# unconditionally would turn it on for every workspace build; fuzz.yml builds with it, and a fuzz
+# build without it refuses to compile.
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-identity-kyc/try-runtime",
+	"pezpallet-referral/try-runtime",
+	"pezsp-runtime/try-runtime",
+]

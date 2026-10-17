@@ -104,8 +104,8 @@
 //! ```
 
 pub use pezpallet::*;
-#[cfg(test)]
-mod mock;
+#[cfg(any(test, feature = "fuzzing"))]
+pub mod mock;
 pub mod types; // Adding our new types module
 pub mod weights;
 

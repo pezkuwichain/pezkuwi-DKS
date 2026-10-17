@@ -24,7 +24,9 @@ use crate::{
 use alloc::{collections::BTreeMap, vec::Vec};
 use codec::Codec;
 use hash_db::Hasher;
-use pezsp_core::storage::{ChildInfo, StateVersion, Storage};
+#[cfg(feature = "std")]
+use pezsp_core::storage::Storage;
+use pezsp_core::storage::{ChildInfo, StateVersion};
 use pezsp_trie::{empty_trie_root, LayoutV1, PrefixedMemoryDB, RandomState};
 
 #[cfg(feature = "std")]
