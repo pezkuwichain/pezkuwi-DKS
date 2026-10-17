@@ -10,8 +10,8 @@ use crate::{
 		MaxAppointedRewsenbir, RuntimeEvent, RuntimeOrigin, System, Test, Welati,
 	},
 	types::*,
-	ActiveProposals, AirdropProposals, Error, Event as WelatiEvent, GovernmentPosition,
-	NextAirdropId, PresaleProposals, PresaleSentTotal,
+	ActiveProposals, AirdropProposals, Error, Event as WelatiEvent, NextAirdropId,
+	PresaleProposals, PresaleSentTotal,
 };
 use pezframe_support::{assert_noop, assert_ok, BoundedVec};
 use pezpallet_tiki::Tiki;
@@ -302,7 +302,10 @@ const MP: u64 = 42;
 
 /// Seat a Parliament that can confirm, and a Serok who can nominate.
 fn seat_the_two_bodies() {
-	pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, SEROK);
+	// The President the way an election seats one -- the tiki, its holder index and the
+	// mandate. Writing the holder index alone left a President with no role and no term, a
+	// state `try_state` refuses and the chain cannot reach.
+	seat_president(SEROK);
 	add_parliament_member(MP);
 }
 
@@ -3093,7 +3096,7 @@ mod electoral_clock {
 #[cfg(feature = "try-runtime")]
 mod invariant {
 	use super::*;
-	use crate::{mock::System, ConsecutiveTerms, CurrentOfficials, OpenElection, TermEnds};
+	use crate::{mock::System, ConsecutiveTerms, OpenElection, TermEnds};
 	use pezframe_support::traits::Hooks;
 	use pezpallet_tiki::Tiki;
 
@@ -3150,11 +3153,18 @@ mod invariant {
 	#[test]
 	fn a_holder_the_government_register_does_not_name_is_caught() {
 		// The shape of a real failure: "who is President" answered differently depending on
-		// which record the asking pallet happens to read.
+		// which record the asking pallet happens to read. Since 39d91555a there is one register,
+		// tiki's, so the disagreement left to catch is inside it -- the holder index naming
+		// somebody whose own role list does not have the office -- and tiki's `try_state` is
+		// the one that has to refuse it. This asked welati, which no longer keeps a copy, and
+		// it did not compile from then until it was found.
 		ExtBuilder::default().build().execute_with(|| {
 			seated_president();
 			pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 3);
-			assert_rejected("the office and the register named different people");
+			assert!(
+				<crate::mock::Tiki as Hooks<u64>>::try_state(System::block_number()).is_err(),
+				"try_state accepted a state where the office and the register named different people"
+			);
 		});
 	}
 
@@ -3423,14 +3433,72 @@ fn an_emptied_house_does_not_wait_for_its_term() {
 			"a sitting house schedules nothing"
 		);
 
-		// Every seat gone, long before the term ends.
-		crate::ParliamentMembers::<Test>::kill();
+		// Every seat gone, long before the term ends -- both members stripped of citizenship,
+		// the one way a seat empties inside a term. This used to kill the roll directly and
+		// leave both holding the seat's tiki, a state the chain cannot reach and `try_state`
+		// refuses; the test only passed because nothing ran it with that check on.
+		revoke_citizenship(2);
+		revoke_citizenship(3);
 		run_to_block(System::block_number() + 1);
 
 		assert!(
 			Welati::scheduled_election(ElectionType::Parliamentary).is_some(),
 			"an empty house must open an election without waiting for the calendar"
 		);
+	});
+}
+
+/// What a revocation does in the runtime: identity-kyc burns the citizen NFT through tiki,
+/// which strips every role, and tells welati. The mock wires neither, so this does both.
+fn revoke_citizenship(who: u64) {
+	use pezpallet_identity_kyc::types::{CitizenNftProvider, OnCitizenshipRevoked};
+	assert_ok!(<crate::mock::Tiki as CitizenNftProvider<u64>>::burn_citizen_nft(&who));
+	<Welati as OnCitizenshipRevoked<u64>>::on_citizenship_revoked(&who);
+}
+
+/// A revoked citizen stops voting in the house the day the citizenship goes.
+///
+/// The salary already stopped -- it is read from the seat's tiki, which the revocation strips --
+/// but the vote is read from the house's roll, and nothing took the member off it. A non-citizen
+/// went on voting in Parliament until the term ran out.
+#[test]
+fn a_revoked_citizen_loses_the_vote_in_the_house() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_president(1);
+		assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
+		run_to_block(System::block_number() + 2);
+		assert!(Welati::is_parliament_member(&2));
+
+		revoke_citizenship(2);
+
+		assert!(!Welati::is_parliament_member(&2));
+		assert!(!Welati::is_authorized_to_vote(
+			&CollectiveDecisionType::ParliamentSimpleMajority,
+			&2
+		));
+		assert!(Welati::is_parliament_member(&3), "only the revoked member leaves");
+		run_to_block(System::block_number() + 1);
+	});
+}
+
+/// And a revoked judge leaves the court, which the vacancy rules then fill.
+#[test]
+fn a_revoked_citizen_leaves_the_court() {
+	ExtBuilder::default().build().execute_with(|| {
+		let mut bench = Welati::diwan_members();
+		make_citizen(20);
+		let _ = bench.try_push(crate::types::DiwanMember {
+			account: 20,
+			appointed_at: 1,
+			term_ends_at: 999_999,
+			appointed_by: crate::types::AppointmentAuthority::Parliament,
+		});
+		crate::DiwanMembers::<Test>::put(bench);
+		assert!(Welati::is_diwan_member(&20));
+
+		revoke_citizenship(20);
+
+		assert!(!Welati::is_diwan_member(&20));
 	});
 }
 
@@ -4522,7 +4590,7 @@ mod initiative {
 		mock::{launched, set_citizen_count, set_trust_score, Balances},
 		InitiativeBacking, Initiatives,
 	};
-	use pezframe_support::traits::{Currency, ReservableCurrency};
+	use pezframe_support::traits::Currency;
 
 	const PROPOSER: u64 = 11;
 	const SIGNER: u64 = 12;
@@ -4716,9 +4784,8 @@ use scale_info::{TypeDef, TypeInfo};
 
 fn pinned<T: TypeInfo + 'static>(name: &str, expected: &[(&str, u8)]) {
 	let info = <T as TypeInfo>::type_info();
-	let TypeDef::Variant(v) = info.type_def() else { panic!("{name} is not an enum") };
-	let got: Vec<(String, u8)> =
-		v.variants().iter().map(|x| (x.name.to_string(), x.index)).collect();
+	let TypeDef::Variant(v) = &info.type_def else { panic!("{name} is not an enum") };
+	let got: Vec<(String, u8)> = v.variants.iter().map(|x| (x.name.to_string(), x.index)).collect();
 	assert_eq!(
 		got.len(),
 		expected.len(),

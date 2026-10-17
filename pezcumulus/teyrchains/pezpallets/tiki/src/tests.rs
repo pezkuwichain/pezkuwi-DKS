@@ -7,7 +7,6 @@ use crate::{
 	mock::*, Error, Event, RoleAssignmentType, Tiki as TikiEnum, TikiProvider, TikiScoreProvider,
 };
 use pezframe_support::{assert_noop, assert_ok};
-use pezsp_runtime::DispatchError;
 
 type TikiPallet = crate::Pezpallet<Test>;
 
@@ -1344,7 +1343,11 @@ mod invariant {
 	/// checking nothing, because non-unique roles have no entry there by design.
 	fn seated() {
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), 2));
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 2, TikiEnum::Xezinedar));
+		// The treasurer is seated by governance, not by `grant_tiki`, which refuses it with
+		// `SeatedByGovernance`; so the fixture seats it the way governance does. It called
+		// `grant_tiki` until the guard was added, and nothing noticed, because this module only
+		// builds with `try-runtime` and no test run enabled it.
+		assert_ok!(TikiPallet::internal_grant_role(&2, TikiEnum::Xezinedar));
 		assert_ok!(TikiPallet::grant_tiki(
 			RuntimeOrigin::root(),
 			2,

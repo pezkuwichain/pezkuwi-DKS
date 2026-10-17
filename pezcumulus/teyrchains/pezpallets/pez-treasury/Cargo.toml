@@ -43,18 +43,21 @@ xcm = { workspace = true, default-features = false }
 pezframe-benchmarking = { optional = true, workspace = true }
 pezsp-core = { workspace = true, default-features = false, optional = true }
 pezsp-io = { workspace = true, default-features = false, optional = true }
+# The mock, for the fuzzer (`fuzzing`) as well as the tests.
+pezpallet-assets = { workspace = true, default-features = false, optional = true }
 
 [dev-dependencies]
 # Test için gerekli olan bağımlılıklar
 pezpallet-assets = { workspace = true, default-features = false, features = [
 	"std",
-] } # <-- BU SATIRI EKLEYİN
+] }
 pezsp-core = { workspace = true, default-features = false }
 pezsp-io = { workspace = true, default-features = false }
 xcm = { workspace = true, default-features = false, features = ["std"] }
 
 [features]
 default = ["std"]
+fuzzing = ["pezpallet-assets", "pezsp-core", "pezsp-io"]
 std = [
 	"codec/std",
 	"log/std",
@@ -62,7 +65,7 @@ std = [
 	"pezframe-support/std",
 	"pezframe-system/std",
 	"pezkuwi-primitives/std",
-	"pezpallet-assets/std",
+	"pezpallet-assets?/std",
 	"pezpallet-balances/std",
 	"pezpallet-scheduler/std",
 	"pezsp-core?/std",
@@ -80,7 +83,7 @@ runtime-benchmarks = [
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
 	"pezkuwi-primitives/runtime-benchmarks",
-	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-assets?/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-scheduler/runtime-benchmarks",
 	"pezsp-core",
@@ -94,7 +97,7 @@ try-runtime = [
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
 	"pezkuwi-primitives/try-runtime",
-	"pezpallet-assets/try-runtime",
+	"pezpallet-assets?/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-scheduler/try-runtime",
 	"pezsp-runtime/try-runtime",

@@ -49,6 +49,8 @@ pezpallet-pez-treasury = { workspace = true, default-features = false, features 
 
 [features]
 default = ["std"]
+# The mock, for the fuzzer as well as the tests.
+fuzzing = ["pezsp-core", "pezsp-io"]
 std = [
 	"codec/std",
 	"log/std",

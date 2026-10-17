@@ -162,6 +162,48 @@ impl<T: Config> Pezpallet<T> {
 		Ok(())
 	}
 
+	/// Carry an account's record to the account its citizenship was reissued to.
+	///
+	/// The register can move a citizenship to a new account, and the trust score that opens
+	/// the lottery stratum moves with it. A ban that stayed behind would turn the remedy for a
+	/// lost key into a way to launder one: the banned account is reissued, and its successor
+	/// walks back into the pool with the standing and without the ban. So the ban moves, and
+	/// so does the rest of the record -- the sessions served, which the infrastructure stratum
+	/// reads, and the co-failures that disqualify from it -- because a record that only moved
+	/// when it helped would be its own laundering.
+	///
+	/// Membership does not move. Session keys belong to an account, so the new one has to
+	/// register its own and join; and the tenure spell, defined on unbroken membership, starts
+	/// again with it. The old account leaves the pool here, since it is retired.
+	pub fn rebind_account(from: &T::AccountId, to: &T::AccountId) -> DispatchResult {
+		if let Some(until) = Banned::<T>::take(from) {
+			let until = Banned::<T>::get(to).map_or(until, |existing| existing.max(until));
+			Banned::<T>::insert(to, until);
+		}
+
+		let seated = SeatedSessions::<T>::take(from);
+		if seated > 0 {
+			SeatedSessions::<T>::mutate(to, |n| *n = n.saturating_add(seated));
+		}
+
+		let failures = CoFailures::<T>::take(from);
+		if !failures.is_empty() {
+			CoFailures::<T>::mutate(to, |kept| {
+				// Both lists are oldest first; keep the most recent the bound allows.
+				let mut all: alloc::vec::Vec<u32> =
+					kept.iter().chain(failures.iter()).copied().collect();
+				all.sort_unstable();
+				let skip = all.len().saturating_sub(BoundedVec::<u32, ConstU32<8>>::bound());
+				*kept = BoundedVec::truncate_from(all.split_off(skip));
+			});
+		}
+
+		if PoolMembers::<T>::contains_key(from) {
+			Self::do_leave(from.clone())?;
+		}
+		Ok(())
+	}
+
 	pub(crate) fn do_leave(who: T::AccountId) -> DispatchResult {
 		// The spell ends here. Tenure is defined on unbroken membership, so leaving and
 		// rejoining must start the clock again rather than pick it up.

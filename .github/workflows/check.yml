@@ -444,6 +444,39 @@ jobs:
             -p pezpallet-referral -p pezpallet-staking-score -p pezpallet-tiki \
             -p pezpallet-token-wrapper -p pezpallet-trust -p pezpallet-welati
 
+  # And with `try-runtime`, because that is the only build in which a pallet's `try_state`
+  # exists. The mocks run it after every block (`check_invariants`) and each pallet has tests
+  # proving it rejects a broken state; without this feature all of that compiles to nothing, so
+  # every test passes whatever the invariants say. Nothing ran it: on 2026-10-17 welati's
+  # "the invariant can fail" module had not compiled since a storage item it imported was
+  # removed, three welati tests and eight tiki tests failed once it ran (fixtures in states the
+  # chain cannot reach, and one test asking the wrong pallet), and a revoked citizen still
+  # voting in Parliament was found on the way.
+  #
+  # The list is derived, not written: every package under our two pallet trees that declares
+  # `try-runtime`, fuzzers aside. A pallet added later is covered without anyone remembering it.
+  test-pallet-try-runtime:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, bizinikiwi-build]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Tests with try-runtime, our pallets
+        run: |
+          packages=$(cargo metadata --no-deps --format-version 1 --locked | python3 -c '
+          import json, os, sys
+          meta = json.load(sys.stdin)
+          trees = ("pezcumulus/teyrchains/pezpallets/", "pezkuwi/pezpallets/")
+          for p in sorted(meta["packages"], key=lambda p: p["name"]):
+              rel = os.path.relpath(p["manifest_path"], meta["workspace_root"])
+              if rel.startswith(trees) and "try-runtime" in p["features"] and "fuzzer" not in rel:
+                  print("-p", p["name"])')
+          [ -n "$packages" ] || { echo "::error::no pallets found"; exit 1; }
+          echo "$packages"
+          # shellcheck disable=SC2086 # one word per package flag, by construction
+          cargo test --locked --features try-runtime --lib $packages
+
   # The jobs above name the packages they care about. Between them they pull in 503 of the
   # workspace's 616 crates, which leaves 113 that nothing on this path compiles — among them
   # all 27 crates of the emulated integration-test tree, 29 pallets and 15 client crates.

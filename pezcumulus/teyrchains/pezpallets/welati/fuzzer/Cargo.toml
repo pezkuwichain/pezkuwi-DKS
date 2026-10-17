@@ -1,0 +1,40 @@
+[package]
+name = "pezpallet-welati-fuzzer"
+version = "0.0.0"
+publish = false
+license = "Apache-2.0"
+description = "Fuzzer for the constitution: every welati call, in any order, from any origin"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "constitution"
+path = "src/constitution.rs"
+
+[dependencies]
+honggfuzz = { workspace = true }
+
+codec = { workspace = true, default-features = true }
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezpallet-welati = { features = [
+	"fuzzing",
+], workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+[features]
+# The constitution's invariants are the pallets' `try_state`, which only exists under
+# `try-runtime`. Opt-in so it does not reach every workspace build; fuzz.yml builds with it, and a
+# fuzz build without it refuses to compile.
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-welati/try-runtime",
+	"pezsp-runtime/try-runtime",
+]

@@ -154,8 +154,8 @@ pub use weights::WeightInfo;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-#[cfg(test)]
-mod mock;
+#[cfg(any(test, feature = "fuzzing"))]
+pub mod mock;
 #[cfg(test)]
 mod tests;
 
@@ -358,6 +358,18 @@ impl<T: Config> pezpallet_identity_kyc::types::OnCitizenshipRevoked<T::AccountId
 			DormantCount::<T>::mutate(|n| *n = n.saturating_sub(1));
 		}
 		LastSeenInGovernance::<T>::remove(who);
+
+		// A seat is a citizen's. The tiki pallet strips every role with the citizenship, which
+		// stops the salary, but the right to vote in the house and to sit on the court is read
+		// from the rolls kept here -- so without this a revoked citizen went on voting in
+		// Parliament and judging in the Diwan until the term ran out. The empty seat is then
+		// what the vacancy rules are for: an emptied house opens an election, an elected court
+		// seat short opens one for that half, an appointed one is the President's to fill.
+		ParliamentMembers::<T>::mutate(|house| house.retain(|member| &member.account != who));
+		DiwanMembers::<T>::mutate(|bench| bench.retain(|member| &member.account != who));
+		// A seat still waiting to be handed over would be granted to somebody who can no
+		// longer hold a role; the grant would be refused and leave the handover stuck.
+		PendingSeatGrants::<T>::mutate(|grants| grants.retain(|grant| grant != who));
 	}
 }
 

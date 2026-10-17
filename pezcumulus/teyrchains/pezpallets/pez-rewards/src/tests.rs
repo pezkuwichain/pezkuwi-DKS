@@ -276,6 +276,55 @@ fn nobody_is_paid_twice() {
 }
 
 #[test]
+fn a_reissued_citizenship_cannot_draw_the_same_month_twice() {
+	// The register can move a citizenship to a new account mid-window -- a lost or stolen
+	// key -- and the score and the seat go with it. The month's share was fixed at
+	// finalisation, so if the old account already drew it the new one has nothing left to
+	// draw. Without the rebind the new account was paid the same share again.
+	new_test_ext().execute_with(|| {
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		set_seat(1, 0, true);
+		finalize_current_epoch();
+
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
+		let paid = PezRewards::paid_out_total();
+
+		// What the reissue does to the rolls, then what it now does here.
+		set_trust(1, 0);
+		set_trust(7, 1_000);
+		clear_seat(1);
+		set_seat(7, 0, true);
+		assert_ok!(PezRewards::rebind_account(&1, &7));
+
+		assert_noop!(
+			PezRewards::claim_reward(RuntimeOrigin::signed(7), 0),
+			Error::<Test>::RewardAlreadyClaimed
+		);
+		assert_eq!(PezRewards::paid_out_total(), paid);
+		assert_eq!(PezRewards::claimed_rewards(0, 1), Some(paid), "the old account's record stays");
+	});
+}
+
+#[test]
+fn a_reissue_before_claiming_leaves_the_month_to_the_new_account() {
+	new_test_ext().execute_with(|| {
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		finalize_current_epoch();
+
+		set_trust(1, 0);
+		set_trust(7, 1_000);
+		assert_ok!(PezRewards::rebind_account(&1, &7));
+
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(7), 0));
+		assert_eq!(PezRewards::claimed_rewards(0, 1), None);
+	});
+}
+
+#[test]
 fn a_claim_after_the_deadline_is_refused() {
 	new_test_ext().execute_with(|| {
 		start();
