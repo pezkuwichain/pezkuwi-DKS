@@ -20907,6 +20907,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezsp-state-machine-fuzz"
+version = "0.0.0"
+dependencies = [
+ "libfuzzer-sys",
+ "pezsp-runtime",
+ "pezsp-state-machine",
+]
+
+[[package]]
 name = "pezsp-statement-store"
 version = "10.0.0"
 dependencies = [

@@ -307,6 +307,7 @@ members = [
 	"bizinikiwi/primitives/session",
 	"bizinikiwi/primitives/staking",
 	"bizinikiwi/primitives/state-machine",
+	"bizinikiwi/primitives/state-machine/fuzz",
 	"bizinikiwi/primitives/statement-store",
 	"bizinikiwi/primitives/std",
 	"bizinikiwi/primitives/storage",
