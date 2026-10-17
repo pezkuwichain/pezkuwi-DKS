@@ -694,6 +694,30 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// Carry an account's claim on the open window over to the account its citizenship
+		/// was moved to.
+		///
+		/// A reissue moves the trust score and the seat to the new account in the middle of a
+		/// claim window, and the share they earn was fixed at finalisation. If the old account
+		/// had already drawn it, the new one must not draw it again: same person, same month,
+		/// same score. The old record stays where it is -- that account was paid, and the
+		/// history says so -- and the new account gets a zero-amount record for the same
+		/// epoch, which is what the claim checks. Zero keeps the records summing to what was
+		/// paid out.
+		///
+		/// Only the open window matters: a closed one can no longer be claimed against, and
+		/// the next one is measured after the move.
+		pub fn rebind_account(from: &T::AccountId, to: &T::AccountId) -> DispatchResult {
+			if let Some(epoch) = EpochInClaim::<T>::get() {
+				if ClaimedRewards::<T>::contains_key(epoch, from)
+					&& !ClaimedRewards::<T>::contains_key(epoch, to)
+				{
+					ClaimedRewards::<T>::insert(epoch, to, 0);
+				}
+			}
+			Ok(())
+		}
+
 		/// Close a claim window. Nothing moves: what was not claimed never left the pot, and
 		/// is available again the following month.
 		pub fn do_close_epoch(epoch: u32) -> DispatchResult {

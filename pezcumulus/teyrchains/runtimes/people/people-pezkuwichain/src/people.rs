@@ -1542,6 +1542,7 @@ pezpallet_welati::impl_rebind_adapters!(Runtime;
 	RebindTiki => pezpallet_tiki,
 	RebindTrust => pezpallet_trust,
 	RebindStakingScore => pezpallet_staking_score,
+	RebindPezRewards => pezpallet_pez_rewards,
 );
 
 impl pezpallet_welati::Config for Runtime {
@@ -1598,8 +1599,17 @@ impl pezpallet_welati::Config for Runtime {
 	// Every pallet that keys anything on a citizen. A pallet added later has to be added here
 	// too or its records are quietly left behind by every reissue -- the failure is silent,
 	// which is why the list is spelled out where all of them are visible rather than derived.
-	type ReissueCarries =
-		(RebindReferral, RebindPerwerde, RebindTiki, RebindTrust, RebindStakingScore);
+	//
+	// `RebindPezRewards` was missing until 2026-10-17: a reissue in the middle of a claim window
+	// let the new account draw the month the old account had already drawn.
+	type ReissueCarries = (
+		RebindReferral,
+		RebindPerwerde,
+		RebindTiki,
+		RebindTrust,
+		RebindStakingScore,
+		RebindPezRewards,
+	);
 	// The court, and nothing else on this chain, may ask the relay to whitelist a call. The
 	// relay refuses it from anybody else in any case; checking here as well keeps the grant
 	// readable on the side that exercises it.
