@@ -481,6 +481,7 @@ members = [
 	"pezcumulus/teyrchains/pezpallets/pez-treasury",
 	"pezcumulus/teyrchains/pezpallets/ping",
 	"pezcumulus/teyrchains/pezpallets/referral",
+	"pezcumulus/teyrchains/pezpallets/referral/fuzzer",
 	"pezcumulus/teyrchains/pezpallets/staking-score",
 	"pezcumulus/teyrchains/pezpallets/teyrchain-info",
 	"pezcumulus/teyrchains/pezpallets/tiki",

@@ -16747,6 +16747,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezpallet-referral-fuzzer"
+version = "0.0.0"
+dependencies = [
+ "honggfuzz",
+ "pezframe-support",
+ "pezframe-system",
+ "pezpallet-balances",
+ "pezpallet-identity-kyc",
+ "pezpallet-referral",
+ "pezsp-core",
+ "pezsp-io",
+ "pezsp-runtime",
+ "rand 0.8.6",
+]
+
+[[package]]
 name = "pezpallet-remark"
 version = "28.0.0"
 dependencies = [

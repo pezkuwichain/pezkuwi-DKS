@@ -46,6 +46,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # A crate whose checks live behind a feature names it; see that crate's Cargo.toml.
+        include:
+          - crate: pezcumulus/teyrchains/pezpallets/referral/fuzzer
+            features: try-runtime
         crate:
           - bizinikiwi/pezframe/bags-list/fuzzer
           - bizinikiwi/pezframe/election-provider-support/solution-type/fuzzer
@@ -67,6 +71,7 @@ jobs:
         working-directory: ${{ matrix.crate }}
         env:
           HFUZZ_RUN_ARGS: --run_time ${{ env.FUZZ_SECONDS }} --exit_upon_crash --exit_code_upon_crash 1 --timeout 10
+          HFUZZ_BUILD_ARGS: ${{ matrix.features && format('--features {0}', matrix.features) || '' }}
         run: |
           targets=$(cargo metadata --no-deps --format-version 1 --locked | python3 -c '
           import json, os, sys
