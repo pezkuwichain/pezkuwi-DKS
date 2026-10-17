@@ -230,6 +230,11 @@ where
 		if chunk_data.len() % 2 != 0 {
 			return Err(Error::UnevenLength);
 		}
+		// The index comes from the caller; out of range it would index past `received_shards`
+		// and panic. Found by the `reconstruct` fuzz target.
+		if chunk_idx >= n_validators {
+			return Err(Error::ChunkIndexOutOfBounds { chunk_index: chunk_idx, n_validators });
+		}
 
 		received_shards[chunk_idx] = Some(WrappedShard::new(chunk_data.to_vec()));
 	}
@@ -409,6 +414,17 @@ mod tests {
 		}
 
 		QuickCheck::new().quickcheck(property as fn(ArbitraryAvailableData, u16))
+	}
+
+	#[test]
+	fn reconstruct_rejects_an_out_of_range_chunk_index() {
+		let chunk = [0u8; 2];
+		for chunk_index in [10, 11, usize::MAX] {
+			assert_eq!(
+				reconstruct_v1(10, [(&chunk[..], chunk_index)]),
+				Err(Error::ChunkIndexOutOfBounds { chunk_index, n_validators: 10 })
+			);
+		}
 	}
 
 	#[test]
