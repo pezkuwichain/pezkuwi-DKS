@@ -80,17 +80,21 @@ jobs:
             cargo hfuzz run "$t" || { echo "::error::$t found a crash"; failed=1; }
             echo "::endgroup::"
           done
-          # honggfuzz discards the target's stderr, so a crash arrives as a bare SIGABRT. Run
-          # each crashing input once more outside the fuzzer (the instrumented binary reads one
-          # input from stdin when no fuzzer drives it) to put the panic message in this log.
-          for f in hfuzz_workspace/*/*.fuzz; do
-            [ -e "$f" ] || continue
-            t=$(basename "$(dirname "$f")")
-            bin=$(find hfuzz_target -path "*/release/$t" -type f -executable | head -1)
-            echo "::group::replay $f"
-            RUST_BACKTRACE=1 timeout 120 "$bin" < "$f" 2>&1 | grep -v '^reconstructed \|^++ \|^iter = ' | tail -40 || true
-            echo "::endgroup::"
-          done
+          # honggfuzz discards the target's stderr, so a crash arrives as a bare SIGABRT. Replay
+          # each crashing input once in the `fuzzing_debug` build, which runs the closure on the
+          # file named by CARGO_HONGGFUZZ_CRASH_FILENAME and nothing else, so the panic message
+          # and backtrace land in this log. (`run-debug` would do the same under a debugger.)
+          if ls hfuzz_workspace/*/*.fuzz >/dev/null 2>&1; then
+            cargo hfuzz build-debug
+            for f in hfuzz_workspace/*/*.fuzz; do
+              t=$(basename "$(dirname "$f")")
+              bin=$(find hfuzz_target -path "*/debug/$t" -type f -executable | head -1)
+              echo "::group::replay $f"
+              CARGO_HONGGFUZZ_CRASH_FILENAME="$f" RUST_BACKTRACE=1 timeout 300 "$bin" 2>&1 |
+                grep -v '^reconstructed \|^++ \|^iter = ' | tail -60 || true
+              echo "::endgroup::"
+            done
+          fi
           exit ${failed:-0}
       - name: Keep the crashing inputs
         if: failure()
