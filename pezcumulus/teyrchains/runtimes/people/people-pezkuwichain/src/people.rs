@@ -1543,6 +1543,7 @@ pezpallet_welati::impl_rebind_adapters!(Runtime;
 	RebindTrust => pezpallet_trust,
 	RebindStakingScore => pezpallet_staking_score,
 	RebindPezRewards => pezpallet_pez_rewards,
+	RebindTnpos => pezpallet_tnpos,
 );
 
 impl pezpallet_welati::Config for Runtime {
@@ -1600,8 +1601,9 @@ impl pezpallet_welati::Config for Runtime {
 	// too or its records are quietly left behind by every reissue -- the failure is silent,
 	// which is why the list is spelled out where all of them are visible rather than derived.
 	//
-	// `RebindPezRewards` was missing until 2026-10-17: a reissue in the middle of a claim window
-	// let the new account draw the month the old account had already drawn.
+	// `RebindPezRewards` and `RebindTnpos` were missing until 2026-10-17: a reissue in the
+	// middle of a claim window let the new account draw the month the old account had already
+	// drawn, and a banned validator's successor joined the pool without the ban.
 	type ReissueCarries = (
 		RebindReferral,
 		RebindPerwerde,
@@ -1609,6 +1611,7 @@ impl pezpallet_welati::Config for Runtime {
 		RebindTrust,
 		RebindStakingScore,
 		RebindPezRewards,
+		RebindTnpos,
 	);
 	// The court, and nothing else on this chain, may ask the relay to whitelist a call. The
 	// relay refuses it from anybody else in any case; checking here as well keeps the grant

@@ -838,6 +838,62 @@ fn an_offence_bans_the_member_from_the_pool() {
 }
 
 #[test]
+fn a_reissued_citizenship_carries_its_ban() {
+	// The register can move a citizenship to a new account and the trust score moves with it.
+	// Without the ban moving too, reissuing a banned account would hand its successor the
+	// standing that opens the lottery stratum and none of the penalty.
+	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
+		set_perwerde(ALICE, 500);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), ALICE, Offence::Equivocation));
+		SeatedSessions::<Test>::insert(ALICE, 12);
+
+		assert_ok!(Tnpos::rebind_account(&ALICE, &BOB));
+
+		assert_eq!(Banned::<Test>::get(ALICE), None);
+		assert_eq!(Banned::<Test>::get(BOB), Some(360));
+		assert_eq!(SeatedSessions::<Test>::get(BOB), 12);
+		ensure_has_keys(BOB);
+		set_perwerde(BOB, 500);
+		assert_noop!(
+			Tnpos::join(RuntimeOrigin::signed(BOB), StratumId::Perwerde),
+			Error::<Test>::Banned
+		);
+	});
+}
+
+#[test]
+fn a_reissued_member_leaves_the_pool_and_the_successor_joins_with_its_own_keys() {
+	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
+		set_perwerde(ALICE, 500);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
+
+		assert_ok!(Tnpos::rebind_account(&ALICE, &BOB));
+
+		assert_eq!(PoolMembers::<Test>::get(ALICE), None);
+		assert_eq!(StratumSize::<Test>::get(StratumId::Perwerde), 0);
+		ensure_has_keys(BOB);
+		set_perwerde(BOB, 500);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(BOB), StratumId::Perwerde));
+	});
+}
+
+#[test]
+fn co_failures_merge_and_keep_the_most_recent() {
+	new_test_ext().execute_with(|| {
+		CoFailures::<Test>::insert(ALICE, BoundedVec::truncate_from(vec![1, 3, 5, 7, 9]));
+		CoFailures::<Test>::insert(BOB, BoundedVec::truncate_from(vec![2, 4, 6, 8, 10]));
+
+		assert_ok!(Tnpos::rebind_account(&ALICE, &BOB));
+
+		assert!(CoFailures::<Test>::get(ALICE).is_empty());
+		assert_eq!(CoFailures::<Test>::get(BOB).into_inner(), vec![3, 4, 5, 6, 7, 8, 9, 10]);
+	});
+}
+
+#[test]
 fn a_banned_member_cannot_rejoin_until_the_ban_expires() {
 	new_test_ext().execute_with(|| {
 		ensure_has_keys(ALICE);
