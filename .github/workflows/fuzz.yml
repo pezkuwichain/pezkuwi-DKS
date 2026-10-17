@@ -54,6 +54,8 @@ jobs:
             features: try-runtime
           - crate: pezcumulus/teyrchains/pezpallets/pez-rewards/fuzzer
             features: try-runtime
+          - crate: pezcumulus/teyrchains/pezpallets/welati/fuzzer
+            features: try-runtime
         crate:
           - bizinikiwi/pezframe/bags-list/fuzzer
           - bizinikiwi/pezframe/election-provider-support/solution-type/fuzzer

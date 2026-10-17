@@ -623,8 +623,8 @@ pub fn clear_sent_xcm() {
 // what class it belongs to, and the running count. Wiring the real pallet in would test that
 // pallet, not this one.
 
-/// How many citizens the roll holds, as the tally divides by.
 parameter_types! {
+	/// How many citizens the roll holds, as the tally divides by.
 	pub static MockElectorate: u32 = 100;
 	/// Zero, so the existing tests keep measuring support against the mock roll itself. The
 	/// floor has its own tests; leaving it off here keeps every other case reading the way it

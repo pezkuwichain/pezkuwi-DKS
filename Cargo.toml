@@ -490,6 +490,7 @@ members = [
 	"pezcumulus/teyrchains/pezpallets/token-wrapper",
 	"pezcumulus/teyrchains/pezpallets/trust",
 	"pezcumulus/teyrchains/pezpallets/welati",
+	"pezcumulus/teyrchains/pezpallets/welati/fuzzer",
 	"pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain",
 	"pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/bridge-primitives",
 	"pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros",

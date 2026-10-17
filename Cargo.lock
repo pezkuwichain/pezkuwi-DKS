@@ -17952,6 +17952,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezpallet-welati-fuzzer"
+version = "0.0.0"
+dependencies = [
+ "honggfuzz",
+ "parity-scale-codec",
+ "pezframe-support",
+ "pezframe-system",
+ "pezpallet-welati",
+ "pezsp-runtime",
+]
+
+[[package]]
 name = "pezpallet-whitelist"
 version = "27.0.0"
 dependencies = [

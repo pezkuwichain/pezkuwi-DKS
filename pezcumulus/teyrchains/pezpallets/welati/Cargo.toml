@@ -32,6 +32,11 @@ pezframe-support = { default-features = false, workspace = true }
 pezframe-system = { default-features = false, workspace = true }
 pezsp-core = { workspace = true, default-features = false, optional = true }
 pezsp-io = { workspace = true, default-features = false, optional = true }
+# The mock, for the fuzzer (`fuzzing`) as well as the tests.
+pezpallet-balances = { workspace = true, default-features = false, optional = true }
+pezpallet-identity = { workspace = true, default-features = false, optional = true }
+pezpallet-nfts = { workspace = true, default-features = false, optional = true }
+pezpallet-staking-score = { workspace = true, default-features = false, optional = true }
 pezsp-runtime = { default-features = false, workspace = true }
 pezsp-std = { default-features = false, workspace = true }
 
@@ -58,21 +63,29 @@ pezsp-io = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]
+fuzzing = [
+	"pezpallet-balances",
+	"pezpallet-identity",
+	"pezpallet-nfts",
+	"pezpallet-staking-score",
+	"pezsp-core",
+	"pezsp-io",
+]
 std = [
 	"codec/std",
 	"log/std",
 	"pezframe-benchmarking?/std",
 	"pezframe-support/std",
 	"pezframe-system/std",
-	"pezpallet-balances/std",
+	"pezpallet-balances?/std",
 	"pezpallet-collective/std",
 	"pezpallet-elections-phragmen/std",
 	"pezpallet-identity-kyc/std",
-	"pezpallet-identity/std",
-	"pezpallet-nfts/std",
+	"pezpallet-identity?/std",
+	"pezpallet-nfts?/std",
 	"pezpallet-referral/std",
 	"pezpallet-scheduler/std",
-	"pezpallet-staking-score/std",
+	"pezpallet-staking-score?/std",
 	"pezpallet-tiki/std",
 	"pezpallet-timestamp/std",
 	"pezpallet-trust/std",
@@ -89,15 +102,15 @@ runtime-benchmarks = [
 	"pezframe-benchmarking/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
-	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-balances?/runtime-benchmarks",
 	"pezpallet-collective/runtime-benchmarks",
 	"pezpallet-elections-phragmen/runtime-benchmarks",
 	"pezpallet-identity-kyc/runtime-benchmarks",
-	"pezpallet-identity/runtime-benchmarks",
-	"pezpallet-nfts/runtime-benchmarks",
+	"pezpallet-identity?/runtime-benchmarks",
+	"pezpallet-nfts?/runtime-benchmarks",
 	"pezpallet-referral/runtime-benchmarks",
 	"pezpallet-scheduler/runtime-benchmarks",
-	"pezpallet-staking-score/runtime-benchmarks",
+	"pezpallet-staking-score?/runtime-benchmarks",
 	"pezpallet-tiki/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
 	"pezpallet-trust/runtime-benchmarks",
@@ -111,15 +124,15 @@ try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
-	"pezpallet-balances/try-runtime",
+	"pezpallet-balances?/try-runtime",
 	"pezpallet-collective/try-runtime",
 	"pezpallet-elections-phragmen/try-runtime",
 	"pezpallet-identity-kyc/try-runtime",
-	"pezpallet-identity/try-runtime",
-	"pezpallet-nfts/try-runtime",
+	"pezpallet-identity?/try-runtime",
+	"pezpallet-nfts?/try-runtime",
 	"pezpallet-referral/try-runtime",
 	"pezpallet-scheduler/try-runtime",
-	"pezpallet-staking-score/try-runtime",
+	"pezpallet-staking-score?/try-runtime",
 	"pezpallet-tiki/try-runtime",
 	"pezpallet-timestamp/try-runtime",
 	"pezpallet-trust/try-runtime",
@@ -131,7 +144,7 @@ serde = [
 	"dep:serde",
 	"log/serde",
 	"pezframe-benchmarking?/serde",
-	"pezpallet-staking-score/serde",
+	"pezpallet-staking-score?/serde",
 	"pezpallet-trust/serde",
 	"pezsp-core?/serde",
 	"pezsp-runtime/serde",
