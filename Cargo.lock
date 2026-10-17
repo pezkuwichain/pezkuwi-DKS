@@ -16621,6 +16621,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezpallet-pez-rewards-fuzzer"
+version = "0.0.0"
+dependencies = [
+ "honggfuzz",
+ "pezframe-support",
+ "pezframe-system",
+ "pezpallet-pez-rewards",
+ "pezsp-runtime",
+ "rand 0.8.6",
+]
+
+[[package]]
 name = "pezpallet-pez-treasury"
 version = "1.0.0"
 dependencies = [
@@ -16640,6 +16652,19 @@ dependencies = [
  "pezstaging-xcm",
  "scale-info",
  "serde",
+]
+
+[[package]]
+name = "pezpallet-pez-treasury-fuzzer"
+version = "0.0.0"
+dependencies = [
+ "honggfuzz",
+ "pezframe-support",
+ "pezframe-system",
+ "pezpallet-pez-treasury",
+ "pezsp-core",
+ "pezsp-runtime",
+ "rand 0.8.6",
 ]
 
 [[package]]

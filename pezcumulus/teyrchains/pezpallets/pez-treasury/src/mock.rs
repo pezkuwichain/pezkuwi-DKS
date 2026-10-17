@@ -3,9 +3,6 @@
 // Copyright (C) Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: Apache-2.0
 
-// pezkuwi/pallets/pez-treasury/src/mock.rs
-// VERSION 3: AccountId type changed to H256 (instead of u64)
-
 use crate::{self as pezpallet_pez_treasury, weights};
 use pezframe_support::{
 	assert_ok, construct_runtime, parameter_types,

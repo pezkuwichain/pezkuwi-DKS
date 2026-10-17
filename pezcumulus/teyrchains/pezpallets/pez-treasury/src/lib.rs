@@ -85,8 +85,8 @@ pub use weights::WeightInfo;
 pub mod migrations;
 pub mod weights;
 
-#[cfg(test)]
-mod mock;
+#[cfg(any(test, feature = "fuzzing"))]
+pub mod mock;
 
 #[cfg(test)]
 mod tests;

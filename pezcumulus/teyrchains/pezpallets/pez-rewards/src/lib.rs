@@ -63,8 +63,8 @@ pub use pezpallet::*;
 pub mod weights;
 pub use weights::WeightInfo;
 
-#[cfg(test)]
-mod mock;
+#[cfg(any(test, feature = "fuzzing"))]
+pub mod mock;
 
 #[cfg(test)]
 mod tests;

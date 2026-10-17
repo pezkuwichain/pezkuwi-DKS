@@ -1,0 +1,42 @@
+[package]
+name = "pezpallet-pez-rewards-fuzzer"
+version = "0.0.0"
+publish = false
+license = "Apache-2.0"
+description = "Fuzzer for the monthly payroll: epochs, the frozen roll, claims"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "payroll"
+path = "src/payroll.rs"
+
+[dependencies]
+honggfuzz = { workspace = true }
+
+pezpallet-pez-rewards = { features = [
+	"fuzzing",
+], workspace = true, default-features = true }
+
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+rand = { features = ["small_rng"], workspace = true, default-features = true }
+
+[features]
+# The payroll's invariants are the pallet's `try_state`, which only exists under `try-runtime`.
+# Opt-in so it does not reach every workspace build; fuzz.yml builds with it, and a fuzz build
+# without it refuses to compile.
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-pez-rewards/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
