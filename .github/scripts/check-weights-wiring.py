@@ -76,7 +76,6 @@ BACKLOG_2026_08_31 = {
     ("pezcumulus/teyrchains/runtimes/people/people-pezkuwichain/src/weights", "pezpallet_recovery"),
     ("pezcumulus/teyrchains/runtimes/people/people-pezkuwichain/src/weights", "pezpallet_society"),
     ("pezcumulus/teyrchains/runtimes/people/people-pezkuwichain/src/weights", "pezpallet_vesting"),
-    ("pezcumulus/teyrchains/runtimes/people/people-zagros/src/weights", "pezpallet_collective"),
     ("pezcumulus/teyrchains/runtimes/people/people-zagros/src/weights", "pezpallet_recovery"),
     ("pezcumulus/teyrchains/runtimes/people/people-zagros/src/weights", "pezpallet_society"),
     ("pezcumulus/teyrchains/runtimes/people/people-zagros/src/weights", "pezpallet_vesting"),

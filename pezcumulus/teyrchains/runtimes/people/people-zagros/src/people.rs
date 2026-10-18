@@ -623,7 +623,7 @@ impl pezpallet_nfts::Config for Runtime {
 	type OffchainPublic = <Signature as pezsp_runtime::traits::Verify>::Signer;
 	#[cfg(feature = "runtime-benchmarks")]
 	type Helper = NftsBenchmarkHelper;
-	type WeightInfo = pezpallet_nfts::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_nfts::WeightInfo<Runtime>;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
 }
 
@@ -776,7 +776,7 @@ impl pezpallet_collective::Config<CouncilCollective> for Runtime {
 	type MaxProposals = CouncilMaxProposals;
 	type MaxMembers = CouncilMaxMembers;
 	type DefaultVote = pezpallet_collective::PrimeDefaultVote;
-	type WeightInfo = pezpallet_collective::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_collective::WeightInfo<Runtime>;
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 	type MaxProposalWeight = MaxProposalWeight;
 	type DisapproveOrigin = EnsureRoot<AccountId>;
@@ -834,7 +834,9 @@ impl pezpallet_collective::Config<ParliamentCollective> for Runtime {
 	type MaxMembers = WelatiParliamentSize;
 	// A member who does not vote is not counted as agreeing.
 	type DefaultVote = pezpallet_collective::MoreThanMajorityThenPrimeDefaultVote;
-	type WeightInfo = pezpallet_collective::weights::BizinikiwiWeight<Runtime>;
+	// Measured on the Council instance, up to its hundred members; the weights are linear in
+	// the member count, so the same formulas carry this chamber's two hundred and one.
+	type WeightInfo = weights::pezpallet_collective::WeightInfo<Runtime>;
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 	type MaxProposalWeight = MaxProposalWeight;
 	type DisapproveOrigin = EnsureRoot<AccountId>;
@@ -881,7 +883,7 @@ impl pezpallet_collective::Config<DiwanCollective> for Runtime {
 	// A judge who does not vote is not counted as agreeing. On a court, silence is not
 	// assent.
 	type DefaultVote = pezpallet_collective::MoreThanMajorityThenPrimeDefaultVote;
-	type WeightInfo = pezpallet_collective::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_collective::WeightInfo<Runtime>;
 	type SetMembersOrigin = EnsureRoot<AccountId>;
 	type MaxProposalWeight = MaxProposalWeight;
 	type DisapproveOrigin = EnsureRoot<AccountId>;
@@ -1163,7 +1165,7 @@ impl pezpallet_preimage::Config for Runtime {
 		PreimageHoldReason,
 		LinearStoragePrice<PreimageBaseDeposit, PreimageByteDeposit, Balance>,
 	>;
-	type WeightInfo = pezpallet_preimage::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_preimage::WeightInfo<Runtime>;
 }
 
 // The register's ballot box. Everything above decides *who* may put a question; this decides
@@ -1212,7 +1214,7 @@ impl pezsp_core::Get<u32> for CitizenRoll {
 }
 
 impl pezpallet_referenda::Config for Runtime {
-	type WeightInfo = pezpallet_referenda::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_referenda::WeightInfo<Runtime>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type Scheduler = Scheduler;
@@ -1251,7 +1253,7 @@ impl pezpallet_scheduler::Config for Runtime {
 	type MaximumWeight = MaximumSchedulerWeight;
 	type ScheduleOrigin = EnsureRoot<AccountId>;
 	type MaxScheduledPerBlock = ConstU32<50>;
-	type WeightInfo = pezpallet_scheduler::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_scheduler::WeightInfo<Runtime>;
 	type OriginPrivilegeCmp = pezframe_support::traits::EqualPrivilegeOnly;
 	type Preimages = Preimage;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;

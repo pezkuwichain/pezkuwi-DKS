@@ -623,7 +623,7 @@ impl pezpallet_nfts::Config for Runtime {
 	type OffchainPublic = <Signature as pezsp_runtime::traits::Verify>::Signer;
 	#[cfg(feature = "runtime-benchmarks")]
 	type Helper = NftsBenchmarkHelper;
-	type WeightInfo = pezpallet_nfts::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_nfts::WeightInfo<Runtime>;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
 }
 
@@ -1214,7 +1214,7 @@ impl pezsp_core::Get<u32> for CitizenRoll {
 }
 
 impl pezpallet_referenda::Config for Runtime {
-	type WeightInfo = pezpallet_referenda::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_referenda::WeightInfo<Runtime>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type Scheduler = Scheduler;
