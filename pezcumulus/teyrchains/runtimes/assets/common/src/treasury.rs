@@ -62,7 +62,6 @@ where
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn ensure_successful(who: &Self::Beneficiary, _: Self::AssetKind, amount: Self::Balance) {
-		use pezframe_support::traits::fungible::Inspect;
 		use pezsp_runtime::Saturating;
 		let existential_deposit = F::minimum_balance();
 		F::mint_into(&A::get(), amount.saturating_add(existential_deposit))
