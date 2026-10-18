@@ -2113,6 +2113,7 @@ mod benches {
 		[pezpallet_scheduler, Scheduler]
 		[pezpallet_preimage, Preimage]
 		[pezpallet_conviction_voting, ConvictionVoting]
+		[pezpallet_referenda, Referenda]
 		// XCM
 		[pezpallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		// NOTE: Make sure you point to the individual modules below.
