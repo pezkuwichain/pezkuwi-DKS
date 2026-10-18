@@ -119,10 +119,15 @@
 # nfts, the three collective instances, scheduler, preimage and referenda all still charged the
 # pallets' own reference weights; collective had a file in the tree that nothing declared,
 # measured on an older code, so it is measured again rather than wired as it stood.
+# Previous request (measured by run 39144704836):
+# runs:
+#   - runtime: people-pezkuwichain
+#     pallet: pezpallet_nfts pezpallet_referenda
+#     why: nfts and referenda benchmarks failed against the Tiki collection and the electorate floor
+#   - runtime: people-zagros
+#     pallet: pezpallet_nfts pezpallet_collective pezpallet_scheduler pezpallet_preimage pezpallet_referenda
+#     why: People governance and nfts pallets still on reference weights (the 10-18 run was cut by a host power-off)
 runs:
-  - runtime: people-pezkuwichain
-    pallet: pezpallet_nfts pezpallet_referenda
-    why: nfts and referenda benchmarks failed against the Tiki collection and the electorate floor
-  - runtime: people-zagros
-    pallet: pezpallet_nfts pezpallet_collective pezpallet_scheduler pezpallet_preimage pezpallet_referenda
-    why: People governance and nfts pallets still on reference weights (the 10-18 run was cut by a host power-off)
+  - runtime: people-zagros people-pezkuwichain
+    pallet: pezpallet_staking_score pezpallet_trust
+    why: staking score keeps a confirmation per source (MaxDataAge); its writes and trust's score read changed
