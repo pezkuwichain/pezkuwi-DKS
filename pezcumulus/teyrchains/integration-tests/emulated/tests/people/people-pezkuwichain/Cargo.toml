@@ -24,6 +24,8 @@ pezpallet-identity = { workspace = true }
 pezpallet-identity-kyc = { workspace = true }
 pezpallet-message-queue = { workspace = true }
 pezpallet-pez-treasury = { workspace = true }
+pezpallet-staking-async-rc-client = { workspace = true }
+pezpallet-tnpos = { workspace = true }
 pezpallet-xcm = { workspace = true }
 pezsp-runtime = { workspace = true }
 
@@ -49,6 +51,8 @@ runtime-benchmarks = [
 	"pezpallet-identity/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
 	"pezpallet-pez-treasury/runtime-benchmarks",
+	"pezpallet-staking-async-rc-client/runtime-benchmarks",
+	"pezpallet-tnpos/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 	"teyrchains-common/runtime-benchmarks",
@@ -66,6 +70,8 @@ std = [
 	"pezpallet-identity/std",
 	"pezpallet-message-queue/std",
 	"pezpallet-pez-treasury/std",
+	"pezpallet-staking-async-rc-client/std",
+	"pezpallet-tnpos/std",
 	"pezpallet-xcm/std",
 	"pezsp-runtime/std",
 	"xcm-executor/std",
@@ -81,6 +87,8 @@ try-runtime = [
 	"pezpallet-identity/try-runtime",
 	"pezpallet-message-queue/try-runtime",
 	"pezpallet-pez-treasury/try-runtime",
+	"pezpallet-staking-async-rc-client/try-runtime",
+	"pezpallet-tnpos/try-runtime",
 	"pezpallet-xcm/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"teyrchains-common/try-runtime",
