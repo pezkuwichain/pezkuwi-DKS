@@ -48,6 +48,14 @@
 //! 3. Noter submits `receive_staking_details()` with the staking data
 //! 4. `pezpallet-trust` queries staking score via `StakingScoreProvider` trait
 //! 5. Score = base_score(amount_tier) * duration_multiplier, capped at 100
+//!
+//! ## Freshness
+//!
+//! Every time data for a source becomes effective -- changed or not -- `LastConfirmed`
+//! records the block. The duration multiplier counts only up to the newest confirmation plus
+//! `MaxDataAge`: when confirmations stop, the multiplier holds where it was instead of
+//! climbing on data nobody is checking. Noters confirm unchanged stake on a schedule shorter
+//! than `MaxDataAge`, so this is reached only when they stop.
 
 pub use pezpallet::*;
 
@@ -171,6 +179,15 @@ pub mod pezpallet {
 				let _ = source;
 			}
 
+			// A confirmation vouches for a stake. One with no stake behind it would keep an
+			// account's clock running on data that is not there.
+			for (who, source, _) in LastConfirmed::<T>::iter() {
+				ensure!(
+					CachedStakingDetails::<T>::contains_key(&who, source),
+					"a stake confirmation outlived the stake it confirms"
+				);
+			}
+
 			Ok(())
 		}
 	}
@@ -278,6 +295,21 @@ pub mod pezpallet {
 		/// different things that would not move together.
 		#[pezpallet::constant]
 		type OracleGracePeriod: Get<BlockNumberFor<Self>>;
+
+		/// How long stake data keeps earning time after it was last confirmed.
+		///
+		/// The duration multiplier is a claim that a stake has been held, and the chain only
+		/// knows that from what a noter or the relay last told it. Counting on from there
+		/// indefinitely meant a bot that stopped left every score climbing towards the
+		/// twelve-month multiplier on data nobody was checking any more -- including for
+		/// accounts that had since unstaked. Past this age the clock stops at the last
+		/// confirmation plus this allowance; the next confirmation starts it again, with
+		/// nothing lost.
+		///
+		/// Noters confirm unchanged stake on a schedule shorter than this, so a healthy
+		/// account never reaches it. It is reached only when confirmations stop.
+		#[pezpallet::constant]
+		type MaxDataAge: Get<BlockNumberFor<Self>>;
 	}
 
 	/// Balance type of `T::Currency` (the noter bond currency) — distinct from
@@ -353,6 +385,22 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn stake_first_seen)]
 	pub type StakeFirstSeen<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
+	/// The block each source's stake was last confirmed at -- written whenever data for it
+	/// becomes effective, changed or not.
+	///
+	/// This is what `MaxDataAge` is measured from. Cleared with the stake it vouches for.
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn last_confirmed)]
+	pub type LastConfirmed<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
+		StakingSource,
+		BlockNumberFor<T>,
+		OptionQuery,
+	>;
 
 	/// Accounts that have asked for their staking time to be counted.
 	///
@@ -817,6 +865,7 @@ pub mod pezpallet {
 
 			if staked_amount.is_zero() {
 				CachedStakingDetails::<T>::remove(who, source);
+				LastConfirmed::<T>::remove(who, source);
 
 				let remaining = Self::total_cached_stake(who);
 				if remaining.is_zero() {
@@ -827,6 +876,11 @@ pub mod pezpallet {
 				let details =
 					StakingDetails { staked_amount, nominations_count, unlocking_chunks_count };
 				CachedStakingDetails::<T>::insert(who, source, details);
+				LastConfirmed::<T>::insert(
+					who,
+					source,
+					pezframe_system::Pezpallet::<T>::block_number(),
+				);
 
 				let new_total = Self::total_cached_stake(who);
 				if previous_total.is_zero() {
@@ -850,6 +904,23 @@ pub mod pezpallet {
 				source,
 				staked_amount,
 			});
+		}
+
+		/// The block the duration multiplier may count up to for `who`.
+		///
+		/// Now, while the newest confirmation of any of the account's sources is within
+		/// `MaxDataAge`; otherwise that confirmation plus `MaxDataAge`, so the multiplier holds
+		/// where it was rather than climbing on data nobody has checked. Stake recorded before
+		/// confirmations were kept has none, and is reckoned confirmed when it was first seen.
+		pub fn confirmed_clock(who: &T::AccountId) -> BlockNumberFor<T> {
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			let newest = LastConfirmed::<T>::iter_prefix_values(who)
+				.max()
+				.or_else(|| StakeFirstSeen::<T>::get(who));
+			match newest {
+				Some(at) => now.min(at.saturating_add(T::MaxDataAge::get())),
+				None => now,
+			}
 		}
 
 		/// If a pending noter submission for `(who, source)` exists and has
@@ -911,7 +982,7 @@ pub mod pezpallet {
 			// Duration-based multiplier.
 			let (final_score, duration_for_return) = match StakingStartBlock::<T>::get(who) {
 				Some(start_block) => {
-					let current_block = pezframe_system::Pezpallet::<T>::block_number();
+					let current_block = Self::confirmed_clock(who);
 
 					// Counted from the opt-in, so the delay in getting the data here is not
 					// charged to the user -- but never for longer than there has actually

@@ -697,6 +697,11 @@ parameter_types! {
 	// a single hardcoded noter, the same way a state can authorize any number
 	// of notaries.
 	pub const StakingOracleGracePeriod: BlockNumber = DAYS;
+	// Two weeks without a confirmation before an account's duration multiplier stops
+	// climbing. The noter re-confirms unchanged stake every few days, so this is reached only
+	// when the noters have stopped; a fortnight is long enough to survive an outage that is
+	// noticed and fixed, and short enough that a dead bot cannot carry a score a tier up.
+	pub const StakingMaxDataAge: BlockNumber = 14 * DAYS;
 	pub const NoterBondAmount: Balance = 50_000 * UNITS;
 	// Real-world analogy: a notarized document's recording/contestability
 	// period — a noter-signed submission only takes effect after this many
@@ -732,6 +737,7 @@ impl pezpallet_staking_score::Config for Runtime {
 	// for. A day covers a slow bot cycle and the dispute window it then waits out; past
 	// that, time is only credited for a stake that has actually existed.
 	type OracleGracePeriod = StakingOracleGracePeriod;
+	type MaxDataAge = StakingMaxDataAge;
 	type SlashDestination = PenaltiesToTreasury;
 }
 
