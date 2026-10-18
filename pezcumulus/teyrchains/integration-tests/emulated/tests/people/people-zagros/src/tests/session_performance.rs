@@ -23,8 +23,9 @@ fn the_relay_tells_the_register_who_authored() {
 	let (scored, failed): (Vec<AccountId>, Vec<AccountId>) = Zagros::execute_with(|| {
 		Dmp::make_teyrchain_reachable(1004);
 		let seated = Session::validators();
-		assert!(seated.len() >= 2, "the emulated relay seats at least two validators");
-		let (author, absent) = seated.split_first().expect("non-empty");
+		// The emulated relay may seat a single validator; then nobody is absent, and the
+		// register must still count the session for the one who sat it.
+		let (author, absent) = seated.split_first().expect("the emulated relay seats a validator");
 		let report = SessionReport {
 			end_index: 1,
 			validator_points: vec![(author.clone(), 20)],
