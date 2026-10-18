@@ -107,7 +107,22 @@
 # People-guarded pots offered a `Here` benchmark origin, and the treasury's 100-unit spend sat
 # below the existential deposit -- all fixed in the commits before this one. Referenda is not
 # asked for: its benchmarks submit with a Root proposal origin, and these hubs give Root no track.
+#   (asked: asset-hub-zagros asset-hub-pezkuwichain x pezpallet_treasury pezpallet_asset_rate
+#    pezpallet_bounties pezpallet_child_bounties pezpallet_nis pezpallet_scheduler
+#    pezpallet_preimage pezpallet_conviction_voting)
+#
+# Measured (run of 2026-10-14): the eight came back and are in the tree, treasury as one file
+# per instance.
+#
+# 2026-10-18: the last reference figures on the mainnet runtimes, before genesis. Referenda on
+# both Asset Hubs, now that a benchmark build maps Root to a track there. On both People chains,
+# nfts, the three collective instances, scheduler, preimage and referenda all still charged the
+# pallets' own reference weights; collective had a file in the tree that nothing declared,
+# measured on an older code, so it is measured again rather than wired as it stood.
 runs:
   - runtime: asset-hub-zagros asset-hub-pezkuwichain
-    pallet: pezpallet_treasury pezpallet_asset_rate pezpallet_bounties pezpallet_child_bounties pezpallet_nis pezpallet_scheduler pezpallet_preimage pezpallet_conviction_voting
-    why: treasury, bounties and OpenGov never measured on the Asset Hubs
+    pallet: pezpallet_referenda
+    why: referenda never measured on the Asset Hubs (Root had no track in the benchmark)
+  - runtime: people-zagros people-pezkuwichain
+    pallet: pezpallet_nfts pezpallet_collective pezpallet_scheduler pezpallet_preimage pezpallet_referenda
+    why: People governance and nfts pallets still on reference weights
