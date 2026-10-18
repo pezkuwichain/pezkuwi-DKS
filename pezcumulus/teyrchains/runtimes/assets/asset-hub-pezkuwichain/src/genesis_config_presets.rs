@@ -415,20 +415,22 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				hex!("ab445602ed2049270de70fcb1d52cb445e5580de63edd8b215f0b2039cb36f1f").into();
 
 			asset_hub_pezkuwichain_genesis(
-				// initial collators - 2 Asset Hub collators - Generated 2026-01-29
+				// initial collators - 2 Asset Hub collators. The account is master-derived and stays in
+				// cold storage; the aura key is its own phrase, because it is the one that sits on the
+				// collator (res/genesis/mainnet/mainnet-session-keys.json)
 				vec![
 					// Azad (5CoxwDrivErLrWGh2wUBwto4kACphxeqMDsvgUVTBgzwiBdR)
 					(
 						hex!("20fe4fa9e8289dae29099651f6f525845c5f379eda42c63dad86fe458d16916e")
 							.into(),
-						hex!("20fe4fa9e8289dae29099651f6f525845c5f379eda42c63dad86fe458d16916e")
+						hex!("e8b2344ecbce16fcca6a71fb2fa8982dc67ecf0388858a73a6c68d5f6b99900a")
 							.unchecked_into(),
 					),
 					// Beritan (5DAgtoFmatt8MVWBRfk2u6JGgiwRXquavjfXKBSb3x2eQky4)
 					(
 						hex!("30cc7692d41b1119dd5f67b1e04d21e8a46c1aa76aa3cd237db8b8b9aa742b22")
 							.into(),
-						hex!("30cc7692d41b1119dd5f67b1e04d21e8a46c1aa76aa3cd237db8b8b9aa742b22")
+						hex!("28ffab65c4afd1f3984d569ab0b6208d7a13acc54cf02160c1428fc7a030ef7f")
 							.unchecked_into(),
 					),
 				],
