@@ -127,7 +127,16 @@
 #   - runtime: people-zagros
 #     pallet: pezpallet_nfts pezpallet_collective pezpallet_scheduler pezpallet_preimage pezpallet_referenda
 #     why: People governance and nfts pallets still on reference weights (the 10-18 run was cut by a host power-off)
+# Previous request (measured by run 39147418670): trust is in the tree. Staking score came back
+# about a quarter cheaper than before, and the storage notes said why -- the trust update its
+# calls trigger stopped at the citizenship check, because the benchmark's account was no
+# citizen once the People runtimes stopped pretending everyone was. The benchmarks now make it
+# one, and staking score is measured again.
+# runs:
+#   - runtime: people-zagros people-pezkuwichain
+#     pallet: pezpallet_staking_score pezpallet_trust
+#     why: staking score keeps a confirmation per source (MaxDataAge); its writes and trust's score read changed
 runs:
   - runtime: people-zagros people-pezkuwichain
-    pallet: pezpallet_staking_score pezpallet_trust
-    why: staking score keeps a confirmation per source (MaxDataAge); its writes and trust's score read changed
+    pallet: pezpallet_staking_score
+    why: its benchmarks now measure the trust update for a citizen, not the early exit for a stranger
