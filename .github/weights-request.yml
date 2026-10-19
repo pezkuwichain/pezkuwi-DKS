@@ -107,7 +107,36 @@
 # People-guarded pots offered a `Here` benchmark origin, and the treasury's 100-unit spend sat
 # below the existential deposit -- all fixed in the commits before this one. Referenda is not
 # asked for: its benchmarks submit with a Root proposal origin, and these hubs give Root no track.
+#   (asked: asset-hub-zagros asset-hub-pezkuwichain x pezpallet_treasury pezpallet_asset_rate
+#    pezpallet_bounties pezpallet_child_bounties pezpallet_nis pezpallet_scheduler
+#    pezpallet_preimage pezpallet_conviction_voting)
+#
+# Measured (run of 2026-10-14): the eight came back and are in the tree, treasury as one file
+# per instance.
+#
+# 2026-10-18: the last reference figures on the mainnet runtimes, before genesis. Referenda on
+# both Asset Hubs, now that a benchmark build maps Root to a track there. On both People chains,
+# nfts, the three collective instances, scheduler, preimage and referenda all still charged the
+# pallets' own reference weights; collective had a file in the tree that nothing declared,
+# measured on an older code, so it is measured again rather than wired as it stood.
+# Previous request (measured by run 39144704836):
+# runs:
+#   - runtime: people-pezkuwichain
+#     pallet: pezpallet_nfts pezpallet_referenda
+#     why: nfts and referenda benchmarks failed against the Tiki collection and the electorate floor
+#   - runtime: people-zagros
+#     pallet: pezpallet_nfts pezpallet_collective pezpallet_scheduler pezpallet_preimage pezpallet_referenda
+#     why: People governance and nfts pallets still on reference weights (the 10-18 run was cut by a host power-off)
+# Previous request (measured by run 39147418670): trust is in the tree. Staking score came back
+# about a quarter cheaper than before, and the storage notes said why -- the trust update its
+# calls trigger stopped at the citizenship check, because the benchmark's account was no
+# citizen once the People runtimes stopped pretending everyone was. The benchmarks now make it
+# one, and staking score is measured again.
+# runs:
+#   - runtime: people-zagros people-pezkuwichain
+#     pallet: pezpallet_staking_score pezpallet_trust
+#     why: staking score keeps a confirmation per source (MaxDataAge); its writes and trust's score read changed
 runs:
-  - runtime: asset-hub-zagros asset-hub-pezkuwichain
-    pallet: pezpallet_treasury pezpallet_asset_rate pezpallet_bounties pezpallet_child_bounties pezpallet_nis pezpallet_scheduler pezpallet_preimage pezpallet_conviction_voting
-    why: treasury, bounties and OpenGov never measured on the Asset Hubs
+  - runtime: people-zagros people-pezkuwichain
+    pallet: pezpallet_staking_score
+    why: its benchmarks now measure the trust update for a citizen, not the early exit for a stranger

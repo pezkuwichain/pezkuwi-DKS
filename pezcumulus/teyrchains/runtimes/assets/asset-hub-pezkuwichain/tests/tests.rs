@@ -2884,3 +2884,45 @@ fn an_approved_bounty_is_funded_in_the_next_spend_period() {
 		assert_eq!(Balances::free_balance(Bounties::bounty_account_id(0)), value);
 	});
 }
+
+/// Who may authorise a runtime upgrade of this chain.
+///
+/// The mainnet twin of the test asset-hub-zagros carries; it was missing here, which is how the
+/// two chains' answers could drift apart without anything noticing. The answer is this chain's
+/// own root and the relay chain, and nothing else. People sends this chain instructions -- the
+/// treasury's spends arrive from there -- but its authority is over money it is granted, not
+/// over the code, so a message from People must not be able to install a runtime.
+#[test]
+fn governance_authorize_upgrade_works() {
+	use pezkuwichain_runtime_constants::system_teyrchain::PEOPLE_ID;
+	use pezsp_runtime::Either;
+
+	// no - a teyrchain nobody granted anything to
+	assert_err!(
+		teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
+			Runtime,
+			RuntimeOrigin,
+		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(12334)))),
+		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
+	);
+
+	// no - People
+	assert!(teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
+		Runtime,
+		RuntimeOrigin,
+	>(GovernanceOrigin::Location(Location::new(1, Teyrchain(PEOPLE_ID))))
+	.is_err());
+
+	// ok - this chain's root
+	assert_ok!(teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
+		Runtime,
+		RuntimeOrigin,
+	>(GovernanceOrigin::Origin(RuntimeOrigin::root())));
+
+	// ok - the relay chain, which is the governance location this runtime declares
+	assert_eq!(xcm_config::GovernanceLocation::get(), Location::parent());
+	assert_ok!(teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
+		Runtime,
+		RuntimeOrigin,
+	>(GovernanceOrigin::Location(Location::parent())));
+}

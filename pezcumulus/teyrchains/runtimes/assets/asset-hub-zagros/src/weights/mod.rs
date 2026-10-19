@@ -53,6 +53,7 @@ pub mod pezpallet_parameters;
 pub mod pezpallet_pez_treasury;
 pub mod pezpallet_preimage;
 pub mod pezpallet_proxy;
+pub mod pezpallet_referenda;
 pub mod pezpallet_revive;
 pub mod pezpallet_scheduler;
 pub mod pezpallet_session;

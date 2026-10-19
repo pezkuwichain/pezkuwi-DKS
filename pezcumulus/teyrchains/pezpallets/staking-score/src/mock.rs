@@ -15,7 +15,7 @@ use pezframe_support::{
 use pezframe_system::EnsureSignedBy;
 use pezsp_runtime::BuildStorage;
 
-use crate::UNITS;
+use crate::{MONTH_IN_BLOCKS, UNITS};
 
 // --- Type Aliases ---
 type Block = pezframe_system::mocking::MockBlock<Test>;
@@ -50,6 +50,12 @@ parameter_types! {
 	pub const NoterBondAmount: Balance = 1_000 * UNITS;
 	pub const DisputeWindowBlocks: BlockNumber = DISPUTE_WINDOW;
 	pub const SlashDestinationAccount: AccountId = TREASURY;
+}
+
+parameter_types! {
+	/// Settable, and far beyond every span the older tests step through, so those keep
+	/// measuring what they were written for. The freshness tests lower it.
+	pub storage MaxDataAge: u64 = 100 * MONTH_IN_BLOCKS as u64;
 }
 
 pub struct DisputeMemberProvider;
@@ -111,6 +117,7 @@ impl crate::Config for Test {
 	type DisputeOrigin = EnsureSignedBy<DisputeMemberProvider, AccountId>;
 	type SlashOrigin = EnsureSignedBy<SlashMemberProvider, AccountId>;
 	type OracleGracePeriod = OracleGracePeriod;
+	type MaxDataAge = MaxDataAge;
 	type SlashDestination = SlashesTo<SlashDestinationAccount>;
 }
 

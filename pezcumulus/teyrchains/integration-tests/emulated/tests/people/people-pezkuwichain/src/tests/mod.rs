@@ -18,4 +18,5 @@ mod claim_assets;
 mod governance;
 mod government_spend;
 mod identity;
+mod session_performance;
 mod teleport;

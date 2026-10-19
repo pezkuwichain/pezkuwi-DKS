@@ -50,6 +50,8 @@ construct_runtime!(
 parameter_types! {
 	pub const ReferralFallbackPeriod: u64 = 100;
 	pub const OracleGracePeriod: u64 = 100;
+	// These tests are about elections, not about stale stake data.
+	pub const StakingMaxDataAge: u64 = u64::MAX / 2;
 	pub const TrustScoreScale: u32 = 1_000;
 	pub const TrustStakingWeight: u32 = 20;
 	pub const TrustReferralWeight: u32 = 25;
@@ -330,6 +332,7 @@ impl pezpallet_staking_score::Config for Test {
 	type SlashOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type SlashDestination = SlashesTo<StakingScoreSlashDestination>;
 	type OracleGracePeriod = OracleGracePeriod;
+	type MaxDataAge = StakingMaxDataAge;
 }
 
 // Referral Configuration

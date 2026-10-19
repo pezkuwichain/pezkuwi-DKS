@@ -12,7 +12,7 @@
 timeout = 1000
 
 [relaychain]
-default_command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi"
+default_command = "pezkuwi"
 default_args = ["-lteyrchain=debug,runtime=debug"]
 chain = "pezkuwichain-local"
 
@@ -36,14 +36,14 @@ cumulus_based = true
 [[teyrchains.collators]]
 name = "asset-hub-collator-1"
 validator = true
-command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+command = "pezkuwi-teyrchain"
 rpc_port = 9945
 args = ["-lteyrchain=debug", "--force-authoring"]
 
 [[teyrchains.collators]]
 name = "asset-hub-collator-2"
 validator = true
-command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+command = "pezkuwi-teyrchain"
 args = ["-lteyrchain=debug", "--force-authoring"]
 
 # People Chain Teyrchain (Teyrchain ID: 1004)
@@ -55,12 +55,12 @@ cumulus_based = true
 [[teyrchains.collators]]
 name = "people-collator-1"
 validator = true
-command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+command = "pezkuwi-teyrchain"
 rpc_port = 9946
 args = ["-lteyrchain=debug", "--force-authoring"]
 
 [[teyrchains.collators]]
 name = "people-collator-2"
 validator = true
-command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+command = "pezkuwi-teyrchain"
 args = ["-lteyrchain=debug", "--force-authoring"]

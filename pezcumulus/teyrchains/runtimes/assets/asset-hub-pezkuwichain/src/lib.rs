@@ -1828,7 +1828,7 @@ impl pezpallet_conviction_voting::Config for Runtime {
 }
 
 impl pezpallet_referenda::Config for Runtime {
-	type WeightInfo = pezpallet_referenda::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_referenda::WeightInfo<Runtime>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type Scheduler = Scheduler;
@@ -2108,6 +2108,7 @@ mod benches {
 		[pezpallet_scheduler, Scheduler]
 		[pezpallet_preimage, Preimage]
 		[pezpallet_conviction_voting, ConvictionVoting]
+		[pezpallet_referenda, Referenda]
 		// XCM
 		[pezpallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		// NOTE: Make sure you point to the individual modules below.

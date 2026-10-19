@@ -18,7 +18,7 @@
 timeout = 1000
 
 [relaychain]
-default_command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi"
+default_command = "pezkuwi"
 default_args = ["-lteyrchain=debug,runtime=debug"]
 chain = "pezkuwichain-dev"
 
@@ -41,7 +41,7 @@ onboard_as_parachain = false
 [[teyrchains.collators]]
 name = "asset-hub-alice"
 validator = true
-command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+command = "pezkuwi-teyrchain"
 rpc_port = 9945
 args = ["-lteyrchain=debug", "--force-authoring"]
 
@@ -55,6 +55,6 @@ onboard_as_parachain = false
 [[teyrchains.collators]]
 name = "people-alice"
 validator = true
-command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+command = "pezkuwi-teyrchain"
 rpc_port = 9946
 args = ["-lteyrchain=debug", "--force-authoring"]

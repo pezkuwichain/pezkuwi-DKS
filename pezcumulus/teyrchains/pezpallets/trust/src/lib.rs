@@ -686,5 +686,16 @@ pub mod pezpallet {
 				log::error!("Failed to update trust score on staking change for {who:?}: {e:?}");
 			}
 		}
+
+		/// A citizen, the way the chain makes one: an approved KYC record, which is what every
+		/// runtime's `CitizenshipSource` reads. Anyone else is turned away before the score is
+		/// computed or written.
+		#[cfg(feature = "runtime-benchmarks")]
+		fn prepare_worst_case(who: &T::AccountId) {
+			pezpallet_identity_kyc::KycStatuses::<T>::insert(
+				who,
+				pezpallet_identity_kyc::types::KycLevel::Approved,
+			);
+		}
 	}
 }

@@ -1716,6 +1716,139 @@ fn a_noter_cannot_submit_their_own_staking_data() {
 }
 
 // ============================================================================
+// FRESHNESS: the multiplier stops climbing when confirmations stop
+// ============================================================================
+
+mod freshness {
+	use super::*;
+	use crate::LastConfirmed;
+
+	const AGE: u64 = 14 * 24 * 60 * 10; // fourteen days of blocks
+
+	fn confirm(amount: Balance) {
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::root(),
+			USER_STASH,
+			StakingSource::RelayChain,
+			amount,
+			0,
+			0
+		));
+	}
+
+	fn tracked_from(block: u64, amount: Balance) {
+		MaxDataAge::set(&AGE);
+		System::set_block_number(block);
+		confirm(amount);
+		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+	}
+
+	#[test]
+	fn the_multiplier_holds_once_confirmations_stop() {
+		// The bot stops the day after the stake is recorded. Thirteen months later the
+		// account would read twelve-month data on a stake nobody has looked at in a year --
+		// it may well be gone. The clock stops at the last confirmation plus the allowance.
+		ExtBuilder.build_and_execute(|| {
+			tracked_from(10, 500 * UNITS);
+
+			System::set_block_number(10 + 13 * MONTH_IN_BLOCKS as u64);
+			let (score, duration) = StakingScore::get_staking_score(&USER_STASH);
+			assert_eq!(duration, AGE, "counted past the last confirmation");
+			assert_eq!(score, 40, "the multiplier climbed on unconfirmed data");
+		});
+	}
+
+	#[test]
+	fn a_confirmation_of_unchanged_stake_keeps_the_clock_running() {
+		// What a healthy noter does: the same numbers again, inside the allowance. Nothing
+		// about the stake changed, so nothing about the duration resets, and it keeps counting.
+		ExtBuilder.build_and_execute(|| {
+			tracked_from(10, 500 * UNITS);
+
+			let mut at = 10u64;
+			while at < 10 + 13 * MONTH_IN_BLOCKS as u64 {
+				at += AGE / 2;
+				System::set_block_number(at);
+				confirm(500 * UNITS);
+			}
+
+			let (score, duration) = StakingScore::get_staking_score(&USER_STASH);
+			assert_eq!(duration, at - 10, "an unchanged confirmation reset or froze the clock");
+			assert_eq!(score, 80);
+		});
+	}
+
+	#[test]
+	fn a_late_confirmation_gives_the_time_back() {
+		// The allowance is about the chain not knowing, not about the user being at fault: once
+		// a noter confirms the stake is still there, the time it was held counts in full.
+		ExtBuilder.build_and_execute(|| {
+			tracked_from(10, 500 * UNITS);
+
+			let later = 10 + 4 * MONTH_IN_BLOCKS as u64;
+			System::set_block_number(later);
+			assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 40);
+
+			confirm(500 * UNITS);
+			let (score, duration) = StakingScore::get_staking_score(&USER_STASH);
+			assert_eq!(duration, later - 10);
+			assert_eq!(score, 56);
+		});
+	}
+
+	#[test]
+	fn the_newest_source_is_what_counts() {
+		// Two sources, one gone quiet: the account is as fresh as its freshest confirmation.
+		ExtBuilder.build_and_execute(|| {
+			let pool = |amount| {
+				assert_ok!(StakingScore::receive_staking_details(
+					RuntimeOrigin::root(),
+					USER_STASH,
+					StakingSource::AssetHub,
+					amount,
+					0,
+					0
+				));
+			};
+			MaxDataAge::set(&AGE);
+			System::set_block_number(10);
+			pool(300 * UNITS);
+			tracked_from(10, 500 * UNITS);
+
+			let later = 10 + 4 * MONTH_IN_BLOCKS as u64;
+			System::set_block_number(later);
+			pool(300 * UNITS);
+			assert_eq!(StakingScore::get_staking_score(&USER_STASH).1, later - 10);
+		});
+	}
+
+	#[test]
+	fn unstaking_clears_the_confirmation() {
+		ExtBuilder.build_and_execute(|| {
+			tracked_from(10, 500 * UNITS);
+			assert!(LastConfirmed::<Test>::get(USER_STASH, StakingSource::RelayChain).is_some());
+
+			confirm(0);
+			assert!(LastConfirmed::<Test>::get(USER_STASH, StakingSource::RelayChain).is_none());
+		});
+	}
+
+	#[test]
+	fn stake_recorded_before_confirmations_counts_from_when_it_was_first_seen() {
+		// A chain upgraded into this holds stake with no confirmation on record. It is
+		// reckoned confirmed at first sight, so it freezes like any other until a noter
+		// confirms it -- not left running for ever because the record predates the rule.
+		ExtBuilder.build_and_execute(|| {
+			tracked_from(10, 500 * UNITS);
+			LastConfirmed::<Test>::remove(USER_STASH, StakingSource::RelayChain);
+
+			System::set_block_number(10 + 13 * MONTH_IN_BLOCKS as u64);
+			assert_eq!(StakingScore::get_staking_score(&USER_STASH).1, AGE);
+		});
+	}
+}
+
+// ============================================================================
 // THE INVARIANT CAN FAIL
 // ============================================================================
 
@@ -1755,6 +1888,14 @@ mod invariant {
 		ExtBuilder.build_and_execute(|| {
 			NoterBonds::<Test>::insert(USER_STASH, 1_000_000_000_000u128);
 			assert_rejected("a noter's bond was recorded but never reserved");
+		});
+	}
+
+	#[test]
+	fn a_confirmation_without_a_stake_is_caught() {
+		ExtBuilder.build_and_execute(|| {
+			crate::LastConfirmed::<Test>::insert(USER_STASH, StakingSource::RelayChain, 1u64);
+			assert_rejected("a stake confirmation outlived the stake it confirms");
 		});
 	}
 

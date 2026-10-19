@@ -189,20 +189,22 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				hex!("3a4eed1ba224f6d76dec6f24da10b850248dc8db5e8de7effcaf25bea977fe7f").into();
 
 			people_pezkuwichain_genesis(
-				// initial collators - 2 People Chain collators - generated 2026-09-15
+				// initial collators - 2 People Chain collators. The account is master-derived and stays in
+				// cold storage; the aura key is its own phrase, because it is the one that sits on the
+				// collator (res/genesis/mainnet/mainnet-session-keys.json)
 				vec![
 					// Erin (5C7WutzWPuGJN2HV6a59e6nVnGZmZ2WK3oEPifJznn4YVp12)
 					(
 						hex!("0224e4f04a88bd2d1c2b140dfda031755a87e81873bfcde6c47b2a2da1fe9f51")
 							.into(),
-						hex!("0224e4f04a88bd2d1c2b140dfda031755a87e81873bfcde6c47b2a2da1fe9f51")
+						hex!("144c97bd87ea297559f4a0ecdb7cef0167915a0da9a619366477b0013ad41313")
 							.unchecked_into(),
 					),
 					// Firaz (5DG28PmnZeLhg2kJCdgfBz9Pwc4nEgAeku45Dm8UUjtFPXLC)
 					(
 						hex!("34dd705f8a54f8b195e602556960a1181862b8bd7a2fd231f4d99b5cdd30d165")
 							.into(),
-						hex!("34dd705f8a54f8b195e602556960a1181862b8bd7a2fd231f4d99b5cdd30d165")
+						hex!("ceb9d485a931af182909f5c29e68bfd5ec45256fc302a40e82ad9c7d25d3bc68")
 							.unchecked_into(),
 					),
 				],

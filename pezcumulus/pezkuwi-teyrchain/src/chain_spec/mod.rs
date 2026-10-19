@@ -53,6 +53,12 @@ pub(crate) struct ChainSpecLoader;
 
 impl LoadSpec for ChainSpecLoader {
 	fn load_spec(&self, id: &str) -> Result<Box<dyn ChainSpec>, String> {
+		// A file the operator named is a file, whatever its name starts with. Matched against
+		// the ids below first, `--chain bridge-hub-zagros.json` took the bridge-hub prefix arm,
+		// failed to parse as a runtime type and panicked; only an absolute path got through.
+		if id.ends_with(".json") && std::path::Path::new(id).is_file() {
+			return Ok(Box::new(GenericChainSpec::from_json_file(id.into())?));
+		}
 		Ok(match id {
 			// Only chains that have been launched carry an embedded spec, and each one is the
 			// file its live nodes run (Serok, 2026-10-03). The specs this binary used to embed

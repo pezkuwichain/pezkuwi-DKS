@@ -1195,7 +1195,8 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 // MAINNET SIMULATION PRESET - For local upgrade testing with real sudo key
 // ============================================================================
 //
-// 2 validators with derivable seeds (for local keystore insertion)
+// 2 validators: mainnet's Validator_01 and Validator_02, session keys included, each loaded
+// into a local keystore from its own phrase (never the master's)
 // Sudo = real founder account (requires SUDO_MNEMONIC at runtime)
 // NO Alice/Bob — tests the exact upgrade path used on mainnet
 //
@@ -1208,8 +1209,8 @@ fn pezkuwichain_mainnet_simulation_genesis() -> serde_json::Value {
 	let founder_account: AccountId =
 		hex!("3a4eed1ba224f6d76dec6f24da10b850248dc8db5e8de7effcaf25bea977fe7f").into();
 
-	// 2 validators — real mainnet Validator_01 and Validator_02 keys
-	// Seed phrases stored offline in secure wallet storage
+	// 2 validators — real mainnet Validator_01 and Validator_02 keys, the same tuples as
+	// `pezkuwichain_genesis_config`. Their session phrases are kept off-repository, one per key.
 	let initial_authorities: Vec<(
 		AccountId,
 		AccountId,
@@ -1224,36 +1225,36 @@ fn pezkuwichain_mainnet_simulation_genesis() -> serde_json::Value {
 			// Validator 01 (5G4e6KKUViiwUp6qPgvdqNxwtaGM7LzYB2KVr9bXMjJAfMDF)
 			hex!("b0e442bf467ef368a9247474bf1a97a1c08ad9213673e3180fdab407a758ac3c").into(),
 			hex!("10aec0daa42782e62b375845a5a496d6943a3b28c0d8803c12df0be24a641d22").into(),
-			hex!("5872d64bd3a67b8c8272c9b3eaaa4853333509076f09942d0560236756e8cb37")
+			hex!("4e261f75a97625fe1d4258ae7671c1aeb77d29022282c235f8b25ff721f6de47")
 				.unchecked_into(),
-			hex!("40316a0bf1f562ad339556975360bcd97dc688b53b93c230f08f5ddab4dd79e2")
+			hex!("12359b7c659f93473a8cdc9f236a4c9dab90dce478ef5a21d4a8be9587552565")
 				.unchecked_into(),
-			hex!("eaa8333a15b4d18ca40aeb5e53154f56acb8d5ce024129ee17904f5140d2464c")
+			hex!("94f3bd94986d886db66743988c679be0f6d134bc10ec99809e577f788a490543")
 				.unchecked_into(),
-			hex!("7a30d53d07680b55bffc423d0dd75cf4c0d86e82d0c6ee3320c07e7c389c746b")
+			hex!("3aa9fdea783b84df2f3a5b1024720de6b781c2df5e2bf65aa6794271c9a22874")
 				.unchecked_into(),
-			hex!("f8784e05c19f61e58eaeaa780c9315ec15e9e794110fb0f511e89baec1e38c7a")
+			hex!("985b961a9fec7c232e90a609f908addb6129b3883da5b6b281b92bfe1cbbbf16")
 				.unchecked_into(),
 			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
-			hex!("03559f13b26109776b0cd0074b6612cf1b9f0e2198af6f3d66c2a4ec6ddcf39407")
+			hex!("02507df6ce8f663ea68a3ea29da7ac1fda8dd467461f07d1afefa67b7969f1a59f")
 				.unchecked_into(),
 		),
 		(
 			// Validator 02 (5E5239nsL71Qb2MUmPwPtUM8pLb1Md4KkNBajmJ6wAHQwZP1)
 			hex!("58b5ab34bfef86ccd2fda24b4b4034d8e77f03e24b19c810b1d3025456036806").into(),
 			hex!("9cb78ac63399b9257d8ccb5a4fd0160e251f971b0ca5d4a8fb98d196e4b7721a").into(),
-			hex!("d874b6f6f9bf67d55ec69838129744fec8237fd8e77c2828ce9460a20916e42e")
+			hex!("8a1d0c705d1dd6e08bd3f75e4da1567a03b53baf26286b3db033f11cce4de327")
 				.unchecked_into(),
-			hex!("e8f1ba8114c0eb72f540c7be75d675effbc87318154da4b53ca03f849960669a")
+			hex!("be0362dbef8ed5a21686a324ddf78575e09fe619944fa26fa79664888631034e")
 				.unchecked_into(),
-			hex!("bce8e0618ad82b86e5fc775363fbbd5c230657fc431501e2c7229f289e477c62")
+			hex!("84141c4692dda61075de310540ec4bde2d59508b8c58d6f1218442540ff88704")
 				.unchecked_into(),
-			hex!("887b1a1d2d1155c16dcf64b070684a8a981b7ab99077ad66848739cc8f87c952")
+			hex!("e4226d2d23e1ace8ba9b4204a2fa3e9d416bd40349991f3c51aa92f3e54c9466")
 				.unchecked_into(),
-			hex!("764f5241852f479240812f969cd1393242cb318b8f2f9cee800dafef6803983a")
+			hex!("8216ddb36f2229edc194f29fd87dee7777f24b09d749dce381f54fa9d2f2b30a")
 				.unchecked_into(),
 			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
-			hex!("024d226f333f7d0a9f82bd3eba49e4585139f84934cd71dc052412768cd62a811f")
+			hex!("026e1a3e151b57fe4cffb9967c9c816ecc227ae13633400937b02faea2cc6ea998")
 				.unchecked_into(),
 		),
 	]);

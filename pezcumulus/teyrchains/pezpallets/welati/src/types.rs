@@ -1617,6 +1617,16 @@ pub struct CitizenTally<Electorate: 'static, MinElectorate: 'static> {
 	dummy: core::marker::PhantomData<(Electorate, MinElectorate)>,
 }
 
+impl<Electorate: Get<u32> + 'static, MinElectorate: Get<u32> + 'static>
+	CitizenTally<Electorate, MinElectorate>
+{
+	/// The count `support` is a share of: the roll, or `MinElectorate` while the roll is
+	/// smaller than that.
+	fn denominator() -> u32 {
+		Electorate::get().max(MinElectorate::get())
+	}
+}
+
 impl<Electorate: Get<u32> + 'static, MinElectorate: Get<u32> + 'static, Class>
 	pezframe_support::traits::VoteTally<u32, Class> for CitizenTally<Electorate, MinElectorate>
 {
@@ -1642,13 +1652,12 @@ impl<Electorate: Get<u32> + 'static, MinElectorate: Get<u32> + 'static, Class>
 		// the curves mean what they say -- at forty million welatî, root asks for eight hundred
 		// thousand ayes.
 		//
-		// Deliberately not on the `Electorate` provider: `unanimity`, `rejection` and
-		// `from_requirements` build tallies from it, and a floored provider would have them
-		// describe a state the chain cannot reach. Deliberately not on `approval` either -- that
-		// is the share among those who voted, and its denominator is already `ayes + nays`.
+		// Deliberately not on the `Electorate` provider, so the roll stays the roll everywhere
+		// else. Deliberately not on `approval` either -- that is the share among those who
+		// voted, and its denominator is already `ayes + nays`.
 		//
 		// An empty roll is not unanimous consent, it is no consent.
-		let electorate = Electorate::get().max(MinElectorate::get());
+		let electorate = Self::denominator();
 		if electorate == 0 {
 			pezsp_runtime::Perbill::zero()
 		} else {
@@ -1665,14 +1674,21 @@ impl<Electorate: Get<u32> + 'static, MinElectorate: Get<u32> + 'static, Class>
 		}
 	}
 
+	// The benchmark helpers build tallies against the same denominator `support` divides by.
+	// Against the bare roll, a benchmark genesis with a handful of citizens and a floor of a
+	// hundred thousand gives "unanimity" a support of a few millionths: no referendum passes,
+	// and every benchmark that needs one to pass or confirm panics in its verify block. A
+	// tally that only clears the floor with more ayes than the roll holds is not reachable on
+	// a live chain, but the cost being measured is the dispatch, and that does not depend on
+	// whether the voters behind the count exist.
 	#[cfg(feature = "runtime-benchmarks")]
 	fn unanimity(_: Class) -> Self {
-		Self { ayes: Electorate::get(), nays: 0, dummy: core::marker::PhantomData }
+		Self { ayes: Self::denominator(), nays: 0, dummy: core::marker::PhantomData }
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn rejection(_: Class) -> Self {
-		Self { ayes: 0, nays: Electorate::get(), dummy: core::marker::PhantomData }
+		Self { ayes: 0, nays: Self::denominator(), dummy: core::marker::PhantomData }
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
@@ -1681,9 +1697,9 @@ impl<Electorate: Get<u32> + 'static, MinElectorate: Get<u32> + 'static, Class>
 		approval: pezsp_runtime::Perbill,
 		_: Class,
 	) -> Self {
-		// `support` is a share of the whole roll and every voter counts once, so the number who
-		// turned out is exactly that share of the electorate; `approval` then splits it.
-		let turnout = support.mul_ceil(Electorate::get());
+		// `support` is a share of the floored roll and every voter counts once, so the number
+		// who turned out is exactly that share of it; `approval` then splits it.
+		let turnout = support.mul_ceil(Self::denominator());
 		let ayes = approval.mul_ceil(turnout);
 		Self { ayes, nays: turnout.saturating_sub(ayes), dummy: core::marker::PhantomData }
 	}
