@@ -88,7 +88,7 @@ Pallets present on one twin only. Each must be recorded with its reason in
 
 ## asset-hub-zagros
 
-`pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/lib.rs` · spec `asset-hub-zagros` 1_020_019 · 62 pallets
+`pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/lib.rs` · spec `asset-hub-zagros` 1_020_020 · 62 pallets
 
 | index | pallet | crate |
 |---:|---|---|
@@ -429,7 +429,7 @@ Pallets present on one twin only. Each must be recorded with its reason in
 
 ## people-zagros
 
-`pezcumulus/teyrchains/runtimes/people/people-zagros/src/lib.rs` · spec `people-zagros` 1_020_016 · 47 pallets
+`pezcumulus/teyrchains/runtimes/people/people-zagros/src/lib.rs` · spec `people-zagros` 1_020_017 · 47 pallets
 
 | index | pallet | crate |
 |---:|---|---|
