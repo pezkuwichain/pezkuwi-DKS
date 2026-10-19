@@ -795,6 +795,13 @@ pub mod pezpallet {
 	/// Trust pallet implements this to recalculate scores on staking updates.
 	pub trait OnStakingDataUpdate<AccountId> {
 		fn on_staking_data_changed(who: &AccountId);
+
+		/// Put `who` where the callback does its full work, for benchmarking only. Without it
+		/// a listener that bails out early for most accounts -- the trust pallet skips anyone
+		/// who is not a citizen -- is measured on its cheap path, and every call that notifies
+		/// it is undercharged. Default no-op; a listener with such a gate should override it.
+		#[cfg(feature = "runtime-benchmarks")]
+		fn prepare_worst_case(_who: &AccountId) {}
 	}
 
 	impl<AccountId> OnStakingDataUpdate<AccountId> for () {

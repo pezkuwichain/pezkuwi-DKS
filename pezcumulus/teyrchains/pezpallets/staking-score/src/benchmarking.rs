@@ -6,8 +6,9 @@
 //! Benchmarking setup for pezpallet-staking-score
 
 use crate::{
-	BalanceOf, CachedStakingDetails, Call, Config, NoterBonds, NoterCheck, PendingStakingDetails,
-	PendingSubmission, Pezpallet, StakingDetails, StakingSource, StakingStartBlock, UNITS,
+	BalanceOf, CachedStakingDetails, Call, Config, NoterBonds, NoterCheck, OnStakingDataUpdate,
+	PendingStakingDetails, PendingSubmission, Pezpallet, StakingDetails, StakingSource,
+	StakingStartBlock, UNITS,
 };
 use pezframe_benchmarking::v2::*;
 use pezframe_support::traits::{Currency, EnsureOrigin, Get};
@@ -47,6 +48,7 @@ mod benchmarks {
 				unlocking_chunks_count: 2,
 			},
 		);
+		T::OnStakingUpdate::prepare_worst_case(&caller);
 
 		#[extrinsic_call]
 		_(RawOrigin::Signed(caller.clone()));
@@ -69,6 +71,7 @@ mod benchmarks {
 				unlocking_chunks_count: 0,
 			},
 		);
+		T::OnStakingUpdate::prepare_worst_case(&target);
 
 		#[extrinsic_call]
 		_(
@@ -177,6 +180,7 @@ mod benchmarks {
 		pezframe_system::Pezpallet::<T>::set_block_number(
 			T::DisputeWindow::get().saturating_add(1u32.into()),
 		);
+		T::OnStakingUpdate::prepare_worst_case(&target);
 
 		let caller: T::AccountId = account("finalizer", 0, 0);
 
