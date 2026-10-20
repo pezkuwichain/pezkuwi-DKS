@@ -636,6 +636,10 @@ parameter_types! {
 	/// Defaults to the mock threshold, so the gate reads as it did before the override
 	/// existed; the cases that exercise lowering set it themselves.
 	pub static MockPopulationThresholdOverride: u32 = 100;
+	/// Out of reach unless a test lowers it. The mock register reports a hundred and ten
+	/// citizens so that turnout arithmetic has a population to work against, and the tests
+	/// written before the founding period existed assume no election opens on its own.
+	pub static MockFoundingPeriodThreshold: u32 = u32::MAX;
 	pub static MockPolls: BTreeMap<u32, MockPollState> =
 		vec![(1u32, MockPollState::Ongoing(<CitizenTally<MockElectorate, MockMinElectorate> as pezframe_support::traits::VoteTally<u32, u16>>::new(0), 0u16))].into_iter().collect();
 }
@@ -844,6 +848,7 @@ impl pezpallet_welati::Config for Test {
 	type PopulationThreshold = PopulationThreshold;
 	type PopulationThresholdOverride = MockPopulationThresholdOverride;
 	type PopulationCheckPeriod = PopulationCheckPeriod;
+	type FoundingPeriodThreshold = MockFoundingPeriodThreshold;
 }
 
 // CRITICAL: CitizenInfo trait implementation - DEFINE ONLY ONCE

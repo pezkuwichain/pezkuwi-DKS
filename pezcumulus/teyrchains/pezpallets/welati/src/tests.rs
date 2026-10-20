@@ -972,25 +972,18 @@ fn parliament_is_elected_at_the_midpoint_of_a_presidency() {
 	// The stagger, and the one shortened term that creates it. Without this the two clocks
 	// start together and stay together, and a single vote hands one side both the government
 	// and the legislature for four years.
+	// The founding house has no term, so the first house this applies to is the first one
+	// elected: it is the one that starts Parliament's calendar.
 	ExtBuilder::default().build().execute_with(|| {
-		seat_president(1);
-		crate::TermEnds::<Test>::remove(ElectionType::Presidential);
-
 		let now = System::block_number();
 		let term = crate::mock::TermLength::get();
 
-		assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
-		let parliament_ends = crate::TermEnds::<Test>::get(ElectionType::Parliamentary).unwrap();
-		assert_eq!(parliament_ends, now + term / 2, "the first house sits half a term");
+		let parliament_ends = Welati::begin_term(&ElectionType::Parliamentary);
+		assert_eq!(parliament_ends, now + term / 2, "the first elected house sits half a term");
 
 		// Every house after it serves a full term, so the offset persists.
-		crate::ParliamentMembers::<Test>::kill();
-		crate::PendingSeatGrants::<Test>::kill();
-		crate::PendingSeatRevokes::<Test>::kill();
-		crate::PendingSeatTerm::<Test>::kill();
-		assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![4, 5]));
 		assert_eq!(
-			crate::TermEnds::<Test>::get(ElectionType::Parliamentary).unwrap(),
+			Welati::begin_term(&ElectionType::Parliamentary),
 			parliament_ends + term,
 			"and the ones after it serve whole terms from that anchor"
 		);
@@ -2821,6 +2814,175 @@ mod electoral_clock {
 		id
 	}
 
+	// ===== THE FOUNDING PERIOD =====
+	//
+	// The founding President (seated by genesis) and the founding house (seated by that
+	// President) are interim, and the register ends them: the day it reaches
+	// `FoundingPeriodThreshold` citizens, the elections that replace them open on their own.
+	// No date ends it, nothing the founding government can set brings it forward, and it
+	// does not come back.
+	mod founding_period {
+		use super::*;
+		use crate::{
+			mock::{
+				set_citizen_count, MockFoundingPeriodThreshold, MockPopulationThresholdOverride,
+			},
+			FirstElectionOwed, FoundingPeriodEnded, PopulationGateReported,
+		};
+
+		/// The state as genesis and the founding President leave it: a President with no
+		/// term, and a house seated without one.
+		fn found_the_state() {
+			seat_president(1);
+			TermEnds::<Test>::remove(ElectionType::Presidential);
+			assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
+			run_to_block(System::block_number() + 2);
+		}
+
+		fn open(election_type: ElectionType) -> Option<u32> {
+			OpenElection::<Test>::get(election_type)
+		}
+
+		/// Run the presidential election that is open to a seated winner.
+		fn win_the_open_presidential(winner: u64) {
+			let id = open(ElectionType::Presidential).expect("no presidential election is open");
+			let endorsers =
+				gather_endorsements(id, winner, crate::mock::PresidentialEndorsements::get());
+			assert_ok!(Welati::register_candidate(
+				RuntimeOrigin::signed(winner),
+				id,
+				None,
+				endorsers
+			));
+			let election = Welati::active_elections(id).unwrap();
+			run_to_block(election.voting_start + 1);
+			for voter in 1..=60u64 {
+				assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(voter), id, vec![winner], None));
+			}
+			run_to_block(election.end_block + 1);
+			assert_ok!(Welati::finalize_election(RuntimeOrigin::signed(99), id));
+		}
+
+		#[test]
+		fn below_the_threshold_the_founding_government_stays_however_long_it_takes() {
+			ExtBuilder::default().build().execute_with(|| {
+				MockFoundingPeriodThreshold::set(200); // the register holds 110
+				found_the_state();
+
+				run_to_block(System::block_number() + 3 * crate::mock::TermLength::get());
+
+				assert!(!FoundingPeriodEnded::<Test>::get());
+				assert_eq!(open(ElectionType::Presidential), None, "no presidential election");
+				assert_eq!(open(ElectionType::Parliamentary), None, "no parliamentary election");
+				assert_eq!(holder_of(Tiki::Serok), Some(1), "the founding President still sits");
+				assert!(Welati::is_parliament_member(&2), "and so does the founding house");
+			});
+		}
+
+		#[test]
+		fn reaching_the_threshold_opens_both_first_elections() {
+			ExtBuilder::default().build().execute_with(|| {
+				MockFoundingPeriodThreshold::set(200);
+				found_the_state();
+				run_to_block(30);
+				assert_eq!(open(ElectionType::Presidential), None);
+
+				MockFoundingPeriodThreshold::set(110); // the register reaches it
+				run_to_block(40);
+
+				assert!(FoundingPeriodEnded::<Test>::get());
+				assert!(open(ElectionType::Presidential).is_some(), "the President is replaced");
+				assert!(open(ElectionType::Parliamentary).is_some(), "and so is the house");
+				System::assert_has_event(RuntimeEvent::Welati(WelatiEvent::FoundingPeriodEnded {
+					citizen_count: 110,
+				}));
+			});
+		}
+
+		#[test]
+		fn the_payment_override_does_not_end_the_founding_period() {
+			// The override lowers the payment gate, and only that. If it reached this one, a
+			// founding government could lower the bar for its own replacement and choose
+			// the electorate that replaces it.
+			ExtBuilder::default().build().execute_with(|| {
+				MockFoundingPeriodThreshold::set(200);
+				MockPopulationThresholdOverride::set(50);
+				found_the_state();
+
+				run_to_block(100);
+
+				assert!(PopulationGateReported::<Test>::get(), "the payment gate did open");
+				assert!(!FoundingPeriodEnded::<Test>::get(), "the founding period did not end");
+				assert_eq!(open(ElectionType::Presidential), None);
+			});
+		}
+
+		#[test]
+		fn a_first_election_without_a_winner_is_opened_again() {
+			// Nobody stood, so nobody won, and the founding President is still sitting. If the
+			// first election were opened once and then forgotten, that would be the end of
+			// elections: the founding offices have no term for the clock to act on.
+			ExtBuilder::default().build().execute_with(|| {
+				MockFoundingPeriodThreshold::set(110);
+				found_the_state();
+				run_to_block(10);
+				let first = open(ElectionType::Presidential).expect("opened at the threshold");
+
+				let election = Welati::active_elections(first).unwrap();
+				run_to_block(election.end_block + 1);
+				assert_ok!(Welati::finalize_election(RuntimeOrigin::signed(99), first));
+				assert_eq!(open(ElectionType::Presidential), None, "it ended without a winner");
+				assert!(FirstElectionOwed::<Test>::contains_key(ElectionType::Presidential));
+
+				run_to_block(System::block_number() + crate::mock::PopulationCheckPeriod::get());
+				let second = open(ElectionType::Presidential).expect("the debt was not forgotten");
+				assert_ne!(second, first, "a new election, not the old one");
+			});
+		}
+
+		#[test]
+		fn a_seated_winner_settles_the_debt() {
+			ExtBuilder::default().build().execute_with(|| {
+				MockFoundingPeriodThreshold::set(110);
+				found_the_state();
+				run_to_block(10);
+
+				win_the_open_presidential(4);
+
+				assert_eq!(holder_of(Tiki::Serok), Some(4), "the elected President took office");
+				assert!(!FirstElectionOwed::<Test>::contains_key(ElectionType::Presidential));
+				assert!(
+					TermEnds::<Test>::get(ElectionType::Presidential).is_some(),
+					"from here on the office runs on its term like any elected one"
+				);
+
+				run_to_block(System::block_number() + crate::mock::PopulationCheckPeriod::get());
+				assert_eq!(open(ElectionType::Presidential), None, "nothing more is owed");
+			});
+		}
+
+		#[test]
+		fn the_founding_period_does_not_come_back() {
+			ExtBuilder::default().build().execute_with(|| {
+				MockFoundingPeriodThreshold::set(110);
+				found_the_state();
+				run_to_block(10);
+				assert!(FoundingPeriodEnded::<Test>::get());
+
+				set_citizen_count(10);
+				run_to_block(100);
+				assert!(FoundingPeriodEnded::<Test>::get(), "a smaller register does not undo it");
+
+				// And with it goes the one power the founding period had: appointing a house.
+				crate::ParliamentMembers::<Test>::kill();
+				assert_noop!(
+					Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![5, 6]),
+					Error::<Test>::FoundingPeriodOver
+				);
+			});
+		}
+	}
+
 	#[test]
 	fn winning_starts_a_mandate_that_runs_out() {
 		ExtBuilder::default().build().execute_with(|| {
@@ -3221,10 +3383,10 @@ fn listed_members() -> Vec<u64> {
 const CYCLE: u64 = 60;
 
 #[test]
-fn the_founding_parliament_is_seated_and_starts_the_clock() {
+fn the_founding_parliament_is_seated_without_a_clock() {
 	// The house that passes the first budget cannot itself have been elected -- there is
-	// nobody to elect it yet. What matters is that seating it starts the institutional clock,
-	// because that clock is the only thing that opens the first real election.
+	// nobody to elect it yet. It is seated without a term: what replaces it is the register
+	// reaching the founding threshold, not a calendar (see `mod founding_period`).
 	ExtBuilder::default().build().execute_with(|| {
 		seat_president(1);
 		let founding: Vec<u64> = (2..=6).collect();
@@ -3233,8 +3395,8 @@ fn the_founding_parliament_is_seated_and_starts_the_clock() {
 
 		assert_eq!(listed_members(), founding);
 		assert!(
-			crate::TermEnds::<Test>::contains_key(ElectionType::Parliamentary),
-			"seating the founding house has to start the clock, or the first election never opens"
+			!crate::TermEnds::<Test>::contains_key(ElectionType::Parliamentary),
+			"a term on the founding house would open its election by the calendar"
 		);
 
 		// The seats arrive over the following blocks, not in the call.
@@ -3244,30 +3406,23 @@ fn the_founding_parliament_is_seated_and_starts_the_clock() {
 }
 
 #[test]
-fn the_founding_parliament_is_temporary_by_construction() {
-	// It is not temporary because anyone promised to replace it: the seats carry the same
-	// term an elected house would, so they run out on their own.
+fn a_founding_seat_does_not_run_out() {
+	// A seat with an expiry would empty the founding house on a date, and an empty house
+	// opens an election -- the calendar coming back in by the side door.
 	ExtBuilder::default().build().execute_with(|| {
 		seat_president(1);
 		assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
 		run_to_block(System::block_number() + 2);
 
-		let term_end = crate::TermEnds::<Test>::get(ElectionType::Parliamentary).unwrap();
 		assert_eq!(
 			pezpallet_tiki::TikiExpiry::<Test>::get(2, pezpallet_tiki::Tiki::Parlementer),
-			Some(term_end + CYCLE),
-			"a seat outlives its term by one election cycle, so the house is never empty \
-			 while the next one is being counted"
+			None,
+			"a founding seat carries no expiry"
 		);
-
-		assert!(pezpallet_tiki::Pezpallet::<Test>::has_tiki(
-			&2,
-			&pezpallet_tiki::Tiki::Parlementer
-		));
-		run_to_block(term_end + CYCLE + 1);
+		run_to_block(System::block_number() + 3 * crate::mock::TermLength::get());
 		assert!(
-			!pezpallet_tiki::Pezpallet::<Test>::has_tiki(&2, &pezpallet_tiki::Tiki::Parlementer),
-			"the seat has to stop counting when its term is over, without anyone removing it"
+			pezpallet_tiki::Pezpallet::<Test>::has_tiki(&2, &pezpallet_tiki::Tiki::Parlementer),
+			"three full terms later the founding member still sits"
 		);
 	});
 }
@@ -3338,8 +3493,8 @@ fn a_member_who_keeps_their_seat_never_loses_it() {
 		// A new house: 3 stays, 2 and 4 go, 5 arrives.
 		let incoming = vec![3u64, 5];
 		let outgoing: Vec<u64> = vec![2, 3, 4];
-		let term_end = crate::TermEnds::<Test>::get(ElectionType::Parliamentary).unwrap() + 500;
-		assert_ok!(Welati::queue_seat_handover(&outgoing, &incoming, term_end));
+		let term_end = System::block_number() + crate::mock::TermLength::get();
+		assert_ok!(Welati::queue_seat_handover(&outgoing, &incoming, Some(term_end)));
 
 		assert_eq!(
 			Welati::pending_seat_revokes().to_vec(),
@@ -3379,23 +3534,24 @@ fn a_winner_who_is_no_longer_a_citizen_does_not_stall_the_queue() {
 }
 
 #[test]
-fn the_clock_and_not_the_roll_opens_the_next_election() {
-	// The ordinary path: a house is replaced when its term runs out. There is an emptiness
-	// arm beside it now -- see `an_emptied_house_does_not_wait_for_its_term` -- and this pins
-	// that the clock still opens the election on its own, and that seating the founding house
-	// is what starts that clock at all.
+fn an_elected_house_is_replaced_by_the_clock() {
+	// The ordinary path once the founding period is over: a house is replaced when its term
+	// runs out. There is an emptiness arm beside it -- see
+	// `an_emptied_house_does_not_wait_for_its_term`. An elected house is stood in for by its
+	// term, which is what the election's arm writes.
 	ExtBuilder::default().build().execute_with(|| {
 		seat_president(1);
 		assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
 		run_to_block(System::block_number() + 2);
+		let term_end = System::block_number() + crate::mock::TermLength::get();
+		crate::TermEnds::<Test>::insert(ElectionType::Parliamentary, term_end);
 		assert!(Welati::scheduled_election(ElectionType::Parliamentary).is_none());
 
-		let term_end = crate::TermEnds::<Test>::get(ElectionType::Parliamentary).unwrap();
 		// The election opens one cycle before the term ends, so the count is finished in time.
 		run_to_block(term_end - CYCLE);
 		assert!(
 			Welati::scheduled_election(ElectionType::Parliamentary).is_some(),
-			"the founding house has to hand over to an elected one on schedule"
+			"an elected house has to hand over to the next one on schedule"
 		);
 	});
 }
@@ -3428,6 +3584,11 @@ fn an_emptied_house_does_not_wait_for_its_term() {
 		seat_president(1);
 		assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
 		run_to_block(System::block_number() + 2);
+		// An elected house, as far as the scheduler can tell: one with a term.
+		crate::TermEnds::<Test>::insert(
+			ElectionType::Parliamentary,
+			System::block_number() + crate::mock::TermLength::get(),
+		);
 		assert!(
 			Welati::scheduled_election(ElectionType::Parliamentary).is_none(),
 			"a sitting house schedules nothing"

@@ -185,7 +185,7 @@ use pezpallet_identity_kyc::types::KycLevel;
 use pezpallet_identity_kyc::types::KycStatus;
 use pezpallet_tiki::{Tiki, TikiScoreProvider};
 use pezpallet_trust::TrustScoreProvider;
-use pezsp_runtime::traits::{Dispatchable, Saturating};
+use pezsp_runtime::traits::{Bounded, Dispatchable, Saturating};
 // Not feature-gated, for the same reason as `Currency` above: `return_candidacy_deposits`
 // calls `saturated_into` in every configuration.
 use pezsp_runtime::SaturatedConversion;
@@ -848,6 +848,16 @@ pub mod pezpallet {
 		/// one call the whole population makes.
 		#[pezpallet::constant]
 		type PopulationCheckPeriod: Get<BlockNumberFor<Self>>;
+
+		/// How many citizens the register must hold before the founding government is
+		/// replaced by election.
+		///
+		/// Its own constant rather than `PopulationThreshold`, though both runtimes bind the
+		/// two to the same number: the payment gate has `PopulationThresholdOverride` beside
+		/// it, and this one deliberately has nothing. There is no lower figure the founding
+		/// government could set, and no date that ends the founding period instead.
+		#[pezpallet::constant]
+		type FoundingPeriodThreshold: Get<u32>;
 	}
 
 	// --- CORE GOVERNANCE STORAGE ---
@@ -878,7 +888,8 @@ pub mod pezpallet {
 	/// When the seats being handed out run out.
 	///
 	/// Held here rather than in each queue entry because every seat in one handover ends on
-	/// the same day -- the house has one term, not two hundred and one.
+	/// the same day -- the house has one term, not two hundred and one. Absent while the
+	/// founding house is seated: its seats have no term.
 	#[pezpallet::storage]
 	pub type PendingSeatTerm<T: Config> = StorageValue<_, BlockNumberFor<T>, OptionQuery>;
 
@@ -1207,6 +1218,28 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn population_gate_reported)]
 	pub type PopulationGateReported<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+	/// Whether the founding period is over.
+	///
+	/// The founding government -- the President genesis seats and the house that President
+	/// seats -- is interim, and one thing ends it: the register reaching
+	/// `FoundingPeriodThreshold` citizens. Not a date. A state of a few thousand electing two hundred and one
+	/// representatives would be a vote in name only, and a deadline would force exactly that
+	/// if the register grew slowly; so the founding government sits for as long as it takes,
+	/// and the day the threshold is crossed the first elections open on their own. Latched:
+	/// a register that later dips below the threshold does not bring the founding period back.
+	#[pezpallet::storage]
+	pub type FoundingPeriodEnded<T: Config> = StorageValue<_, bool, ValueQuery>;
+
+	/// The first elections the end of the founding period owes, until each produces a winner.
+	///
+	/// An election can end without one -- nobody stood, or the count failed -- and the
+	/// founding office it was meant to replace is then still sitting. Owed until a winner is
+	/// seated, so the next check opens it again rather than leaving the interim government in
+	/// place for good.
+	#[pezpallet::storage]
+	pub type FirstElectionOwed<T: Config> =
+		StorageMap<_, Blake2_128Concat, ElectionType, (), OptionQuery>;
+
 	/// Initiatives open for backing, and those that closed but were not yet settled.
 	#[pezpallet::storage]
 	pub type Initiatives<T: Config> = StorageMap<
@@ -1363,7 +1396,7 @@ pub mod pezpallet {
 		ParliamentUpdated { new_members: Vec<T::AccountId>, term_start: BlockNumberFor<T> },
 
 		/// The founding parliament was seated by the President before the first election.
-		FoundingParliamentSeated { members: Vec<T::AccountId>, term_ends_at: BlockNumberFor<T> },
+		FoundingParliamentSeated { members: Vec<T::AccountId> },
 
 		/// Every seat in a handover has changed hands.
 		SeatHandoverCompleted,
@@ -1492,6 +1525,10 @@ pub mod pezpallet {
 			vetoed_by: T::AccountId,
 			reason: BoundedVec<u8, ConstU32<1000>>,
 		},
+
+		/// The register reached the population threshold: the founding period is over, and
+		/// the elections that replace the founding President and house are opening.
+		FoundingPeriodEnded { citizen_count: u32 },
 	}
 
 	#[pezpallet::error]
@@ -1683,6 +1720,8 @@ pub mod pezpallet {
 		AppointedRewsenbirLimitReached,
 		/// The approver nominated this appointee; an appointment has two parties.
 		CannotApproveOwnNomination,
+		/// The founding period is over; a house now comes only from an election.
+		FoundingPeriodOver,
 	}
 
 	#[pezpallet::hooks]
@@ -1697,6 +1736,7 @@ pub mod pezpallet {
 			let mut weight = Self::process_seat_handover();
 			weight = weight.saturating_add(Self::schedule_due_elections(n));
 			weight = weight.saturating_add(Self::check_population_gate(n));
+			weight = weight.saturating_add(Self::end_founding_period(n));
 			weight
 		}
 
@@ -1797,12 +1837,23 @@ pub mod pezpallet {
 				}
 			}
 
-			// A queued handover has to have a term to hand out, and a finished one must not
-			// leave the term behind: a stale term would be given to the next house.
+			// A finished handover must not leave its term behind: a stale term would be given
+			// to the next house. The other direction is not an invariant any more -- the
+			// founding house is seated with no term at all -- and an elected house cannot be
+			// queued without one, because the election's arm is the only caller that passes
+			// a term and it always does.
 			let handover_running = !PendingSeatGrants::<T>::get().is_empty() || !leaving.is_empty();
 			ensure!(
-				handover_running == PendingSeatTerm::<T>::exists(),
-				"the seat handover queue and the term it hands out disagree"
+				handover_running || !PendingSeatTerm::<T>::exists(),
+				"a finished seat handover left its term behind"
+			);
+
+			// The founding period's bookkeeping: a first election is owed only once the
+			// period is over.
+			ensure!(
+				FoundingPeriodEnded::<T>::get()
+					|| FirstElectionOwed::<T>::iter_keys().next().is_none(),
+				"a first election is owed while the founding period is still running"
 			);
 
 			// Nobody is serving more consecutive terms than the office allows. The limit is
@@ -1977,6 +2028,59 @@ pub mod pezpallet {
 			}
 
 			T::DbWeight::get().reads_writes(3, 1)
+		}
+
+		/// End the founding period once the register is large enough, and open what it owes.
+		///
+		/// Checked on the population gate's period, against `FoundingPeriodThreshold`, which
+		/// has no override: the payment gate's lets the register bring the first payment
+		/// forward, and a founding government able to lower the bar for its own replacement
+		/// could choose the electorate that replaces it.
+		///
+		/// The founding offices have no term (`seat_founding_parliament`, and genesis seats
+		/// the President without one), so the ordinary scheduler never opens their elections
+		/// -- this is the only thing that does. Each first election stays owed until it
+		/// seats somebody.
+		fn end_founding_period(n: BlockNumberFor<T>) -> Weight {
+			let period = T::PopulationCheckPeriod::get();
+			if period.is_zero() || !(n % period).is_zero() {
+				return Weight::zero();
+			}
+			let mut weight = T::DbWeight::get().reads(1);
+
+			if !FoundingPeriodEnded::<T>::get() {
+				let citizen_count = T::CitizenSource::citizen_count();
+				weight = weight.saturating_add(T::DbWeight::get().reads(1));
+				if citizen_count < T::FoundingPeriodThreshold::get() {
+					return weight;
+				}
+				FoundingPeriodEnded::<T>::put(true);
+				FirstElectionOwed::<T>::insert(ElectionType::Presidential, ());
+				FirstElectionOwed::<T>::insert(ElectionType::Parliamentary, ());
+				weight = weight.saturating_add(T::DbWeight::get().writes(3));
+				Self::deposit_event(Event::FoundingPeriodEnded { citizen_count });
+			}
+
+			for election_type in [ElectionType::Presidential, ElectionType::Parliamentary] {
+				weight = weight.saturating_add(T::DbWeight::get().reads(2));
+				if !FirstElectionOwed::<T>::contains_key(election_type)
+					|| OpenElection::<T>::contains_key(election_type)
+				{
+					continue;
+				}
+				weight = weight.saturating_add(<T as Config>::WeightInfo::initiate_election());
+				if Self::initiate_election(
+					pezframe_system::RawOrigin::Root.into(),
+					election_type,
+					None,
+					None,
+				)
+				.is_ok()
+				{
+					Self::deposit_event(Event::ElectionScheduled { election_type });
+				}
+			}
+			weight
 		}
 	}
 
@@ -3146,10 +3250,18 @@ pub mod pezpallet {
 		/// budget has to be there before there is anyone to elect it. So the President seats
 		/// it, once, and only while no house sits.
 		///
-		/// It is temporary by construction rather than by promise. The seats carry the
-		/// institutional term, exactly as elected ones do, and seating the house starts the
-		/// clock that makes the scheduler open the first real election. When that election is
-		/// counted these members are replaced wholesale, through the same queue.
+		/// It is interim, and what ends it is the register rather than a calendar. The seats
+		/// carry no term, and seating the house starts no clock: the first parliamentary
+		/// election opens the day the register reaches `FoundingPeriodThreshold` citizens (see
+		/// `end_founding_period`), and until then this house sits. When that election is
+		/// counted these members are replaced wholesale, through the same queue. It used to
+		/// carry half an institutional term instead, which would have put the first vote two
+		/// years in whatever the roll's size -- a house of two hundred and one chosen by a few
+		/// thousand voters.
+		///
+		/// Only during the founding period. Once it is over, a house comes from an election
+		/// and from nothing else, even an empty one -- `schedule_due_elections` opens the vote
+		/// for that.
 		///
 		/// No minimum size is imposed. `get_voting_threshold` counts against `ParliamentSize`
 		/// -- the constant, not the number of people sitting -- so a founding house of twenty
@@ -3175,11 +3287,15 @@ pub mod pezpallet {
 			members: Vec<T::AccountId>,
 		) -> DispatchResult {
 			Self::ensure_root_or_serok(origin)?;
+			ensure!(!FoundingPeriodEnded::<T>::get(), Error::<T>::FoundingPeriodOver);
 			ensure!(ParliamentMembers::<T>::get().is_empty(), Error::<T>::ParliamentAlreadySeated);
 			ensure!(!members.is_empty(), Error::<T>::ParliamentFull);
 
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
-			let term_end = Self::begin_term(&ElectionType::Parliamentary);
+			// No term: the founding house sits until the elected one replaces it. The field
+			// is informational -- nothing reads a member's term to decide anything -- and the
+			// largest block number says "not by the clock" in the only way the type allows.
+			let term_end = BlockNumberFor::<T>::max_value();
 
 			let seated: BoundedVec<_, T::ParliamentSize> = members
 				.iter()
@@ -3198,12 +3314,9 @@ pub mod pezpallet {
 
 			ParliamentMembers::<T>::put(seated);
 			T::HouseRoster::set_members(members.clone());
-			Self::queue_seat_handover(&[], &members, term_end)?;
+			Self::queue_seat_handover(&[], &members, None)?;
 
-			Self::deposit_event(Event::FoundingParliamentSeated {
-				members,
-				term_ends_at: term_end,
-			});
+			Self::deposit_event(Event::FoundingParliamentSeated { members });
 			Ok(())
 		}
 
@@ -4426,6 +4539,7 @@ pub mod pezpallet {
 						let ends_at = Self::begin_term(election_type);
 						Self::seat_elected_tiki(winner, Tiki::Serok, ends_at)?;
 						Self::record_consecutive_term(election_type, winner);
+						FirstElectionOwed::<T>::remove(election_type);
 					}
 				},
 				ElectionType::Parliamentary => {
@@ -4466,7 +4580,8 @@ pub mod pezpallet {
 							parliament_members.map_err(|_| Error::<T>::ParliamentFull)?,
 						);
 						T::HouseRoster::set_members(winners.to_vec());
-						Self::queue_seat_handover(&outgoing, winners, term_end)?;
+						Self::queue_seat_handover(&outgoing, winners, Some(term_end))?;
+						FirstElectionOwed::<T>::remove(election_type);
 
 						Self::deposit_event(Event::ParliamentUpdated {
 							new_members: winners.to_vec(),
@@ -4689,7 +4804,7 @@ pub mod pezpallet {
 		/// one back by however late the count was, and the whole calendar would drift a
 		/// little further every cycle until elections landed wherever the last delay left
 		/// them. Anchoring to the previous term keeps the cycle fixed.
-		fn begin_term(election_type: &ElectionType) -> BlockNumberFor<T> {
+		pub(crate) fn begin_term(election_type: &ElectionType) -> BlockNumberFor<T> {
 			let now = pezframe_system::Pezpallet::<T>::block_number();
 			let length = Self::term_length_of(election_type);
 			let previous = TermEnds::<T>::get(election_type);
@@ -4910,10 +5025,11 @@ pub mod pezpallet {
 		///
 		/// Only the difference: a member returned to their seat keeps their tiki untouched,
 		/// so the trust score behind it never dips and the NFT is not rewritten for nothing.
+		/// `term_ends_at` is `None` for the founding house, whose seats have no term.
 		pub(crate) fn queue_seat_handover(
 			outgoing: &[T::AccountId],
 			incoming: &[T::AccountId],
-			term_ends_at: BlockNumberFor<T>,
+			term_ends_at: Option<BlockNumberFor<T>>,
 		) -> Result<(), Error<T>> {
 			ensure!(
 				PendingSeatRevokes::<T>::get().is_empty()
@@ -4934,16 +5050,19 @@ pub mod pezpallet {
 			// Everyone who kept their seat keeps it under the new term, and that is a
 			// bounded rewrite of the expiry alone -- no grant, no metadata, no queue.
 			for member in incoming.iter().filter(|who| outgoing.contains(who)) {
-				pezpallet_tiki::TikiExpiry::<T>::insert(
-					member,
-					Tiki::Parlementer,
-					Self::seat_expiry(term_ends_at),
-				);
+				match term_ends_at {
+					Some(end) => pezpallet_tiki::TikiExpiry::<T>::insert(
+						member,
+						Tiki::Parlementer,
+						Self::seat_expiry(end),
+					),
+					None => pezpallet_tiki::TikiExpiry::<T>::remove(member, Tiki::Parlementer),
+				}
 			}
 
 			PendingSeatRevokes::<T>::put(revokes);
 			PendingSeatGrants::<T>::put(grants);
-			PendingSeatTerm::<T>::put(term_ends_at);
+			PendingSeatTerm::<T>::set(term_ends_at);
 			Ok(())
 		}
 
