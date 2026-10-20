@@ -1291,12 +1291,13 @@ fn pezkuwichain_mainnet_simulation_genesis() -> serde_json::Value {
 				.collect::<Vec<_>>(),
 		},
 		babe: BabeConfig { epoch_config: BABE_GENESIS_EPOCH_CONFIG },
-		// Mainnet's root is its own key now, not the founder's. A simulation that keeps
-		// the old shape rehearses a chain that no longer exists.
-		// SS58: 5D4o1HMKEntLafi1f2tz4U9XVZpg1gz5YAR6mgcgoPT4jgzU
+		// Mainnet's root is its signers' 2-of-3 multisig now (`pezkuwichain_runtime_constants::
+		// genesis::SUDO_MULTISIG`), not the founder's key and not one key. A simulation that
+		// keeps an old shape rehearses a chain that no longer exists.
+		// SS58: 5FkoDQZX5cd9vQBzaf2zAqSrE99j91Sman3cdZvjKDC3rzrD
 		sudo: SudoConfig {
 			key: Some(
-				hex!("2c4d909d9cba926dcf9cad71a154cc64adbbb0e8066b353a10e062707199c97c").into(),
+				hex!("a3488d3aade054ace7500f51c3db8c0bfb1fe633a9ec227dd75615bbac448f95").into(),
 			),
 		},
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },

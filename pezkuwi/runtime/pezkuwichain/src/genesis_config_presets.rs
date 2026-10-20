@@ -253,12 +253,40 @@ fn hez_allocations_sum_to_200m() {
 	assert_eq!(here + elsewhere, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
 }
 
+/// Root is the multisig its signers can actually sign for.
+///
+/// The root key is written down as a constant and the signers beside it; nothing on chain ties
+/// them together. If a signer is replaced and the key is not, the chain launches with a root
+/// nobody can sign for, and there is no way back from that. So the key is derived here the way
+/// the multisig pallet derives it, from the signers and the threshold, and must match.
+#[test]
+fn the_root_key_is_the_signers_multisig() {
+	let mut signers: Vec<AccountId> = pezkuwichain_runtime_constants::genesis::SUDO_SIGNERS
+		.iter()
+		.map(|s| AccountId::from(*s))
+		.collect();
+	signers.sort();
+	let derived = pezpallet_multisig::Pezpallet::<crate::Runtime>::multi_account_id(
+		&signers,
+		pezkuwichain_runtime_constants::genesis::SUDO_THRESHOLD,
+	);
+	assert_eq!(
+		derived,
+		AccountId::from(pezkuwichain_runtime_constants::genesis::SUDO_MULTISIG),
+		"SUDO_MULTISIG is not the multisig of SUDO_SIGNERS at SUDO_THRESHOLD"
+	);
+	let genesis = pezkuwichain_genesis_config();
+	let root = genesis["sudo"]["key"].as_str().expect("the genesis names a root key");
+	assert_eq!(serde_json::to_value(&derived).expect("an account serialises").as_str(), Some(root));
+}
+
 /// Root can pay for its own first call.
 ///
 /// The two supply tests above both stay green whether root is funded or not, because the
 /// funding is carved out of the founder's share -- the total never moves. That is the right
 /// shape for the supply and the wrong shape for a guard, so the guard is here: it reads the
-/// key out of `SudoConfig` and asks what the genesis actually mints to it.
+/// key out of `SudoConfig` and asks what the genesis actually mints to whoever signs for it.
+/// Root is a multisig, so that is its three signers, and the multisig itself starts empty.
 ///
 /// Measured 2026-09-14 on Zagros, whose root is a separate key for the same reason: root held nothing, `sudo_schedule_para_initialize`
 /// could not pay its fee, and the teyrchains could not be registered until an account was funded
@@ -278,13 +306,23 @@ fn sudo_starts_with_a_fee_budget() {
 	let balances = genesis["balances"]["balances"]
 		.as_array()
 		.expect("the balances patch is an array of (account, amount)");
+	let minted_to = |who: &str| -> u128 {
+		balances.iter().filter(|e| e[0].as_str() == Some(who)).map(amount).sum()
+	};
 
-	let to_root: u128 = balances.iter().filter(|e| e[0].as_str() == Some(root)).map(amount).sum();
-	assert_eq!(
-		to_root,
-		pezkuwichain_runtime_constants::currency::HEZ_SUDO_FUNDING,
-		"root must launch with its fee budget -- without it the first sudo call cannot pay"
-	);
+	assert_eq!(minted_to(root), 0, "the multisig pays nothing itself; its signers do");
+	let mut to_signers = 0;
+	for signer in pezkuwichain_runtime_constants::genesis::SUDO_SIGNERS {
+		let signer = serde_json::to_value(AccountId::from(signer)).expect("an account serialises");
+		let got = minted_to(signer.as_str().expect("an account serialises to a string"));
+		assert_eq!(
+			got,
+			pezkuwichain_runtime_constants::currency::HEZ_SUDO_SIGNER_FUNDING,
+			"every signer must launch with its fee budget -- the one who submits pays"
+		);
+		to_signers += got;
+	}
+	assert_eq!(to_signers, pezkuwichain_runtime_constants::currency::HEZ_SUDO_FUNDING);
 
 	// Carved, not added. If someone later funds root by minting extra, the supply tests catch
 	// it; if they fund it by taking from somewhere that is not the founder, only this does.
@@ -306,7 +344,7 @@ fn sudo_starts_with_a_fee_budget() {
 			- pezkuwichain_runtime_constants::currency::HEZ_SUDO_FUNDING
 			- pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
 			- pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT
-						- pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_CARVE_OUT
+			- pezkuwichain_runtime_constants::currency::HEZ_COLLATOR_POT_CARVE_OUT
 			- pezkuwichain_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT,
 		"root's budget, the founding office's, the accumulation accounts', the collators' pots and \
 		 the genesis validators' stakes come out of the founder's allocation, not on top of it"
@@ -812,17 +850,20 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	let founder_account: AccountId =
 		hex!("3a4eed1ba224f6d76dec6f24da10b850248dc8db5e8de7effcaf25bea977fe7f").into();
 
-	// The chain's root key -- its own account, no longer the founder's.
+	// The chain's root key -- its own account, not the founder's, and not one key at all.
 	//
 	// It used to be `founder_account`, which put root authority and personal property on one
 	// key: losing or leaking it would not have cost the founder money, it would have handed
-	// over the chain. Root is also the one authority meant to be retired, and retiring an
-	// account is cleaner than retiring a person's wallet. Zagros has rehearsed the separate-key
-	// shape since its own genesis; a testnet that rehearses a different topology than the
-	// mainnet is not rehearsing the mainnet.
-	// SS58: 5D4o1HMKEntLafi1f2tz4U9XVZpg1gz5YAR6mgcgoPT4jgzU
-	let sudo_account: AccountId =
-		hex!("2c4d909d9cba926dcf9cad71a154cc64adbbb0e8066b353a10e062707199c97c").into();
+	// over the chain. Then it was one separate key, which still put the chain one theft or one
+	// loss away. Now it is the 2-of-3 multisig of `genesis::SUDO_SIGNERS` (decided 2026-10-20),
+	// derived rather than held; `the_root_key_is_the_signers_multisig` derives it again. Root is
+	// also the one authority meant to be retired, and retiring an account is cleaner than
+	// retiring a person's wallet.
+	let sudo_account: AccountId = pezkuwichain_runtime_constants::genesis::SUDO_MULTISIG.into();
+	let sudo_signers: Vec<AccountId> = pezkuwichain_runtime_constants::genesis::SUDO_SIGNERS
+		.iter()
+		.map(|s| AccountId::from(*s))
+		.collect();
 
 	// The founding office: holder of `Tiki::Serok` on the People chain, funded on all three.
 	//
@@ -1431,11 +1472,24 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 						// The genesis validators' stakes, minted and bonded on the Asset Hub.
 						- pezkuwichain_runtime_constants::currency::HEZ_GENESIS_STAKE_CARVE_OUT,
 				),
-				// Root's fee budget. Carved out of the founder's share, not added to it, so the
-				// genesis total is untouched -- the same shape as `HEZ_VALIDATOR_FUNDING` coming
-				// out of the treasury's. Without it the first `sudo` call cannot pay its fee and
-				// the chain launches ungovernable.
-				(sudo_account.clone(), pezkuwichain_runtime_constants::currency::HEZ_SUDO_FUNDING,),
+				// Root's fee budget, held by its three signers: a multisig account pays nothing
+				// itself -- the signer who submits `as_multi` pays the fee and holds the deposit.
+				// Carved out of the founder's share, not added to it, so the genesis total is
+				// untouched -- the same shape as `HEZ_VALIDATOR_FUNDING` coming out of the
+				// treasury's. Without it the first `sudo` call cannot pay and the chain launches
+				// ungovernable.
+				(
+					sudo_signers[0].clone(),
+					pezkuwichain_runtime_constants::currency::HEZ_SUDO_SIGNER_FUNDING,
+				),
+				(
+					sudo_signers[1].clone(),
+					pezkuwichain_runtime_constants::currency::HEZ_SUDO_SIGNER_FUNDING,
+				),
+				(
+					sudo_signers[2].clone(),
+					pezkuwichain_runtime_constants::currency::HEZ_SUDO_SIGNER_FUNDING,
+				),
 				// The founding office's fee budget on this chain. Two more like it are minted
 				// on the Asset Hub and on People; all three come out of the founder's line
 				// above through `HEZ_FOUNDING_OFFICE_CARVE_OUT`, and the two that are held
@@ -1598,13 +1652,10 @@ fn pezkuwichain_mainnet_simulation_genesis() -> serde_json::Value {
 				.collect::<Vec<_>>(),
 		},
 		babe: BabeConfig { epoch_config: BABE_GENESIS_EPOCH_CONFIG },
-		// Mainnet's root is its own key now, not the founder's. A simulation that keeps
-		// the old shape rehearses a chain that no longer exists.
-		// SS58: 5D4o1HMKEntLafi1f2tz4U9XVZpg1gz5YAR6mgcgoPT4jgzU
+		// Mainnet's root is the signers' multisig now, not the founder's key and not one key.
+		// A simulation that keeps an old shape rehearses a chain that no longer exists.
 		sudo: SudoConfig {
-			key: Some(
-				hex!("2c4d909d9cba926dcf9cad71a154cc64adbbb0e8066b353a10e062707199c97c").into(),
-			),
+			key: Some(pezkuwichain_runtime_constants::genesis::SUDO_MULTISIG.into()),
 		},
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },
 		registrar: RegistrarConfig { next_free_para_id: pezkuwi_primitives::LOWEST_PUBLIC_ID },
