@@ -1629,7 +1629,7 @@ wasm-bindgen-test = { version = "0.3.24" }
 wasm-encoder = { version = "0.236.1", default-features = false }
 wasm-opt = { version = "0.116" }
 wasmparser = { version = "0.236.1", default-features = false }
-wasmtime = { version = "36.0.18", default-features = false }
+wasmtime = { version = "36.0.19", default-features = false }
 wat = { version = "1.0.0" }
 web-sys = { version = "0.3.70" }
 web-time = { version = "1.1", default-features = false }
