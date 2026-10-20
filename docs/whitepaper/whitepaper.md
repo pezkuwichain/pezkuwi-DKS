@@ -138,8 +138,10 @@ not need to win an election, and the relay's own governance weighs tokens where 
 counts heads — so a token majority upstairs must not be able to decide who is a person
 downstairs. What remains for the founding period is narrower and named: an office the People
 chain's genesis seats, holding `Tiki::Serok`, which can seat the first parliament once and
-appoint the first court. Its authority expires the way an elected one does, by the term clock
-that seating starts.
+appoint the first court. Its authority ends with the founding period, and one thing ends that:
+the register reaching a hundred thousand citizens. That day the elections that replace the
+founding President and house open on their own. Until then they sit, however long it takes, and
+neither a date nor any setting the founding government controls brings that day forward.
 
 **When it retires is a measurement, not a date.** The referendum seat is only occupied once
 the register can actually fill it: the support floor in §3.1 means a question needs two
@@ -339,7 +341,7 @@ Two hundred and one seats, four years, elected across ten districts. A candidate
 trust score of at least 100 and a hundred endorsements, and the election requires forty
 percent turnout.
 
-**The first parliament sits for half a term.** This is deliberate: it staggers the
+**The first elected parliament sits for half a term.** This is deliberate: it staggers the
 legislature against the presidency permanently, so that no single election ever renews the
 whole state at once.
 
@@ -349,8 +351,11 @@ seat needs a trust score, trust needs stake and history, and on the first day no
 `Tiki::Serok`, whom the chain's genesis names. That is not a convenience: the register is closed
 to messages from other chains, so no external root can reach it, and the chain's own root track
 needs the very electorate the register has yet to record. The founding office is the only hand
-that exists, it can seat the house exactly once, and the seats it fills carry the ordinary term
-clock that brings the first real election.
+that exists, and it can seat the house exactly once, during the founding period only. The seats
+it fills carry no term: the founding house sits until the register reaches a hundred thousand
+citizens, and the first real election opens that day on its own. A deadline would have forced
+that election on a register of a few thousand, two hundred and one representatives chosen by
+almost nobody.
 
 ### 5.3 Serokê Meclisê — the Speaker
 

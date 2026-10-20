@@ -1711,6 +1711,10 @@ impl pezpallet_welati::Config for Runtime {
 	type PopulationThreshold = WelatiPopulationThreshold;
 	type PopulationThresholdOverride = crate::dynamic_params::qeyd::PopulationThresholdOverride;
 	type PopulationCheckPeriod = WelatiPopulationCheckPeriod;
+	// The same figure as the payment gate, and on purpose without its override: the founding
+	// government stays until the register reaches it, however long that takes, and nothing
+	// it can set brings its own replacement forward.
+	type FoundingPeriodThreshold = WelatiPopulationThreshold;
 }
 
 // =============================================================================

@@ -1469,7 +1469,10 @@ parameter_types! {
 	/// a rate moved faster than its own effect can be observed is not policy, it is guessing.
 	pub const WelatiMinEmissionInterval: BlockNumber = 90 * DAYS;
 
-	/// The state starts paying its citizens once there are a hundred thousand of them.
+	/// The state starts paying its citizens once there are a hundred thousand of them, and
+	/// elects its first government at the same size: the founding President and house sit
+	/// until the register reaches it, and the elections that replace them open on their own
+	/// the day it does.
 	pub const WelatiPopulationThreshold: u32 = 100_000;
 	/// The size support is measured against while the roll is smaller than it.
 	///
@@ -1689,6 +1692,10 @@ impl pezpallet_welati::Config for Runtime {
 	type PopulationThreshold = WelatiPopulationThreshold;
 	type PopulationThresholdOverride = crate::dynamic_params::qeyd::PopulationThresholdOverride;
 	type PopulationCheckPeriod = WelatiPopulationCheckPeriod;
+	// The same figure as the payment gate, and on purpose without its override: the founding
+	// government stays until the register reaches it, however long that takes, and nothing
+	// it can set brings its own replacement forward.
+	type FoundingPeriodThreshold = WelatiPopulationThreshold;
 }
 
 // =============================================================================
