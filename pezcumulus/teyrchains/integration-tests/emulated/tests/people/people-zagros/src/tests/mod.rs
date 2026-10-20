@@ -15,6 +15,7 @@
 
 mod aliases;
 mod claim_assets;
+mod committee_rehearsal;
 mod governance;
 mod government_spend;
 mod identity;
