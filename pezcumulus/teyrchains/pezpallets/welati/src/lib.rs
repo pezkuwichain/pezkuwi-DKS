@@ -1771,13 +1771,24 @@ pub mod pezpallet {
 			// scheduler is meant to see it. What must not happen is the reverse: somebody
 			// seated in an elected office with no mandate recorded at all, which is an
 			// officeholder no clock will ever remove.
+			//
+			// With one exception, and only one: the founding President. Genesis seats them
+			// with no term, because what replaces them is the register reaching the founding
+			// threshold rather than a date, and `end_founding_period` -- not a clock -- is
+			// what removes them. That lasts until an election has seated a successor. This
+			// check used to allow no exception at all, which every founded chain contradicted
+			// from its first block.
+			let founding_president = !FoundingPeriodEnded::<T>::get()
+				|| FirstElectionOwed::<T>::contains_key(ElectionType::Presidential);
 			for (election_type, tiki) in [
 				(ElectionType::Presidential, Tiki::Serok),
 				(ElectionType::SpeakerElection, Tiki::SerokiMeclise),
 			] {
 				if pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki).is_some() {
+					let founding =
+						election_type == ElectionType::Presidential && founding_president;
 					ensure!(
-						TermEnds::<T>::contains_key(election_type),
+						founding || TermEnds::<T>::contains_key(election_type),
 						"an elected office is held under no mandate"
 					);
 				}

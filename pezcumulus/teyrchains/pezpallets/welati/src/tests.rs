@@ -2961,6 +2961,23 @@ mod electoral_clock {
 			});
 		}
 
+		/// The founding President is the one officeholder allowed no mandate, and only until a
+		/// successor is elected. After that the exception is gone.
+		#[cfg(feature = "try-runtime")]
+		#[test]
+		#[should_panic(expected = "an elected office is held under no mandate")]
+		fn after_the_founding_period_every_president_has_a_mandate() {
+			ExtBuilder::default().build().execute_with(|| {
+				MockFoundingPeriodThreshold::set(110);
+				found_the_state();
+				run_to_block(10);
+				win_the_open_presidential(4);
+
+				TermEnds::<Test>::remove(ElectionType::Presidential);
+				crate::mock::check_invariants();
+			});
+		}
+
 		#[test]
 		fn the_founding_period_does_not_come_back() {
 			ExtBuilder::default().build().execute_with(|| {
@@ -3333,9 +3350,12 @@ mod invariant {
 	#[test]
 	fn an_elected_office_held_under_no_mandate_is_caught() {
 		// An officeholder no clock will ever remove: nothing schedules an election, because
-		// there is no term running down to schedule it against.
+		// there is no term running down to schedule it against. Past the founding period, and
+		// with no first election owed -- before that, the founding President is the one holder
+		// allowed no mandate (see `founding_period`).
 		ExtBuilder::default().build().execute_with(|| {
 			seated_president();
+			crate::FoundingPeriodEnded::<Test>::put(true);
 			TermEnds::<Test>::remove(ElectionType::Presidential);
 			assert_rejected("somebody held an elected office with no mandate recorded");
 		});
