@@ -27667,6 +27667,7 @@ dependencies = [
  "emulated-integration-tests-common",
  "pezkuwi-primitives",
  "pezpallet-staking",
+ "pezpallet-staking-async-ah-client",
  "pezsc-consensus-grandpa",
  "pezsp-authority-discovery",
  "pezsp-consensus-babe",

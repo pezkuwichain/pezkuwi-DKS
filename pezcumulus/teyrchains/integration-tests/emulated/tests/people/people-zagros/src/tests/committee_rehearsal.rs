@@ -127,13 +127,13 @@ fn give_standing(who: &AccountId, stratum: StratumId) {
 ///
 /// Returns every candidate with the stratum they joined.
 fn fill_the_pool(short: Option<StratumId>) -> Vec<(AccountId, StratumId)> {
-	// The relay's `ah_client` refuses a validator set unless it is `Active`. Every genesis
-	// preset of the Zagros relay starts it `Active`; the emulated relay's genesis leaves the
-	// pallet at its default, `Passive`, and would refuse the committee for a reason production
-	// does not have.
+	// The relay's `ah_client` refuses a validator set unless it is `Active`, which the emulated
+	// relay's genesis sets, as every real Zagros preset does.
 	Zagros::execute_with(|| {
-		pezpallet_staking_async_ah_client::Mode::<RelayRuntime>::put(
+		assert_eq!(
+			pezpallet_staking_async_ah_client::Mode::<RelayRuntime>::get(),
 			pezpallet_staking_async_ah_client::OperatingMode::Active,
+			"the relay would refuse the committee for a reason the live chain does not have"
 		);
 		assert!(
 			pezpallet_staking_async_ah_client::ValidatorSet::<RelayRuntime>::get().is_none(),

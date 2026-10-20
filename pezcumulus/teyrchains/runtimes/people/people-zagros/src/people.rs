@@ -2214,13 +2214,6 @@ parameter_types! {
 }
 
 pezframe_support::parameter_types! {
-	/// How long unbroken, offence-free pool membership must run before it is standing.
-	///
-	/// **Deliberately not the mainnet figure.** A year here would mean the gate never closes
-	/// inside the life of a test network, so the strict half would ship unexercised -- and the
-	/// grace window doubles as the qualifying window, so a network that never leaves grace
-	/// never demonstrates either. Thirty days closes inside a testnet's life and is still far
-	/// longer than any single run.
 	/// Standing the open lottery asks of an ordinary citizen: forty.
 	///
 	/// Exactly what an account that stakes the smallest tier and does nothing else scores, so
@@ -2244,6 +2237,13 @@ pezframe_support::parameter_types! {
 	/// Two here rather than three, so a pattern can be demonstrated inside a test run.
 	pub const TnposCoFailureRepeats: u32 = 2;
 
+	/// How long unbroken, offence-free pool membership must run before it is standing.
+	///
+	/// **Deliberately not the mainnet figure.** A year here would mean the gate never closes
+	/// inside the life of a test network, so the strict half would ship unexercised -- and the
+	/// grace window doubles as the qualifying window, so a network that never leaves grace
+	/// never demonstrates either. Thirty days closes inside a testnet's life and is still far
+	/// longer than any single run.
 	pub const TnposTenurePeriod: BlockNumber = 30 * DAYS;
 }
 
@@ -2369,7 +2369,7 @@ impl pezpallet_tnpos::SendKeysToRelay<AccountId> for KeysToRelay {
 /// A send that fails is *not* retried. The relay keeps validating with the previous committee,
 /// which is safe -- those validators are still elected members of the register -- and the next
 /// era draws again. What must not happen is that the failure is invisible, so the pallet emits
-/// `CommitteeExportFailed`; a run of them means the era clock here and the validator set there
+/// `CommitteeCouldNotBeSent`; a run of them means the era clock here and the validator set there
 /// have come apart, and that is an operational alarm, not a state to reconcile in code.
 pub struct CommitteeToRelay;
 impl pezpallet_tnpos::SendCommitteeToRelay<AccountId> for CommitteeToRelay {

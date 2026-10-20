@@ -2195,12 +2195,6 @@ parameter_types! {
 }
 
 pezframe_support::parameter_types! {
-	/// How long unbroken, offence-free pool membership must run before it is standing: one year.
-	///
-	/// Long enough that it cannot be waited out inside one attack, and the only qualification
-	/// in the nine strata that nobody can grant. Its own grace window is the same length: the
-	/// chain admits on trust until it is a year old, and the people admitted that way are
-	/// exactly the ones serving the year.
 	/// Standing the open lottery asks of an ordinary citizen: forty.
 	///
 	/// Exactly what an account that stakes the smallest tier and does nothing else scores, so
@@ -2225,6 +2219,12 @@ pezframe_support::parameter_types! {
 	/// Three such sessions in the window. One is coincidence; a pattern is infrastructure.
 	pub const TnposCoFailureRepeats: u32 = 3;
 
+	/// How long unbroken, offence-free pool membership must run before it is standing: one year.
+	///
+	/// Long enough that it cannot be waited out inside one attack, and the only qualification
+	/// in the nine strata that nobody can grant. Its own grace window is the same length: the
+	/// chain admits on trust until it is a year old, and the people admitted that way are
+	/// exactly the ones serving the year.
 	pub const TnposTenurePeriod: BlockNumber = 365 * DAYS;
 }
 
@@ -2350,7 +2350,7 @@ impl pezpallet_tnpos::SendKeysToRelay<AccountId> for KeysToRelay {
 /// A send that fails is *not* retried. The relay keeps validating with the previous committee,
 /// which is safe -- those validators are still elected members of the register -- and the next
 /// era draws again. What must not happen is that the failure is invisible, so the pallet emits
-/// `CommitteeExportFailed`; a run of them means the era clock here and the validator set there
+/// `CommitteeCouldNotBeSent`; a run of them means the era clock here and the validator set there
 /// have come apart, and that is an operational alarm, not a state to reconcile in code.
 pub struct CommitteeToRelay;
 impl pezpallet_tnpos::SendCommitteeToRelay<AccountId> for CommitteeToRelay {
