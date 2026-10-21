@@ -5037,7 +5037,8 @@ mod initiative {
 	#[test]
 	fn clearing_is_bounded_and_charged_for_what_it_clears() {
 		use pezframe_support::dispatch::GetDispatchInfo;
-		ExtBuilder::default().build().execute_with(|| {
+		let mut ext = ExtBuilder::default().build();
+		ext.execute_with(|| {
 			let small = crate::Call::<Test>::clear_referendum_answers { poll: 9, limit: 1 }
 				.get_dispatch_info()
 				.call_weight;
@@ -5054,6 +5055,12 @@ mod initiative {
 			for who in 0..(crate::MAX_CLEARED_PER_CALL as u64 + 5) {
 				crate::ReferendumVotes::<Test>::insert(9, 10_000 + who, true);
 			}
+		});
+		// Into the backend: `clear_prefix` counts its limit against stored keys, and removes
+		// keys that exist only in the overlay without counting them -- a chain's answers were
+		// written in earlier blocks, so this is the case that matters.
+		ext.commit_all().expect("the answers commit");
+		ext.execute_with(|| {
 			assert_ok!(Welati::clear_referendum_answers(
 				RuntimeOrigin::signed(SIGNER),
 				9,
