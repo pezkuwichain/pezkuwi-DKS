@@ -177,10 +177,17 @@ fn default_teyrchains_host_configuration(
 		max_upward_message_num_per_candidate: 5,
 		hrmp_sender_deposit: 0,
 		hrmp_recipient_deposit: 0,
-		hrmp_channel_max_capacity: 8,
-		hrmp_channel_max_total_size: 8 * 1024,
+		// A channel sends its head page only while the page is smaller than the room left
+		// in it, and a page grows up to the message size. So the message size has to be
+		// strictly below the channel's total, or one full page can never leave an empty
+		// channel and is never dropped either: everything queued behind it waits for good.
+		// These were 8 KiB total against a 1 MiB message, which the Asset Hub's bond report
+		// alone outgrows at about 255 validators (L-7, 2026-10-21). Polkadot's figures for
+		// capacity and total, and half the total for a message, the same as upward messages.
+		hrmp_channel_max_capacity: 1000,
+		hrmp_channel_max_total_size: 100 * 1024,
 		hrmp_max_teyrchain_inbound_channels: 4,
-		hrmp_channel_max_message_size: 1024 * 1024,
+		hrmp_channel_max_message_size: 50 * 1024,
 		hrmp_max_teyrchain_outbound_channels: 4,
 		hrmp_max_message_num_per_candidate: 5,
 		dispute_period: 6,
@@ -214,6 +221,23 @@ fn default_teyrchains_host_configuration(
 #[test]
 fn default_teyrchains_host_configuration_is_consistent() {
 	default_teyrchains_host_configuration().panic_if_not_consistent();
+}
+
+/// A full page always fits an empty channel.
+///
+/// `xcmp-queue` sends a channel's head page only when it is smaller than the room left, and
+/// fills pages up to the channel's message size. With the message size at or above the total,
+/// a page that reaches it is never sent and never dropped, and the channel is dead behind it --
+/// the Asset Hub's bond report to People and People's payroll messages would have stopped for
+/// good. `panic_if_not_consistent` does not check this; the host configuration has no rule
+/// tying the two together.
+#[test]
+fn an_hrmp_page_always_fits_an_empty_channel() {
+	let config = default_teyrchains_host_configuration();
+	assert!(
+		config.hrmp_channel_max_message_size < config.hrmp_channel_max_total_size,
+		"a channel's message size must be below its total, or one full page blocks it for good"
+	);
 }
 
 /// The four allocations still sum to 200M, across two chains rather than one.
