@@ -144,6 +144,7 @@ pub trait BenchmarkSetup<AccountId, RuntimeOrigin> {
 pub mod pezpallet {
 	use super::*;
 	use pezframe_support::pezpallet_prelude::*;
+	use pezframe_support::weights::WeightMeter;
 	use pezframe_system::pezpallet_prelude::*;
 
 	/// A day on the chain this pallet runs on: People, at six seconds a block.
@@ -289,6 +290,18 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn paid_out_total)]
 	pub type PaidOutTotal<T: Config> = StorageValue<_, u128, ValueQuery>;
 
+	/// The first epoch whose claim records may still be in state.
+	///
+	/// A closed window can no longer be claimed against, so its records have done their job.
+	/// They are cleared in order, in whatever weight blocks leave idle.
+	#[pezpallet::storage]
+	pub type NextEpochToClear<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+	/// What the cleared claim records had paid, so that the records still held and this add up
+	/// to what was paid out.
+	#[pezpallet::storage]
+	pub type ClearedPaidOut<T: Config> = StorageValue<_, u128, ValueQuery>;
+
 	#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct EpochData<T: Config> {
 		pub current_epoch: u32,
@@ -348,6 +361,8 @@ pub mod pezpallet {
 		EpochClosed { epoch_index: u32 },
 		/// The chain holding the pot reported what it has been given.
 		IncentiveFundingNoted { total: u128 },
+		/// A closed epoch's claim records have all been cleared from state.
+		EpochClaimsCleared { epoch_index: u32 },
 	}
 
 	#[pezpallet::error]
@@ -414,6 +429,49 @@ pub mod pezpallet {
 			weight
 		}
 
+		/// Clear the claim records of closed epochs, oldest first, as far as `remaining` pays.
+		///
+		/// One record per claimant per month and nothing removed them: at the citizenry the
+		/// chain is built for, tens of millions of entries a month kept for good (L-7,
+		/// 2026-10-21). The amounts move into `ClearedPaidOut` so the ledger still balances.
+		fn on_idle(_n: BlockNumberFor<T>, remaining: Weight) -> Weight {
+			let mut meter = WeightMeter::with_limit(remaining);
+			// The cursor and the epoch's status.
+			if meter.try_consume(T::DbWeight::get().reads(2)).is_err() {
+				return meter.consumed();
+			}
+			let epoch = NextEpochToClear::<T>::get();
+			if EpochStatus::<T>::get(epoch) != EpochState::Closed {
+				return meter.consumed();
+			}
+			// Writing the cursor and the cleared total back.
+			if meter.try_consume(T::DbWeight::get().reads_writes(1, 2)).is_err() {
+				return meter.consumed();
+			}
+
+			let per_record = Self::clearing_weight_per_record();
+			let budget = Self::records_affordable(meter.remaining(), per_record);
+			if budget == 0 {
+				return meter.consumed();
+			}
+			let mut cleared = 0u32;
+			let mut amount = 0u128;
+			for (_who, paid) in ClaimedRewards::<T>::drain_prefix(epoch).take(budget as usize) {
+				cleared += 1;
+				amount = amount.saturating_add(paid);
+			}
+			let _ = meter.try_consume(per_record.saturating_mul(u64::from(cleared)));
+			ClearedPaidOut::<T>::mutate(|total| *total = total.saturating_add(amount));
+
+			// Fewer than it had room for means the prefix ran out. Exactly as many leaves one
+			// more look, which finds it empty.
+			if cleared < budget {
+				NextEpochToClear::<T>::put(epoch.saturating_add(1));
+				Self::deposit_event(Event::EpochClaimsCleared { epoch_index: epoch });
+			}
+			meter.consumed()
+		}
+
 		/// What the pallet has paid must be what it has recorded paying, and it can never
 		/// have paid out more than the pot was given.
 		///
@@ -429,8 +487,10 @@ pub mod pezpallet {
 			let paid = PaidOutTotal::<T>::get();
 			ensure!(paid <= reported, "more has been paid out than the pot was ever given");
 
-			let mut summed = 0u128;
+			let mut summed = ClearedPaidOut::<T>::get();
+			let next_to_clear = NextEpochToClear::<T>::get();
 			for (epoch, _who, amount) in ClaimedRewards::<T>::iter() {
+				ensure!(epoch >= next_to_clear, "an epoch marked cleared still has claim records");
 				let state = EpochStatus::<T>::get(epoch);
 				ensure!(
 					state != EpochState::Open,
@@ -529,6 +589,23 @@ pub mod pezpallet {
 	}
 
 	impl<T: Config> Pezpallet<T> {
+		/// Most claim records one `on_idle` pass clears, however much weight it is given.
+		const MAX_CLEARED_PER_PASS: u32 = 1_000;
+
+		/// What clearing one claim record costs: reading it on the way out, removing it, and
+		/// the trie nodes that proves.
+		fn clearing_weight_per_record() -> Weight {
+			T::DbWeight::get().reads_writes(1, 1).saturating_add(Weight::from_parts(0, 150))
+		}
+
+		/// How many records `remaining` pays for, at most `MAX_CLEARED_PER_PASS`.
+		fn records_affordable(remaining: Weight, per_record: Weight) -> u32 {
+			let by = |have: u64, each: u64| if each == 0 { u64::MAX } else { have / each };
+			by(remaining.ref_time(), per_record.ref_time())
+				.min(by(remaining.proof_size(), per_record.proof_size()))
+				.min(u64::from(Self::MAX_CLEARED_PER_PASS)) as u32
+		}
+
 		pub fn do_initialize_rewards_system() -> DispatchResult {
 			ensure!(!EpochInfo::<T>::exists(), Error::<T>::AlreadyInitialized);
 
