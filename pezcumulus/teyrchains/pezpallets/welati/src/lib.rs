@@ -3846,10 +3846,10 @@ pub mod pezpallet {
 				ElectionOutcome::Winners(winners) => {
 					Self::assign_election_winners(&election.election_type, &winners)?;
 
-					let total_citizen_count = Self::get_total_citizen_count();
-					let turnout_percentage = if total_citizen_count > 0 {
-						((election.total_votes as u64).saturating_mul(100)
-							/ total_citizen_count as u64) as u8
+					let electorate = Self::electorate_of(&election.election_type);
+					let turnout_percentage = if electorate > 0 {
+						((election.total_votes as u64).saturating_mul(100) / electorate as u64)
+							.min(100) as u8
 					} else {
 						0
 					};
@@ -4433,9 +4433,30 @@ pub mod pezpallet {
 			1
 		}
 
-		/// Total citizen count
-		fn get_total_citizen_count() -> u32 {
-			T::CitizenSource::citizen_count()
+		/// Whether only the house votes in this election.
+		///
+		/// The Speaker is the presiding officer of the house, chosen by that house; six of the
+		/// court's eleven seats belong to the house, so the house casts them, and the other
+		/// five are the President's and not voted for at all. Every citizen used to be able to
+		/// vote for the Speaker (L-7, 2026-10-21).
+		pub fn elected_by_the_house(election_type: &ElectionType) -> bool {
+			matches!(
+				election_type,
+				ElectionType::SpeakerElection | ElectionType::ConstitutionalCourt
+			)
+		}
+
+		/// How many may vote in this election, which is what its turnout is measured against.
+		///
+		/// The house for its own elections, the register for the rest. Both house elections
+		/// used to be measured against the register, which a house of 201 can never reach: the
+		/// first round always failed, and the re-run asks for no quorum at all.
+		fn electorate_of(election_type: &ElectionType) -> u32 {
+			if Self::elected_by_the_house(election_type) {
+				ParliamentMembers::<T>::get().len() as u32
+			} else {
+				T::CitizenSource::citizen_count()
+			}
 		}
 
 		/// Calculates election winners or determines if runoff is needed
@@ -4446,10 +4467,11 @@ pub mod pezpallet {
 			// Enforce the minimum turnout quorum recorded on the election at initiation
 			// time. Without this check, elections could be finalized (and officeholders
 			// seated) with arbitrarily low citizen participation.
-			let total_citizen_count = Self::get_total_citizen_count();
-			if total_citizen_count > 0 && FailedAttempts::<T>::get(election.election_type) == 0 {
+			let electorate = Self::electorate_of(&election.election_type);
+			if electorate > 0 && FailedAttempts::<T>::get(election.election_type) == 0 {
 				let turnout_percentage = ((election.total_votes as u64).saturating_mul(100)
-					/ total_citizen_count as u64) as u8;
+					/ electorate as u64)
+					.min(100) as u8;
 				ensure!(turnout_percentage >= election.minimum_turnout, Error::<T>::QuorumNotMet);
 			}
 
@@ -4795,14 +4817,9 @@ pub mod pezpallet {
 				);
 			}
 
-			// The court is the one election with a restricted electorate. Six of its eleven
-			// seats belong to the house, so the house votes for them -- not the whole
-			// citizenry. The other five are the President's, and are not voted for at all.
-			if election.election_type == ElectionType::ConstitutionalCourt {
-				ensure!(
-					pezpallet_tiki::Pezpallet::<T>::has_tiki(voter, &Tiki::Parlementer),
-					Error::<T>::NotAParliamentMember
-				);
+			// The house's own elections are the house's -- see `elected_by_the_house`.
+			if Self::elected_by_the_house(&election.election_type) {
+				ensure!(Self::is_parliament_member(voter), Error::<T>::NotAParliamentMember);
 			}
 
 			ensure!(

@@ -5971,7 +5971,10 @@ mod a_silent_office {
 				System::block_number() + crate::mock::TermLength::get() / 2,
 			);
 			let speaker = 7u64;
-			crate::mock::add_parliament_member(speaker);
+			// The house that chooses its Speaker.
+			for member in 7..=10u64 {
+				crate::mock::add_parliament_member(member);
+			}
 
 			let id = Welati::next_election_id();
 			assert_ok!(Welati::initiate_election(
@@ -5988,7 +5991,7 @@ mod a_silent_office {
 			));
 			let election = Welati::active_elections(id).unwrap();
 			crate::mock::run_to_block(election.voting_start + 1);
-			for voter in (1..=60u64).filter(|v| *v != speaker) {
+			for voter in 8..=10u64 {
 				assert_ok!(Welati::cast_vote(
 					RuntimeOrigin::signed(voter),
 					id,
