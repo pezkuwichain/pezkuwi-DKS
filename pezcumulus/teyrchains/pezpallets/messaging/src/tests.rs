@@ -418,12 +418,12 @@ mod free_only_when_it_goes_through {
 			assert!(!free(1, message(1, 50)), "nobody messages themselves");
 			assert!(!free(1, message(2, 0)), "an empty message");
 			assert!(
-				!free(1, message(2, <Test as Config>::MaxMessageSize::get() as usize + 1)),
+				!free(1, message(2, <<Test as Config>::MaxMessageSize as pezframe_support::traits::Get<u32>>::get() as usize + 1)),
 				"too large"
 			);
 			assert!(!free(11, message(2, 50)), "not a citizen");
 
-			for _ in 0..<Test as Config>::MaxMessagesPerEra::get() {
+			for _ in 0..<<Test as Config>::MaxMessagesPerEra as pezframe_support::traits::Get<u32>>::get() {
 				assert_ok!(Messaging::send_message(
 					RuntimeOrigin::signed(1),
 					2,
@@ -441,7 +441,10 @@ mod free_only_when_it_goes_through {
 		new_test_ext().execute_with(|| {
 			let key = || Call::register_encryption_key { public_key: dummy_pubkey(1) };
 			assert!(free(1, key()));
-			for _ in 0..<Test as Config>::MaxMessagesPerEra::get() {
+			for _ in 0..<<Test as Config>::MaxMessagesPerEra as pezframe_support::traits::Get<
+				u32,
+			>>::get()
+			{
 				assert_ok!(Messaging::register_encryption_key(
 					RuntimeOrigin::signed(1),
 					dummy_pubkey(1)
