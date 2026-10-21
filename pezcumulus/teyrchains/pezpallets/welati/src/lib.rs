@@ -3160,7 +3160,7 @@ pub mod pezpallet {
 			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
 			Pezpallet::<T>::ensure_may_vote_in_the_register(&who).is_ok()
 				&& T::Polls::as_ongoing(*poll).is_some()
-				&& !ReferendumVotes::<T>::contains_key(poll, &who)
+				&& Pezpallet::<T>::referendum_answer_of(*poll, &who).is_none()
 		})]
 		pub fn answer_referendum(
 			origin: OriginFor<T>,
@@ -3174,15 +3174,20 @@ pub mod pezpallet {
 				let (tally, _class) =
 					status.ensure_ongoing().ok_or(Error::<T>::ReferendumNotOngoing)?;
 
-				match ReferendumVotes::<T>::get(poll, &who) {
-					Some(previous) if previous == aye => {
+				// The person's answer, under whichever of their keys gave it.
+				let previous = Self::referendum_answer_of(poll, &who);
+				match previous {
+					Some((_, earlier)) if earlier == aye => {
 						return Err(Error::<T>::AlreadyAnsweredThatWay.into())
 					},
 					// Take the earlier answer back out before putting the new one in, or the
 					// citizen would be counted on both sides at once.
-					Some(true) => tally.ayes = tally.ayes.saturating_sub(1),
-					Some(false) => tally.nays = tally.nays.saturating_sub(1),
+					Some((_, true)) => tally.ayes = tally.ayes.saturating_sub(1),
+					Some((_, false)) => tally.nays = tally.nays.saturating_sub(1),
 					None => {},
+				}
+				if let Some((by, _)) = previous {
+					ReferendumVotes::<T>::remove(poll, &by);
 				}
 
 				if aye {
@@ -4803,6 +4808,22 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// Whether `check` holds for `who` or for any key a reissue retired in its favour.
+		///
+		/// What a person did under an earlier key is recorded under that key, so asking only
+		/// the current one let a reissue vote a second time (L-7, 2026-10-22).
+		pub fn the_person_has(who: &T::AccountId, check: impl Fn(&T::AccountId) -> bool) -> bool {
+			check(who)
+				|| pezpallet_identity_kyc::Pezpallet::<T>::earlier_accounts(who).iter().any(check)
+		}
+
+		/// The person's answer to `poll` and the key it was given under, if any.
+		pub fn referendum_answer_of(poll: u32, who: &T::AccountId) -> Option<(T::AccountId, bool)> {
+			core::iter::once(who.clone())
+				.chain(pezpallet_identity_kyc::Pezpallet::<T>::earlier_accounts(who))
+				.find_map(|a| ReferendumVotes::<T>::get(poll, &a).map(|aye| (a, aye)))
+		}
+
 		/// Everything `back_initiative` checks before it writes.
 		///
 		/// The call's fee exemption asks the same thing, so a free signature is one that will
@@ -4811,7 +4832,10 @@ pub mod pezpallet {
 		/// nothing, as often as its sender likes (L-7 Y4, 2026-10-21).
 		pub fn may_back_initiative(who: &T::AccountId, id: u32) -> DispatchResult {
 			Self::ensure_may_vote_in_the_register(who)?;
-			ensure!(!InitiativeBacking::<T>::contains_key(id, who), Error::<T>::AlreadyBacked);
+			ensure!(
+				!Self::the_person_has(who, |a| InitiativeBacking::<T>::contains_key(id, a)),
+				Error::<T>::AlreadyBacked
+			);
 			let init = Initiatives::<T>::get(id).ok_or(Error::<T>::NoSuchInitiative)?;
 			ensure!(
 				pezframe_system::Pezpallet::<T>::block_number() <= init.closes,
@@ -4842,7 +4866,10 @@ pub mod pezpallet {
 			);
 
 			ensure!(
-				!Endorsements::<T>::contains_key(election_id, endorser),
+				!Self::the_person_has(endorser, |a| Endorsements::<T>::contains_key(
+					election_id,
+					a
+				)),
 				Error::<T>::AlreadyEndorsed
 			);
 			Ok(())
@@ -4892,7 +4919,7 @@ pub mod pezpallet {
 			}
 
 			ensure!(
-				!ElectionVotes::<T>::contains_key(election_id, voter),
+				!Self::the_person_has(voter, |a| ElectionVotes::<T>::contains_key(election_id, a)),
 				Error::<T>::AlreadyVoted
 			);
 
@@ -4912,7 +4939,10 @@ pub mod pezpallet {
 
 			// Check if voter has already voted on this proposal
 			ensure!(
-				!CollectiveVotes::<T>::contains_key(proposal_id, voter),
+				!Self::the_person_has(voter, |a| CollectiveVotes::<T>::contains_key(
+					proposal_id,
+					a
+				)),
 				Error::<T>::ProposalAlreadyVoted
 			);
 

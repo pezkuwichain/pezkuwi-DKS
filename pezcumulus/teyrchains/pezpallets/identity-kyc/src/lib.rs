@@ -330,6 +330,15 @@ pub mod pezpallet {
 	pub type SupersededBy<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, T::AccountId, OptionQuery>;
 
+	/// The account a reissue retired in favour of this one: `SupersededBy` read backwards.
+	///
+	/// What somebody has already done under an earlier key -- a ballot cast, an endorsement
+	/// given -- is recorded under that key. A check of "has this person already" has to ask
+	/// every key the person has held, or a reissue is a second vote (L-7, 2026-10-22).
+	#[pezpallet::storage]
+	pub type Supersedes<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, T::AccountId, OptionQuery>;
+
 	/// How many accounts currently hold `KycLevel::Approved`.
 	///
 	/// Kept rather than counted. `citizen_count()` walks the whole of `KycStatuses`, which is
@@ -983,7 +992,27 @@ impl<T: Config> Pezpallet<T> {
 
 		// The counters are unchanged on purpose: one person left and the same person arrived.
 		SupersededBy::<T>::insert(from, to.clone());
+		Supersedes::<T>::insert(to, from.clone());
 		Ok(())
+	}
+
+	/// The accounts `who` replaced, most recent first, at most `MAX_SUPERSESSION_HOPS`.
+	///
+	/// For a reader asking whether this person has already acted under an earlier key. Empty
+	/// for an account no reissue produced, which is one read.
+	pub fn earlier_accounts(who: &T::AccountId) -> alloc::vec::Vec<T::AccountId> {
+		let mut earlier = alloc::vec::Vec::new();
+		let mut current = who.clone();
+		for _ in 0..Self::MAX_SUPERSESSION_HOPS {
+			match Supersedes::<T>::get(&current) {
+				Some(previous) => {
+					earlier.push(previous.clone());
+					current = previous;
+				},
+				None => break,
+			}
+		}
+		earlier
 	}
 
 	/// Count total number of citizens.
