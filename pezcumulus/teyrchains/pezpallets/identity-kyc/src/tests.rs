@@ -309,8 +309,10 @@ fn cancel_application_works() {
 		// Cancel
 		assert_ok!(IdentityKycPallet::cancel_application(RuntimeOrigin::signed(APPLICANT)));
 
-		// Status should be reset to NotStarted
+		// Status should be reset to NotStarted -- and the record gone, not left behind as one
+		// more entry for the trust sweep to walk.
 		assert_eq!(IdentityKycPallet::kyc_status_of(APPLICANT), KycLevel::NotStarted);
+		assert!(!crate::KycStatuses::<Test>::contains_key(APPLICANT));
 
 		// Application should be removed
 		assert!(IdentityKycPallet::applications(APPLICANT).is_none());

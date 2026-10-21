@@ -820,3 +820,65 @@ fn the_call_and_the_hook_share_one_batch_and_one_checkpoint() {
 		);
 	});
 }
+
+// =============================================================================
+// THE SWEEP IS BOUNDED BY WHAT IT WALKS, AND WALKS EVERY CITIZEN (L-7)
+// =============================================================================
+
+#[test]
+fn records_that_are_not_citizens_still_count_against_the_batch() {
+	// Only citizens used to count, so a register full of abandoned applications was walked
+	// in one go, however long it was -- and anyone could fill it for a few fees each.
+	use pezpallet_identity_kyc::types::KycLevel;
+
+	new_test_ext().execute_with(|| {
+		for who in 1_000..1_300u64 {
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(who, KycLevel::Pending);
+		}
+
+		assert_ok!(TrustPallet::update_all_trust_scores(RuntimeOrigin::root()));
+
+		assert!(
+			crate::BatchUpdateInProgress::<Test>::get(),
+			"three hundred records do not fit one batch of a hundred, citizens or not"
+		);
+	});
+}
+
+#[test]
+fn a_sweep_across_batches_reaches_every_citizen() {
+	// The checkpoint used to be the record that stopped a batch, and the next batch resumes
+	// strictly after the checkpoint -- so that record was never processed.
+	use pezframe_support::traits::Hooks;
+	use pezpallet_identity_kyc::types::KycLevel;
+
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+		for who in 1..=250u64 {
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(who, KycLevel::Approved);
+		}
+
+		assert_ok!(TrustPallet::update_all_trust_scores(RuntimeOrigin::root()));
+		let mut block = 1;
+		while crate::BatchUpdateInProgress::<Test>::get() {
+			block += 1;
+			assert!(block < 10, "the sweep has to finish");
+			System::set_block_number(block);
+			<TrustPallet as Hooks<u64>>::on_initialize(block);
+		}
+
+		let updated: u32 = System::events()
+			.into_iter()
+			.filter_map(|r| match r.event {
+				RuntimeEvent::TrustPallet(crate::Event::BulkTrustScoreUpdate { count }) => {
+					Some(count)
+				},
+				RuntimeEvent::TrustPallet(crate::Event::AllTrustScoresUpdated {
+					total_updated,
+				}) => Some(total_updated),
+				_ => None,
+			})
+			.sum();
+		assert_eq!(updated, 250, "every citizen is recomputed exactly once per sweep");
+	});
+}

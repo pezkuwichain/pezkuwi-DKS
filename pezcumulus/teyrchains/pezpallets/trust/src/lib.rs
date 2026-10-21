@@ -602,10 +602,16 @@ pub mod pezpallet {
 		/// Internal batch update logic used by both on_initialize and extrinsics.
 		/// Returns consumed weight.
 		fn do_batch_update() -> Weight {
+			// Every record the walk visits counts against the batch, citizen or not. Only
+			// citizens used to count, and a record that was not one cost nothing and was not
+			// charged -- while anyone could leave such records behind for a few fees each, by
+			// applying and cancelling. Enough of them and the daily walk would not fit a block,
+			// and the block would be attempted again every block (L-7, 2026-10-21).
 			let batch_size = Self::calculate_optimal_batch_size();
+			let mut visited = 0u32;
 			let mut updated_count = 0u32;
 			let mut all_processed = true;
-			let mut last_account: Option<T::AccountId> = None;
+			let mut last_processed: Option<T::AccountId> = None;
 
 			let iterator = match LastProcessedAccount::<T>::get() {
 				Some(start_key) => pezpallet_identity_kyc::KycStatuses::<T>::iter_from(
@@ -615,18 +621,22 @@ pub mod pezpallet {
 			};
 
 			for (account, kyc_level) in iterator {
-				if updated_count >= batch_size {
-					last_account = Some(account);
+				if visited >= batch_size {
 					all_processed = false;
 					break;
 				}
+				visited += 1;
 
 				if kyc_level == pezpallet_identity_kyc::types::KycLevel::Approved {
 					let _ = Self::update_score_for_account(&account);
 					updated_count += 1;
 				}
 
-				last_account = Some(account);
+				// The last record actually processed, so the next batch resumes after it. The
+				// record that stopped this batch used to be stored instead, and `iter_from`
+				// starts strictly after its key -- so it was skipped, one citizen at every
+				// batch boundary of every sweep, the same one each time.
+				last_processed = Some(account);
 			}
 
 			if all_processed {
@@ -634,17 +644,23 @@ pub mod pezpallet {
 				BatchUpdateInProgress::<T>::put(false);
 				Self::deposit_event(Event::AllTrustScoresUpdated { total_updated: updated_count });
 			} else {
-				if let Some(ref account) = last_account {
+				if let Some(ref account) = last_processed {
 					LastProcessedAccount::<T>::put(account.clone());
 				}
 				BatchUpdateInProgress::<T>::put(true);
 				Self::deposit_event(Event::BulkTrustScoreUpdate { count: updated_count });
 			}
 
-			// Approximate weight
+			// Each visit is a read of the record and its proof; each citizen is a recompute,
+			// charged as the benchmarked single recomputation.
 			let base_weight = T::DbWeight::get().reads_writes(2, 2);
-			let per_account = T::DbWeight::get().reads_writes(3, 2);
-			base_weight.saturating_add(per_account.saturating_mul(updated_count as u64))
+			let per_visit = T::DbWeight::get().reads(1).saturating_add(Weight::from_parts(0, 128));
+			base_weight
+				.saturating_add(per_visit.saturating_mul(u64::from(visited)))
+				.saturating_add(
+					<T as Config>::WeightInfo::force_recalculate_trust_score()
+						.saturating_mul(u64::from(updated_count)),
+				)
 		}
 	}
 

@@ -830,7 +830,10 @@ pub mod pezpallet {
 			T::CitizenNftProvider::burn_citizen_nft(&who)?;
 
 			// Reset status
-			KycStatuses::<T>::insert(&who, KycLevel::NotStarted);
+			// Removed, not written back as `NotStarted`: the map defaults to that, and an entry
+			// left behind is one more record the trust sweep has to walk for ever -- anyone
+			// could leave thousands by applying and cancelling (L-7, 2026-10-21).
+			KycStatuses::<T>::remove(&who);
 			CitizenCount::<T>::mutate(|n| *n = n.saturating_sub(1));
 
 			// Remove identity hash and reverse mapping
@@ -864,7 +867,10 @@ pub mod pezpallet {
 			IdentityHashToAccount::<T>::remove(application.identity_hash);
 
 			// Reset status
-			KycStatuses::<T>::insert(&applicant, KycLevel::NotStarted);
+			// Removed, not written back as `NotStarted`: the map defaults to that, and an entry
+			// left behind is one more record the trust sweep has to walk for ever -- anyone
+			// could leave thousands by applying and cancelling (L-7, 2026-10-21).
+			KycStatuses::<T>::remove(&applicant);
 
 			// Unreserve deposit
 			let deposit = T::KycApplicationDeposit::get();
