@@ -5349,6 +5349,15 @@ pub mod pezpallet {
 				tiki,
 				pezpallet_tiki::RoleAssignmentType::Elected,
 			);
+			// A winner gets a full period from the day they are seated, as an appointee does in
+			// `seat_unique_tiki`. Without the record the silence was measured from the start of
+			// the term -- and the Speaker's term is the house's, which began before any Speaker
+			// was elected, so a Speaker was 'silent' the moment they took the chair and anyone
+			// could vacate it, and every by-election's winner after them (L-7, 2026-10-21).
+			if Self::silence_vacatable_office(&tiki).is_some() {
+				let now = pezframe_system::Pezpallet::<T>::block_number();
+				OfficeLastActive::<T>::insert(tiki, (who.clone(), now));
+			}
 			Ok(())
 		}
 

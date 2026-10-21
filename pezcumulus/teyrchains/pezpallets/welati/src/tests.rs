@@ -5949,6 +5949,57 @@ mod a_silent_office {
 		);
 	}
 
+	/// A Speaker the house has just elected is not silent.
+	///
+	/// Seating by election wrote no check-in, so the silence was measured from the start of the
+	/// term -- and the Speaker's term is the house's, half a term old by the time the first
+	/// elected house chose a Speaker. Anyone could vacate the chair the moment it was filled,
+	/// and every by-election's winner after it (L-7, 2026-10-21).
+	#[test]
+	fn a_freshly_elected_speaker_is_not_silent() {
+		ExtBuilder::default().build().execute_with(|| {
+			// The first elected house: half a term, starting now.
+			crate::TermEnds::<Test>::insert(
+				ElectionType::Parliamentary,
+				System::block_number() + crate::mock::TermLength::get() / 2,
+			);
+			let speaker = 7u64;
+			crate::mock::add_parliament_member(speaker);
+
+			let id = Welati::next_election_id();
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::SpeakerElection,
+				None,
+				None,
+			));
+			assert_ok!(Welati::register_candidate(
+				RuntimeOrigin::signed(speaker),
+				id,
+				None,
+				vec![]
+			));
+			let election = Welati::active_elections(id).unwrap();
+			crate::mock::run_to_block(election.voting_start + 1);
+			for voter in (1..=60u64).filter(|v| *v != speaker) {
+				assert_ok!(Welati::cast_vote(
+					RuntimeOrigin::signed(voter),
+					id,
+					vec![speaker],
+					None
+				));
+			}
+			crate::mock::run_to_block(election.end_block + 1);
+			assert_ok!(Welati::finalize_election(RuntimeOrigin::signed(99), id));
+			assert_eq!(holder_of(Tiki::SerokiMeclise), Some(speaker));
+
+			assert_noop!(
+				Welati::vacate_silent_office(RuntimeOrigin::signed(99), Tiki::SerokiMeclise),
+				Error::<Test>::OfficeHolderIsStillReachable
+			);
+		});
+	}
+
 	#[test]
 	fn a_founding_president_is_not_emptied_for_silence() {
 		ExtBuilder::default().build().execute_with(|| {
