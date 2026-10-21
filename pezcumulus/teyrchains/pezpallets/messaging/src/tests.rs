@@ -390,7 +390,7 @@ fn inbox_count_works() {
 // (L-7 Y4, 2026-10-21).
 mod free_only_when_it_goes_through {
 	use super::*;
-	use pezframe_support::{dispatch::CheckIfFeeless, traits::Get};
+	use pezframe_support::dispatch::CheckIfFeeless;
 
 	fn free(who: u64, call: Call<Test>) -> bool {
 		call.is_feeless(&RuntimeOrigin::signed(who))
