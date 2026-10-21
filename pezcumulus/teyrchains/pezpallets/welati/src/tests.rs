@@ -6285,3 +6285,126 @@ mod free_only_when_counted {
 		});
 	}
 }
+
+// ===== THE HOUSE'S OWN ELECTIONS =====
+//
+// The Speaker is "the presiding officer of the elected house, chosen by that house"
+// (whitepaper §5.3), and six of the court's eleven seats are the house's to fill (§5.4). Two
+// things were wrong. Every citizen could vote for the Speaker. And both elections measured
+// turnout against the whole register, which a house of 201 can never reach: the first round
+// always failed, and the re-run asks for no quorum at all (L-7, 2026-10-21).
+
+mod the_houses_own_elections {
+	use super::*;
+	use crate::FailedAttempts;
+
+	#[test]
+	fn the_speaker_is_chosen_by_the_house() {
+		ExtBuilder::default().build().execute_with(|| {
+			let speaker = 7u64;
+			add_parliament_member(speaker);
+			add_parliament_member(8);
+			let id = Welati::next_election_id();
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::SpeakerElection,
+				None,
+				None,
+			));
+			assert_ok!(Welati::register_candidate(
+				RuntimeOrigin::signed(speaker),
+				id,
+				None,
+				vec![]
+			));
+			run_to_block(Welati::active_elections(id).unwrap().voting_start + 1);
+
+			make_citizen(50);
+			assert_noop!(
+				Welati::cast_vote(RuntimeOrigin::signed(50), id, vec![speaker], None),
+				Error::<Test>::NotAParliamentMember
+			);
+			assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(8), id, vec![speaker], None));
+		});
+	}
+
+	#[test]
+	fn a_house_that_turns_out_elects_at_the_first_attempt() {
+		ExtBuilder::default().build().execute_with(|| {
+			let speaker = 7u64;
+			for member in 7..=10u64 {
+				add_parliament_member(member);
+			}
+			let id = Welati::next_election_id();
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::SpeakerElection,
+				None,
+				None,
+			));
+			assert_ok!(Welati::register_candidate(
+				RuntimeOrigin::signed(speaker),
+				id,
+				None,
+				vec![]
+			));
+			let election = Welati::active_elections(id).unwrap();
+			run_to_block(election.voting_start + 1);
+			// The whole house, four of four -- and four of the register's hundred and ten.
+			for member in 7..=10u64 {
+				assert_ok!(Welati::cast_vote(
+					RuntimeOrigin::signed(member),
+					id,
+					vec![speaker],
+					None
+				));
+			}
+			run_to_block(election.end_block + 1);
+			assert_ok!(Welati::finalize_election(RuntimeOrigin::signed(99), id));
+
+			assert_eq!(Welati::active_elections(id).unwrap().status, ElectionStatus::Completed);
+			assert_eq!(FailedAttempts::<Test>::get(ElectionType::SpeakerElection), 0);
+		});
+	}
+
+	#[test]
+	fn a_house_that_stays_home_does_not_elect() {
+		ExtBuilder::default().build().execute_with(|| {
+			let speaker = 7u64;
+			for member in 7..=16u64 {
+				add_parliament_member(member);
+			}
+			let id = Welati::next_election_id();
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::SpeakerElection,
+				None,
+				None,
+			));
+			assert_ok!(Welati::register_candidate(
+				RuntimeOrigin::signed(speaker),
+				id,
+				None,
+				vec![]
+			));
+			let election = Welati::active_elections(id).unwrap();
+			run_to_block(election.voting_start + 1);
+			// Two of ten, under the thirty per cent the election asks for.
+			for member in 7..=8u64 {
+				assert_ok!(Welati::cast_vote(
+					RuntimeOrigin::signed(member),
+					id,
+					vec![speaker],
+					None
+				));
+			}
+			run_to_block(election.end_block + 1);
+			assert_ok!(Welati::finalize_election(RuntimeOrigin::signed(99), id));
+
+			assert_eq!(
+				Welati::active_elections(id).unwrap().status,
+				ElectionStatus::FailedForTurnout
+			);
+		});
+	}
+}
