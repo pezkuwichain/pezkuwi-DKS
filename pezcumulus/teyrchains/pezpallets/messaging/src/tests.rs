@@ -474,3 +474,56 @@ mod free_only_when_it_goes_through {
 		});
 	}
 }
+
+// An expired era is cleared of its inboxes and both of its counters, within the weight
+// on_idle is given. The era was declared purged as soon as its inboxes were empty, so the
+// counters past the first fifty -- an era where many wrote to few -- stayed for good; and each
+// pass deleted up to a hundred and fifty entries having checked there was room for one
+// (L-7, 2026-10-21).
+mod era_cleanup {
+	use super::*;
+	use pezframe_support::{traits::Hooks, weights::Weight};
+
+	const ERA: u32 = 0;
+
+	fn expired_era(ext: &mut pezsp_io::TestExternalities, senders: u64) {
+		ext.execute_with(|| {
+			Inbox::<Test>::insert(ERA, 2u64, BoundedVec::default());
+			for who in 0..senders {
+				SendCount::<Test>::insert(ERA, 1_000 + who, 1);
+			}
+			CleanupCursor::<Test>::put((ERA, BoundedVec::default()));
+		});
+		// Into the backend, where an expired era's entries are by the time it is cleaned.
+		ext.commit_all().expect("the era commits");
+	}
+
+	#[test]
+	fn an_era_is_purged_only_when_its_counters_are_gone_too() {
+		let mut ext = new_test_ext();
+		expired_era(&mut ext, 120);
+		for _ in 0..10 {
+			ext.execute_with(|| {
+				Messaging::on_idle(1, Weight::MAX);
+			});
+			ext.commit_all().expect("each pass commits");
+		}
+		ext.execute_with(|| {
+			assert!(CleanupCursor::<Test>::get().is_none(), "the era was never finished");
+			assert_eq!(SendCount::<Test>::iter_prefix(ERA).count(), 0, "counters left behind");
+		});
+	}
+
+	#[test]
+	fn a_pass_deletes_no_more_than_it_was_given_room_for() {
+		let mut ext = new_test_ext();
+		expired_era(&mut ext, 120);
+		ext.execute_with(|| {
+			let one = <Test as pezframe_system::Config>::DbWeight::get().reads_writes(1, 1);
+			Messaging::on_idle(1, one.saturating_mul(10));
+			let left = SendCount::<Test>::iter_prefix(ERA).count()
+				+ Inbox::<Test>::iter_prefix(ERA).count();
+			assert!(left >= 111, "deleted {} of 121 with room for ten", 121 - left);
+		});
+	}
+}
