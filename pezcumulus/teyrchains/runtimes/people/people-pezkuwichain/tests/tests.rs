@@ -443,6 +443,79 @@ mod the_register_is_not_writable_from_abroad {
 		});
 		assert!(Filter::contains(&upgrade), "the upgrade path must stay open");
 	}
+
+	/// A register write wrapped in another call, or written to storage directly, is refused.
+	///
+	/// The filter used to look at the outermost call alone. Each of these carried a register
+	/// write past it as Root: `Utility` dispatches its inner calls around every filter when the
+	/// origin is Root, `Scheduler` runs a call later as Root, `set_storage` writes the register's
+	/// keys without any pallet, and the Council's roster is set by Root and then satisfies
+	/// `Tiki`'s admin origin. Found by the L-7 audit, 2026-10-21.
+	#[test]
+	fn a_register_write_wrapped_or_raw_is_refused() {
+		let revoke = RuntimeCall::IdentityKyc(pezpallet_identity_kyc::Call::revoke_citizenship {
+			who: ALICE.into(),
+		});
+		let calls = vec![
+			RuntimeCall::Utility(pezpallet_utility::Call::batch_all {
+				calls: vec![revoke.clone()],
+			}),
+			RuntimeCall::Utility(pezpallet_utility::Call::force_batch {
+				calls: vec![revoke.clone()],
+			}),
+			RuntimeCall::Utility(pezpallet_utility::Call::dispatch_as {
+				as_origin: Box::new(people_pezkuwichain_runtime::OriginCaller::system(
+					pezframe_system::RawOrigin::Root,
+				)),
+				call: Box::new(revoke.clone()),
+			}),
+			RuntimeCall::Scheduler(pezpallet_scheduler::Call::schedule {
+				when: 1,
+				maybe_periodic: None,
+				priority: 0,
+				call: Box::new(revoke.clone()),
+			}),
+			RuntimeCall::System(pezframe_system::Call::set_storage {
+				items: vec![(b"any key".to_vec(), b"any value".to_vec())],
+			}),
+			RuntimeCall::Council(pezpallet_collective::Call::set_members {
+				new_members: vec![ALICE.into()],
+				prime: None,
+				old_count: 0,
+			}),
+		];
+		for call in calls {
+			assert!(
+				!Filter::contains(&call),
+				"a register write reached the chain from abroad: {call:?}"
+			);
+		}
+	}
+
+	/// The paths other runtimes build still arrive.
+	///
+	/// An allowlist that forgot one would close it silently: a filtered `Transact` is not a
+	/// failed extrinsic on the chain that sent it. So every call another runtime's code
+	/// addresses here is named and must pass.
+	#[test]
+	fn the_paths_other_chains_build_still_arrive() {
+		let calls = vec![
+			RuntimeCall::Tnpos(pezpallet_tnpos::Call::note_bonded {
+				era: 1,
+				bonded: Default::default(),
+			}),
+			RuntimeCall::Tnpos(pezpallet_tnpos::Call::note_session_performance {
+				scored: vec![],
+				failed: vec![],
+			}),
+			RuntimeCall::PezRewards(pezpallet_pez_rewards::Call::note_incentive_funding {
+				total: 1,
+			}),
+		];
+		for call in calls {
+			assert!(Filter::contains(&call), "a cross-chain path was closed: {call:?}");
+		}
+	}
 }
 
 /// The register's scores are read locally, and the oracle's is the only one that can be stale.
