@@ -163,6 +163,42 @@ fn register_candidate_fails_already_candidate() {
 	});
 }
 
+/// A ballot names each candidate once.
+///
+/// The tally adds the voter's weight once per name on the ballot, and the ballot was never
+/// deduplicated: ten copies of one name were ten votes for that candidate, from one citizen
+/// (L-7, 2026-10-21).
+#[test]
+fn a_ballot_naming_one_candidate_twice_is_refused() {
+	ExtBuilder::default().build().execute_with(|| {
+		assert_ok!(Welati::initiate_election(
+			RuntimeOrigin::root(),
+			ElectionType::Parliamentary,
+			None,
+			None,
+		));
+		let endorsers = endorsed_by(0, 1, (3..=52).collect());
+		assert_ok!(Welati::register_candidate(RuntimeOrigin::signed(1), 0, None, endorsers));
+		run_to_block(crate::mock::CandidacyPeriod::get() + crate::mock::CampaignPeriod::get() + 1);
+
+		assert_noop!(
+			Welati::cast_vote(RuntimeOrigin::signed(2), 0, vec![1; 10], None),
+			Error::<Test>::CandidateNamedTwice
+		);
+		assert_noop!(
+			Welati::cast_vote(RuntimeOrigin::signed(2), 0, vec![1; 11], None),
+			Error::<Test>::BallotTooLong
+		);
+
+		assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(2), 0, vec![1], None));
+		assert_eq!(
+			crate::ElectionCandidates::<Test>::get(0, 1).unwrap().vote_count,
+			Welati::election_votes(0, 2).unwrap().vote_weight,
+			"one ballot counts once"
+		);
+	});
+}
+
 #[test]
 fn cast_vote_works() {
 	ExtBuilder::default().build().execute_with(|| {
@@ -3208,6 +3244,45 @@ mod electoral_clock {
 			);
 			assert!(!OpenElection::<Test>::contains_key(ElectionType::Presidential));
 			assert_eq!(FailedAttempts::<Test>::get(ElectionType::Presidential), 1);
+		});
+	}
+
+	/// A failed count is final: counting it again neither seats anyone nor refunds twice.
+	///
+	/// It used to be countable again. The second count found `FailedAttempts` at one, skipped
+	/// the quorum the first had just failed, and seated whoever led -- a President on one vote
+	/// out of a million -- and released the candidates' deposits again out of whatever else they
+	/// had reserved (L-7, 2026-10-21).
+	#[test]
+	fn a_failed_election_cannot_be_counted_twice() {
+		ExtBuilder::default().build().execute_with(|| {
+			crate::mock::set_citizen_count(1_000_000);
+			let id = Welati::next_election_id();
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::Presidential,
+				None,
+				None,
+			));
+			let endorsers =
+				gather_endorsements(id, 2, crate::mock::PresidentialEndorsements::get());
+			assert_ok!(Welati::register_candidate(RuntimeOrigin::signed(2), id, None, endorsers));
+			let election = Welati::active_elections(id).unwrap();
+			run_to_block(election.voting_start + 1);
+			assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(1), id, vec![2], None));
+			run_to_block(election.end_block + 1);
+			assert_ok!(Welati::finalize_election(RuntimeOrigin::signed(99), id));
+
+			// Something else of candidate 2's held in reserve, which a second refund would free.
+			use pezframe_support::traits::ReservableCurrency;
+			assert_ok!(crate::mock::Balances::reserve(&2, 7));
+
+			assert_noop!(
+				Welati::finalize_election(RuntimeOrigin::signed(99), id),
+				Error::<Test>::ElectionAlreadyFinalized
+			);
+			assert_ne!(holder_of(Tiki::Serok), Some(2), "a failed count seated a President");
+			assert_eq!(crate::mock::Balances::reserved_balance(2), 7, "a deposit came back twice");
 		});
 	}
 

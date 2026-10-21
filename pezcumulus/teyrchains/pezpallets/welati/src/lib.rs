@@ -1722,6 +1722,10 @@ pub mod pezpallet {
 		CannotApproveOwnNomination,
 		/// The founding period is over; a house now comes only from an election.
 		FoundingPeriodOver,
+		/// A ballot names more candidates than it may.
+		BallotTooLong,
+		/// A ballot names the same candidate more than once.
+		CandidateNamedTwice,
 	}
 
 	#[pezpallet::hooks]
@@ -3691,6 +3695,17 @@ pub mod pezpallet {
 		) -> DispatchResult {
 			let voter = ensure_signed(origin)?;
 
+			// Bounded before anything walks it, and every name on it once. The list used to be
+			// walked before the bound of ten was applied -- a hundred thousand names cost one
+			// fixed fee -- and a name written ten times was counted ten times, so one ballot was
+			// worth ten for any candidate (L-7, 2026-10-21).
+			let candidates: BoundedVec<T::AccountId, ConstU32<10>> =
+				candidates.try_into().map_err(|_| Error::<T>::BallotTooLong)?;
+			let mut distinct = candidates.clone().into_inner();
+			distinct.sort();
+			distinct.dedup();
+			ensure!(distinct.len() == candidates.len(), Error::<T>::CandidateNamedTwice);
+
 			let mut election =
 				ActiveElections::<T>::get(election_id).ok_or(Error::<T>::ElectionNotFound)?;
 
@@ -3737,10 +3752,7 @@ pub mod pezpallet {
 
 			let vote_info = ElectionVoteInfo {
 				voter: voter.clone(),
-				candidates: candidates
-					.clone()
-					.try_into()
-					.map_err(|_| Error::<T>::CalculationOverflow)?,
+				candidates: candidates.clone(),
 				vote_block: current_block,
 				vote_weight,
 				vote_type: VoteType::Citizen,
@@ -3762,7 +3774,12 @@ pub mod pezpallet {
 			election.total_votes = election.total_votes.saturating_add(vote_weight);
 			ActiveElections::<T>::insert(election_id, election);
 
-			Self::deposit_event(Event::VoteCast { election_id, voter, candidates, district_id });
+			Self::deposit_event(Event::VoteCast {
+				election_id,
+				voter,
+				candidates: candidates.into_inner(),
+				district_id,
+			});
 
 			Ok(())
 		}
@@ -3796,8 +3813,18 @@ pub mod pezpallet {
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
 			ensure!(current_block > election.end_block, Error::<T>::ElectionNotActive);
 
+			// Counted once, whatever the count said. A turnout failure is an ending too, and it
+			// used to be countable again: the second count found `FailedAttempts` already at one,
+			// skipped the quorum the first had just failed, and seated whoever led -- a President
+			// on one vote -- while refunding every deposit a second time out of whatever else
+			// the candidates had reserved (L-7, 2026-10-21).
 			ensure!(
-				election.status != ElectionStatus::Completed,
+				!matches!(
+					election.status,
+					ElectionStatus::Completed
+						| ElectionStatus::FailedForTurnout
+						| ElectionStatus::Cancelled
+				),
 				Error::<T>::ElectionAlreadyFinalized
 			);
 
