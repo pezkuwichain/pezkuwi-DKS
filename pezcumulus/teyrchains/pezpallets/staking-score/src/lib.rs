@@ -83,7 +83,7 @@ pub mod pezpallet {
 	use core::ops::Div;
 	use pezframe_support::{
 		pezpallet_prelude::*,
-		traits::{Currency, OnUnbalanced, ReservableCurrency},
+		traits::{BalanceStatus, Currency, OnUnbalanced, ReservableCurrency},
 	};
 	use pezframe_system::pezpallet_prelude::*;
 	use pezsp_runtime::traits::{Saturating, Zero};
@@ -169,7 +169,7 @@ pub mod pezpallet {
 
 			for (who, source, pending) in PendingStakingDetails::<T>::iter() {
 				ensure!(
-					NoterBonds::<T>::contains_key(&pending.submitted_by),
+					NoterBonds::<T>::contains_key(Self::noter_answering_for(&pending.submitted_by)),
 					"a pending submission is from somebody who is not a bonded noter"
 				);
 				ensure!(
@@ -352,6 +352,15 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type NoterLastSubmission<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
+	/// The account a noter's standing moved to when its key was reissued.
+	///
+	/// A pending submission names the key that made it, and a dispute against it is charged
+	/// to whoever answers for that key now -- otherwise the successor holds the bond while
+	/// the retired key, which nobody can sign for, takes the dispute.
+	#[pezpallet::storage]
+	pub type NoterSucceededBy<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, T::AccountId, OptionQuery>;
 
 	/// A noter-submitted staking update awaiting its dispute window. Does not
 	/// affect `get_staking_score` until finalized into `CachedStakingDetails` —
@@ -729,8 +738,9 @@ pub mod pezpallet {
 
 			PendingStakingDetails::<T>::remove(&who, source);
 			DisputeCount::<T>::insert(&who, source, already.saturating_add(1));
-			DisputesAgainstNoter::<T>::mutate(&pending.submitted_by, |n| *n = n.saturating_add(1));
-			UnresolvedDisputes::<T>::mutate(&pending.submitted_by, |n| *n = n.saturating_add(1));
+			let noter = Self::noter_answering_for(&pending.submitted_by);
+			DisputesAgainstNoter::<T>::mutate(&noter, |n| *n = n.saturating_add(1));
+			UnresolvedDisputes::<T>::mutate(&noter, |n| *n = n.saturating_add(1));
 
 			Self::deposit_event(Event::StakingDetailsDisputed { who, source, disputed_by });
 			Ok(())
@@ -893,11 +903,30 @@ pub mod pezpallet {
 			from: &T::AccountId,
 			to: &T::AccountId,
 		) -> pezframe_support::pezpallet_prelude::DispatchResult {
+			// The record and the money it describes move together. Moving only the record
+			// left the reserve on the lost key: unregistering then released the successor's
+			// other deposits, and a slash took its free balance (L-7, 2026-10-22).
+			let mut was_noter = false;
 			if let Some(bond) = NoterBonds::<T>::take(from) {
-				NoterBonds::<T>::insert(to, bond);
+				was_noter = true;
+				match T::Currency::repatriate_reserved(from, to, bond, BalanceStatus::Reserved) {
+					Ok(left_behind) => {
+						let moved = bond.saturating_sub(left_behind);
+						if !moved.is_zero() {
+							NoterBonds::<T>::insert(to, moved);
+						}
+					},
+					// The successor cannot take it; the bond stays where its money is, and
+					// governance can still slash it there.
+					Err(_) => NoterBonds::<T>::insert(from, bond),
+				}
 			}
 			if let Some(at) = NoterLastSubmission::<T>::take(from) {
+				was_noter = true;
 				NoterLastSubmission::<T>::insert(to, at);
+			}
+			if was_noter {
+				NoterSucceededBy::<T>::insert(from, to);
 			}
 			let disputes = DisputesAgainstNoter::<T>::take(from);
 			if disputes != 0 {
@@ -911,6 +940,21 @@ pub mod pezpallet {
 				TrackingOptIn::<T>::insert(to, ());
 			}
 			Ok(())
+		}
+
+		/// The account that answers today for submissions `who` made as a noter.
+		///
+		/// Bounded: a noter can lose a key twice, and a chain long enough to matter is not
+		/// one, so the walk stops after a fixed number of steps.
+		pub fn noter_answering_for(who: &T::AccountId) -> T::AccountId {
+			let mut current = who.clone();
+			for _ in 0..8 {
+				match NoterSucceededBy::<T>::get(&current) {
+					Some(next) => current = next,
+					None => break,
+				}
+			}
+			current
 		}
 
 		/// Calculate total cached stake across all sources for a given account.
