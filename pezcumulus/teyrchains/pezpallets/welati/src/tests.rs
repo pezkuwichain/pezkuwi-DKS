@@ -6465,3 +6465,63 @@ fn a_first_round_that_goes_to_a_runoff_returns_its_deposits() {
 		}
 	});
 }
+
+// ===== THE SPEAKER'S ELECTION =====
+//
+// The Speaker holds no term of their own: the chair is the house's, filled by the house, and
+// vacated when the house is replaced (whitepaper §5.3). Seating a new house cleared the
+// Speaker's term "so the scheduler opens a Speaker election" -- but the scheduler reads no
+// term as an office never elected and opens nothing, so an elected house never got a Speaker.
+// And a Speaker who did have a term had the house's, so the scheduler would have re-elected
+// the chair in the outgoing house's last weeks (L-7, 2026-10-21).
+
+mod the_speakers_election {
+	use super::*;
+	use crate::{OpenElection, TermEnds};
+
+	#[test]
+	fn an_elected_house_without_a_speaker_opens_the_election() {
+		ExtBuilder::default().build().execute_with(|| {
+			let now = System::block_number();
+			TermEnds::<Test>::insert(ElectionType::Parliamentary, now + 100_000);
+			for member in 7..=10u64 {
+				add_parliament_member(member);
+			}
+			run_to_block(now + 1);
+			assert!(OpenElection::<Test>::contains_key(ElectionType::SpeakerElection));
+		});
+	}
+
+	#[test]
+	fn the_founding_house_does_not_open_it() {
+		ExtBuilder::default().build().execute_with(|| {
+			// No term for the house: it was seated by the founding President, not elected.
+			for member in 7..=10u64 {
+				add_parliament_member(member);
+			}
+			run_to_block(System::block_number() + 1);
+			assert!(!OpenElection::<Test>::contains_key(ElectionType::SpeakerElection));
+		});
+	}
+
+	#[test]
+	fn a_seated_speaker_is_not_re_elected_on_the_houses_clock() {
+		ExtBuilder::default().build().execute_with(|| {
+			let ends = System::block_number() + 2_000;
+			TermEnds::<Test>::insert(ElectionType::Parliamentary, ends);
+			TermEnds::<Test>::insert(ElectionType::SpeakerElection, ends);
+			for member in 7..=10u64 {
+				add_parliament_member(member);
+			}
+			assert_ok!(Welati::seat_unique_tiki(&7, Tiki::SerokiMeclise));
+			// Keep the chair from falling silent while the house runs down.
+			crate::OfficeLastActive::<Test>::insert(Tiki::SerokiMeclise, (7u64, ends));
+
+			run_to_block(ends - 1);
+			assert!(
+				!OpenElection::<Test>::contains_key(ElectionType::SpeakerElection),
+				"the chair is filled and the house still sits"
+			);
+		});
+	}
+}
