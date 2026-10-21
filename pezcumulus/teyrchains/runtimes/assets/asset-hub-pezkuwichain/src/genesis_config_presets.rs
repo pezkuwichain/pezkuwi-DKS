@@ -55,6 +55,14 @@ fn pez_asset_team() -> AccountId {
 	PezAssetTeamId::get().into_account_truncating()
 }
 
+/// The account that owns the wHEZ asset: the token wrapper's own, which no seed produces.
+///
+/// The wrapper mints and burns wHEZ itself, against the HEZ it holds; it needs none of the
+/// owner's roles to do so. Any key holding them could mint wHEZ with nothing behind it.
+fn whez_owner() -> AccountId {
+	TokenWrapperPalletId::get().into_account_truncating()
+}
+
 // ============================================================================
 // PEZ TOKEN CONSTANTS
 // ============================================================================
@@ -109,9 +117,9 @@ const _: () = assert!(
 /// - `endowed_accounts`: Accounts to receive initial HEZ balance
 /// - `endowment`: HEZ amount for each endowed account
 /// - `id`: Teyrchain ID
-/// - `asset_owner`: Account that administers the wHEZ and wUSDT assets, both of which are
-///   minted and burned by live systems and so need a team that can act. PEZ is deliberately
-///   not among them -- see `pez_asset_team()`.
+/// - `asset_owner`: Account that administers the wUSDT asset, which the bridge mints and
+///   burns and so needs a team that can act. PEZ and wHEZ are deliberately not given to it --
+///   see `pez_asset_team()` and `whez_owner()`.
 /// - `founder_account`: Account holding the Founder PEZ allocation. This one is genuinely
 ///   owned -- it is property, and what happens to it is the founder's to decide.
 /// - `pez_presale_custody`: Account holding the PEZ presale allocation. The sale happens on
@@ -318,8 +326,9 @@ fn asset_hub_pezkuwichain_genesis(
 				// PEZ Token - Governance token with 5B fixed supply.
 				// The asset team is keyless by design -- see `PezAssetTeamId`.
 				(PEZ_ASSET_ID, pez_asset_team(), true, 1),
-				// wHEZ Token - Wrapped HEZ for DeFi operations
-				(WHEZ_ASSET_ID, asset_owner.clone(), true, 1),
+				// wHEZ Token - Wrapped HEZ for DeFi operations.
+				// Owned by the wrapper's keyless account -- see `whez_owner()`.
+				(WHEZ_ASSET_ID, whez_owner(), true, 1),
 				// wUSDT - Wrapped USDT (1:1 backed by Polkadot USDT or TRC20 USDT)
 				// Min balance: 10_000 (0.01 USDT with 6 decimals)
 				(WUSDT_ASSET_ID, asset_owner.clone(), true, 10_000),
@@ -397,9 +406,9 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			// old accounts in place would mean it did not replace who holds it. Recorded in
 			// `res/genesis/mainnet/mainnet-wallets.json`, which stays out of this repository.
 			//
-			// Administrator of wHEZ and wUSDT only -- both are minted and burned by live
-			// systems, so they need a team that can act. PEZ is deliberately not among
-			// them; see `PezAssetTeamId`.
+			// Administrator of wUSDT only -- the bridge mints and burns it, so it needs a
+			// team that can act. PEZ and wHEZ are deliberately not given to it; see
+			// `PezAssetTeamId` and `whez_owner()`.
 			// SS58: 5FRp6DBpM24irn5mrDeAAUB2ypB3ozu7kjLRvqhJ3JK1rpGn
 			let asset_owner: AccountId =
 				hex!("94cdd66f332e0c7759fee3e49b3706b3a8cf63b948a642c57f0c8bf0eb16f202").into();

@@ -1546,8 +1546,9 @@ parameter_types! {
 	/// exercised. PEZ needs none of them -- the entire supply is created at genesis and the
 	/// fixed five billion is the whole point of the token.
 	///
-	/// wHEZ and wUSDT are administered normally, because live systems mint and burn them.
-	/// PEZ must not be. Do not give this asset a signable owner.
+	/// wUSDT is administered normally, because the bridge mints and burns it. PEZ must not
+	/// be, and neither must wHEZ, which belongs to `TokenWrapperPalletId`'s account. Do not
+	/// give this asset a signable owner.
 	pub const PezAssetTeamId: PalletId = PalletId(*b"pez/asst");
 	/// `PezRewards` on the People chain, which is where the funding report is addressed.
 	pub const PezRewardsPalletIndex: u8 = 91;
