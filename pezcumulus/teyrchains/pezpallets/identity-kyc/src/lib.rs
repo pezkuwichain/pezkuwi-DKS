@@ -494,6 +494,10 @@ pub mod pezpallet {
 		NotRevoked,
 		/// This account is already a citizen.
 		AlreadyACitizen,
+		/// The court revoked this citizenship; only the court's restoration brings it back.
+		CitizenshipRevokedByTheCourt,
+		/// This account has an application in progress; it finishes or is cancelled first.
+		ApplicationInProgress,
 	}
 
 	// ============= EXTRINSICS =============
@@ -1014,7 +1018,17 @@ impl<T: Config> Pezpallet<T> {
 	/// the honorary register, which exists so the chain can be asked how many citizens
 	/// applied and how many were named, and for nothing else.
 	pub fn register_honorary_citizen(who: &T::AccountId) -> pezsp_runtime::DispatchResult {
-		ensure!(KycStatuses::<T>::get(who) != KycLevel::Approved, Error::<T>::AlreadyACitizen);
+		// Only somebody with no standing record may be named. A revoked citizenship used to
+		// be overwritten here -- the head of government undoing the court's finding with a
+		// signature, where the court's own `restore_citizenship` is the way back. And an
+		// application in progress was overwritten too, leaving its deposit reserved for good
+		// (L-7, 2026-10-21).
+		match KycStatuses::<T>::get(who) {
+			KycLevel::NotStarted => {},
+			KycLevel::Approved => return Err(Error::<T>::AlreadyACitizen.into()),
+			KycLevel::Revoked => return Err(Error::<T>::CitizenshipRevokedByTheCourt.into()),
+			_ => return Err(Error::<T>::ApplicationInProgress.into()),
+		}
 
 		KycStatuses::<T>::insert(who, KycLevel::Approved);
 		CitizenCount::<T>::mutate(|n| *n = n.saturating_add(1));

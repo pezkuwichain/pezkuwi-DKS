@@ -788,6 +788,40 @@ mod honorary {
 		});
 	}
 
+	/// The head of government cannot undo the court with an honour.
+	#[test]
+	fn a_revoked_citizenship_is_not_overwritten_by_an_honour() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(IdentityKycPallet::revoke_citizenship(RuntimeOrigin::root(), CITIZEN_1));
+			let count = IdentityKycPallet::approved_citizen_count();
+
+			assert_noop!(
+				IdentityKycPallet::register_honorary_citizen(&CITIZEN_1),
+				Error::<Test>::CitizenshipRevokedByTheCourt
+			);
+			assert_eq!(IdentityKycPallet::kyc_status_of(CITIZEN_1), KycLevel::Revoked);
+			assert_eq!(IdentityKycPallet::approved_citizen_count(), count);
+		});
+	}
+
+	/// An application in progress is finished or cancelled, not overwritten with its deposit
+	/// still reserved.
+	#[test]
+	fn an_application_in_progress_is_not_overwritten_by_an_honour() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(IdentityKycPallet::apply_for_citizenship(
+				RuntimeOrigin::signed(APPLICANT),
+				H256::from_low_u64_be(4242),
+				Some(CITIZEN_1),
+				None,
+			));
+			assert_noop!(
+				IdentityKycPallet::register_honorary_citizen(&APPLICANT),
+				Error::<Test>::ApplicationInProgress
+			);
+		});
+	}
+
 	#[test]
 	fn nobody_is_named_a_citizen_twice() {
 		new_test_ext().execute_with(|| {
