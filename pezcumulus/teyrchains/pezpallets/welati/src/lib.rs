@@ -3885,6 +3885,10 @@ pub mod pezpallet {
 					)?;
 
 					election.status = ElectionStatus::Completed;
+					// The first round is over like any other, so its deposits come back. This
+					// arm used to return none, and every first-round candidate's deposit stayed
+					// reserved for good (L-7, 2026-10-21).
+					Self::return_candidacy_deposits(election_id, &election);
 					ActiveElections::<T>::insert(election_id, election);
 				},
 			}
