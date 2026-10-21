@@ -105,6 +105,14 @@ pub fn genesis() -> Storage {
 			..Default::default()
 		},
 		configuration: zagros_runtime::ConfigurationConfig { config: get_host_config() },
+		// `Active`, as in every real Zagros preset: the relay takes its validator set from the
+		// Asset Hub or from People's committee. At the pallet's default, `Passive`, it refuses
+		// any set it is sent, so a test of the handover would fail for a reason the live chain
+		// does not have.
+		staking_ah_client: zagros_runtime::StakingAhClientConfig {
+			operating_mode: pezpallet_staking_async_ah_client::OperatingMode::Active,
+			..Default::default()
+		},
 		..Default::default()
 	};
 

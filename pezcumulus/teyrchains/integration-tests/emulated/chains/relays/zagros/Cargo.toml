@@ -16,6 +16,7 @@ workspace = true
 [dependencies]
 # Bizinikiwi
 pezpallet-staking = { workspace = true }
+pezpallet-staking-async-ah-client = { workspace = true, default-features = true }
 pezsc-consensus-grandpa = { workspace = true }
 pezsp-authority-discovery = { workspace = true }
 pezsp-consensus-babe = { workspace = true }
@@ -36,6 +37,7 @@ teyrchains-common = { workspace = true, default-features = true }
 runtime-benchmarks = [
 	"emulated-integration-tests-common/runtime-benchmarks",
 	"pezkuwi-primitives/runtime-benchmarks",
+	"pezpallet-staking-async-ah-client/runtime-benchmarks",
 	"pezpallet-staking/runtime-benchmarks",
 	"pezsc-consensus-grandpa/runtime-benchmarks",
 	"pezsp-authority-discovery/runtime-benchmarks",
@@ -49,6 +51,7 @@ runtime-benchmarks = [
 std = [
 	"emulated-integration-tests-common/std",
 	"pezkuwi-primitives/std",
+	"pezpallet-staking-async-ah-client/std",
 	"pezpallet-staking/std",
 	"pezsc-consensus-grandpa/std",
 	"pezsp-authority-discovery/std",
@@ -60,6 +63,7 @@ std = [
 try-runtime = [
 	"emulated-integration-tests-common/try-runtime",
 	"pezkuwi-primitives/try-runtime",
+	"pezpallet-staking-async-ah-client/try-runtime",
 	"pezpallet-staking/try-runtime",
 	"pezsc-consensus-grandpa/try-runtime",
 	"pezsp-authority-discovery/try-runtime",

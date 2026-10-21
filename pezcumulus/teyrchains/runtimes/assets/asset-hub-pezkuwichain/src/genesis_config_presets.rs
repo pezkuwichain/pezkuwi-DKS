@@ -123,10 +123,16 @@ const _: () = assert!(
 /// - `founding_office`: Holder of `Tiki::Serok`, funded here for its calls on this chain
 /// - `foreign_assets`: Foreign assets to create at genesis
 /// - `foreign_assets_endowed_accounts`: Initial balances for foreign assets
-/// How many winners the Asset Hub's election asks for until People's first committee snapshot
-/// arrives; from then on `Komite` sets it to the committee members who validate here. The
-/// election seats no one -- the committee comes from People, every stratum drawn by lot -- it
-/// builds the exposures the payout and slashing read.
+/// The fewest winners the Asset Hub's election asks for before People's first committee
+/// snapshot arrives; from then on `Komite` sets it to the committee members who validate here.
+/// The election seats no one -- the committee comes from People, every stratum drawn by lot --
+/// it builds the exposures the payout and slashing read.
+///
+/// A floor, not the genesis count. Genesis asks for every genesis validator, because until the
+/// committee forms they are the relay's set, and a validator the election does not pick has no
+/// exposure and so no pay: this figure alone, as the count, paid three of twenty-seven and sent
+/// the rest of the validators' share to the treasury. The committee needs its pool to fill
+/// every stratum floor first, which on a young register can take months.
 pub const STAKE_STRATUM_SEATS: u32 = 3;
 
 /// The least a validator bonds here (spec K4). Below it `validate` is refused, so a seat
@@ -274,8 +280,9 @@ fn asset_hub_pezkuwichain_genesis(
 			// force_new_era()" in a comment, left the live Zagros at era 0 for weeks: nothing
 			// was ever minted. Spec res/specs/2026-10-04-hez-emission-design.md, C1.
 			force_era: pezpallet_staking_async::Forcing::NotForcing,
-			// Until People's first committee snapshot sets it (see `STAKE_STRATUM_SEATS`).
-			validator_count: STAKE_STRATUM_SEATS,
+			// Every genesis validator, until People's first committee snapshot sets it (see
+			// `STAKE_STRATUM_SEATS`).
+			validator_count: (genesis_validators.len() as u32).max(STAKE_STRATUM_SEATS),
 			// Spec K4: 10,000 HEZ bonded to validate, the condition for being paid.
 			min_validator_bond: MIN_VALIDATOR_BOND,
 			// Synthetic stakers, for the presets that ask for them. The multi-block election
@@ -845,6 +852,11 @@ fn the_genesis_validators_start_bonded() {
 		"the genesis bond is the validator floor"
 	);
 	let stakers = g["staking"]["stakers"].as_array().expect("the genesis preset lists stakers");
+	assert_eq!(
+		g["staking"]["validatorCount"].as_u64(),
+		Some(pezkuwichain_runtime_constants::genesis::VALIDATOR_STASHES.len() as u64),
+		"the election asks for every genesis validator, or the ones it leaves out go unpaid"
+	);
 	let want: alloc::vec::Vec<serde_json::Value> =
 		pezkuwichain_runtime_constants::genesis::VALIDATOR_STASHES
 			.iter()
