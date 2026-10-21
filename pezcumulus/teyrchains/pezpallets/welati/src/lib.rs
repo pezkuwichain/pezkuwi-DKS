@@ -2999,32 +2999,20 @@ pub mod pezpallet {
 		/// rather than people.
 		#[pezpallet::call_index(53)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
-		#[pezpallet::feeless_if(|_origin: &OriginFor<T>, id: &u32| -> bool {
-			Initiatives::<T>::contains_key(id)
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, id: &u32| -> bool {
+			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
+			Pezpallet::<T>::may_back_initiative(&who, *id).is_ok()
 		})]
 		pub fn back_initiative(
 			origin: OriginFor<T>,
 			#[pezpallet::compact] id: u32,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-
-			#[cfg(not(any(test, feature = "runtime-benchmarks")))]
-			ensure!(
-				<pezpallet_identity_kyc::Pezpallet<T> as KycStatus<T::AccountId>>::get_kyc_status(
-					&who
-				) == KycLevel::Approved,
-				Error::<T>::NotACitizen
-			);
-			ensure!(T::TrustScoreSource::trust_score_of(&who) > 0, Error::<T>::NoTrustToVote);
-			ensure!(!InitiativeBacking::<T>::contains_key(id, &who), Error::<T>::AlreadyBacked);
+			Self::may_back_initiative(&who, id)?;
 
 			let backing =
 				Initiatives::<T>::try_mutate(id, |maybe| -> Result<u32, DispatchError> {
 					let init = maybe.as_mut().ok_or(Error::<T>::NoSuchInitiative)?;
-					ensure!(
-						pezframe_system::Pezpallet::<T>::block_number() <= init.closes,
-						Error::<T>::InitiativeClosed
-					);
 					init.backing = init.backing.saturating_add(1);
 					Ok(init.backing)
 				})?;
@@ -3146,12 +3134,15 @@ pub mod pezpallet {
 		/// cannot cast, and "zero stake is zero trust" already means they are the citizens
 		/// least likely to have any.
 		///
-		/// The predicate is narrow on purpose. Free requires that the vote is real *and* that
-		/// this account has not already cast one: a repeat is paid for, so a free call cannot
-		/// be repeated, and a call naming something that does not exist was never a vote.
+		/// The predicate is narrow on purpose. Free requires that the vote is real, that this
+		/// account may cast it, *and* that it has not already cast one: a repeat is paid for,
+		/// so a free call cannot be repeated, and a call the body will refuse was never a
+		/// vote. It used to skip the middle condition, so anyone could send a refused answer
+		/// for nothing, as often as they liked (L-7 Y4, 2026-10-21).
 		#[pezpallet::feeless_if(|origin: &OriginFor<T>, poll: &u32, _aye: &bool| -> bool {
 			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
-			T::Polls::as_ongoing(*poll).is_some()
+			Pezpallet::<T>::ensure_may_vote_in_the_register(&who).is_ok()
+				&& T::Polls::as_ongoing(*poll).is_some()
 				&& !ReferendumVotes::<T>::contains_key(poll, &who)
 		})]
 		pub fn answer_referendum(
@@ -3160,15 +3151,7 @@ pub mod pezpallet {
 			aye: bool,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-
-			#[cfg(not(any(test, feature = "runtime-benchmarks")))]
-			ensure!(
-				<pezpallet_identity_kyc::Pezpallet<T> as KycStatus<T::AccountId>>::get_kyc_status(
-					&who
-				) == KycLevel::Approved,
-				Error::<T>::NotACitizen
-			);
-			ensure!(T::TrustScoreSource::trust_score_of(&who) > 0, Error::<T>::NoTrustToVote);
+			Self::ensure_may_vote_in_the_register(&who)?;
 
 			T::Polls::try_access_poll(poll, |status| {
 				let (tally, _class) =
@@ -3241,10 +3224,9 @@ pub mod pezpallet {
 		/// An endorsement is how a citizen with no money takes part in *choosing who stands*,
 		/// which is the half of an election that happens before anybody votes. Charging for it
 		/// puts the earlier and more consequential half behind the same wall.
-		#[pezpallet::feeless_if(|origin: &OriginFor<T>, election_id: &u32, _candidate: &T::AccountId| -> bool {
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, election_id: &u32, candidate: &T::AccountId| -> bool {
 			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
-			ActiveElections::<T>::contains_key(election_id)
-				&& !Endorsements::<T>::contains_key(election_id, &who)
+			Pezpallet::<T>::may_endorse(&who, *election_id, candidate).is_ok()
 		})]
 		pub fn endorse_candidate(
 			origin: OriginFor<T>,
@@ -3252,27 +3234,7 @@ pub mod pezpallet {
 			candidate: T::AccountId,
 		) -> DispatchResult {
 			let endorser = ensure_signed(origin)?;
-			ensure!(endorser != candidate, Error::<T>::CannotEndorseSelf);
-
-			let election =
-				ActiveElections::<T>::get(election_id).ok_or(Error::<T>::ElectionNotFound)?;
-			let now = pezframe_system::Pezpallet::<T>::block_number();
-			ensure!(now <= election.candidacy_deadline, Error::<T>::CandidacyPeriodExpired);
-
-			#[cfg(not(any(test, feature = "runtime-benchmarks")))]
-			{
-				ensure!(
-					<pezpallet_identity_kyc::Pezpallet<T> as KycStatus<T::AccountId>>::get_kyc_status(
-						&endorser
-					) == KycLevel::Approved,
-					Error::<T>::NotACitizen
-				);
-			}
-
-			ensure!(
-				!Endorsements::<T>::contains_key(election_id, &endorser),
-				Error::<T>::AlreadyEndorsed
-			);
+			Self::may_endorse(&endorser, election_id, &candidate)?;
 
 			Self::note_governance_activity(&endorser);
 			Endorsements::<T>::insert(election_id, &endorser, &candidate);
@@ -3756,13 +3718,14 @@ pub mod pezpallet {
 		/// cannot cast, and "zero stake is zero trust" already means they are the citizens
 		/// least likely to have any.
 		///
-		/// The predicate is narrow on purpose. Free requires that the vote is real *and* that
-		/// this account has not already cast one: a repeat is paid for, so a free call cannot
-		/// be repeated, and a call naming something that does not exist was never a vote.
-		#[pezpallet::feeless_if(|origin: &OriginFor<T>, election_id: &u32, _candidates: &Vec<T::AccountId>, _district_id: &Option<u32>| -> bool {
+		/// The predicate is narrow on purpose: it asks everything the body asks, through the
+		/// same `ballot_for`. A repeat is refused, so it is not free, and a ballot the body
+		/// will refuse was never a vote. It used to ask only that the election existed and
+		/// that this account had not voted, so a ballot certain to be refused went through
+		/// for nothing, as often as its sender liked (L-7 Y4, 2026-10-21).
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, election_id: &u32, candidates: &Vec<T::AccountId>, _district_id: &Option<u32>| -> bool {
 			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
-			ActiveElections::<T>::contains_key(election_id)
-				&& !ElectionVotes::<T>::contains_key(election_id, &who)
+			Pezpallet::<T>::ballot_for(&who, *election_id, candidates.clone()).is_ok()
 		})]
 		pub fn cast_vote(
 			origin: OriginFor<T>,
@@ -3771,59 +3734,8 @@ pub mod pezpallet {
 			district_id: Option<u32>,
 		) -> DispatchResult {
 			let voter = ensure_signed(origin)?;
-
-			// Bounded before anything walks it, and every name on it once. The list used to be
-			// walked before the bound of ten was applied -- a hundred thousand names cost one
-			// fixed fee -- and a name written ten times was counted ten times, so one ballot was
-			// worth ten for any candidate (L-7, 2026-10-21).
-			let candidates: BoundedVec<T::AccountId, ConstU32<10>> =
-				candidates.try_into().map_err(|_| Error::<T>::BallotTooLong)?;
-			let mut distinct = candidates.clone().into_inner();
-			distinct.sort();
-			distinct.dedup();
-			ensure!(distinct.len() == candidates.len(), Error::<T>::CandidateNamedTwice);
-
-			let mut election =
-				ActiveElections::<T>::get(election_id).ok_or(Error::<T>::ElectionNotFound)?;
-
+			let (candidates, mut election) = Self::ballot_for(&voter, election_id, candidates)?;
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
-			ensure!(
-				current_block >= election.voting_start && current_block <= election.end_block,
-				Error::<T>::VotingPeriodNotStarted
-			);
-
-			// BYPASS KYC CHECK FOR TESTS AND BENCHMARKS
-			#[cfg(not(any(test, feature = "runtime-benchmarks")))]
-			{
-				ensure!(
-					<pezpallet_identity_kyc::Pezpallet<T> as KycStatus<T::AccountId>>::get_kyc_status(
-						&voter
-					) == KycLevel::Approved,
-					Error::<T>::NotACitizen
-				);
-			}
-
-			// The court is the one election with a restricted electorate. Six of its eleven
-			// seats belong to the house, so the house votes for them -- not the whole
-			// citizenry. The other five are the President's, and are not voted for at all.
-			if election.election_type == ElectionType::ConstitutionalCourt {
-				ensure!(
-					pezpallet_tiki::Pezpallet::<T>::has_tiki(&voter, &Tiki::Parlementer),
-					Error::<T>::NotAParliamentMember
-				);
-			}
-
-			ensure!(
-				!ElectionVotes::<T>::contains_key(election_id, &voter),
-				Error::<T>::AlreadyVoted
-			);
-
-			for candidate in &candidates {
-				ensure!(
-					ElectionCandidates::<T>::contains_key(election_id, candidate),
-					Error::<T>::ElectionNotFound
-				);
-			}
 
 			let vote_weight = Self::calculate_vote_weight(&voter, &election.election_type);
 
@@ -4322,10 +4234,11 @@ pub mod pezpallet {
             // accounts unauthorized for this specific proposal's decision type
             // (e.g. Ministers, who are never authorized to vote) could spam this
             // call for free and always fail authorization.
+            // It asks everything the body asks, through the same `may_vote_on_proposal`: a
+            // member's second vote, or one outside the window, used to be free as well
+            // (L-7 Y4, 2026-10-21).
             match ensure_signed(origin.clone()) {
-                Ok(who) => ActiveProposals::<T>::get(proposal_id)
-                    .map(|proposal| Pezpallet::<T>::is_authorized_to_vote(&proposal.decision_type, &who))
-                    .unwrap_or(false),
+                Ok(who) => Pezpallet::<T>::may_vote_on_proposal(&who, *proposal_id).is_ok(),
                 Err(_) => false,
             }
         })]
@@ -4336,34 +4249,7 @@ pub mod pezpallet {
 			rationale: Option<BoundedVec<u8, ConstU32<500>>>,
 		) -> DispatchResult {
 			let voter = ensure_signed(origin)?;
-			ensure!(ActiveProposals::<T>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
-
-			// Check if voter has already voted on this proposal
-			ensure!(
-				!CollectiveVotes::<T>::contains_key(proposal_id, &voter),
-				Error::<T>::ProposalAlreadyVoted
-			);
-
-			// Check if voter is authorized (must be a parliament member)
-			let proposal =
-				ActiveProposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotFound)?;
-
-			// Enforce access control based on decision type (shared with feeless_if
-			// via is_authorized_to_vote so the two checks cannot drift apart)
-			ensure!(
-				Self::is_authorized_to_vote(&proposal.decision_type, &voter),
-				Error::<T>::NotAuthorizedToVote
-			);
-
-			// The window was written onto the proposal and never read, so a member could vote
-			// before debate opened or long after it closed -- and since a proposal passes the
-			// moment its ayes reach the threshold, a late vote could carry something the
-			// house had already let lapse.
-			let now = pezframe_system::Pezpallet::<T>::block_number();
-			ensure!(
-				now >= proposal.voting_starts_at && now <= proposal.expires_at,
-				Error::<T>::OutsideVotingWindow
-			);
+			Self::may_vote_on_proposal(&voter, proposal_id)?;
 
 			// Record the vote
 			let vote_info = CollectiveVote {
@@ -4810,6 +4696,159 @@ pub mod pezpallet {
 					Self::is_parliament_member(voter) || Self::is_serok(voter)
 				},
 			}
+		}
+
+		/// Whether `who` may take part in the register's own votes: an approved citizen whose
+		/// trust is above zero. Trust of zero is technical death, and the dead do not vote.
+		pub fn ensure_may_vote_in_the_register(who: &T::AccountId) -> DispatchResult {
+			#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+			ensure!(
+				<pezpallet_identity_kyc::Pezpallet<T> as KycStatus<T::AccountId>>::get_kyc_status(
+					who
+				) == KycLevel::Approved,
+				Error::<T>::NotACitizen
+			);
+			ensure!(T::TrustScoreSource::trust_score_of(who) > 0, Error::<T>::NoTrustToVote);
+			Ok(())
+		}
+
+		/// Everything `back_initiative` checks before it writes.
+		///
+		/// The call's fee exemption asks the same thing, so a free signature is one that will
+		/// be counted. Every `may_*` and `ballot_for` below exists for the same reason: an
+		/// exemption that asks less than the body lets a call the body refuses through for
+		/// nothing, as often as its sender likes (L-7 Y4, 2026-10-21).
+		pub fn may_back_initiative(who: &T::AccountId, id: u32) -> DispatchResult {
+			Self::ensure_may_vote_in_the_register(who)?;
+			ensure!(!InitiativeBacking::<T>::contains_key(id, who), Error::<T>::AlreadyBacked);
+			let init = Initiatives::<T>::get(id).ok_or(Error::<T>::NoSuchInitiative)?;
+			ensure!(
+				pezframe_system::Pezpallet::<T>::block_number() <= init.closes,
+				Error::<T>::InitiativeClosed
+			);
+			Ok(())
+		}
+
+		/// Everything `endorse_candidate` checks before it writes.
+		pub fn may_endorse(
+			endorser: &T::AccountId,
+			election_id: u32,
+			candidate: &T::AccountId,
+		) -> DispatchResult {
+			ensure!(endorser != candidate, Error::<T>::CannotEndorseSelf);
+
+			let election =
+				ActiveElections::<T>::get(election_id).ok_or(Error::<T>::ElectionNotFound)?;
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			ensure!(now <= election.candidacy_deadline, Error::<T>::CandidacyPeriodExpired);
+
+			#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+			ensure!(
+				<pezpallet_identity_kyc::Pezpallet<T> as KycStatus<T::AccountId>>::get_kyc_status(
+					endorser
+				) == KycLevel::Approved,
+				Error::<T>::NotACitizen
+			);
+
+			ensure!(
+				!Endorsements::<T>::contains_key(election_id, endorser),
+				Error::<T>::AlreadyEndorsed
+			);
+			Ok(())
+		}
+
+		/// Everything `cast_vote` checks before it writes, returning the ballot as it will be
+		/// counted and the election it is cast in.
+		pub fn ballot_for(
+			voter: &T::AccountId,
+			election_id: u32,
+			candidates: Vec<T::AccountId>,
+		) -> Result<(BoundedVec<T::AccountId, ConstU32<10>>, ElectionInfo<T>), DispatchError> {
+			// Bounded before anything walks it, and every name on it once. The list used to be
+			// walked before the bound of ten was applied -- a hundred thousand names cost one
+			// fixed fee -- and a name written ten times was counted ten times, so one ballot was
+			// worth ten for any candidate (L-7, 2026-10-21).
+			let candidates: BoundedVec<T::AccountId, ConstU32<10>> =
+				candidates.try_into().map_err(|_| Error::<T>::BallotTooLong)?;
+			let mut distinct = candidates.clone().into_inner();
+			distinct.sort();
+			distinct.dedup();
+			ensure!(distinct.len() == candidates.len(), Error::<T>::CandidateNamedTwice);
+
+			let election =
+				ActiveElections::<T>::get(election_id).ok_or(Error::<T>::ElectionNotFound)?;
+
+			let current_block = pezframe_system::Pezpallet::<T>::block_number();
+			ensure!(
+				current_block >= election.voting_start && current_block <= election.end_block,
+				Error::<T>::VotingPeriodNotStarted
+			);
+
+			// BYPASS KYC CHECK FOR TESTS AND BENCHMARKS
+			#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+			{
+				ensure!(
+					<pezpallet_identity_kyc::Pezpallet<T> as KycStatus<T::AccountId>>::get_kyc_status(
+						voter
+					) == KycLevel::Approved,
+					Error::<T>::NotACitizen
+				);
+			}
+
+			// The court is the one election with a restricted electorate. Six of its eleven
+			// seats belong to the house, so the house votes for them -- not the whole
+			// citizenry. The other five are the President's, and are not voted for at all.
+			if election.election_type == ElectionType::ConstitutionalCourt {
+				ensure!(
+					pezpallet_tiki::Pezpallet::<T>::has_tiki(voter, &Tiki::Parlementer),
+					Error::<T>::NotAParliamentMember
+				);
+			}
+
+			ensure!(
+				!ElectionVotes::<T>::contains_key(election_id, voter),
+				Error::<T>::AlreadyVoted
+			);
+
+			for candidate in &candidates {
+				ensure!(
+					ElectionCandidates::<T>::contains_key(election_id, candidate),
+					Error::<T>::ElectionNotFound
+				);
+			}
+
+			Ok((candidates, election))
+		}
+
+		/// Everything `vote_on_proposal` checks before it writes.
+		pub fn may_vote_on_proposal(voter: &T::AccountId, proposal_id: u32) -> DispatchResult {
+			ensure!(ActiveProposals::<T>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
+
+			// Check if voter has already voted on this proposal
+			ensure!(
+				!CollectiveVotes::<T>::contains_key(proposal_id, voter),
+				Error::<T>::ProposalAlreadyVoted
+			);
+
+			// Authorised for this proposal's decision type.
+			let proposal =
+				ActiveProposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotFound)?;
+			ensure!(
+				Self::is_authorized_to_vote(&proposal.decision_type, voter),
+				Error::<T>::NotAuthorizedToVote
+			);
+
+			// The window was written onto the proposal and never read, so a member could vote
+			// before debate opened or long after it closed -- and since a proposal passes the
+			// moment its ayes reach the threshold, a late vote could carry something the
+			// house had already let lapse.
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			ensure!(
+				now >= proposal.voting_starts_at && now <= proposal.expires_at,
+				Error::<T>::OutsideVotingWindow
+			);
+
+			Ok(())
 		}
 
 		/// Accept Root or the sitting President, and nobody else.
