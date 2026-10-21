@@ -1726,6 +1726,10 @@ pub mod pezpallet {
 		BallotTooLong,
 		/// A ballot names the same candidate more than once.
 		CandidateNamedTwice,
+		/// An endorsement list names the same endorser more than once.
+		EndorserNamedTwice,
+		/// A candidate cannot endorse their own candidacy.
+		CannotEndorseSelf,
 	}
 
 	#[pezpallet::hooks]
@@ -1742,6 +1746,23 @@ pub mod pezpallet {
 			weight = weight.saturating_add(Self::check_population_gate(n));
 			weight = weight.saturating_add(Self::end_founding_period(n));
 			weight
+		}
+
+		/// A candidacy the configuration requires must be one the configuration admits.
+		///
+		/// `get_required_endorsements` asks for up to `PresidentialEndorsements` and
+		/// `ParliamentaryEndorsements`, and `register_candidate` refuses a list longer than
+		/// `MaxEndorsers`. If either requirement exceeds that bound, nobody can register for
+		/// that office once the roll is mature -- and the founding period ends into elections
+		/// that can never have a candidate. A hidden third bound (a list of a hundred kept in
+		/// each candidate's record) did exactly that to the mainnet presidency, which asks for
+		/// a thousand; the rehearsals asked for twenty and never saw it (L-7, 2026-10-21).
+		fn integrity_test() {
+			assert!(
+				T::PresidentialEndorsements::get() <= T::MaxEndorsers::get()
+					&& T::ParliamentaryEndorsements::get() <= T::MaxEndorsers::get(),
+				"an office requires more endorsements than a candidacy may carry"
+			);
 		}
 
 		/// What the constitution says must always be true of the government.
@@ -3185,6 +3206,7 @@ pub mod pezpallet {
 			candidate: T::AccountId,
 		) -> DispatchResult {
 			let endorser = ensure_signed(origin)?;
+			ensure!(endorser != candidate, Error::<T>::CannotEndorseSelf);
 
 			let election =
 				ActiveElections::<T>::get(election_id).ok_or(Error::<T>::ElectionNotFound)?;
@@ -3480,7 +3502,7 @@ pub mod pezpallet {
 						account: candidate.clone(),
 						district_id: None,
 						registered_at: current_block,
-						endorsers: Default::default(),
+						endorsement_count: 0,
 						vote_count: 0,
 						deposit_paid: 0,
 						campaign_data: Default::default(),
@@ -3599,6 +3621,17 @@ pub mod pezpallet {
 				);
 			}
 
+			// Each endorser once, and never the candidate. The count was taken of the list as
+			// given, and each name was checked only for having endorsed this candidate -- so one
+			// endorsement written a thousand times met the threshold, and a candidate could be
+			// their own endorser. A faction of a few hundred could take every candidate slot of
+			// an election that is meant to need tens of thousands of endorsers (L-7, 2026-10-21).
+			let mut distinct = endorsers.clone();
+			distinct.sort();
+			distinct.dedup();
+			ensure!(distinct.len() == endorsers.len(), Error::<T>::EndorserNamedTwice);
+			ensure!(!endorsers.contains(&candidate), Error::<T>::CannotEndorseSelf);
+
 			let required_endorsements = Self::get_required_endorsements(&election.election_type);
 			ensure!(
 				endorsers.len() as u32 >= required_endorsements,
@@ -3644,9 +3677,7 @@ pub mod pezpallet {
 				account: candidate.clone(),
 				district_id,
 				registered_at: current_block,
-				endorsers: endorsers
-					.try_into()
-					.map_err(|_| Error::<T>::InsufficientEndorsements)?,
+				endorsement_count: endorsers.len() as u32,
 				vote_count: 0,
 				deposit_paid: T::CandidacyDeposit::get(),
 				campaign_data: Default::default(),

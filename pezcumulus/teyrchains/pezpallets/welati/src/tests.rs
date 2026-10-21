@@ -199,6 +199,39 @@ fn a_ballot_naming_one_candidate_twice_is_refused() {
 	});
 }
 
+/// An endorsement counts once, and never the candidate's own.
+///
+/// The threshold was checked against the list as given and each name only for having endorsed
+/// this candidate, so one endorsement repeated met it, and a candidate could endorse
+/// themselves (L-7, 2026-10-21).
+#[test]
+fn an_endorsement_counts_once_and_never_the_candidates_own() {
+	ExtBuilder::default().build().execute_with(|| {
+		assert_ok!(Welati::initiate_election(
+			RuntimeOrigin::root(),
+			ElectionType::Parliamentary,
+			None,
+			None,
+		));
+		let needed = Welati::get_required_endorsements(&ElectionType::Parliamentary) as usize;
+		assert_ok!(Welati::endorse_candidate(RuntimeOrigin::signed(3), 0, 1));
+		assert_noop!(
+			Welati::register_candidate(RuntimeOrigin::signed(1), 0, None, vec![3; needed]),
+			Error::<Test>::EndorserNamedTwice
+		);
+		assert_noop!(
+			Welati::endorse_candidate(RuntimeOrigin::signed(1), 0, 1),
+			Error::<Test>::CannotEndorseSelf
+		);
+		let mut with_self: Vec<u64> = (3..(3 + needed as u64 - 1)).collect();
+		with_self.push(1);
+		assert_noop!(
+			Welati::register_candidate(RuntimeOrigin::signed(1), 0, None, with_self),
+			Error::<Test>::CannotEndorseSelf
+		);
+	});
+}
+
 #[test]
 fn cast_vote_works() {
 	ExtBuilder::default().build().execute_with(|| {
@@ -1269,7 +1302,7 @@ fn register_candidate_presidential_with_max_endorsements() {
 		assert_ok!(Welati::register_candidate(RuntimeOrigin::signed(1), 0, None, endorsers,));
 
 		let candidate_info = Welati::election_candidates(0, 1).unwrap();
-		assert_eq!(candidate_info.endorsers.len(), 100);
+		assert_eq!(candidate_info.endorsement_count, 100);
 	});
 }
 

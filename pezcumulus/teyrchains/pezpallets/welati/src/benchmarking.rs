@@ -156,7 +156,7 @@ mod benchmarks {
 					account: candidate.clone(),
 					district_id: None,
 					registered_at: pezframe_system::Pezpallet::<T>::block_number(),
-					endorsers: Default::default(),
+					endorsement_count: 0,
 					vote_count: full.saturating_sub(i),
 					deposit_paid: 0,
 					campaign_data: Default::default(),
