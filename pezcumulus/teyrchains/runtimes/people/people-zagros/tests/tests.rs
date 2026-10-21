@@ -830,3 +830,48 @@ mod the_founding_serok {
 		});
 	}
 }
+
+/// A staker confirmed by the noters stands for the Stake stratum however long they have held.
+///
+/// The committee read the score's holding duration as the height it was observed at, so after
+/// the chain's first hours every staker looked stale and the stratum admitted nobody
+/// (L-7, 2026-10-21).
+mod the_stake_stratum {
+	use super::*;
+	use people_zagros_runtime::people::{RegisterScores, TnposMaxScoreAge};
+	use pezkuwi_tnpos_primitives::scores::ScoreProvider;
+	use pezpallet_staking_score::StakingSource;
+
+	#[test]
+	fn a_long_held_confirmed_stake_is_fresh() {
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			let who = AccountId::from([31u8; 32]);
+			let now: u32 = 200_000;
+			pezframe_system::Pezpallet::<Runtime>::set_block_number(now);
+
+			pezpallet_staking_score::CachedStakingDetails::<Runtime>::insert(
+				&who,
+				StakingSource::RelayChain,
+				pezpallet_staking_score::StakingDetails {
+					staked_amount: 1_000 * pezpallet_staking_score::UNITS,
+					nominations_count: 1,
+					unlocking_chunks_count: 0,
+				},
+			);
+			// Held since block 50 000, confirmed by a noter a thousand blocks ago.
+			pezpallet_staking_score::StakingStartBlock::<Runtime>::insert(&who, 50_000u32);
+			pezpallet_staking_score::StakeFirstSeen::<Runtime>::insert(&who, 50_000u32);
+			pezpallet_staking_score::LastConfirmed::<Runtime>::insert(
+				&who,
+				StakingSource::RelayChain,
+				now - 1_000,
+			);
+
+			let snapshot = RegisterScores::staking_of(&who);
+			assert!(
+				snapshot.value_if_fresh(now, TnposMaxScoreAge::get()).is_some_and(|v| v > 0),
+				"a confirmed stake read as stale: {snapshot:?}"
+			);
+		});
+	}
+}

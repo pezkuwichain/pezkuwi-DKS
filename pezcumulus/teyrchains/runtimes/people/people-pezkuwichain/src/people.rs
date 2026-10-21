@@ -2038,11 +2038,16 @@ impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for
 		// The oracle's own height, not this block's. This is the one score that comes from
 		// outside the chain, so it is the one that can be stale -- and `value_if_fresh` is
 		// what turns a stalled oracle into an absent score rather than a confident old one.
-		let (value, observed_at) = <StakingScoreSource as pezpallet_trust::StakingScoreProvider<
+		//
+		// The height comes from `observed_at`. It used to be the second value of
+		// `get_staking_score`, which is how long the stake has been held -- a duration read as
+		// a height, so after the chain's first few hours every staker looked hours stale and
+		// the Stake stratum admitted nobody (L-7, 2026-10-21).
+		let (value, _held_for) = <StakingScoreSource as pezpallet_trust::StakingScoreProvider<
 			AccountId,
 			BlockNumber,
 		>>::get_staking_score(who);
-		ScoreSnapshot { value: value.into(), last_updated: observed_at }
+		ScoreSnapshot { value: value.into(), last_updated: StakingScore::observed_at(who) }
 	}
 }
 

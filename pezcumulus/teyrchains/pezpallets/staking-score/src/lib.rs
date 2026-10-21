@@ -921,12 +921,34 @@ pub mod pezpallet {
 		/// confirmations were kept has none, and is reckoned confirmed when it was first seen.
 		pub fn confirmed_clock(who: &T::AccountId) -> BlockNumberFor<T> {
 			let now = pezframe_system::Pezpallet::<T>::block_number();
-			let newest = LastConfirmed::<T>::iter_prefix_values(who)
-				.max()
-				.or_else(|| StakeFirstSeen::<T>::get(who));
-			match newest {
+			match Self::newest_confirmation(who) {
 				Some(at) => now.min(at.saturating_add(T::MaxDataAge::get())),
 				None => now,
+			}
+		}
+
+		/// The newest confirmation of any of `who`'s sources; stake recorded before
+		/// confirmations were kept is reckoned confirmed when it was first seen.
+		pub fn newest_confirmation(who: &T::AccountId) -> Option<BlockNumberFor<T>> {
+			LastConfirmed::<T>::iter_prefix_values(who)
+				.max()
+				.or_else(|| StakeFirstSeen::<T>::get(who))
+		}
+
+		/// The height the oracle's word on `who` is current as of, for a reader that applies its
+		/// own freshness bound.
+		///
+		/// Now, while the newest confirmation is within `MaxDataAge` -- this pallet's one rule
+		/// for when unchanged stake is still believed. Otherwise that confirmation, so the
+		/// reader's bound sees how old the word really is. Zero when nothing was ever
+		/// confirmed. Not `get_staking_score`'s second value: that is how long the stake has
+		/// been held, a duration and not a height.
+		pub fn observed_at(who: &T::AccountId) -> BlockNumberFor<T> {
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			match Self::newest_confirmation(who) {
+				Some(at) if now <= at.saturating_add(T::MaxDataAge::get()) => now,
+				Some(at) => at,
+				None => Zero::zero(),
 			}
 		}
 

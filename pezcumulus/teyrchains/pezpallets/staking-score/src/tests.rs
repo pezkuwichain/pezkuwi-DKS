@@ -1796,6 +1796,30 @@ mod freshness {
 		});
 	}
 
+	/// What a reader with its own freshness bound is told: current while confirmations keep
+	/// coming, the real age once they stop -- and never the holding duration.
+	#[test]
+	fn the_observation_height_is_current_while_confirmed() {
+		ExtBuilder.build_and_execute(|| {
+			assert_eq!(StakingScore::observed_at(&USER_STASH), 0, "nothing was ever confirmed");
+			tracked_from(10, 500 * UNITS);
+
+			// Months held and still confirmed: current, whatever the duration.
+			let mut at = 10u64;
+			while at < 10 + 4 * MONTH_IN_BLOCKS as u64 {
+				at += AGE / 2;
+				System::set_block_number(at);
+				confirm(500 * UNITS);
+			}
+			System::set_block_number(at + 1);
+			assert_eq!(StakingScore::observed_at(&USER_STASH), at + 1);
+
+			// Confirmations stop: past the allowance it reports the last one.
+			System::set_block_number(at + AGE + 1);
+			assert_eq!(StakingScore::observed_at(&USER_STASH), at);
+		});
+	}
+
 	#[test]
 	fn the_newest_source_is_what_counts() {
 		// Two sources, one gone quiet: the account is as fresh as its freshest confirmation.
