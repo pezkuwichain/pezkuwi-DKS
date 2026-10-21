@@ -6411,3 +6411,57 @@ mod the_houses_own_elections {
 		});
 	}
 }
+
+/// A first round that goes to a runoff returns its deposits.
+///
+/// A completed or failed election returns every candidacy deposit; one that went to a runoff
+/// was marked completed and returned none, so every first-round candidate's deposit stayed
+/// reserved for good (L-7, 2026-10-21).
+#[test]
+fn a_first_round_that_goes_to_a_runoff_returns_its_deposits() {
+	use crate::mock::{Balances, CandidacyDeposit};
+
+	ExtBuilder::default().build().execute_with(|| {
+		assert_ok!(Welati::initiate_election(
+			RuntimeOrigin::root(),
+			ElectionType::Presidential,
+			None,
+			None,
+		));
+		for (candidate, endorsers) in [(1u64, 200..=299u64), (2, 300..=399), (3, 400..=499)] {
+			let endorsers = endorsed_by(0, candidate, endorsers.collect());
+			assert_ok!(Welati::register_candidate(
+				RuntimeOrigin::signed(candidate),
+				0,
+				None,
+				endorsers
+			));
+			assert_eq!(Balances::reserved_balance(candidate), CandidacyDeposit::get());
+		}
+
+		let election = Welati::active_elections(0).unwrap();
+		run_to_block(election.voting_start + 1);
+		// 25, 20 and 15 of sixty: nobody has half, so the first two go to a runoff.
+		for (voter, candidate) in (1000..1060u64).map(|v| {
+			(
+				v,
+				if v < 1025 {
+					1
+				} else if v < 1045 {
+					2
+				} else {
+					3
+				},
+			)
+		}) {
+			assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(voter), 0, vec![candidate], None));
+		}
+		run_to_block(election.end_block + 1);
+		assert_ok!(Welati::finalize_election(RuntimeOrigin::signed(99), 0));
+		assert!(Welati::active_elections(1).is_some(), "the runoff is open");
+
+		for candidate in 1..=3u64 {
+			assert_eq!(Balances::reserved_balance(candidate), 0, "candidate {candidate}");
+		}
+	});
+}
