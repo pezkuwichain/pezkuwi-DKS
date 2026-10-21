@@ -1455,3 +1455,52 @@ mod spent_rounds {
 		});
 	}
 }
+
+mod withheld_seeds {
+	use super::*;
+	use pezframe_support::{traits::Hooks, weights::Weight};
+
+	#[test]
+	fn a_seed_committed_and_never_revealed_costs_its_member_24_eras() {
+		// The last to reveal sees what the seed will be and can decline to reveal, steering
+		// the draw by a bit for nothing. Committing and not following through is the same
+		// failure as being seated and not voting, and costs the same (Serok 2026-10-22).
+		new_test_ext().execute_with(|| {
+			fill_every_stratum(60);
+			let revealed = PoolMembers::<Test>::iter().next().map(|(w, _)| w).unwrap();
+			let withheld = PoolMembers::<Test>::iter().nth(1).map(|(w, _)| w).unwrap();
+			let next_round = PoolMembers::<Test>::iter().nth(2).map(|(w, _)| w).unwrap();
+			SeedCommitments::<Test>::insert(1, withheld, [7u8; 32]);
+			assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+			// Committed to the round now open, which can still be revealed.
+			SeedCommitments::<Test>::insert(2, next_round, [8u8; 32]);
+
+			Tnpos::on_idle(System::block_number(), Weight::MAX);
+
+			assert_eq!(
+				Banned::<Test>::get(withheld),
+				Some(1 + crate::slash::BAN_UNAVAILABLE),
+				"a withheld seed cost nothing"
+			);
+			assert!(!PoolMembers::<Test>::contains_key(withheld));
+			assert!(Banned::<Test>::get(revealed).is_none(), "a revealed seed was punished");
+			assert!(Banned::<Test>::get(next_round).is_none(), "an open round was punished");
+			assert!(PoolMembers::<Test>::contains_key(next_round));
+		});
+	}
+
+	#[test]
+	fn a_withheld_seed_is_punished_even_after_leaving_the_pool() {
+		// Leaving before the draw must not be the way out of it.
+		new_test_ext().execute_with(|| {
+			fill_every_stratum(60);
+			let withheld = PoolMembers::<Test>::iter().nth(1).map(|(w, _)| w).unwrap();
+			SeedCommitments::<Test>::insert(1, withheld, [7u8; 32]);
+			assert_ok!(Tnpos::leave(RuntimeOrigin::signed(withheld)));
+			assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+
+			Tnpos::on_idle(System::block_number(), Weight::MAX);
+			assert_eq!(Banned::<Test>::get(withheld), Some(1 + crate::slash::BAN_UNAVAILABLE));
+		});
+	}
+}
