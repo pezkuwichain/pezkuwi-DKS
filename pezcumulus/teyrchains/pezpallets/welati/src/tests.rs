@@ -6605,3 +6605,144 @@ mod election_records {
 		});
 	}
 }
+
+// ===== ONE PERSON, ONE VOTE, ACROSS A REISSUE =====
+//
+// A court-ordered reissue moves a citizenship to a new key. Every "already voted" check read
+// the voting key only, so the new key could vote again in a ballot, a proposal, an
+// endorsement round, an initiative or a referendum its predecessor had already answered
+// (L-7, 2026-10-22).
+
+mod one_person_one_vote {
+	use super::*;
+	use crate::mock::{set_trust_score, TestPolls};
+	use pezframe_support::traits::{Currency, Polling};
+
+	const SUCCESSOR_OFFSET: u64 = 1_000;
+
+	/// Reissue `who`'s citizenship to `who + SUCCESSOR_OFFSET`, as the register and this
+	/// pallet do it on a real runtime.
+	fn reissue(who: u64) -> u64 {
+		let to = who + SUCCESSOR_OFFSET;
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+			who,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
+		assert_ok!(pezpallet_identity_kyc::Pezpallet::<Test>::rebind_account(&who, &to));
+		assert_ok!(Welati::rebind_account(&who, &to));
+		to
+	}
+
+	fn election_open_for_ballots() {
+		assert_ok!(Welati::initiate_election(
+			RuntimeOrigin::root(),
+			ElectionType::Parliamentary,
+			None,
+			None,
+		));
+		let endorsers = endorsed_by(0, 1, (3..=52).collect());
+		assert_ok!(Welati::register_candidate(RuntimeOrigin::signed(1), 0, None, endorsers));
+		run_to_block(crate::mock::CandidacyPeriod::get() + crate::mock::CampaignPeriod::get() + 1);
+	}
+
+	#[test]
+	fn a_ballot() {
+		ExtBuilder::default().build().execute_with(|| {
+			election_open_for_ballots();
+			assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(60), 0, vec![1], None));
+			let successor = reissue(60);
+			assert_noop!(
+				Welati::cast_vote(RuntimeOrigin::signed(successor), 0, vec![1], None),
+				Error::<Test>::AlreadyVoted
+			);
+		});
+	}
+
+	#[test]
+	fn an_endorsement() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::Parliamentary,
+				None,
+				None,
+			));
+			assert_ok!(Welati::endorse_candidate(RuntimeOrigin::signed(3), 0, 1));
+			let successor = reissue(3);
+			assert_noop!(
+				Welati::endorse_candidate(RuntimeOrigin::signed(successor), 0, 1),
+				Error::<Test>::AlreadyEndorsed
+			);
+		});
+	}
+
+	#[test]
+	fn a_proposal() {
+		ExtBuilder::default().build().execute_with(|| {
+			add_parliament_member(1);
+			add_parliament_member(2);
+			assert_ok!(Welati::submit_proposal(
+				RuntimeOrigin::signed(1),
+				b"t".to_vec().try_into().unwrap(),
+				b"d".to_vec().try_into().unwrap(),
+				CollectiveDecisionType::ParliamentSimpleMajority,
+				ProposalPriority::Normal,
+				None,
+			));
+			run_to_block(Welati::active_proposals(0).unwrap().voting_starts_at + 1);
+			assert_ok!(Welati::vote_on_proposal(
+				RuntimeOrigin::signed(2),
+				0,
+				VoteChoice::Aye,
+				None
+			));
+			let successor = reissue(2);
+			assert_noop!(
+				Welati::vote_on_proposal(
+					RuntimeOrigin::signed(successor),
+					0,
+					VoteChoice::Aye,
+					None
+				),
+				Error::<Test>::ProposalAlreadyVoted
+			);
+		});
+	}
+
+	#[test]
+	fn an_initiative() {
+		ExtBuilder::default().build().execute_with(|| {
+			let _ = crate::mock::Balances::deposit_creating(&11, 1_000);
+			assert_ok!(Welati::open_initiative(
+				RuntimeOrigin::signed(11),
+				0,
+				pezsp_core::H256::repeat_byte(9),
+				42
+			));
+			set_trust_score(1000);
+			assert_ok!(Welati::back_initiative(RuntimeOrigin::signed(12), 0));
+			let successor = reissue(12);
+			assert_noop!(
+				Welati::back_initiative(RuntimeOrigin::signed(successor), 0),
+				Error::<Test>::AlreadyBacked
+			);
+		});
+	}
+
+	#[test]
+	fn a_referendum_answer_is_changed_not_repeated() {
+		// A referendum answer may be changed while the question is open. The successor
+		// changes the person's answer; it does not add a second one.
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(7), 1, true));
+			let successor = reissue(7);
+			assert_noop!(
+				Welati::answer_referendum(RuntimeOrigin::signed(successor), 1, true),
+				Error::<Test>::AlreadyAnsweredThatWay
+			);
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(successor), 1, false));
+			let (tally, _) = TestPolls::as_ongoing(1).unwrap();
+			assert_eq!((tally.ayes, tally.nays), (0, 1), "one person, one answer");
+		});
+	}
+}
