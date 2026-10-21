@@ -519,11 +519,15 @@ mod era_cleanup {
 		let mut ext = new_test_ext();
 		expired_era(&mut ext, 120);
 		ext.execute_with(|| {
-			let one = <Test as pezframe_system::Config>::DbWeight::get().reads_writes(1, 1);
-			Messaging::on_idle(1, one.saturating_mul(10));
+			// Room for the cursor and ten entries.
+			let room = <Test as pezframe_system::Config>::DbWeight::get()
+				.reads_writes(1, 1)
+				.saturating_add(Messaging::cleanup_weight_per_entry().saturating_mul(10));
+			let used = Messaging::on_idle(1, room);
+			assert!(used.all_lte(room), "charged past what it was given");
 			let left = SendCount::<Test>::iter_prefix(ERA).count()
 				+ Inbox::<Test>::iter_prefix(ERA).count();
-			assert!(left >= 111, "deleted {} of 121 with room for ten", 121 - left);
+			assert!((111..121).contains(&left), "deleted {} of 121 with room for ten", 121 - left);
 		});
 	}
 }
