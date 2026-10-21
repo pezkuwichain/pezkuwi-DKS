@@ -136,6 +136,9 @@ thread_local! {
 	/// `ExtBuilder`, so a test that does not set it cannot inherit it from one that did.
 	pub static SEND_FAILS: RefCell<bool> = const { RefCell::new(false) };
 
+	/// How many key registrations reached the relay -- each one an unpaid upward message.
+	pub static KEYS_SENT: RefCell<u32> = const { RefCell::new(0) };
+
 	/// Every committee handed to the sender, in order. Recorded even when the send fails, so
 	/// a test can tell "was not delivered" from "was never offered" -- two very different
 	/// faults that look identical from the relay's side.
@@ -159,6 +162,7 @@ impl pezpallet_tnpos::SendKeysToRelay<AccountId> for MockSender {
 		if SEND_FAILS.with(|f| *f.borrow()) {
 			Err(())
 		} else {
+			KEYS_SENT.with(|n| *n.borrow_mut() += 1);
 			Ok(())
 		}
 	}

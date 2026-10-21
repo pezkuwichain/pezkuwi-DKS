@@ -1069,6 +1069,7 @@ fn punishing_an_unseated_member_sends_nothing() {
 #[test]
 fn a_key_the_relay_did_not_receive_is_not_recorded() {
 	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
 		let keys = mock_keys(ALICE);
 		let proof = mock_proof(ALICE);
 
@@ -1089,6 +1090,7 @@ fn a_key_the_relay_did_not_receive_is_not_recorded() {
 #[test]
 fn keys_that_would_not_decode_on_the_relay_are_refused_here() {
 	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
 		assert_noop!(
 			Tnpos::set_relay_keys(RuntimeOrigin::signed(ALICE), vec![0xff], vec![]),
 			Error::<Test>::InvalidRelayKeys
@@ -1101,6 +1103,7 @@ fn keys_that_would_not_decode_on_the_relay_are_refused_here() {
 #[test]
 fn the_proof_has_to_belong_to_the_account_offering_it() {
 	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
 		assert_noop!(
 			Tnpos::set_relay_keys(RuntimeOrigin::signed(ALICE), mock_keys(ALICE), mock_proof(BOB)),
 			Error::<Test>::InvalidKeyOwnershipProof
@@ -1117,6 +1120,7 @@ fn the_proof_has_to_belong_to_the_account_offering_it() {
 #[test]
 fn purging_keys_also_leaves_the_pool() {
 	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
 		assert_ok!(Tnpos::set_relay_keys(
 			RuntimeOrigin::signed(ALICE),
 			mock_keys(ALICE),
@@ -1130,6 +1134,109 @@ fn purging_keys_also_leaves_the_pool() {
 		assert!(!RelayKeys::<Test>::contains_key(ALICE));
 		assert!(!PoolMembers::<Test>::contains_key(ALICE));
 		assert_eq!(StratumSize::<Test>::get(StratumId::Perwerde), 0, "a seat was left behind");
+	});
+}
+
+/// Who the Asset Hub reports as bonded, which is who may register relay keys.
+fn bond_for_keys(who: &[AccountId]) {
+	let era = BondReportEra::<Test>::get() + 1;
+	assert_ok!(Tnpos::note_bonded(RuntimeOrigin::root(), era, bonded(who)));
+}
+
+fn keys_sent() -> u32 {
+	KEYS_SENT.with(|n| *n.borrow())
+}
+
+/// Only an account the Asset Hub reports as bonded may send keys to the relay.
+///
+/// Every registration is an upward message nobody pays the relay for, and a key write there
+/// with no deposit. Open to anyone, it was a way to queue messages faster than the relay drains
+/// them, in front of the committee's own export (L-7, 2026-10-21). Bonded is also the only kind
+/// of account that can be seated, so nobody with a reason to register is turned away. Before
+/// the first bond report the answer is no, not yes: the genesis validators' keys come from
+/// genesis.
+#[test]
+fn an_unbonded_account_cannot_send_keys_to_the_relay() {
+	new_test_ext().execute_with(|| {
+		assert_noop!(
+			Tnpos::set_relay_keys(
+				RuntimeOrigin::signed(ALICE),
+				mock_keys(ALICE),
+				mock_proof(ALICE)
+			),
+			Error::<Test>::NotBondedForRelayKeys
+		);
+		bond_for_keys(&[BOB]);
+		assert_noop!(
+			Tnpos::set_relay_keys(
+				RuntimeOrigin::signed(ALICE),
+				mock_keys(ALICE),
+				mock_proof(ALICE)
+			),
+			Error::<Test>::NotBondedForRelayKeys
+		);
+		assert_eq!(keys_sent(), 0, "an unbonded account reached the relay");
+
+		bond_for_keys(&[ALICE]);
+		assert_ok!(Tnpos::set_relay_keys(
+			RuntimeOrigin::signed(ALICE),
+			mock_keys(ALICE),
+			mock_proof(ALICE)
+		));
+		assert_eq!(keys_sent(), 1);
+	});
+}
+
+/// The keys already held are not sent again.
+#[test]
+fn the_same_keys_twice_reach_the_relay_once() {
+	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
+		assert_ok!(Tnpos::set_relay_keys(
+			RuntimeOrigin::signed(ALICE),
+			mock_keys(ALICE),
+			mock_proof(ALICE)
+		));
+		run_to_block(System::block_number() + EraLength::get());
+		assert_noop!(
+			Tnpos::set_relay_keys(
+				RuntimeOrigin::signed(ALICE),
+				mock_keys(ALICE),
+				mock_proof(ALICE)
+			),
+			Error::<Test>::RelayKeysUnchanged
+		);
+		assert_eq!(keys_sent(), 1, "the same keys were sent to the relay twice");
+	});
+}
+
+/// Keys change at most once an era, purging included.
+#[test]
+fn relay_keys_change_at_most_once_an_era() {
+	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
+		assert_ok!(Tnpos::set_relay_keys(
+			RuntimeOrigin::signed(ALICE),
+			mock_keys(ALICE),
+			mock_proof(ALICE)
+		));
+		// Purging and registering again is a change like any other.
+		assert_ok!(Tnpos::purge_relay_keys(RuntimeOrigin::signed(ALICE)));
+		assert_noop!(
+			Tnpos::set_relay_keys(
+				RuntimeOrigin::signed(ALICE),
+				mock_keys(ALICE),
+				mock_proof(ALICE)
+			),
+			Error::<Test>::RelayKeysChangedTooRecently
+		);
+		run_to_block(System::block_number() + EraLength::get());
+		assert_ok!(Tnpos::set_relay_keys(
+			RuntimeOrigin::signed(ALICE),
+			mock_keys(ALICE),
+			mock_proof(ALICE)
+		));
+		assert_eq!(keys_sent(), 2);
 	});
 }
 
