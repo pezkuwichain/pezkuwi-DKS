@@ -2926,3 +2926,62 @@ fn governance_authorize_upgrade_works() {
 		RuntimeOrigin,
 	>(GovernanceOrigin::Location(Location::parent())));
 }
+
+/// The relay cannot speak here as People, so it cannot reach People's money paths.
+///
+/// People's pots accept `EnsureXcm<Equals<PeopleLocation>>` and deliberately not Root. From the
+/// parent, `DescendOrigin(Teyrchain(People))` computes exactly that location and
+/// `AliasOrigin` into it was allowed by `AliasChildLocation` -- one relay message could have
+/// spent from the incentive pot as People (L-7, 2026-10-21). Both are refused at the barrier,
+/// and People's own message still passes.
+#[test]
+fn the_relay_cannot_descend_or_alias_into_a_teyrchain() {
+	use xcm::latest::prelude::*;
+	use xcm_executor::traits::{Properties, ShouldExecute};
+
+	let people = Location::new(1, [Teyrchain(1004)]);
+	let transact = || Transact {
+		origin_kind: OriginKind::Xcm,
+		fallback_max_weight: None,
+		call: vec![0u8].into(),
+	};
+	let unpaid = || UnpaidExecution { weight_limit: Unlimited, check_origin: None };
+	let props = || Properties { weight_credit: Weight::zero(), message_id: None };
+
+	let impersonations: Vec<Xcm<asset_hub_pezkuwichain_runtime::RuntimeCall>> = vec![
+		Xcm(vec![DescendOrigin([Teyrchain(1004)].into()), unpaid(), transact()]),
+		Xcm(vec![unpaid(), AliasOrigin(people.clone()), transact()]),
+		Xcm(vec![
+			unpaid(),
+			ExecuteWithOrigin {
+				descendant_origin: Some([Teyrchain(1004)].into()),
+				xcm: Xcm(vec![transact()]),
+			},
+		]),
+	];
+	for mut message in impersonations {
+		assert!(
+			<xcm_config::Barrier as ShouldExecute>::should_execute(
+				&Location::parent(),
+				message.inner_mut(),
+				Weight::MAX,
+				&mut props(),
+			)
+			.is_err(),
+			"the relay spoke here as a teyrchain: {message:?}"
+		);
+	}
+
+	let mut from_people: Xcm<asset_hub_pezkuwichain_runtime::RuntimeCall> =
+		Xcm(vec![unpaid(), transact()]);
+	assert!(
+		<xcm_config::Barrier as ShouldExecute>::should_execute(
+			&people,
+			from_people.inner_mut(),
+			Weight::MAX,
+			&mut props(),
+		)
+		.is_ok(),
+		"People's own message to the hub must still pass"
+	);
+}

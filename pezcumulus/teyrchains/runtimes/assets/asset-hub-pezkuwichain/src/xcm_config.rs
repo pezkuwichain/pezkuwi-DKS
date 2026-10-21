@@ -308,9 +308,56 @@ impl Contains<Location> for ParentOrParentsPlurality {
 	}
 }
 
+/// The relay may not speak here as one of its teyrchains.
+///
+/// People's money paths on this chain -- the treasury's activation and spends, the airdrop and
+/// presale pots, the committee -- accept `EnsureXcm<Equals<PeopleLocation>>` and deliberately
+/// not Root. But the relay is the parent, and from the parent `DescendOrigin(Teyrchain(People))`
+/// computes exactly People's location, `ExecuteWithOrigin` with that descendant does the same
+/// for a nested message, and `AliasChildLocation` lets the parent alias into it too. So the relay's governance, or its sudo, could have spent from the incentive pot as
+/// People with one message and no code upgrade -- the one route the treasury's rule is meant
+/// to leave (L-7, 2026-10-21). A teyrchain speaks for itself, over its own channel; nothing the
+/// relay legitimately sends here descends or aliases into one. Applied recursively, so a nested
+/// `ExecuteWithOrigin` or appendix cannot carry it either.
+pub struct TheRelayCannotSpeakAsATeyrchain;
+impl xcm_executor::traits::DenyExecution for TheRelayCannotSpeakAsATeyrchain {
+	fn deny_execution<RuntimeCall>(
+		origin: &Location,
+		message: &mut [Instruction<RuntimeCall>],
+		_max_weight: Weight,
+		_properties: &mut xcm_executor::traits::Properties,
+	) -> Result<(), pezframe_support::traits::ProcessMessageError> {
+		use xcm_builder::{CreateMatcher, MatchXcm};
+		if !matches!(origin, Location { parents: 1, interior: Here }) {
+			return Ok(());
+		}
+		let becomes_a_teyrchain =
+			|junctions: &Junctions| matches!(junctions.first(), Some(Teyrchain(_)));
+		message.matcher().match_next_inst_while(
+			|_| true,
+			|inst| match inst {
+				DescendOrigin(junctions) if becomes_a_teyrchain(junctions) => {
+					Err(pezframe_support::traits::ProcessMessageError::Unsupported)
+				},
+				AliasOrigin(Location { parents: 1, interior }) if becomes_a_teyrchain(interior) => {
+					Err(pezframe_support::traits::ProcessMessageError::Unsupported)
+				},
+				// The third way to change the origin: run a nested message as a descendant.
+				ExecuteWithOrigin { descendant_origin: Some(junctions), .. }
+					if becomes_a_teyrchain(junctions) =>
+				{
+					Err(pezframe_support::traits::ProcessMessageError::Unsupported)
+				},
+				_ => Ok(core::ops::ControlFlow::Continue(())),
+			},
+		)?;
+		Ok(())
+	}
+}
+
 pub type Barrier = TrailingSetTopicAsId<
 	DenyThenTry<
-		DenyRecursively<DenyReserveTransferToRelayChain>,
+		DenyRecursively<(DenyReserveTransferToRelayChain, TheRelayCannotSpeakAsATeyrchain)>,
 		(
 			TakeWeightCredit,
 			// Expected responses are OK.
