@@ -6525,3 +6525,77 @@ mod the_speakers_election {
 		});
 	}
 }
+
+// ===== AN ELECTION'S RECORDS ARE DISCARDED ONCE IT IS OVER =====
+//
+// Every ballot, endorsement and candidacy stayed in state for good: one entry per voter per
+// election, forty million a presidency at the scale this chain is built for, and nothing ever
+// removed them. A finished election's records are now cleared by anyone, in bounded steps,
+// as referendum answers and initiative backing already were (L-7, 2026-10-21).
+
+mod election_records {
+	use super::*;
+	use crate::{ActiveElections, ElectionCandidates, Endorsements, MAX_CLEARED_PER_CALL};
+
+	fn candidacy(account: u64) -> CandidateInfo<Test> {
+		CandidateInfo {
+			account,
+			district_id: None,
+			registered_at: 1,
+			endorsement_count: 0,
+			vote_count: 0,
+			deposit_paid: 0,
+			campaign_data: Default::default(),
+		}
+	}
+
+	#[test]
+	fn a_running_election_keeps_its_records() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::Parliamentary,
+				None,
+				None,
+			));
+			assert_noop!(
+				Welati::clear_election_records(RuntimeOrigin::signed(99), 0, 10),
+				Error::<Test>::ElectionNotFinished
+			);
+		});
+	}
+
+	#[test]
+	fn a_finished_elections_records_go_in_bounded_steps() {
+		let mut ext = ExtBuilder::default().build();
+		ext.execute_with(|| {
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::Parliamentary,
+				None,
+				None,
+			));
+			ActiveElections::<Test>::mutate(0, |e| {
+				e.as_mut().unwrap().status = ElectionStatus::Completed
+			});
+			for who in 0..(MAX_CLEARED_PER_CALL as u64 + 5) {
+				Endorsements::<Test>::insert(0, 10_000 + who, 1u64);
+			}
+			ElectionCandidates::<Test>::insert(0, 1u64, candidacy(1));
+			ElectionCandidates::<Test>::insert(0, 2u64, candidacy(2));
+		});
+		// Into the backend, where a chain's records are: see
+		// `clearing_is_bounded_and_charged_for_what_it_clears`.
+		ext.commit_all().expect("the records commit");
+		ext.execute_with(|| {
+			assert_ok!(Welati::clear_election_records(RuntimeOrigin::signed(99), 0, u32::MAX));
+			let left = Endorsements::<Test>::iter_prefix(0).count()
+				+ ElectionCandidates::<Test>::iter_prefix(0).count();
+			assert_eq!(left, 7, "one call cleared past its bound");
+
+			assert_ok!(Welati::clear_election_records(RuntimeOrigin::signed(99), 0, u32::MAX));
+			assert_eq!(Endorsements::<Test>::iter_prefix(0).count(), 0);
+			assert_eq!(ElectionCandidates::<Test>::iter_prefix(0).count(), 0);
+		});
+	}
+}
