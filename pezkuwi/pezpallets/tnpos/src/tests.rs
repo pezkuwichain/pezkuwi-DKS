@@ -1393,3 +1393,65 @@ fn a_member_whose_bond_lapses_is_not_drawn() {
 		}
 	});
 }
+
+mod spent_rounds {
+	use super::*;
+	use pezframe_support::{traits::Hooks, weights::Weight};
+
+	fn leftovers(era: u32) -> usize {
+		SeedCommitments::<Test>::iter_prefix(era).count()
+	}
+
+	/// Commitments to era 1's round that were never revealed, then era 1 drawn.
+	fn era_one_drawn_with_unrevealed(n: AccountId) {
+		fill_every_stratum(60);
+		for who in 0..n {
+			SeedCommitments::<Test>::insert(1, 7_000 + who, [7u8; 32]);
+		}
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		assert_eq!(CurrentEra::<Test>::get(), 1);
+	}
+
+	#[test]
+	fn an_unrevealed_commitment_goes_once_its_era_is_drawn() {
+		// A member who commits and never reveals left the commitment in state for good, and
+		// a pool that changes its membership leaves a new set behind every era.
+		new_test_ext().execute_with(|| {
+			era_one_drawn_with_unrevealed(5);
+			// The next round's commitment is live and stays.
+			SeedCommitments::<Test>::insert(2, 7_100, [8u8; 32]);
+
+			Tnpos::on_idle(System::block_number(), Weight::MAX);
+			assert_eq!(leftovers(1), 0, "a drawn era's commitments stay in state");
+			assert_eq!(leftovers(2), 1, "the open round's commitment was cleared");
+		});
+	}
+
+	#[test]
+	fn clearing_takes_only_the_weight_it_is_given() {
+		// `clear_prefix` removes keys still only in the overlay without counting them against
+		// its limit, and a second call in the same block walks the keys the first deleted. A
+		// real block reads committed state, so the setup and every pass are committed here.
+		let mut ext = new_test_ext();
+		ext.execute_with(|| era_one_drawn_with_unrevealed(5));
+		ext.commit_all().unwrap();
+
+		// Room for about two commitments, not five.
+		let given = Weight::from_parts(u64::MAX / 2, 2 * 150 + 100);
+		let mut passes = 0;
+		while ext.execute_with(|| leftovers(1)) > 0 {
+			ext.execute_with(|| {
+				let before = leftovers(1);
+				let used = Tnpos::on_idle(System::block_number(), given);
+				assert!(used.all_lte(given), "used {used:?} of {given:?}");
+				assert!(before - leftovers(1) < 5, "one pass cleared more than it could pay for");
+			});
+			ext.commit_all().unwrap();
+			passes += 1;
+			assert!(passes < 10, "clearing never finished");
+		}
+		ext.execute_with(|| {
+			assert_eq!(Tnpos::on_idle(System::block_number(), Weight::zero()), Weight::zero());
+		});
+	}
+}
