@@ -1549,6 +1549,9 @@ pub mod pezpallet {
 
 		/// Backing of a finished initiative was discarded.
 		InitiativeBackingCleared { id: u32, removed: u32 },
+
+		/// Ballots, endorsements and candidacies of a finished election were discarded.
+		ElectionRecordsCleared { election_id: u32, removed: u32 },
 	}
 
 	#[pezpallet::error]
@@ -1750,6 +1753,8 @@ pub mod pezpallet {
 		EndorserNamedTwice,
 		/// A candidate cannot endorse their own candidacy.
 		CannotEndorseSelf,
+		/// An election's records can be discarded only once it has finished.
+		ElectionNotFinished,
 	}
 
 	#[pezpallet::hooks]
@@ -3218,6 +3223,54 @@ pub mod pezpallet {
 			let removed =
 				ReferendumVotes::<T>::clear_prefix(poll, limit.min(MAX_CLEARED_PER_CALL), None);
 			Self::deposit_event(Event::ReferendumVotesCleared { poll, removed: removed.unique });
+			Ok(())
+		}
+
+		/// Discard the ballots, endorsements and candidacies of a finished election.
+		///
+		/// Permissionless and bounded, like `clear_referendum_answers`: at most
+		/// `MAX_CLEARED_PER_CALL` entries across the three, charged for what is asked. Nothing
+		/// reads them once the count is in -- the winners are in `ElectionResults`, and every
+		/// deposit was returned at the count. Without this they stayed for good, one entry per
+		/// voter per election (L-7, 2026-10-21).
+		#[pezpallet::call_index(75)]
+		#[pezpallet::weight(Pezpallet::<T>::clearing_weight((*limit).min(MAX_CLEARED_PER_CALL)))]
+		pub fn clear_election_records(
+			origin: OriginFor<T>,
+			#[pezpallet::compact] election_id: u32,
+			limit: u32,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			let election =
+				ActiveElections::<T>::get(election_id).ok_or(Error::<T>::ElectionNotFound)?;
+			ensure!(
+				matches!(
+					election.status,
+					ElectionStatus::Completed
+						| ElectionStatus::FailedForTurnout
+						| ElectionStatus::Cancelled
+				),
+				Error::<T>::ElectionNotFinished
+			);
+
+			let mut budget = limit.min(MAX_CLEARED_PER_CALL);
+			let mut removed = 0u32;
+			if budget > 0 {
+				let r = ElectionVotes::<T>::clear_prefix(election_id, budget, None);
+				budget = budget.saturating_sub(r.loops);
+				removed = removed.saturating_add(r.unique);
+			}
+			if budget > 0 {
+				let r = Endorsements::<T>::clear_prefix(election_id, budget, None);
+				budget = budget.saturating_sub(r.loops);
+				removed = removed.saturating_add(r.unique);
+			}
+			if budget > 0 {
+				let r = ElectionCandidates::<T>::clear_prefix(election_id, budget, None);
+				removed = removed.saturating_add(r.unique);
+			}
+
+			Self::deposit_event(Event::ElectionRecordsCleared { election_id, removed });
 			Ok(())
 		}
 
