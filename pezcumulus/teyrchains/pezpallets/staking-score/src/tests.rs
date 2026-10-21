@@ -2096,3 +2096,71 @@ mod noter_accountability {
 		});
 	}
 }
+
+// ============================================================================
+// A noter's key reissued
+// ============================================================================
+
+mod a_reissued_noter {
+	use super::*;
+	use pezframe_support::traits::ReservableCurrency;
+
+	const SUCCESSOR: AccountId = 30;
+	const ITS_OWN_RESERVE: Balance = 7;
+
+	#[test]
+	fn the_bond_moves_with_the_money_behind_it() {
+		// The record of the bond moved to the successor and the reserve it describes stayed on
+		// the lost key. Unregistering then unreserved the successor's own deposits, and a slash
+		// took the successor's free balance while the bond sat out of reach.
+		ExtBuilder.build_and_execute(|| {
+			System::set_block_number(1);
+			assert_ok!(Balances::reserve(&SUCCESSOR, ITS_OWN_RESERVE));
+			ensure_registered(NOTER);
+			let bond = NoterBondAmount::get();
+
+			assert_ok!(StakingScore::rebind_account(&NOTER, &SUCCESSOR));
+
+			assert_eq!(Balances::reserved_balance(NOTER), 0, "the bond stayed on the lost key");
+			assert_eq!(Balances::reserved_balance(SUCCESSOR), bond + ITS_OWN_RESERVE);
+			assert_eq!(NoterBonds::<Test>::get(SUCCESSOR), Some(bond));
+
+			assert_ok!(StakingScore::unregister_as_noter(RuntimeOrigin::signed(SUCCESSOR)));
+			assert_eq!(
+				Balances::reserved_balance(SUCCESSOR),
+				ITS_OWN_RESERVE,
+				"unregistering released a deposit that was not the bond"
+			);
+		});
+	}
+
+	#[test]
+	fn a_submission_made_before_the_reissue_is_still_answered_for() {
+		// A dispute is charged to whoever made the submission. Charged to the retired key, it
+		// left the successor -- who holds the bond -- free to unregister and walk away.
+		ExtBuilder.build_and_execute(|| {
+			System::set_block_number(1);
+			ensure_registered(NOTER);
+			assert_ok!(StakingScore::receive_staking_details(
+				RuntimeOrigin::signed(NOTER),
+				USER_STASH,
+				StakingSource::RelayChain,
+				100 * UNITS,
+				0,
+				0
+			));
+			assert_ok!(StakingScore::rebind_account(&NOTER, &SUCCESSOR));
+
+			assert_ok!(StakingScore::dispute_staking_details(
+				RuntimeOrigin::signed(DISPUTE_MEMBER),
+				USER_STASH,
+				StakingSource::RelayChain
+			));
+			System::set_block_number(1 + DISPUTE_WINDOW);
+			assert_noop!(
+				StakingScore::unregister_as_noter(RuntimeOrigin::signed(SUCCESSOR)),
+				Error::<Test>::DisputeUnresolved
+			);
+		});
+	}
+}
