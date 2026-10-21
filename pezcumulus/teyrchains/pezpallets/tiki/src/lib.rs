@@ -745,7 +745,16 @@ pub mod pezpallet {
 					}
 					Pezpallet::<T>::internal_grant_role(holder, *tiki)
 						.expect("Tiki genesis: failed to seat the founding government");
-					RoleAssignmentTypeOf::<T>::insert(holder, tiki, RoleAssignmentType::Appointed);
+					// Recorded as the kind of office it is, not as an appointment. Every founding
+					// office used to be written `Appointed`, which put the founding Serok's tiki
+					// within reach of the admin origin -- a Council majority -- instead of the
+					// court, and made the register's own consistency check fail from genesis
+					// (L-7, 2026-10-21).
+					RoleAssignmentTypeOf::<T>::insert(
+						holder,
+						tiki,
+						Pezpallet::<T>::get_role_assignment_type(tiki),
+					);
 				}
 			}
 		}

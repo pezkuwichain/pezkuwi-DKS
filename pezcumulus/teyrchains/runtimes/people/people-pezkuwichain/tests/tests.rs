@@ -762,3 +762,54 @@ mod authorized_aliases {
 		});
 	}
 }
+
+/// The founding Serok answers to the court, as an elected Serok would -- not to the Council.
+///
+/// Every founding office used to be recorded as an appointment, and an appointed role is
+/// revoked by the admin origin, which a Council majority satisfies. So the Council could take
+/// the founding Serok's tiki, and the register's own consistency check failed from genesis
+/// (L-7, 2026-10-21).
+mod the_founding_serok {
+	use super::*;
+	use people_pezkuwichain_runtime::{CouncilCollective, Tiki};
+	use pezsp_runtime::BuildStorage;
+
+	const SEROK: [u8; 32] = [21u8; 32];
+
+	#[test]
+	fn is_recorded_as_elected_and_beyond_the_councils_reach() {
+		let mut t = pezframe_system::GenesisConfig::<Runtime>::default().build_storage().unwrap();
+		pezpallet_tiki::GenesisConfig::<Runtime> {
+			founding_citizen: Some(AccountId::from([9u8; 32])),
+			founding_government: vec![(AccountId::from(SEROK), pezpallet_tiki::Tiki::Serok)],
+			..Default::default()
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
+
+		pezsp_io::TestExternalities::new(t).execute_with(|| {
+			let serok = AccountId::from(SEROK);
+			assert_eq!(
+				pezpallet_tiki::RoleAssignmentTypeOf::<Runtime>::get(
+					&serok,
+					pezpallet_tiki::Tiki::Serok
+				),
+				Some(pezpallet_tiki::RoleAssignmentType::Elected),
+			);
+
+			let council_majority: RuntimeOrigin =
+				pezpallet_collective::RawOrigin::<AccountId, CouncilCollective>::Members(3, 3)
+					.into();
+			assert!(Tiki::revoke_tiki(
+				council_majority,
+				serok.clone().into(),
+				pezpallet_tiki::Tiki::Serok
+			)
+			.is_err());
+			assert!(pezpallet_tiki::Pezpallet::<Runtime>::has_tiki(
+				&serok,
+				&pezpallet_tiki::Tiki::Serok
+			));
+		});
+	}
+}
