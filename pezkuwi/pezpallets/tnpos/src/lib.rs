@@ -356,6 +356,13 @@ pub mod pezpallet {
 		OptionQuery,
 	>;
 
+	/// The first era whose round may still hold commitments nobody revealed.
+	///
+	/// A round is spent once its era is drawn; what was committed to it and never revealed
+	/// is cleared from there, in whatever weight blocks leave idle.
+	#[pezpallet::storage]
+	pub type NextSeedEraToClear<T: Config> = StorageValue<_, u32, ValueQuery>;
+
 	/// The mixed seed for an era's draw, and the era it belongs to.
 	///
 	/// Spent when that era is drawn. An era with no round of its own has no seed and is
@@ -587,6 +594,15 @@ pub mod pezpallet {
 				log::warn!(target: "tnpos", "no committee could be seated; previous one stands");
 			}
 			weight
+		}
+
+		/// Clear commitments to rounds already spent, oldest era first.
+		///
+		/// A member who committed and never revealed left the commitment in state for good,
+		/// and a pool whose membership changes leaves a new set behind every era (L-7,
+		/// 2026-10-21).
+		fn on_idle(_: BlockNumberFor<T>, remaining: Weight) -> Weight {
+			Self::clear_spent_rounds(remaining)
 		}
 
 		#[cfg(feature = "try-runtime")]

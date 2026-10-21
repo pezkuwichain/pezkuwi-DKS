@@ -19,6 +19,7 @@
 //! another era would let anyone compute that era's committee in advance.
 
 use crate::*;
+use pezframe_support::weights::WeightMeter;
 use pezsp_io::hashing::blake2_256;
 
 impl<T: Config> Pezpallet<T> {
@@ -62,6 +63,56 @@ impl<T: Config> Pezpallet<T> {
 			*slot = Some((blake2_256(&buf), era));
 		});
 		Ok(())
+	}
+
+	/// Most commitments one `on_idle` pass clears, however much weight it is given.
+	const MAX_CLEARED_PER_PASS: u32 = 1_000;
+
+	/// What clearing one commitment costs, or looking at one era that has none: removing
+	/// it, and the trie nodes that proves.
+	fn clearing_weight_per_commitment() -> Weight {
+		T::DbWeight::get().reads_writes(1, 1).saturating_add(Weight::from_parts(0, 150))
+	}
+
+	/// How many commitments `remaining` pays for, at most `MAX_CLEARED_PER_PASS`.
+	fn commitments_affordable(remaining: Weight, each: Weight) -> u32 {
+		let by = |have: u64, per: u64| if per == 0 { u64::MAX } else { have / per };
+		by(remaining.ref_time(), each.ref_time())
+			.min(by(remaining.proof_size(), each.proof_size()))
+			.min(u64::from(Self::MAX_CLEARED_PER_PASS)) as u32
+	}
+
+	/// Clear what was committed to rounds already spent, within `limit`.
+	///
+	/// The round open now is for `CurrentEra + 1`; every era up to `CurrentEra` has been
+	/// drawn, or was skipped, and its commitments can no longer be revealed.
+	pub(crate) fn clear_spent_rounds(limit: Weight) -> Weight {
+		let mut meter = WeightMeter::with_limit(limit);
+		// The cursor and the current era, and the cursor written back.
+		if meter.try_consume(T::DbWeight::get().reads_writes(2, 1)).is_err() {
+			return Weight::zero();
+		}
+		let current = CurrentEra::<T>::get();
+		let start = NextSeedEraToClear::<T>::get();
+		let each = Self::clearing_weight_per_commitment();
+		let mut era = start;
+		while era <= current {
+			let budget = Self::commitments_affordable(meter.remaining(), each);
+			if budget == 0 {
+				break;
+			}
+			let result = SeedCommitments::<T>::clear_prefix(era, budget, None);
+			// An empty era still costs a look.
+			meter.consume(each.saturating_mul(u64::from(result.loops.max(1))));
+			if result.maybe_cursor.is_some() {
+				break;
+			}
+			era = era.saturating_add(1);
+		}
+		if era != start {
+			NextSeedEraToClear::<T>::put(era);
+		}
+		meter.consumed()
 	}
 }
 
