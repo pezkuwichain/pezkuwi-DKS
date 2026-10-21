@@ -258,6 +258,8 @@ mod benchmarks {
 	fn submit_proposal() {
 		// --- SETUP ---
 		let proposer: T::AccountId = whitelisted_caller();
+		// A seat is the roll entry and the Parlementer tiki together.
+		parlementer::<T>(&proposer);
 
 		// Simple member creation for benchmark
 		let member: ParliamentMember<T> = ParliamentMember {
@@ -294,6 +296,8 @@ mod benchmarks {
 		// --- SETUP ---
 		let proposer: T::AccountId = account("proposer", 1, 0);
 		let voter: T::AccountId = whitelisted_caller();
+		parlementer::<T>(&proposer);
+		parlementer::<T>(&voter);
 
 		// Create two members (proposer and voter)
 		let member1: ParliamentMember<T> = ParliamentMember {
@@ -648,6 +652,11 @@ mod benchmarks {
 
 	/// Seat `who` in a single-holder office the way the pallet does, NFT and all, so that
 	/// unseating them later does the register's full work.
+	fn parlementer<T: Config>(who: &T::AccountId) {
+		<T as Config>::BenchmarkHelper::make_citizen(who);
+		pezpallet_tiki::Pezpallet::<T>::internal_grant_role(who, Tiki::Parlementer).unwrap();
+	}
+
 	fn seat<T: Config>(who: &T::AccountId, office: Tiki) {
 		<T as Config>::BenchmarkHelper::make_citizen(who);
 		Pezpallet::<T>::seat_unique_tiki(who, office).unwrap();
