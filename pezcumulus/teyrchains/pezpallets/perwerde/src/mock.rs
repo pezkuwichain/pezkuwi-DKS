@@ -151,6 +151,9 @@ pub struct MockBenchmarkSetup;
 #[cfg(feature = "runtime-benchmarks")]
 impl crate::BenchmarkSetup<AccountId> for MockBenchmarkSetup {
 	fn make_citizen(_who: &AccountId) {}
+	fn make_stranger(who: &AccountId) {
+		not_a_citizen(*who);
+	}
 }
 
 impl pezpallet_perwerde::Config for Test {
