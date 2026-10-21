@@ -1437,7 +1437,8 @@ mod spent_rounds {
 		ext.commit_all().unwrap();
 
 		// Room for about two commitments, not five.
-		let given = Weight::from_parts(u64::MAX / 2, 2 * 150 + 100);
+		let each = 150 + <() as crate::weights::WeightInfo>::report_offence().proof_size();
+		let given = Weight::from_parts(u64::MAX / 2, 2 * each + 100);
 		let mut passes = 0;
 		while ext.execute_with(|| leftovers(1)) > 0 {
 			ext.execute_with(|| {

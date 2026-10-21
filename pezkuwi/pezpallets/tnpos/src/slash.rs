@@ -40,13 +40,17 @@ pub enum Offence {
 	/// Signed two conflicting blocks. An attack: this is the act that can fork the chain.
 	#[codec(index = 1)]
 	Equivocation,
+	/// Committed to a seed round and did not reveal before its era was drawn. Indistinguishable
+	/// from steering the draw by declining to reveal, so it costs what not voting costs.
+	#[codec(index = 2)]
+	SeedWithheld,
 }
 
 impl Offence {
 	/// Eras banned from the pool.
 	pub const fn ban_eras(&self) -> u32 {
 		match self {
-			Offence::Unavailable => BAN_UNAVAILABLE,
+			Offence::Unavailable | Offence::SeedWithheld => BAN_UNAVAILABLE,
 			Offence::Equivocation => BAN_EQUIVOCATION,
 		}
 	}
@@ -112,7 +116,7 @@ mod stored_enum_encoding {
 		let TypeDef::Variant(v) = &info.type_def else { panic!("Offence is not an enum") };
 		let got: Vec<(String, u8)> =
 			v.variants.iter().map(|x| (x.name.to_string(), x.index)).collect();
-		let want = [("Unavailable", 0u8), ("Equivocation", 1)];
+		let want = [("Unavailable", 0u8), ("Equivocation", 1), ("SeedWithheld", 2)];
 		assert_eq!(
 			got.len(),
 			want.len(),
