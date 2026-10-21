@@ -1388,9 +1388,9 @@ pub mod dynamic_params {
 	pub mod qeyd {
 		/// How long a new citizen waits before vouching for anyone.
 		///
-		/// Bounds how *fast* a chain of vouching can deepen; capacity below bounds how *wide*
-		/// one person's mistake can be. The two are often confused, and confusing them costs
-		/// the register its growth.
+		/// Bounds how *fast* a chain of vouching can deepen. There is no bound on how *wide*
+		/// one citizen may vouch: the referral score's ceiling caps what width is worth, and
+		/// a record of revoked vouches suspends it.
 		#[codec(index = 0)]
 		/// Compressed in a rehearsal build, for the same reason the track periods are: a
 		/// register that takes a day per generation cannot be grown to the population gate
@@ -1399,17 +1399,14 @@ pub mod dynamic_params {
 		pub static VouchingWaitingPeriod: BlockNumber =
 			pezkuwi_runtime_common::rehearsal_period!(1 * DAYS, DAYS);
 
-		/// How many a new citizen may vouch for at first.
-		#[codec(index = 1)]
-		pub static InitialVouchingCapacity: u32 = 5;
+		// Indices 1 and 2 held the vouching quota, removed 2026-10-21; not reused.
 
-		/// How many settled vouches earn one more place.
-		#[codec(index = 2)]
-		pub static SettledVouchesPerPlace: u32 = 3;
-
-		/// The ceiling on one citizen's vouching width.
+		/// The number of good referrals at which the referral score is full.
+		///
+		/// Not a limit on vouching -- there is none -- but the point past which more vouches
+		/// add nothing to standing.
 		#[codec(index = 3)]
-		pub static MaxVouchingCapacity: u32 = 50;
+		pub static ReferralScoreCeiling: u32 = 50;
 
 		/// Revocations before a voucher's record is judged at all.
 		///
@@ -1445,9 +1442,9 @@ pub mod dynamic_params {
 #[cfg(feature = "runtime-benchmarks")]
 impl Default for RuntimeParameters {
 	fn default() -> Self {
-		RuntimeParameters::Qeyd(dynamic_params::qeyd::Parameters::InitialVouchingCapacity(
-			dynamic_params::qeyd::InitialVouchingCapacity,
-			Some(5),
+		RuntimeParameters::Qeyd(dynamic_params::qeyd::Parameters::ReferralScoreCeiling(
+			dynamic_params::qeyd::ReferralScoreCeiling,
+			Some(50),
 		))
 	}
 }

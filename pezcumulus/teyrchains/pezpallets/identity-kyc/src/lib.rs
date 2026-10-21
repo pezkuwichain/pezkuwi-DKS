@@ -236,8 +236,8 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type VouchingWaitingPeriod: Get<BlockNumberFor<Self>>;
 
-		/// How many more citizens an account may bring in, asked of whoever counts them.
-		type VouchingCapacity: crate::types::VouchingCapacity<Self::AccountId>;
+		/// Whether an account's vouching is suspended, asked of whoever keeps the record.
+		type VouchingStanding: crate::types::VouchingStanding<Self::AccountId>;
 
 		/// Deposit required to apply (spam prevention, returned on approval)
 		#[pezpallet::constant]
@@ -283,8 +283,8 @@ pub mod pezpallet {
 
 	/// When each citizen was admitted.
 	///
-	/// Needed because vouching capacity is earned rather than granted: an account that became
-	/// a citizen this block has none. Nothing else in the register knew the date -- membership
+	/// Needed because the right to vouch waits on it: an account that became a citizen this
+	/// block vouches for nobody yet. Nothing else in the register knew the date -- membership
 	/// was a yes or a no, with no age to it.
 	#[pezpallet::storage]
 	pub type CitizenSince<T: Config> =
@@ -458,8 +458,9 @@ pub mod pezpallet {
 		NotEligibleToVouch,
 		/// A citizen admitted this recently may not vouch yet.
 		VouchingTooSoon,
-		/// This account has brought in as many as its record allows.
-		VouchingCapacityReached,
+		/// Too many of the people this account vouched for were revoked; it may not vouch
+		/// until the court restores enough of them.
+		VouchingSuspended,
 		/// Application already exists for this account
 		ApplicationAlreadyExists,
 		/// No application found for this account
@@ -603,16 +604,15 @@ pub mod pezpallet {
 		pub fn approve_referral(origin: OriginFor<T>, applicant: T::AccountId) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
-			// Two limits on the act of vouching, and neither is about the applicant.
+			// Two conditions on the act of vouching, and neither is about the applicant.
 			//
-			// The register admits people on one citizen's word, so the word has to cost
-			// something or the population can be manufactured. It costs waiting -- a citizen
-			// admitted today vouches for nobody -- and it costs having vouched well before:
-			// capacity is earned from settled referrals and lost to revoked ones.
+			// A citizen admitted today vouches for nobody yet, and a citizen whose vouches the
+			// court has revoked too often vouches for nobody until it restores them. There is
+			// no count: the nation grows as fast as its citizens know people, and what a mass
+			// of vouches could buy is capped by the referral score's ceiling, not here.
 			//
-			// The founder is exempt from both. The root of the tree has no earlier record to
-			// earn from, and the fallback that lets it approve a stalled application would
-			// stop working if it could run out.
+			// The founder is exempt from both. The root of the tree has no earlier record, and
+			// the fallback that lets it approve a stalled application must not be stoppable.
 			if caller != T::DefaultReferrer::get() {
 				let since =
 					CitizenSince::<T>::get(&caller).ok_or(Error::<T>::NotEligibleToVouch)?;
@@ -630,8 +630,10 @@ pub mod pezpallet {
 					Error::<T>::VouchingTooSoon
 				);
 				ensure!(
-					T::VouchingCapacity::remaining(&caller) != Some(0),
-					Error::<T>::VouchingCapacityReached
+					!<T::VouchingStanding as crate::types::VouchingStanding<_>>::is_suspended(
+						&caller
+					),
+					Error::<T>::VouchingSuspended
 				);
 			}
 

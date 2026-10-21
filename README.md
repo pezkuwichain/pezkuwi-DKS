@@ -62,9 +62,10 @@ genesis ──► founding citizen ──► chain of guarantee ──► the po
 
 A citizen vouches for another. The voucher is liable: if the person they vouched for is
 revoked, the voucher's own standing falls, and the loss travels up the chain, diminishing. The
-capacity to vouch is bounded and earned — a new citizen waits, and the number they may vouch
-for grows with time and with the record of those they vouched for before. The tree is public,
-so a manufactured cluster is visible as a subtree with an anomalous revocation rate.
+right to vouch is unbounded in number but not unconditional — a new citizen waits before
+vouching, and a voucher whose record shows too many revocations is suspended until the court
+restores them. The tree is public, so a manufactured cluster is visible as a subtree with an
+anomalous revocation rate.
 
 Forging the register is possible in the sense that robbing a bank is possible. Cost, detection
 and consequence multiply; that product is the security, not an impossibility proof. And the

@@ -335,7 +335,7 @@ impl pezpallet_perwerde::TrustScoreUpdater<AccountId> for TrustScoreNotifier {
 impl pezpallet_identity_kyc::Config for Runtime {
 	type Currency = Balances;
 	type VouchingWaitingPeriod = crate::dynamic_params::qeyd::VouchingWaitingPeriod;
-	type VouchingCapacity = Referral;
+	type VouchingStanding = Referral;
 	// The court alone. Losing citizenship takes every tiki, every office and the vote with
 	// it, and gaining one adds a voter -- so the register is the one authority Root does not
 	// share. Root arrives here from the relay, meaning from the executive for as long as sudo
@@ -515,7 +515,7 @@ parameter_types! {
 	/// It held the mainnet founder's January address until 2026-09-16, on both twins, and
 	/// that was not cosmetic. `DefaultReferrer` does three jobs in `identity-kyc`: it is
 	/// the referrer an application falls back to when none is named, it is the account
-	/// exempt from the waiting period and the earned vouching capacity, and it is the one
+	/// exempt from the waiting period and from suspension, and it is the one
 	/// that can rescue an application whose referrer never answered. Pointed at an account
 	/// that is not a citizen here, all three stop: measured on the live Zagros People
 	/// chain, that address had no `KycStatuses` entry at all, so the register could not be
@@ -530,9 +530,6 @@ parameter_types! {
 
 impl pezpallet_referral::Config for Runtime {
 	type WeightInfo = weights::pezpallet_referral::WeightInfo<Runtime>;
-	type InitialVouchingCapacity = crate::dynamic_params::qeyd::InitialVouchingCapacity;
-	type SettledVouchesPerPlace = crate::dynamic_params::qeyd::SettledVouchesPerPlace;
-	type MaxVouchingCapacity = crate::dynamic_params::qeyd::MaxVouchingCapacity;
 	type SuspensionRevocationFloor = crate::dynamic_params::qeyd::SuspensionRevocationFloor;
 	type SuspensionRevocationPercent = crate::dynamic_params::qeyd::SuspensionRevocationPercent;
 	type DefaultReferrer = DefaultReferrer;
@@ -938,19 +935,19 @@ impl pezpallet_trust::StakingScoreProvider<AccountId, BlockNumber> for StakingSc
 /// Uses the referral pallet's tiered scoring with penalty system
 pub struct ReferralScoreSource;
 impl pezpallet_trust::ReferralScoreProvider<AccountId> for ReferralScoreSource {
-	/// The score reachable at the ceiling the register's rules currently set -- not the tier
-	/// table's own top, which needs a hundred vouches and a lifetime ceiling of fifty can never
-	/// reach. Written out here as `MAX_REFERRAL_SCORE` the declared weight of 25 was really 15,
+	/// The score at the ceiling the register's rules currently set -- not the tier table's own
+	/// top, which needs a hundred vouches. A raw score above it is capped by trust, so past the
+	/// ceiling more vouches add nothing to standing. Written out here as `MAX_REFERRAL_SCORE` the declared weight of 25 was really 15,
 	/// and the highest trust anyone could hold was 900 rather than the 1000 the tables say.
 	///
 	/// It follows the ceiling rather than being written beside it, so a ninety-day referendum
-	/// moving `MaxVouchingCapacity` re-weights the source instead of quietly drifting from it.
+	/// moving `ReferralScoreCeiling` re-weights the source instead of quietly drifting from it.
 	/// Same pattern as `PerwerdeScoreSource` below. Note what that means: moving the ceiling
 	/// rescales every citizen's referral component, and trust feeds candidacy, pool membership
 	/// and reward share -- so the parameter is not the small dial it looks like.
 	fn max_score() -> u32 {
 		pezpallet_referral::score_for(
-			<crate::dynamic_params::qeyd::MaxVouchingCapacity as pezframe_support::traits::Get<
+			<crate::dynamic_params::qeyd::ReferralScoreCeiling as pezframe_support::traits::Get<
 				u32,
 			>>::get(),
 		)
@@ -1394,7 +1391,7 @@ parameter_types! {
 
 	/// Settled referrals needed before a citizen may ask for a geographic mark.
 	///
-	/// Twenty-five, against a lifetime vouching ceiling of fifty: half a full record. High
+	/// Twenty-five, against a referral score that is full at fifty: half a full record. High
 	/// enough that a manufactured account cannot reach it -- every referral is another citizen
 	/// who was admitted and stayed -- and low enough that somebody who has actually brought
 	/// people into the register is not kept out of one stratum by arithmetic.
@@ -2560,7 +2557,7 @@ mod tests {
 	///
 	/// `DefaultReferrer` is not a name for a person, it is three mechanisms: the referrer an
 	/// application falls back to when none is named, the one account exempt from the waiting
-	/// period and the earned vouching capacity, and the one that can rescue an application whose
+	/// period and from suspension, and the one that can rescue an application whose
 	/// referrer never answered. All three read the same `Get`, so an address that is not a
 	/// citizen here disables all three at once -- and does it silently, because each failure
 	/// surfaces as an ordinary refusal on somebody else's extrinsic.
@@ -2830,16 +2827,16 @@ mod tests {
 	///
 	/// `ReferralScoreSource` declares 25 out of 1000. It used to normalise by
 	/// `MAX_REFERRAL_SCORE`, the tier table's own top, which needs a hundred vouches -- while
-	/// the register's lifetime ceiling is fifty. So the most anyone could contribute was 300
-	/// of 500, the weight was really 15, and the highest trust anyone could hold was 900 rather
-	/// than the 1000 the whitepaper and the tables both state.
+	/// the register's rules put the full score at fifty. So the most anyone could contribute
+	/// was 300 of 500, the weight was really 15, and the highest trust anyone could hold was
+	/// 900 rather than the 1000 the whitepaper and the tables both state.
 	///
 	/// Pulling the ceiling from the live parameter fixes the arithmetic and keeps it fixed: a
-	/// ninety-day referendum moving `MaxVouchingCapacity` moves this with it.
+	/// ninety-day referendum moving `ReferralScoreCeiling` moves this with it.
 	#[test]
 	fn the_referral_weight_is_normalised_by_the_reachable_score() {
 		pezsp_io::TestExternalities::default().execute_with(|| {
-			let ceiling = <crate::dynamic_params::qeyd::MaxVouchingCapacity as
+			let ceiling = <crate::dynamic_params::qeyd::ReferralScoreCeiling as
 				pezframe_support::traits::Get<u32>>::get();
 			let reachable = pezpallet_referral::score_for(ceiling);
 

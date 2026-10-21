@@ -177,9 +177,9 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 	assert!(start > 0, "the genesis must seat founding citizens or nobody can vouch");
 
 	// The founding generation is exempt from the waiting period -- `CitizenSince` is zero for
-	// them -- but not from the vouching capacity, so the register grows in generations: each
-	// citizen may vouch for a handful, waits, and may vouch again. That shape is the anti-sybil
-	// design and walking it is the point; short-cutting it would rehearse nothing.
+	// them. Vouching has no quota, but this rehearsal still grows the register in generations
+	// of five per voucher, so that later generations vouch too and the waiting period is walked
+	// rather than skipped.
 	let needed = POPULATION_GATE.saturating_sub(start);
 	let cohort = cohort(needed)?;
 	log::info!("{needed} applicants to bring the roll to {POPULATION_GATE}");
@@ -228,7 +228,7 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 		let mut this_generation = Vec::new();
 		for voucher in &vouchers {
 			for _ in 0..5 {
-				// `InitialVouchingCapacity`
+				// Five per voucher: a generation, not a quota.
 				if admitted >= cohort.len() {
 					break;
 				}
@@ -237,10 +237,7 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 			}
 		}
 		if this_generation.is_empty() {
-			return Err(anyhow!(
-				"no vouching capacity left with {admitted} of {} admitted",
-				cohort.len()
-			));
+			return Err(anyhow!("no vouchers left with {admitted} of {} admitted", cohort.len()));
 		}
 		log::info!("generation of {} applicants", this_generation.len());
 

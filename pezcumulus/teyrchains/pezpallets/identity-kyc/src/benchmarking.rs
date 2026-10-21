@@ -28,7 +28,7 @@ fn setup_citizen<T: Config>(who: &T::AccountId) {
 	// 2026-09-20: `approve_referral` came back `NotEligibleToVouch` because `CitizenSince` was
 	// never written, and `renounce_citizenship` came back `CitizenNftNotFound` because nothing
 	// had minted the NFT. Neither showed up in this crate's own tests -- the mock binds
-	// `CitizenNftProvider` and `VouchingCapacity` to stubs that accept anything, so the gap only
+	// `CitizenNftProvider` and `VouchingStanding` to stubs that accept anything, so the gap only
 	// exists where the real pallets are wired in, which is exactly where weights are taken.
 	//
 	// One rather than zero: zero is the genesis exemption, and the path every referral after

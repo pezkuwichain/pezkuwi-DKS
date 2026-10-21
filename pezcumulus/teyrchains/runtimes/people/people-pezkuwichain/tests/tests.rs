@@ -616,9 +616,7 @@ mod register_parameters {
 				qeyd::VouchingWaitingPeriod::get(),
 				pezkuwi_runtime_common::rehearsal_period!(1 * DAYS, DAYS)
 			);
-			assert_eq!(qeyd::InitialVouchingCapacity::get(), 5);
-			assert_eq!(qeyd::SettledVouchesPerPlace::get(), 3);
-			assert_eq!(qeyd::MaxVouchingCapacity::get(), 50);
+			assert_eq!(qeyd::ReferralScoreCeiling::get(), 50);
 			assert_eq!(qeyd::SuspensionRevocationFloor::get(), 3);
 			assert_eq!(qeyd::SuspensionRevocationPercent::get(), 20);
 			assert_eq!(qeyd::PenaltyPerRevocation::get(), 10);
@@ -640,8 +638,8 @@ mod register_parameters {
 		};
 
 		let widen = || {
-			RuntimeParameters::Qeyd(qeyd::Parameters::MaxVouchingCapacity(
-				qeyd::MaxVouchingCapacity,
+			RuntimeParameters::Qeyd(qeyd::Parameters::ReferralScoreCeiling(
+				qeyd::ReferralScoreCeiling,
 				Some(50_000),
 			))
 		};
@@ -660,7 +658,7 @@ mod register_parameters {
 
 			let track = pezpallet_custom_origins::Origin::QeydRules;
 			assert_ok!(Parameters::set_parameter(track.into(), widen()));
-			assert_eq!(qeyd::MaxVouchingCapacity::get(), 50_000);
+			assert_eq!(qeyd::ReferralScoreCeiling::get(), 50_000);
 		});
 	}
 }

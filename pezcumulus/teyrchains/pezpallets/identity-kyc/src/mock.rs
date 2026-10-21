@@ -100,7 +100,7 @@ impl crate::Config for Test {
 	type VouchingWaitingPeriod = VouchingWaitingPeriod;
 	// Counting vouches is the referral pallet's job and it is not in this mock; unlimited
 	// here means this pallet's tests exercise the waiting period alone.
-	type VouchingCapacity = ();
+	type VouchingStanding = ();
 	type Currency = Balances;
 	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
 	type WeightInfo = ();

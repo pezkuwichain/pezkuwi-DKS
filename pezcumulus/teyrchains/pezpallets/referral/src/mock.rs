@@ -73,9 +73,6 @@ impl pezpallet_identity_kyc::types::CitizenNftProvider<AccountId> for MockCitize
 
 parameter_types! {
 	pub const VouchingWaitingPeriod: u64 = 10;
-	pub const InitialVouchingCapacity: u32 = 2;
-	pub const SettledVouchesPerPlace: u32 = 2;
-	pub const MaxVouchingCapacity: u32 = 6;
 	pub const SuspensionRevocationFloor: u32 = 3;
 	pub const SuspensionRevocationPercent: u32 = 20;
 }
@@ -83,7 +80,7 @@ parameter_types! {
 impl pezpallet_identity_kyc::Config for Test {
 	type OnCitizenshipRestored = Referral;
 	type VouchingWaitingPeriod = VouchingWaitingPeriod;
-	type VouchingCapacity = Referral;
+	type VouchingStanding = Referral;
 	type Currency = Balances;
 	type GovernanceOrigin = EnsureRoot<AccountId>;
 	type WeightInfo = ();
@@ -106,9 +103,6 @@ impl pezframe_support::traits::Get<AccountId> for DefaultReferrerAccount {
 }
 
 impl pezpallet_referral::Config for Test {
-	type InitialVouchingCapacity = InitialVouchingCapacity;
-	type SettledVouchesPerPlace = SettledVouchesPerPlace;
-	type MaxVouchingCapacity = MaxVouchingCapacity;
 	type SuspensionRevocationFloor = SuspensionRevocationFloor;
 	type SuspensionRevocationPercent = SuspensionRevocationPercent;
 	type WeightInfo = ();
