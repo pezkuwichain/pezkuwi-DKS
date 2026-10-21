@@ -6436,7 +6436,10 @@ fn a_first_round_that_goes_to_a_runoff_returns_its_deposits() {
 				None,
 				endorsers
 			));
-			assert_eq!(Balances::reserved_balance(candidate), CandidacyDeposit::get());
+			// A benchmark build takes no deposit; see `register_candidate`.
+			if cfg!(not(feature = "runtime-benchmarks")) {
+				assert_eq!(Balances::reserved_balance(candidate), CandidacyDeposit::get());
+			}
 		}
 
 		let election = Welati::active_elections(0).unwrap();
@@ -6592,7 +6595,10 @@ mod election_records {
 			let left = Endorsements::<Test>::iter_prefix(0).count()
 				+ ElectionCandidates::<Test>::iter_prefix(0).count();
 			assert_eq!(left, 7, "one call cleared past its bound");
-
+		});
+		// The next call comes in a later block, after this one's removals are stored.
+		ext.commit_all().expect("the first clearing commits");
+		ext.execute_with(|| {
 			assert_ok!(Welati::clear_election_records(RuntimeOrigin::signed(99), 0, u32::MAX));
 			assert_eq!(Endorsements::<Test>::iter_prefix(0).count(), 0);
 			assert_eq!(ElectionCandidates::<Test>::iter_prefix(0).count(), 0);
