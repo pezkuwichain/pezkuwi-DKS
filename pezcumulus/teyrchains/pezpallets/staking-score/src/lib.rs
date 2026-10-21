@@ -442,6 +442,30 @@ pub mod pezpallet {
 	pub type DisputesAgainstNoter<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
 
+	/// Disputes against each noter that governance has not yet ruled on.
+	///
+	/// The bond is what a disputed submission is answered from, so it stays reserved until
+	/// they are ruled on: slashed, or dismissed. It used to be withdrawable an hour after the
+	/// submission -- before any review could have happened (L-7, 2026-10-21).
+	#[pezpallet::storage]
+	pub type UnresolvedDisputes<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
+
+	/// A stake that went to zero, kept for `OracleGracePeriod` in case it was not real.
+	///
+	/// (opt-in start, first seen, total before the lapse, lapsed at). A zero used to erase the
+	/// holding duration at once and for good, so one false zero that nobody disputed within
+	/// the hour cost a citizen years of multiplier, and a correction a few minutes later could
+	/// not give it back (L-7, 2026-10-21).
+	#[pezpallet::storage]
+	pub type LapsedStake<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		(Option<BlockNumberFor<T>>, Option<BlockNumberFor<T>>, T::Balance, BlockNumberFor<T>),
+		OptionQuery,
+	>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -476,6 +500,8 @@ pub mod pezpallet {
 		/// A noter's bond was slashed by governance after a confirmed fraudulent
 		/// submission.
 		NoterSlashed { who: T::AccountId, amount: BalanceOf<T> },
+		/// Governance ruled a noter's open disputes unfounded; the bond is free again.
+		NoterDisputesDismissed { who: T::AccountId, dismissed: u32 },
 	}
 
 	#[pezpallet::error]
@@ -499,6 +525,13 @@ pub mod pezpallet {
 		NoPendingSubmission,
 		/// The pending submission's dispute window has not yet elapsed.
 		NotYetMatured,
+		/// A dispute against this noter is awaiting governance's ruling; the bond stays.
+		DisputeUnresolved,
+		/// Different data is already pending for this account and source; it matures or is
+		/// disputed first.
+		SubmissionAwaitingWindow,
+		/// No disputes against this noter are awaiting a ruling.
+		NoUnresolvedDisputes,
 	}
 
 	#[pezpallet::call]
@@ -579,11 +612,23 @@ pub mod pezpallet {
 			// progress past whatever Root last committed (often zero).
 			Self::maybe_finalize(&who, source);
 
-			let current_block = pezframe_system::Pezpallet::<T>::block_number();
-			NoterLastSubmission::<T>::insert(&caller, current_block);
-
 			let details =
 				StakingDetails { staked_amount, nominations_count, unlocking_chunks_count };
+
+			// A submission still in its window is not replaced. Each replacement used to
+			// restart the window, so a noter resubmitting every fifty-nine minutes -- even the
+			// right numbers -- kept an account's data from ever taking effect, and anyone else's
+			// submission was overwritten on the way (L-7, 2026-10-21). The same data again is
+			// the bot confirming what it already sent: accepted, and the window left running.
+			if let Some(pending) = PendingStakingDetails::<T>::get(&who, source) {
+				if pending.details == details {
+					return Ok(());
+				}
+				return Err(Error::<T>::SubmissionAwaitingWindow.into());
+			}
+
+			let current_block = pezframe_system::Pezpallet::<T>::block_number();
+			NoterLastSubmission::<T>::insert(&caller, current_block);
 			PendingStakingDetails::<T>::insert(
 				&who,
 				source,
@@ -631,6 +676,7 @@ pub mod pezpallet {
 		pub fn unregister_as_noter(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let bond = NoterBonds::<T>::get(&who).ok_or(Error::<T>::NotRegisteredNoter)?;
+			ensure!(UnresolvedDisputes::<T>::get(&who) == 0, Error::<T>::DisputeUnresolved);
 
 			if let Some(last_submission) = NoterLastSubmission::<T>::get(&who) {
 				let current_block = pezframe_system::Pezpallet::<T>::block_number();
@@ -684,6 +730,7 @@ pub mod pezpallet {
 			PendingStakingDetails::<T>::remove(&who, source);
 			DisputeCount::<T>::insert(&who, source, already.saturating_add(1));
 			DisputesAgainstNoter::<T>::mutate(&pending.submitted_by, |n| *n = n.saturating_add(1));
+			UnresolvedDisputes::<T>::mutate(&pending.submitted_by, |n| *n = n.saturating_add(1));
 
 			Self::deposit_event(Event::StakingDetailsDisputed { who, source, disputed_by });
 			Ok(())
@@ -733,12 +780,28 @@ pub mod pezpallet {
 
 			let bond = NoterBonds::<T>::take(&noter).ok_or(Error::<T>::NotRegisteredNoter)?;
 			NoterLastSubmission::<T>::remove(&noter);
+			UnresolvedDisputes::<T>::remove(&noter);
 
 			T::Currency::unreserve(&noter, bond);
 			let (slashed, _) = T::Currency::slash(&noter, bond);
 			T::SlashDestination::on_unbalanced(slashed);
 
 			Self::deposit_event(Event::NoterSlashed { who: noter, amount: bond });
+			Ok(())
+		}
+
+		/// Rule a noter's open disputes unfounded, freeing the bond they held in place.
+		///
+		/// The other ruling is `slash_noter`. Same origin: whoever may find a submission
+		/// fraudulent may find that it was not. Charged as `slash_noter`, which does strictly
+		/// more storage work.
+		#[pezpallet::call_index(7)]
+		#[pezpallet::weight(T::WeightInfo::slash_noter())]
+		pub fn dismiss_disputes(origin: OriginFor<T>, noter: T::AccountId) -> DispatchResult {
+			T::SlashOrigin::ensure_origin(origin)?;
+			let dismissed = UnresolvedDisputes::<T>::take(&noter);
+			ensure!(dismissed != 0, Error::<T>::NoUnresolvedDisputes);
+			Self::deposit_event(Event::NoterDisputesDismissed { who: noter, dismissed });
 			Ok(())
 		}
 	}
@@ -840,6 +903,10 @@ pub mod pezpallet {
 			if disputes != 0 {
 				DisputesAgainstNoter::<T>::insert(to, disputes);
 			}
+			let open = UnresolvedDisputes::<T>::take(from);
+			if open != 0 {
+				UnresolvedDisputes::<T>::insert(to, open);
+			}
 			if TrackingOptIn::<T>::take(from).is_some() {
 				TrackingOptIn::<T>::insert(to, ());
 			}
@@ -875,9 +942,17 @@ pub mod pezpallet {
 				LastConfirmed::<T>::remove(who, source);
 
 				let remaining = Self::total_cached_stake(who);
-				if remaining.is_zero() {
-					StakingStartBlock::<T>::remove(who);
-					StakeFirstSeen::<T>::remove(who);
+				if remaining.is_zero() && !previous_total.is_zero() {
+					// Not erased yet: kept for the grace period, in case the zero was not real.
+					LapsedStake::<T>::insert(
+						who,
+						(
+							StakingStartBlock::<T>::take(who),
+							StakeFirstSeen::<T>::take(who),
+							previous_total,
+							pezframe_system::Pezpallet::<T>::block_number(),
+						),
+					);
 				}
 			} else {
 				let details =
@@ -890,14 +965,28 @@ pub mod pezpallet {
 				);
 
 				let new_total = Self::total_cached_stake(who);
+				// What the comparison below measures against: the stake before a lapse that
+				// turned out to be brief, or the stake just before this update.
+				let mut compared_with = previous_total;
 				if previous_total.is_zero() {
-					StakeFirstSeen::<T>::insert(
-						who,
-						pezframe_system::Pezpallet::<T>::block_number(),
-					);
+					let now = pezframe_system::Pezpallet::<T>::block_number();
+					match LapsedStake::<T>::take(who) {
+						// Back within the grace period: the lapse is treated as never having
+						// happened, so the duration carries on from where it was.
+						Some((start, first_seen, before, lapsed_at))
+							if now <= lapsed_at.saturating_add(T::OracleGracePeriod::get()) =>
+						{
+							if let Some(start) = start {
+								StakingStartBlock::<T>::insert(who, start);
+							}
+							StakeFirstSeen::<T>::insert(who, first_seen.unwrap_or(now));
+							compared_with = before;
+						},
+						_ => StakeFirstSeen::<T>::insert(who, now),
+					}
 				}
-				if !previous_total.is_zero()
-					&& new_total > previous_total
+				if !compared_with.is_zero()
+					&& new_total > compared_with
 					&& StakingStartBlock::<T>::contains_key(who)
 				{
 					let current_block = pezframe_system::Pezpallet::<T>::block_number();

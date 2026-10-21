@@ -1940,3 +1940,159 @@ mod invariant {
 		});
 	}
 }
+
+// =============================================================================
+// L-7: A NOTER'S BOND, A FALSE ZERO, AND A WINDOW THAT CAN BE KEPT OPEN
+// =============================================================================
+
+mod noter_accountability {
+	use super::*;
+	use crate::{LapsedStake, StakeFirstSeen, StakingStartBlock, UnresolvedDisputes};
+
+	fn submit(noter: AccountId, amount: Balance) -> pezsp_runtime::DispatchResult {
+		StakingScore::receive_staking_details(
+			RuntimeOrigin::signed(noter),
+			USER_STASH,
+			StakingSource::RelayChain,
+			amount,
+			0,
+			0,
+		)
+	}
+
+	fn dispute() {
+		assert_ok!(StakingScore::dispute_staking_details(
+			RuntimeOrigin::signed(DISPUTE_MEMBER),
+			USER_STASH,
+			StakingSource::RelayChain,
+		));
+	}
+
+	/// The bond answers for a disputed submission until governance rules on it.
+	#[test]
+	fn a_disputed_noter_keeps_the_bond_in_place_until_the_ruling() {
+		ExtBuilder.build_and_execute(|| {
+			ensure_registered(NOTER);
+			assert_ok!(submit(NOTER, 200 * UNITS));
+			dispute();
+
+			// Long past the dispute window, and still no ruling.
+			System::set_block_number(System::block_number() + 10 * DISPUTE_WINDOW);
+			assert_noop!(
+				StakingScore::unregister_as_noter(RuntimeOrigin::signed(NOTER)),
+				Error::<Test>::DisputeUnresolved
+			);
+
+			// Ruled unfounded: the bond is free again.
+			assert_ok!(StakingScore::dismiss_disputes(RuntimeOrigin::signed(SLASH_MEMBER), NOTER));
+			assert_eq!(UnresolvedDisputes::<Test>::get(NOTER), 0);
+			assert_ok!(StakingScore::unregister_as_noter(RuntimeOrigin::signed(NOTER)));
+		});
+	}
+
+	#[test]
+	fn only_governance_dismisses_and_only_what_is_open() {
+		ExtBuilder.build_and_execute(|| {
+			ensure_registered(NOTER);
+			assert_noop!(
+				StakingScore::dismiss_disputes(RuntimeOrigin::signed(SLASH_MEMBER), NOTER),
+				Error::<Test>::NoUnresolvedDisputes
+			);
+			assert_ok!(submit(NOTER, 200 * UNITS));
+			dispute();
+			assert!(StakingScore::dismiss_disputes(RuntimeOrigin::signed(NOTER), NOTER).is_err());
+			// A slash is the other ruling, and it settles them too.
+			assert_ok!(StakingScore::slash_noter(RuntimeOrigin::signed(SLASH_MEMBER), NOTER));
+			assert_eq!(UnresolvedDisputes::<Test>::get(NOTER), 0);
+		});
+	}
+
+	/// Resending the same numbers does not restart the window, and other numbers wait.
+	#[test]
+	fn a_pending_submission_cannot_be_kept_from_maturing() {
+		ExtBuilder.build_and_execute(|| {
+			ensure_registered(NOTER);
+			ensure_registered(NOTER_2);
+			let start = System::block_number();
+			assert_ok!(submit(NOTER, 200 * UNITS));
+
+			// Every few blocks, the same data again: accepted, window untouched.
+			for step in 1..DISPUTE_WINDOW {
+				System::set_block_number(start + step);
+				assert_ok!(submit(NOTER, 200 * UNITS));
+			}
+			let pending =
+				PendingStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).unwrap();
+			assert_eq!(pending.submitted_at, start, "a resubmission restarted the window");
+
+			// Different data, from anyone, waits for this one.
+			assert_noop!(submit(NOTER_2, 300 * UNITS), Error::<Test>::SubmissionAwaitingWindow);
+
+			// And it matures on time.
+			System::set_block_number(start + DISPUTE_WINDOW);
+			assert_ok!(StakingScore::finalize_staking_details(
+				RuntimeOrigin::signed(USER_STASH),
+				USER_STASH,
+				StakingSource::RelayChain,
+			));
+			assert_eq!(StakingScore::total_cached_stake(&USER_STASH), 200 * UNITS);
+		});
+	}
+
+	fn held_for_months() -> (u64, u64) {
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 500 * UNITS, 0, 0);
+		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+		let start = StakingStartBlock::<Test>::get(USER_STASH).unwrap();
+		let first = StakeFirstSeen::<Test>::get(USER_STASH).unwrap();
+		System::set_block_number(System::block_number() + 4 * MONTH_IN_BLOCKS as u64);
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 500 * UNITS, 0, 0);
+		(start, first)
+	}
+
+	/// A false zero corrected within the grace period costs nothing.
+	#[test]
+	fn a_brief_zero_does_not_erase_the_holding_duration() {
+		ExtBuilder.build_and_execute(|| {
+			let (start, first) = held_for_months();
+			let before = StakingScore::get_staking_score(&USER_STASH);
+
+			submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 0, 0, 0);
+			assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 0);
+			assert!(LapsedStake::<Test>::get(USER_STASH).is_some());
+
+			submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 500 * UNITS, 0, 0);
+			assert_eq!(StakingStartBlock::<Test>::get(USER_STASH), Some(start));
+			assert_eq!(StakeFirstSeen::<Test>::get(USER_STASH), Some(first));
+			assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, before.0);
+		});
+	}
+
+	/// A real end of the stake still ends the duration.
+	#[test]
+	fn a_zero_past_the_grace_period_ends_it() {
+		ExtBuilder.build_and_execute(|| {
+			held_for_months();
+			submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 0, 0, 0);
+			System::set_block_number(System::block_number() + OracleGracePeriod::get() + 1);
+
+			submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 500 * UNITS, 0, 0);
+			assert_eq!(StakingStartBlock::<Test>::get(USER_STASH), None, "the opt-in survived");
+			assert_eq!(StakeFirstSeen::<Test>::get(USER_STASH), Some(System::block_number()));
+		});
+	}
+
+	/// Coming back bigger after a brief lapse is a flash stake like any other.
+	#[test]
+	fn a_lapse_does_not_launder_a_flash_stake() {
+		ExtBuilder.build_and_execute(|| {
+			held_for_months();
+			submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 0, 0, 0);
+			submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 50_000 * UNITS, 0, 0);
+			assert_eq!(
+				StakingStartBlock::<Test>::get(USER_STASH),
+				Some(System::block_number()),
+				"a larger stake after a lapse kept the old clock"
+			);
+		});
+	}
+}
