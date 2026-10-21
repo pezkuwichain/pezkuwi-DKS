@@ -326,39 +326,52 @@ pub mod pezpallet {
 			}
 
 			if let Some((cleanup_era, cursor)) = CleanupCursor::<T>::get() {
-				// Consume weight for reading the cursor
-				let _ = meter.try_consume(T::DbWeight::get().reads(1));
+				// Reading the cursor, and writing it back.
+				let _ = meter.try_consume(T::DbWeight::get().reads_writes(1, 1));
 
+				// As many entries as the weight left will pay for, never more. Each pass used
+				// to delete up to fifty from each of three maps having checked there was room
+				// for one (L-7, 2026-10-21).
+				let per_entry = Self::cleanup_weight_per_entry();
+				let mut budget = Self::entries_affordable(meter.remaining(), per_entry);
+				let given = budget;
+				if given == 0 {
+					return meter.consumed();
+				}
+
+				// Inboxes first, then both counters. The era is finished when all three are
+				// empty: it was declared purged as soon as its inboxes were, so the counters
+				// past the first fifty -- an era where many wrote to few -- stayed for good.
 				let maybe_cursor = if cursor.is_empty() { None } else { Some(cursor.as_slice()) };
+				let inbox = Inbox::<T>::clear_prefix(cleanup_era, budget, maybe_cursor);
+				budget = budget.saturating_sub(inbox.loops);
+				let mut finished = inbox.maybe_cursor.is_none();
 
-				// Delete up to 50 entries per on_idle call
-				let result = Inbox::<T>::clear_prefix(cleanup_era, 50, maybe_cursor);
+				for counter_finished in [
+					(budget > 0).then(|| {
+						let r = SendCount::<T>::clear_prefix(cleanup_era, budget, None);
+						budget = budget.saturating_sub(r.loops);
+						r.maybe_cursor.is_none()
+					}),
+					(budget > 0).then(|| {
+						let r = KeyRegistrationCount::<T>::clear_prefix(cleanup_era, budget, None);
+						budget = budget.saturating_sub(r.loops);
+						r.maybe_cursor.is_none()
+					}),
+				] {
+					finished &= counter_finished.unwrap_or(false);
+				}
+				let _ = meter.try_consume(per_entry.saturating_mul(u64::from(given - budget)));
 
-				// Account for the writes
-				let writes_weight = T::DbWeight::get().writes(result.unique as u64);
-				let _ = meter.try_consume(writes_weight);
-
-				// Also clean SendCount and KeyRegistrationCount for this era
-				let send_result = SendCount::<T>::clear_prefix(cleanup_era, 50, None);
-				let send_writes = T::DbWeight::get().writes(send_result.unique as u64);
-				let _ = meter.try_consume(send_writes);
-
-				let key_reg_result = KeyRegistrationCount::<T>::clear_prefix(cleanup_era, 50, None);
-				let key_reg_writes = T::DbWeight::get().writes(key_reg_result.unique as u64);
-				let _ = meter.try_consume(key_reg_writes);
-
-				match result.maybe_cursor {
-					Some(new_cursor) => {
-						// More items remain, save cursor for next block
-						let bounded_cursor: BoundedVec<u8, ConstU32<256>> =
-							new_cursor.try_into().unwrap_or_default();
-						CleanupCursor::<T>::put((cleanup_era, bounded_cursor));
-					},
-					None => {
-						// All items deleted for this era
-						CleanupCursor::<T>::kill();
-						Self::deposit_event(Event::EraPurged { era: cleanup_era });
-					},
+				if finished {
+					CleanupCursor::<T>::kill();
+					Self::deposit_event(Event::EraPurged { era: cleanup_era });
+				} else {
+					// The inboxes' place, or an empty cursor once they are done and only the
+					// counters remain.
+					let bounded_cursor: BoundedVec<u8, ConstU32<256>> =
+						inbox.maybe_cursor.unwrap_or_default().try_into().unwrap_or_default();
+					CleanupCursor::<T>::put((cleanup_era, bounded_cursor));
 				}
 			}
 
@@ -512,6 +525,23 @@ pub mod pezpallet {
 // ============= HELPER FUNCTIONS =============
 
 impl<T: Config> Pezpallet<T> {
+	/// Most entries one `on_idle` pass deletes, however much weight it is given.
+	const MAX_CLEARED_PER_PASS: u32 = 1_000;
+
+	/// What deleting one expired entry costs: iterating to it and removing it, and the trie
+	/// nodes that proves.
+	fn cleanup_weight_per_entry() -> Weight {
+		T::DbWeight::get().reads_writes(1, 1).saturating_add(Weight::from_parts(0, 150))
+	}
+
+	/// How many entries `remaining` pays for, at most `MAX_CLEARED_PER_PASS`.
+	fn entries_affordable(remaining: Weight, per_entry: Weight) -> u32 {
+		let by = |have: u64, each: u64| if each == 0 { u64::MAX } else { have / each };
+		by(remaining.ref_time(), per_entry.ref_time())
+			.min(by(remaining.proof_size(), per_entry.proof_size()))
+			.min(u64::from(Self::MAX_CLEARED_PER_PASS)) as u32
+	}
+
 	/// Everything `register_encryption_key` checks before it writes, returning how many
 	/// registrations `who` has made this era.
 	///
