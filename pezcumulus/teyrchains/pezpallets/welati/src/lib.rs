@@ -1949,20 +1949,32 @@ pub mod pezpallet {
 					continue;
 				}
 
-				let due = match TermEnds::<T>::get(election_type) {
-					// A term is running: open the election early enough that the count is
-					// finished by the time the mandate ends. An office that has fallen empty
-					// mid-term does not wait for the clock -- the state cannot go without a
-					// President because the calendar says the term has three years left.
-					Some(ends_at) => {
-						n.saturating_add(lead_time) >= ends_at
-							|| Self::office_is_vacant(&election_type)
-					},
-					// No term recorded means the office has never been filled by a vote. The
-					// founding government is seated by genesis without one -- genesis does not
-					// write `TermEnds` -- so this also covers a founding office: its first
-					// election is opened by hand, not by this scheduler.
-					None => false,
+				let due = if election_type == ElectionType::SpeakerElection {
+					// The Speaker has no term of their own: the chair belongs to the house, so
+					// it is due whenever an elected house sits without one -- not on a clock.
+					// Reading the Speaker's recorded term here meant no term once a new house
+					// had cleared it, so an elected house never got a Speaker; and the house's
+					// term while one sat, so the chair would have been re-elected in the
+					// outgoing house's last weeks (L-7, 2026-10-21). The founding house has no
+					// term, so this opens nothing for it.
+					TermEnds::<T>::contains_key(ElectionType::Parliamentary)
+						&& Self::office_is_vacant(&election_type)
+				} else {
+					match TermEnds::<T>::get(election_type) {
+						// A term is running: open the election early enough that the count is
+						// finished by the time the mandate ends. An office that has fallen empty
+						// mid-term does not wait for the clock -- the state cannot go without a
+						// President because the calendar says the term has three years left.
+						Some(ends_at) => {
+							n.saturating_add(lead_time) >= ends_at
+								|| Self::office_is_vacant(&election_type)
+						},
+						// No term recorded means the office has never been filled by a vote. The
+						// founding government is seated by genesis without one -- genesis does not
+						// write `TermEnds` -- so this also covers a founding office: its first
+						// election is opened by hand, not by this scheduler.
+						None => false,
+					}
 				};
 
 				if due
@@ -4579,8 +4591,8 @@ pub mod pezpallet {
 						let term_end = Self::begin_term(election_type);
 
 						// The Speaker's mandate came from the house that has just been
-						// replaced, so it ends with it. Clearing the term here is what makes
-						// the scheduler open a Speaker election for the new house.
+						// replaced, so it ends with it. The empty chair under an elected house
+						// is what makes the scheduler open a Speaker election for the new one.
 						let _ = Self::vacate_unique_tiki(Tiki::SerokiMeclise);
 						TermEnds::<T>::remove(ElectionType::SpeakerElection);
 
