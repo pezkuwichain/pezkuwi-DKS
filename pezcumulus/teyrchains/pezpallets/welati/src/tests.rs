@@ -3737,6 +3737,34 @@ fn an_emptied_house_does_not_wait_for_its_term() {
 	});
 }
 
+/// A seat the court takes away takes the vote in the house with it.
+///
+/// The house read its own roll and nothing told it when the court revoked a seat: the member
+/// kept proposing, voting, and their place in the Parliament collective (L-7, 2026-10-21).
+#[test]
+fn a_member_whose_seat_the_court_took_no_longer_votes() {
+	ExtBuilder::default().build().execute_with(|| {
+		add_parliament_member(5);
+		assert!(Welati::is_parliament_member(&5));
+
+		assert_ok!(pezpallet_tiki::Pezpallet::<Test>::revoke_tiki(
+			RuntimeOrigin::root(),
+			5,
+			Tiki::Parlementer
+		));
+
+		assert!(!Welati::is_parliament_member(&5), "the seat is gone but the vote remained");
+		assert!(
+			!Welati::parliament_members().iter().any(|m| m.account == 5),
+			"the roll still names a member the court removed"
+		);
+		assert!(!Welati::is_authorized_to_vote(
+			&CollectiveDecisionType::ParliamentSimpleMajority,
+			&5
+		));
+	});
+}
+
 /// What a revocation does in the runtime: identity-kyc burns the citizen NFT through tiki,
 /// which strips every role, and tells welati. The mock wires neither, so this does both.
 fn revoke_citizenship(who: u64) {

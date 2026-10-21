@@ -639,6 +639,8 @@ parameter_types! {
 }
 
 impl pezpallet_tiki::Config for Runtime {
+	// The house's roll and the Parliament collective follow a seat the court takes away.
+	type OnRoleRevoked = Welati;
 	// Authority hands over in stages: Root, then the technical body, which is what
 	// administers NFTs and roles.
 	type AdminOrigin = crate::RootOrSerokOrCouncil;

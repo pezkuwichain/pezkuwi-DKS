@@ -278,6 +278,7 @@ parameter_types! {
 }
 
 impl crate::Config for Test {
+	type OnRoleRevoked = ();
 	type AdminOrigin = RootOrAPerson;
 	type ElectedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;

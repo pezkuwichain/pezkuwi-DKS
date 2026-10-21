@@ -177,6 +177,15 @@ pub use weights::*;
 pub mod ensure;
 pub mod migrations; // Storage migrations // For origin validation
 
+/// Told when a role leaves an account. See `Config::OnRoleRevoked`.
+pub trait OnRoleRevoked<AccountId> {
+	fn on_role_revoked(who: &AccountId, tiki: Tiki);
+}
+
+impl<AccountId> OnRoleRevoked<AccountId> for () {
+	fn on_role_revoked(_: &AccountId, _: Tiki) {}
+}
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
@@ -232,6 +241,12 @@ pub mod pezpallet {
 		type ImpeachmentOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
 		type WeightInfo: weights::WeightInfo;
+
+		/// Told when a role leaves an account through `internal_revoke_role`, so a pallet that
+		/// mirrors the role somewhere else -- a house's roll, a collective's members -- can
+		/// follow. Without it the court could take a member's seat and the member would go on
+		/// voting in the house, because the house reads its own roll (L-7, 2026-10-21).
+		type OnRoleRevoked: OnRoleRevoked<Self::AccountId>;
 
 		/// Collection ID holding Tiki (Role) NFTs.
 		#[pezpallet::constant]
@@ -1080,6 +1095,7 @@ pub mod pezpallet {
 
 			// Notify trust pallet that user's tiki score component changed
 			T::TrustScoreUpdater::on_score_component_changed(target_account);
+			T::OnRoleRevoked::on_role_revoked(target_account, tiki);
 
 			Ok(())
 		}

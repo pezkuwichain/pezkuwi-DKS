@@ -371,6 +371,7 @@ parameter_types! {
 }
 
 impl pezpallet_tiki::Config for Test {
+	type OnRoleRevoked = Welati;
 	type AdminOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type ElectedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
@@ -919,6 +920,15 @@ pub fn add_parliament_member(account: AccountId) {
 	let mut members = ParliamentMembers::<Test>::get();
 	if members.try_push(member).is_ok() {
 		ParliamentMembers::<Test>::put(members);
+	}
+	// A seat is the roll and the tiki together, as the chain grants it; the house now reads
+	// both, so a helper that wrote only the roll would seat nobody.
+	make_citizen(account);
+	if !pezpallet_tiki::Pezpallet::<Test>::has_tiki(&account, &pezpallet_tiki::Tiki::Parlementer) {
+		assert_ok!(pezpallet_tiki::Pezpallet::<Test>::internal_grant_role(
+			&account,
+			pezpallet_tiki::Tiki::Parlementer
+		));
 	}
 }
 

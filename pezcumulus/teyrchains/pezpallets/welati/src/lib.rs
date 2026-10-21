@@ -365,11 +365,24 @@ impl<T: Config> pezpallet_identity_kyc::types::OnCitizenshipRevoked<T::AccountId
 		// Parliament and judging in the Diwan until the term ran out. The empty seat is then
 		// what the vacancy rules are for: an emptied house opens an election, an elected court
 		// seat short opens one for that half, an appointed one is the President's to fill.
-		ParliamentMembers::<T>::mutate(|house| house.retain(|member| &member.account != who));
-		DiwanMembers::<T>::mutate(|bench| bench.retain(|member| &member.account != who));
-		// A seat still waiting to be handed over would be granted to somebody who can no
-		// longer hold a role; the grant would be refused and leave the handover stuck.
-		PendingSeatGrants::<T>::mutate(|grants| grants.retain(|grant| grant != who));
+		Pezpallet::<T>::leave_the_house(who);
+		Pezpallet::<T>::leave_the_bench(who);
+	}
+}
+
+/// A seat the court or the register takes away leaves the roll and the collective with it.
+///
+/// The house reads its own roll to decide who may propose and vote, and the Parliament
+/// collective holds its own copy of the members. Neither followed the tiki: a member whose seat
+/// the court revoked went on voting in the house and in the collective's motions, and kept the
+/// validator stratum that reads the roll (L-7, 2026-10-21).
+impl<T: Config> pezpallet_tiki::OnRoleRevoked<T::AccountId> for Pezpallet<T> {
+	fn on_role_revoked(who: &T::AccountId, tiki: Tiki) {
+		match tiki {
+			Tiki::Parlementer => Self::leave_the_house(who),
+			Tiki::EndameDiwane => Self::leave_the_bench(who),
+			_ => {},
+		}
 	}
 }
 
@@ -4738,9 +4751,7 @@ pub mod pezpallet {
 						== Some(proposer.clone()))
 				},
 				_ => {
-					let is_parliamentarian = ParliamentMembers::<T>::get()
-						.iter()
-						.any(|member| member.account == *proposer);
+					let is_parliamentarian = Self::is_parliament_member(proposer);
 					let is_president = pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
 						== Some(proposer.clone());
 
@@ -5061,6 +5072,41 @@ pub mod pezpallet {
 		///
 		/// Called after every change to the bench and nowhere else, so the two can only
 		/// disagree for the length of one call. `try_state` holds them to it.
+		/// Take `who` off the house's roll, out of any pending grant, and out of the collective.
+		///
+		/// The collective is told only when the roll changed: a seat handover revokes the
+		/// outgoing members after the new roll is already in place, and republishing a house of
+		/// two hundred and one for each of them would cost the collective's rewrite each time.
+		pub(crate) fn leave_the_house(who: &T::AccountId) {
+			let mut changed = false;
+			ParliamentMembers::<T>::mutate(|house| {
+				let before = house.len();
+				house.retain(|member| &member.account != who);
+				changed = house.len() != before;
+			});
+			// A seat still waiting to be handed over would be granted to somebody who can no
+			// longer hold a role; the grant would be refused and leave the handover stuck.
+			PendingSeatGrants::<T>::mutate(|grants| grants.retain(|grant| grant != who));
+			if changed {
+				T::HouseRoster::set_members(
+					ParliamentMembers::<T>::get().iter().map(|m| m.account.clone()).collect(),
+				);
+			}
+		}
+
+		/// Take `who` off the bench, and out of the court's collective if they were on it.
+		pub(crate) fn leave_the_bench(who: &T::AccountId) {
+			let mut changed = false;
+			DiwanMembers::<T>::mutate(|bench| {
+				let before = bench.len();
+				bench.retain(|member| &member.account != who);
+				changed = bench.len() != before;
+			});
+			if changed {
+				Self::publish_the_bench();
+			}
+		}
+
 		fn publish_the_bench() {
 			T::CourtRoster::set_members(
 				DiwanMembers::<T>::get().iter().map(|member| member.account.clone()).collect(),
@@ -5847,8 +5893,11 @@ impl<T: Config> Pezpallet<T> {
 		Ok(())
 	}
 
+	/// On the roll and still holding the seat. The roll alone used to answer, and a seat whose
+	/// term had run out, or that a path other than the court's took away, left its holder voting.
 	pub fn is_parliament_member(who: &T::AccountId) -> bool {
 		ParliamentMembers::<T>::get().iter().any(|member| &member.account == who)
+			&& pezpallet_tiki::Pezpallet::<T>::has_tiki(who, &Tiki::Parlementer)
 	}
 
 	/// Check if account is a Diwan member
