@@ -6134,3 +6134,154 @@ mod a_silent_office {
 		});
 	}
 }
+
+// ===== A FREE CALL IS ONE THAT WILL BE COUNTED =====
+//
+// The register's votes are free so that the franchise costs nothing. A fee exemption that
+// asks less than the call does is something else: a call the body is certain to refuse goes
+// through for nothing, as often as its sender likes, and fills the block it lands in. The
+// exemption used to ask only whether the vote existed and had not been cast -- not whether
+// the caller could cast it (L-7 Y4, 2026-10-21).
+
+mod free_only_when_counted {
+	use super::*;
+	use crate::{mock::set_trust_score, Call, Initiatives};
+	use pezframe_support::{dispatch::CheckIfFeeless, traits::Currency};
+
+	fn free(who: u64, call: Call<Test>) -> bool {
+		call.is_feeless(&RuntimeOrigin::signed(who))
+	}
+
+	fn open_initiative() -> u32 {
+		let _ = crate::mock::Balances::deposit_creating(&11, 1_000);
+		assert_ok!(Welati::open_initiative(
+			RuntimeOrigin::signed(11),
+			0,
+			pezsp_core::H256::repeat_byte(9),
+			42
+		));
+		0
+	}
+
+	#[test]
+	fn backing_an_initiative() {
+		ExtBuilder::default().build().execute_with(|| {
+			let id = open_initiative();
+			assert!(free(12, Call::back_initiative { id }));
+
+			set_trust_score(0);
+			assert!(!free(12, Call::back_initiative { id }), "trust of zero cannot sign");
+			set_trust_score(1000);
+
+			assert!(!free(11, Call::back_initiative { id }), "the proposer already signed");
+
+			run_to_block(Initiatives::<Test>::get(id).unwrap().closes + 1);
+			assert!(!free(12, Call::back_initiative { id }), "the window has closed");
+		});
+	}
+
+	#[test]
+	fn answering_a_referendum() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert!(free(7, Call::answer_referendum { poll: 1, aye: true }));
+
+			set_trust_score(0);
+			assert!(!free(7, Call::answer_referendum { poll: 1, aye: true }));
+			set_trust_score(1000);
+
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(7), 1, true));
+			assert!(!free(7, Call::answer_referendum { poll: 1, aye: false }), "a change is paid");
+		});
+	}
+
+	#[test]
+	fn endorsing_a_candidate() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::Parliamentary,
+				None,
+				None,
+			));
+			assert!(free(3, Call::endorse_candidate { election_id: 0, candidate: 1 }));
+			assert!(
+				!free(1, Call::endorse_candidate { election_id: 0, candidate: 1 }),
+				"nobody endorses themselves"
+			);
+
+			run_to_block(crate::mock::CandidacyPeriod::get() + 2);
+			assert!(
+				!free(3, Call::endorse_candidate { election_id: 0, candidate: 1 }),
+				"the candidacy period is over"
+			);
+		});
+	}
+
+	#[test]
+	fn casting_a_ballot() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::Parliamentary,
+				None,
+				None,
+			));
+			let endorsers = endorsed_by(0, 1, (3..=52).collect());
+			assert_ok!(Welati::register_candidate(RuntimeOrigin::signed(1), 0, None, endorsers));
+			let ballot = |candidates: Vec<u64>| Call::cast_vote {
+				election_id: 0,
+				candidates,
+				district_id: None,
+			};
+
+			assert!(!free(2, ballot(vec![1])), "voting has not opened");
+
+			run_to_block(
+				crate::mock::CandidacyPeriod::get() + crate::mock::CampaignPeriod::get() + 1,
+			);
+			assert!(free(2, ballot(vec![1])));
+			assert!(!free(2, ballot(vec![99])), "nobody of that name is standing");
+			assert!(!free(2, ballot(vec![1, 1])), "a name counts once");
+			assert!(!free(2, ballot((1..=11).collect())), "a ballot holds ten names");
+		});
+	}
+
+	#[test]
+	fn voting_on_a_proposal() {
+		ExtBuilder::default().build().execute_with(|| {
+			add_parliament_member(1);
+			add_parliament_member(2);
+			assert_ok!(Welati::submit_proposal(
+				RuntimeOrigin::signed(1),
+				b"t".to_vec().try_into().unwrap(),
+				b"d".to_vec().try_into().unwrap(),
+				CollectiveDecisionType::ParliamentSimpleMajority,
+				ProposalPriority::Normal,
+				None,
+			));
+			let aye = || Call::vote_on_proposal {
+				proposal_id: 0,
+				vote: VoteChoice::Aye,
+				rationale: None,
+			};
+
+			let proposal = Welati::active_proposals(0).unwrap();
+			if proposal.voting_starts_at > System::block_number() {
+				assert!(!free(2, aye()), "debate has not opened");
+			}
+			run_to_block(proposal.voting_starts_at + 1);
+			assert!(free(2, aye()));
+
+			assert_ok!(Welati::vote_on_proposal(
+				RuntimeOrigin::signed(2),
+				0,
+				VoteChoice::Aye,
+				None
+			));
+			assert!(!free(2, aye()), "a second vote is refused, so it is not free");
+
+			run_to_block(proposal.expires_at + 1);
+			assert!(!free(1, aye()), "the window has closed");
+		});
+	}
+}
