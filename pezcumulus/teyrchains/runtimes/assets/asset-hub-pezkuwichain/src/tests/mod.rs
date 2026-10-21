@@ -84,6 +84,21 @@ fn full_block_fee_ratio() {
 /// `pallet-assets` gives the owner named at genesis all four roles -- owner, issuer, admin
 /// and freezer -- so this one account is everything a key could do to the asset.
 fn genesis_owner_in_every_preset(asset: u32) -> Vec<(pezsp_genesis_builder::PresetId, AccountId)> {
+	genesis_asset_in_every_preset(asset)
+		.into_iter()
+		.map(|(id, entry)| {
+			let owner: AccountId =
+				serde_json::from_value(entry[1].clone()).expect("the owner decodes");
+			(id, owner)
+		})
+		.collect()
+}
+
+/// The `(id, owner, is_sufficient, min_balance)` entry every genesis preset creates `asset`
+/// with.
+fn genesis_asset_in_every_preset(
+	asset: u32,
+) -> Vec<(pezsp_genesis_builder::PresetId, serde_json::Value)> {
 	// Building a preset reaches for host functions, so it needs an externalities environment.
 	pezsp_io::TestExternalities::default().execute_with(|| {
 		[
@@ -106,9 +121,7 @@ fn genesis_owner_in_every_preset(asset: u32) -> Vec<(pezsp_genesis_builder::Pres
 				.find(|entry| entry[0] == serde_json::json!(asset))
 				.unwrap_or_else(|| panic!("preset {id:?} creates asset {asset}"))
 				.clone();
-			let owner: AccountId =
-				serde_json::from_value(entry[1].clone()).expect("the owner decodes");
-			(id, owner)
+			(id, entry)
 		})
 		.collect()
 	})
@@ -153,5 +166,28 @@ fn whez_is_owned_by_the_wrapper_in_every_preset() {
 			"preset {id:?} gives wHEZ an owner that can be signed for; \
 			 the issuer could then mint wHEZ with no HEZ behind it and unwrap it"
 		);
+	}
+}
+
+/// Holding PEZ or wHEZ costs what holding HEZ costs: the existential deposit.
+///
+/// Both are sufficient, so a balance of either keeps an account in existence with no HEZ in
+/// it. At a minimum balance of one planck, sending one planck to an address that has never
+/// existed created an account for the price of the transfer fee alone, and nothing ever
+/// reaped it. wHEZ is HEZ, and PEZ has the same twelve decimals.
+#[test]
+fn holding_pez_or_whez_costs_an_existential_deposit_in_every_preset() {
+	use crate::genesis_config_presets::WHEZ_ASSET_ID;
+
+	for asset in [PEZ_ASSET_ID, WHEZ_ASSET_ID] {
+		for (id, entry) in genesis_asset_in_every_preset(asset) {
+			let min_balance: Balance =
+				serde_json::from_value(entry[3].clone()).expect("the minimum balance decodes");
+			assert_eq!(
+				min_balance,
+				ExistentialDeposit::get(),
+				"preset {id:?} lets one planck of asset {asset} keep an account alive"
+			);
+		}
 	}
 }
