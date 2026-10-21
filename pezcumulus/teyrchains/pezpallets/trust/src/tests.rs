@@ -833,7 +833,7 @@ fn records_that_are_not_citizens_still_count_against_the_batch() {
 
 	new_test_ext().execute_with(|| {
 		for who in 1_000..1_300u64 {
-			pezpallet_identity_kyc::KycStatuses::<Test>::insert(who, KycLevel::Pending);
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(who, KycLevel::PendingReferral);
 		}
 
 		assert_ok!(TrustPallet::update_all_trust_scores(RuntimeOrigin::root()));
