@@ -476,6 +476,40 @@ fn a_failed_release_moves_no_money() {
 }
 
 #[test]
+fn a_release_that_pays_one_pot_and_not_the_other_pays_neither() {
+	// The incentive transfer and the government transfer are one release. Hooks have no
+	// storage layer of their own, so when the second failed the first stayed paid while the
+	// month went unrecorded -- and every block after retried it, paying the incentive pot
+	// again until the treasury ran dry.
+	new_test_ext().execute_with(|| {
+		activate();
+		let incentive = expected_amount(0) * 75 / 100;
+		// Leave enough for the incentive share and nothing like the government's.
+		let keep = incentive + 2;
+		let spare = pez_balance(treasury_account()) - keep;
+		assert_ok!(<Assets as pezframe_support::traits::fungibles::Mutate<_>>::transfer(
+			PezAssetId::get(),
+			&treasury_account(),
+			&bob(),
+			spare,
+			pezframe_support::traits::tokens::Preservation::Preserve,
+		));
+
+		run_blocks(3);
+
+		assert!(
+			PezTreasury::get_incentive_pot_balance().is_zero(),
+			"half a release was paid and left standing"
+		);
+		assert_eq!(pez_balance(treasury_account()), keep);
+		assert_eq!(PezTreasury::next_release_month(), 0);
+		assert!(System::events()
+			.iter()
+			.any(|e| matches!(e.event, RuntimeEvent::PezTreasury(Event::MonthlyReleaseFailed))));
+	});
+}
+
+#[test]
 fn being_too_early_is_quiet() {
 	// `ReleaseTooEarly` is the answer on all but one block a month. It must not fill the chain
 	// with failure events.
