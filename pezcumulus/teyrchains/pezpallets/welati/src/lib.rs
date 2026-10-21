@@ -196,6 +196,10 @@ use xcm::latest::prelude::*;
 ///
 /// Kept next to the pallet-index constant it is used with, because the pair is the whole
 /// address of a call on another chain and neither half means anything alone.
+/// The most per-citizen entries one clearing call removes. Enough that a finished question can
+/// be cleared in a few hundred calls, small enough that one of them fits a block with room left.
+pub const MAX_CLEARED_PER_CALL: u32 = 1_000;
+
 const ACTIVATE_DISTRIBUTION_CALL_INDEX: u8 = 0;
 
 /// `pezpallet-pez-treasury::spend_from_government_pot`, by call index.
@@ -1542,6 +1546,9 @@ pub mod pezpallet {
 		/// The register reached the population threshold: the founding period is over, and
 		/// the elections that replace the founding President and house are opening.
 		FoundingPeriodEnded { citizen_count: u32 },
+
+		/// Backing of a finished initiative was discarded.
+		InitiativeBackingCleared { id: u32, removed: u32 },
 	}
 
 	#[pezpallet::error]
@@ -3048,8 +3055,11 @@ pub mod pezpallet {
 
 			// It did what it was taken for.
 			T::NativeCurrency::unreserve(&init.proposer, init.deposit.saturated_into());
+			// The backers are left for `clear_initiative_backing`. Clearing them here was every
+			// backer in one call at a fixed weight -- four hundred thousand at the mature
+			// threshold, a block nobody could validate (L-7, 2026-10-21). With the initiative
+			// gone they are inert: backing checks the initiative first.
 			Initiatives::<T>::remove(id);
-			let _ = InitiativeBacking::<T>::clear_prefix(id, u32::MAX, None);
 
 			Self::deposit_event(Event::InitiativeLaunched { id, backing: init.backing });
 			Ok(())
@@ -3087,10 +3097,29 @@ pub mod pezpallet {
 					.saturating_add(T::InitiativeCooldown::get()),
 			);
 
+			// The backers are left for `clear_initiative_backing`, as in `launch_initiative`.
 			Initiatives::<T>::remove(id);
-			let _ = InitiativeBacking::<T>::clear_prefix(id, u32::MAX, None);
 
 			Self::deposit_event(Event::InitiativeLapsed { id, backing: init.backing });
+			Ok(())
+		}
+
+		/// Discard the backing of an initiative that has been launched or has lapsed.
+		///
+		/// Permissionless and bounded, like `clear_referendum_answers`: at most
+		/// `MAX_CLEARED_PER_CALL` entries, charged for what is asked.
+		#[pezpallet::call_index(74)]
+		#[pezpallet::weight(Pezpallet::<T>::clearing_weight((*limit).min(MAX_CLEARED_PER_CALL)))]
+		pub fn clear_initiative_backing(
+			origin: OriginFor<T>,
+			#[pezpallet::compact] id: u32,
+			limit: u32,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			ensure!(!Initiatives::<T>::contains_key(id), Error::<T>::InitiativeStillOpen);
+			let removed =
+				InitiativeBacking::<T>::clear_prefix(id, limit.min(MAX_CLEARED_PER_CALL), None);
+			Self::deposit_event(Event::InitiativeBackingCleared { id, removed: removed.unique });
 			Ok(())
 		}
 
@@ -3177,9 +3206,12 @@ pub mod pezpallet {
 		/// ever grows, one entry per citizen per question, forever.
 		///
 		/// `limit` bounds the work so a long-running question can be cleared across several
-		/// calls rather than in one block nobody else fits into.
+		/// calls rather than in one block nobody else fits into -- at most
+		/// `MAX_CLEARED_PER_CALL`, and the caller pays for what they ask to clear. It used to be
+		/// charged a fixed weight whatever the limit, so `limit = u32::MAX` on a large poll was
+		/// a block over the proof limit for one fee (L-7, 2026-10-21).
 		#[pezpallet::call_index(51)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		#[pezpallet::weight(Pezpallet::<T>::clearing_weight((*limit).min(MAX_CLEARED_PER_CALL)))]
 		pub fn clear_referendum_answers(
 			origin: OriginFor<T>,
 			#[pezpallet::compact] poll: u32,
@@ -3188,7 +3220,8 @@ pub mod pezpallet {
 			ensure_signed(origin)?;
 			ensure!(T::Polls::as_ongoing(poll).is_none(), Error::<T>::ReferendumStillOngoing);
 
-			let removed = ReferendumVotes::<T>::clear_prefix(poll, limit, None);
+			let removed =
+				ReferendumVotes::<T>::clear_prefix(poll, limit.min(MAX_CLEARED_PER_CALL), None);
 			Self::deposit_event(Event::ReferendumVotesCleared { poll, removed: removed.unique });
 			Ok(())
 		}
@@ -5072,6 +5105,15 @@ pub mod pezpallet {
 		///
 		/// Called after every change to the bench and nowhere else, so the two can only
 		/// disagree for the length of one call. `try_state` holds them to it.
+		/// What clearing `n` per-citizen entries costs: a read and a write each, and the proof of
+		/// the key and value it removes (a double-map key of 4+8 and 16+32 bytes, a one-byte
+		/// value, the trie nodes above it -- a hundred and fifty bytes, rounded up).
+		pub(crate) fn clearing_weight(n: u32) -> Weight {
+			<T as pezpallet::Config>::WeightInfo::vote_on_proposal()
+				.saturating_add(T::DbWeight::get().reads_writes(u64::from(n), u64::from(n)))
+				.saturating_add(Weight::from_parts(0, 150u64.saturating_mul(u64::from(n))))
+		}
+
 		/// Take `who` off the house's roll, out of any pending grant, and out of the collective.
 		///
 		/// The collective is told only when the roll changed: a seat handover revokes the

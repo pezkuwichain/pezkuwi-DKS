@@ -5009,7 +5009,61 @@ mod initiative {
 			assert_eq!(launched(), vec![(PROPOSER, 0u16, hash(), 42u32)]);
 			assert_eq!(Balances::reserved_balance(PROPOSER), 0, "it did what it was taken for");
 			assert!(Initiatives::<Test>::get(id).is_none());
+
+			// The backers stay until somebody clears them, in bounded and paid-for steps.
+			// Clearing them inside the launch was every backer at a fixed weight.
+			assert!(InitiativeBacking::<Test>::contains_key(id, PROPOSER));
+			assert_ok!(Welati::clear_initiative_backing(RuntimeOrigin::signed(SIGNER), id, 10));
 			assert!(!InitiativeBacking::<Test>::contains_key(id, PROPOSER));
+		});
+	}
+
+	/// An open initiative's backing is not cleared: it is what stops a second signature.
+	#[test]
+	fn an_open_initiatives_backing_cannot_be_cleared() {
+		ExtBuilder::default().build().execute_with(|| {
+			let id = open();
+			assert_noop!(
+				Welati::clear_initiative_backing(RuntimeOrigin::signed(SIGNER), id, 10),
+				Error::<Test>::InitiativeStillOpen
+			);
+		});
+	}
+
+	/// Clearing is bounded per call and charged for what it is asked to clear.
+	///
+	/// It used to take any limit at a fixed weight, so one fee could ask for a deletion larger
+	/// than a block can prove (L-7, 2026-10-21).
+	#[test]
+	fn clearing_is_bounded_and_charged_for_what_it_clears() {
+		use pezframe_support::dispatch::GetDispatchInfo;
+		ExtBuilder::default().build().execute_with(|| {
+			let small = crate::Call::<Test>::clear_referendum_answers { poll: 9, limit: 1 }
+				.get_dispatch_info()
+				.call_weight;
+			let huge = crate::Call::<Test>::clear_referendum_answers { poll: 9, limit: u32::MAX }
+				.get_dispatch_info()
+				.call_weight;
+			assert!(huge.all_gt(small), "asking to clear more did not cost more");
+			assert_eq!(huge, Welati::clearing_weight(crate::MAX_CLEARED_PER_CALL));
+
+			// A finished question with more answers than one call may clear.
+			let mut polls = crate::mock::MockPolls::get();
+			polls.insert(9, crate::mock::MockPollState::Completed(1, true));
+			crate::mock::MockPolls::set(polls);
+			for who in 0..(crate::MAX_CLEARED_PER_CALL as u64 + 5) {
+				crate::ReferendumVotes::<Test>::insert(9, 10_000 + who, true);
+			}
+			assert_ok!(Welati::clear_referendum_answers(
+				RuntimeOrigin::signed(SIGNER),
+				9,
+				u32::MAX
+			));
+			assert_eq!(
+				crate::ReferendumVotes::<Test>::iter_prefix(9).count(),
+				5,
+				"one call cleared past its bound"
+			);
 		});
 	}
 
