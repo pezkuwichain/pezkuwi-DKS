@@ -179,6 +179,13 @@ impl Contains<RuntimeCall> for TheRegisterIsNotWritableFromAbroad {
 				// chain's spec name and version. The register is in the code, so an upgrade is
 				// the one way abroad can change it -- and it is public before it lands.
 				| RuntimeCall::System(pezframe_system::Call::authorize_upgrade { .. })
+				// On-chain identity -- display names, registrars' judgements, usernames -- which is
+				// not the register: citizenship is `IdentityKyc`, and nothing here reads this
+				// pallet to decide who is a citizen. The relay's governance administers it as on
+				// every Polkadot-shaped People chain (registrars, killing an abusive identity,
+				// username authorities), and a user on another chain aliases into their own
+				// account here to set their own identity.
+				| RuntimeCall::Identity(..)
 				// Keeping the transport and the block producers running. None of it reads or
 				// writes the register.
 				| RuntimeCall::PezkuwiXcm(

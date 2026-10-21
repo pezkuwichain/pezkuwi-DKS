@@ -511,6 +511,14 @@ mod the_register_is_not_writable_from_abroad {
 			RuntimeCall::PezRewards(pezpallet_pez_rewards::Call::note_incentive_funding {
 				total: 1,
 			}),
+			// The relay's governance administering identity, and a user on another chain
+			// setting their own.
+			RuntimeCall::Identity(pezpallet_identity::Call::add_registrar {
+				account: AccountId::from(ALICE).into(),
+			}),
+			RuntimeCall::Identity(pezpallet_identity::Call::set_identity {
+				info: Box::new(Default::default()),
+			}),
 		];
 		for call in calls {
 			assert!(Filter::contains(&call), "a cross-chain path was closed: {call:?}");
