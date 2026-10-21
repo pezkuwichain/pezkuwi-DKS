@@ -219,8 +219,8 @@ Pezkuwi Network includes 12 custom pallets:
 // burns, has an owner that can sign.
 assets: AssetsConfig {
     assets: vec![
-        (PEZ_ASSET_ID, pez_asset_team(), true, 1),
-        (WHEZ_ASSET_ID, whez_owner(), true, 1),
+        (PEZ_ASSET_ID, pez_asset_team(), true, ExistentialDeposit::get()),
+        (WHEZ_ASSET_ID, whez_owner(), true, ExistentialDeposit::get()),
         (WUSDT_ASSET_ID, asset_owner.clone(), true, 10_000),
     ],
     metadata: vec![

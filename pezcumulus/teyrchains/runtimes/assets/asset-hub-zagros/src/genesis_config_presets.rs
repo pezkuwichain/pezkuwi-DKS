@@ -324,10 +324,13 @@ fn asset_hub_pezkuwichain_genesis(
 			assets: vec![
 				// PEZ Token - Governance token with 5B fixed supply.
 				// The asset team is keyless by design -- see `PezAssetTeamId`.
-				(PEZ_ASSET_ID, pez_asset_team(), true, 1),
+				// Sufficient, so holding it keeps an account alive: it costs the existential
+				// deposit, as HEZ does, not one planck.
+				(PEZ_ASSET_ID, pez_asset_team(), true, ExistentialDeposit::get()),
 				// wHEZ Token - Wrapped HEZ for DeFi operations.
 				// Owned by the wrapper's keyless account -- see `whez_owner()`.
-				(WHEZ_ASSET_ID, whez_owner(), true, 1),
+				// One wHEZ is one HEZ, so its minimum is HEZ's.
+				(WHEZ_ASSET_ID, whez_owner(), true, ExistentialDeposit::get()),
 				// wUSDT - Wrapped USDT (1:1 backed by Polkadot USDT or TRC20 USDT)
 				// Min balance: 10_000 (0.01 USDT with 6 decimals)
 				(WUSDT_ASSET_ID, asset_owner.clone(), true, 10_000),
