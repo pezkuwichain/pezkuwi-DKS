@@ -104,14 +104,11 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
 	/// Storage: `Trust::TotalActiveTrustScore` (r:1 w:1)
 	/// Proof: `Trust::TotalActiveTrustScore` (`max_values`: Some(1), `max_size`: Some(16), added: 511, mode: `MaxEncodedLen`)
+	/// Derived until the weights run measures the noter path: `finalize_staking_details`
+	/// for the matured submission it applies, then the noter checks and the new record.
 	fn receive_staking_details() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `475`
-		//  Estimated: `8682`
-		// Minimum execution time: 127_528_000 picoseconds.
-		Weight::from_parts(201_235_000, 8682)
-			.saturating_add(T::DbWeight::get().reads(9_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		<Self as WeightInfo>::finalize_staking_details()
+			.saturating_add(T::DbWeight::get().reads_writes(3, 2))
 	}
 	/// Storage: `Tiki::UserTikis` (r:1 w:0)
 	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
@@ -231,14 +228,11 @@ impl WeightInfo for () {
 	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
 	/// Storage: `Trust::TotalActiveTrustScore` (r:1 w:1)
 	/// Proof: `Trust::TotalActiveTrustScore` (`max_values`: Some(1), `max_size`: Some(16), added: 511, mode: `MaxEncodedLen`)
+	/// Derived until the weights run measures the noter path: `finalize_staking_details`
+	/// for the matured submission it applies, then the noter checks and the new record.
 	fn receive_staking_details() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `475`
-		//  Estimated: `8682`
-		// Minimum execution time: 127_528_000 picoseconds.
-		Weight::from_parts(201_235_000, 8682)
-			.saturating_add(RocksDbWeight::get().reads(9_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+		<Self as WeightInfo>::finalize_staking_details()
+			.saturating_add(RocksDbWeight::get().reads_writes(3, 2))
 	}
 	/// Storage: `Tiki::UserTikis` (r:1 w:0)
 	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)

@@ -108,15 +108,11 @@ impl<T: pezframe_system::Config> pezpallet_staking_score::WeightInfo for WeightI
 	/// Proof: `Trust::TotalActiveTrustScore` (`max_values`: Some(1), `max_size`: Some(16), added: 511, mode: `MaxEncodedLen`)
 	/// Storage: `StakingScore::LastConfirmed` (r:0 w:1)
 	/// Proof: `StakingScore::LastConfirmed` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Derived until the weights run measures the noter path: `finalize_staking_details`
+	/// for the matured submission it applies, then the noter checks and the new record.
 	fn receive_staking_details() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `808`
-		//  Estimated: `8682`
-		// Minimum execution time: 113_453_000 picoseconds.
-		Weight::from_parts(169_005_000, 0)
-			.saturating_add(Weight::from_parts(0, 8682))
-			.saturating_add(T::DbWeight::get().reads(12))
-			.saturating_add(T::DbWeight::get().writes(4))
+		<Self as pezpallet_staking_score::WeightInfo>::finalize_staking_details()
+			.saturating_add(T::DbWeight::get().reads_writes(3, 2))
 	}
 	/// Storage: `Tiki::UserTikis` (r:1 w:0)
 	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
