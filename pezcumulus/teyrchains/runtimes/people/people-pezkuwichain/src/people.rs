@@ -2204,6 +2204,24 @@ impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
 						});
 					}
 				});
+				// The house's register is half of membership; the seat's tiki is the other,
+				// and `is_parliament_member` asks for both since the seat became a tiki
+				// (L-7, 2026-10-21). Without it every benchmark that joins Meclis was refused
+				// (weights run 39788954023).
+				// A benchmark genesis may have no citizen collection to mint from; the
+				// welati helper creates it first.
+				<WelatiBenchmarkHelper as pezpallet_welati::BenchmarkHelper<AccountId>>::make_citizen(
+					who,
+				);
+				if !pezpallet_tiki::Pezpallet::<Runtime>::has_tiki(
+					who,
+					&pezpallet_tiki::Tiki::Parlementer,
+				) {
+					let _ = pezpallet_tiki::Pezpallet::<Runtime>::internal_grant_role(
+						who,
+						pezpallet_tiki::Tiki::Parlementer,
+					);
+				}
 			},
 			StratumId::Divan => {
 				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
