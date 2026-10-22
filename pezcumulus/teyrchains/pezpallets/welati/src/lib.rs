@@ -1996,7 +1996,11 @@ pub mod pezpallet {
 				}
 			}
 
-			T::DbWeight::get().reads_writes(8, (opened as u64).saturating_mul(2))
+			// An election opened here is `initiate_election`, so it is charged as one; two
+			// writes was a guess at its storage (L-7, 2026-10-22).
+			T::DbWeight::get().reads(8).saturating_add(
+				<T as Config>::WeightInfo::initiate_election().saturating_mul(u64::from(opened)),
+			)
 		}
 
 		/// Whether a single-holder office that should be filled is empty.
@@ -2100,7 +2104,12 @@ pub mod pezpallet {
 				},
 			}
 
-			T::DbWeight::get().reads_writes(3, 1)
+			// The report is a message to the treasury chain. `pay_airdrop` sends one there and
+			// measured it, with reads of its own besides -- an overcharge, once in the chain's
+			// life, rather than a message nothing paid for.
+			T::DbWeight::get()
+				.reads_writes(3, 1)
+				.saturating_add(<T as Config>::WeightInfo::pay_airdrop())
 		}
 
 		/// End the founding period once the register is large enough, and open what it owes.
@@ -5411,23 +5420,24 @@ pub mod pezpallet {
 			}
 
 			let term = PendingSeatTerm::<T>::get();
-			let mut done = 0u32;
+			let mut revoked = 0u32;
+			let mut granted = 0u32;
 
-			while done < SEATS_PER_BLOCK && !revokes.is_empty() {
+			while revoked < SEATS_PER_BLOCK && !revokes.is_empty() {
 				let who = revokes.remove(0);
 				// A seat already gone -- the holder lost their citizenship, or the Diwan
 				// removed them -- is not an error, it is the outcome we wanted.
 				let _ =
 					pezpallet_tiki::Pezpallet::<T>::internal_revoke_role(&who, Tiki::Parlementer);
-				done = done.saturating_add(1);
+				revoked = revoked.saturating_add(1);
 			}
 
-			while done < SEATS_PER_BLOCK && !grants.is_empty() {
+			while revoked.saturating_add(granted) < SEATS_PER_BLOCK && !grants.is_empty() {
 				let who = grants.remove(0);
 				if Self::seat_parliamentarian(&who, term).is_err() {
 					Self::deposit_event(Event::SeatCouldNotBeTaken { who });
 				}
-				done = done.saturating_add(1);
+				granted = granted.saturating_add(1);
 			}
 
 			let finished = revokes.is_empty() && grants.is_empty();
@@ -5438,7 +5448,21 @@ pub mod pezpallet {
 				Self::deposit_event(Event::SeatHandoverCompleted);
 			}
 
-			T::DbWeight::get().reads_writes(3, 3 + (done as u64).saturating_mul(4))
+			// Each seat is a tiki taken or given, which is what the tiki pallet measured for
+			// those calls -- the role, its expiry, and the trust score it moves. Four writes a
+			// seat was the storage alone (L-7, 2026-10-22).
+			use pezpallet_tiki::weights::WeightInfo as _;
+			T::DbWeight::get()
+				.reads_writes(3, 3)
+				.saturating_add(
+					<T as pezpallet_tiki::Config>::WeightInfo::revoke_tiki()
+						.saturating_mul(u64::from(revoked)),
+				)
+				.saturating_add(
+					<T as pezpallet_tiki::Config>::WeightInfo::grant_elected_role()
+						.saturating_add(T::DbWeight::get().writes(2))
+						.saturating_mul(u64::from(granted)),
+				)
 		}
 
 		/// Give one seat, with its term.
