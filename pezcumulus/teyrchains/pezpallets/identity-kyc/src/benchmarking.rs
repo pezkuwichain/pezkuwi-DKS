@@ -42,6 +42,18 @@ fn setup_citizen<T: Config>(who: &T::AccountId) {
 		.expect("a citizen this pallet just approved must be able to hold the NFT; qed");
 }
 
+/// A citizen vouched for by a staked one, with the record the approval hook keeps of it.
+///
+/// Revoking or renouncing citizenship charges the voucher and recomputes their standing. A
+/// citizen nobody vouched for skips both, and that is what the two benchmarks measured.
+fn setup_vouched_citizen<T: Config>(citizen: &T::AccountId) {
+	let referrer: T::AccountId = funded_account::<T>("referrer", 0);
+	setup_citizen::<T>(&referrer);
+	T::OnKycApproved::prepare_worst_case(&referrer);
+	setup_citizen::<T>(citizen);
+	T::OnKycApproved::on_kyc_approved(citizen, &referrer, None);
+}
+
 /// Helper function to setup an applicant in PendingReferral state
 fn setup_pending_referral<T: Config>(applicant: &T::AccountId, referrer: &T::AccountId) {
 	let identity_hash = H256::repeat_byte(0x01);
@@ -117,6 +129,7 @@ mod benchmarks {
 	fn confirm_citizenship() {
 		let referrer: T::AccountId = funded_account::<T>("referrer", 0);
 		setup_citizen::<T>(&referrer);
+		T::OnKycApproved::prepare_worst_case(&referrer);
 
 		let applicant: T::AccountId = funded_account::<T>("applicant", 1);
 		setup_referrer_approved::<T>(&applicant, &referrer);
@@ -130,7 +143,7 @@ mod benchmarks {
 	#[benchmark]
 	fn revoke_citizenship() {
 		let citizen: T::AccountId = funded_account::<T>("citizen", 0);
-		setup_citizen::<T>(&citizen);
+		setup_vouched_citizen::<T>(&citizen);
 
 		#[extrinsic_call]
 		revoke_citizenship(RawOrigin::Root, citizen.clone());
@@ -141,7 +154,7 @@ mod benchmarks {
 	#[benchmark]
 	fn renounce_citizenship() {
 		let citizen: T::AccountId = funded_account::<T>("citizen", 0);
-		setup_citizen::<T>(&citizen);
+		setup_vouched_citizen::<T>(&citizen);
 
 		#[extrinsic_call]
 		renounce_citizenship(RawOrigin::Signed(citizen.clone()));

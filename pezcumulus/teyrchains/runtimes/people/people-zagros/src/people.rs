@@ -311,10 +311,26 @@ parameter_types! {
 /// This avoids cyclic dependencies between component pallets and pezpallet-trust.
 pub struct TrustScoreNotifier;
 
+/// A citizen with a stake: the account whose recomputation reads every component and writes
+/// the score and the total. Each component pallet's benchmark notifies one of these.
+#[cfg(feature = "runtime-benchmarks")]
+fn trust_worst_case(who: &AccountId) {
+	use pezpallet_trust::BenchmarkHelper as _;
+	pezpallet_identity_kyc::KycStatuses::<Runtime>::insert(
+		who,
+		pezpallet_identity_kyc::types::KycLevel::Approved,
+	);
+	TrustBenchmarkHelper::make_scored(who);
+}
+
 impl pezpallet_referral::TrustScoreUpdater<AccountId> for TrustScoreNotifier {
 	fn on_score_component_changed(who: &AccountId) {
 		use pezpallet_trust::TrustScoreUpdater;
 		<Trust as TrustScoreUpdater<AccountId>>::on_score_component_changed(who);
+	}
+	#[cfg(feature = "runtime-benchmarks")]
+	fn prepare_worst_case(who: &AccountId) {
+		trust_worst_case(who);
 	}
 }
 
@@ -323,12 +339,20 @@ impl pezpallet_tiki::TrustScoreUpdater<AccountId> for TrustScoreNotifier {
 		use pezpallet_trust::TrustScoreUpdater;
 		<Trust as TrustScoreUpdater<AccountId>>::on_score_component_changed(who);
 	}
+	#[cfg(feature = "runtime-benchmarks")]
+	fn prepare_worst_case(who: &AccountId) {
+		trust_worst_case(who);
+	}
 }
 
 impl pezpallet_perwerde::TrustScoreUpdater<AccountId> for TrustScoreNotifier {
 	fn on_score_component_changed(who: &AccountId) {
 		use pezpallet_trust::TrustScoreUpdater;
 		<Trust as TrustScoreUpdater<AccountId>>::on_score_component_changed(who);
+	}
+	#[cfg(feature = "runtime-benchmarks")]
+	fn prepare_worst_case(who: &AccountId) {
+		trust_worst_case(who);
 	}
 }
 

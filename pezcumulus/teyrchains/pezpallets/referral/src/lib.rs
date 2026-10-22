@@ -160,6 +160,12 @@ pub fn score_for(good_referrals: u32) -> u32 {
 /// Defined locally to avoid cyclic dependency with pezpallet-trust.
 pub trait TrustScoreUpdater<AccountId> {
 	fn on_score_component_changed(who: &AccountId);
+
+	/// Make `who` the account whose notification costs the most, for benchmarking: a citizen
+	/// with a stake, whose score has to be worked out and written. For anybody else the trust
+	/// pallet returns at its first check, and a benchmark notifying them measures that.
+	#[cfg(feature = "runtime-benchmarks")]
+	fn prepare_worst_case(_who: &AccountId) {}
 }
 
 /// Noop implementation for mock environments and pallets that don't need trust updates.
@@ -510,6 +516,11 @@ pub mod pezpallet {
 	// --- Trait Implementations ---
 
 	impl<T: Config> OnKycApproved<T::AccountId> for Pezpallet<T> {
+		#[cfg(feature = "runtime-benchmarks")]
+		fn prepare_worst_case(referrer: &T::AccountId) {
+			T::TrustScoreUpdater::prepare_worst_case(referrer);
+		}
+
 		fn on_kyc_approved(
 			who: &T::AccountId,
 			referrer: &T::AccountId,

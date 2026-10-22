@@ -182,6 +182,12 @@ pub trait OnKycApproved<AccountId> {
 	///   fact from the guarantor and frequently a different person: you can be brought here by
 	///   one person and ask another to stand for you.
 	fn on_kyc_approved(who: &AccountId, referrer: &AccountId, inviter: Option<&AccountId>);
+
+	/// Make `referrer` the voucher whose bookkeeping costs the most, for benchmarking. An
+	/// approval, a revocation and a restoration each recompute the voucher's standing, and
+	/// that recomputation is only paid in full for a citizen with a stake.
+	#[cfg(feature = "runtime-benchmarks")]
+	fn prepare_worst_case(_referrer: &AccountId) {}
 }
 
 /// No-op implementation for when no hook is needed
