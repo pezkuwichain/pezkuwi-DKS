@@ -233,6 +233,12 @@ pub trait BenchmarkHelper<AccountId> {
 	/// configuration for the router to check the message against -- the same refusal, for
 	/// the same reason, as the treasury's.
 	fn ensure_relay_reachable();
+
+	/// Give `who` a trust score, which voting, backing and opening an initiative require.
+	///
+	/// The score is another pallet's, and a benchmark genesis has nobody with one, so the
+	/// runtime writes it. Nothing to do where the trust source already answers for anyone.
+	fn give_trust(_who: &AccountId) {}
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -2180,7 +2186,7 @@ pub mod pezpallet {
 		/// closed without them. Waiting for the deadline even after the votes are in would
 		/// hold the state up for no reason.
 		#[pezpallet::call_index(22)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_proposal())]
 		pub fn finalize_proposal(origin: OriginFor<T>, proposal_id: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 
@@ -2277,7 +2283,7 @@ pub mod pezpallet {
 		/// caller holds the finance portfolio (the tiki), the allowance covers it (Parliament's
 		/// vote), and the pot has the money (the treasury chain's own check, on arrival).
 		#[pezpallet::call_index(41)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::spend_budget())]
 		pub fn spend_budget(
 			origin: OriginFor<T>,
 			beneficiary: T::AccountId,
@@ -2968,7 +2974,7 @@ pub mod pezpallet {
 		/// The proposal is named by a preimage that is already stored, so what is being asked
 		/// is readable before anyone signs it.
 		#[pezpallet::call_index(52)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::submit_proposal())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::open_initiative())]
 		pub fn open_initiative(
 			origin: OriginFor<T>,
 			track: u16,
@@ -3024,7 +3030,7 @@ pub mod pezpallet {
 		/// right, and letting one account sign twice would make the threshold measure balance
 		/// rather than people.
 		#[pezpallet::call_index(53)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::back_initiative())]
 		#[pezpallet::feeless_if(|origin: &OriginFor<T>, id: &u32| -> bool {
 			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
 			Pezpallet::<T>::may_back_initiative(&who, *id).is_ok()
@@ -3055,7 +3061,7 @@ pub mod pezpallet {
 		/// collect it would let an initiative that the register already backed die because one
 		/// person went quiet.
 		#[pezpallet::call_index(54)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::submit_proposal())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::launch_initiative())]
 		pub fn launch_initiative(
 			origin: OriginFor<T>,
 			#[pezpallet::compact] id: u32,
@@ -3084,7 +3090,7 @@ pub mod pezpallet {
 		/// The deposit is forfeit to the treasury -- not destroyed. Destroying HEZ would pay
 		/// the forfeit out to every other holder instead of to the state.
 		#[pezpallet::call_index(55)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::close_lapsed_initiative())]
 		pub fn close_lapsed_initiative(
 			origin: OriginFor<T>,
 			#[pezpallet::compact] id: u32,
@@ -3151,7 +3157,7 @@ pub mod pezpallet {
 		/// Answering the other way while the question is open replaces the earlier answer. That
 		/// is not a second vote -- the tally moves by one either way, never by two.
 		#[pezpallet::call_index(50)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::answer_referendum())]
 		/// Free the first time, and paid after that.
 		///
 		/// Voting is the act this whole register exists to carry, and charging for it makes the
@@ -3297,7 +3303,7 @@ pub mod pezpallet {
 		/// Only during the candidacy period, so that support is given before campaigning
 		/// rather than gathered from people who have already seen the field.
 		#[pezpallet::call_index(4)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::register_candidate())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::endorse_candidate())]
 		/// Free the first time, and paid after that -- see `answer_referendum`.
 		///
 		/// An endorsement is how a citizen with no money takes part in *choosing who stands*,
@@ -4198,7 +4204,7 @@ pub mod pezpallet {
 		/// ever been rejected outright, and the check works anyway, because a President does
 		/// not send a name that will be refused.
 		#[pezpallet::call_index(12)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::approve_appointment())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::confirm_appointment())]
 		pub fn confirm_appointment(origin: OriginFor<T>, process_id: u32) -> DispatchResult {
 			T::ConfirmationOrigin::ensure_origin(origin)?;
 

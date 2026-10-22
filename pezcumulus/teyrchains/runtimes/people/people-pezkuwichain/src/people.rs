@@ -2534,6 +2534,12 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 		use pezcumulus_primitives_core::UpwardMessageSender;
 		<crate::TeyrchainSystem as UpwardMessageSender>::ensure_successful_delivery();
 	}
+
+	/// A trust score written straight into the register: a benchmark genesis has no citizen
+	/// with one, and voting, backing and opening an initiative all refuse an account without.
+	fn give_trust(who: &AccountId) {
+		pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+	}
 }
 
 #[cfg(test)]

@@ -993,4 +993,57 @@ impl<T: pezframe_system::Config> pezpallet_welati::WeightInfo for WeightInfo<T> 
 			.saturating_add(Weight::from_parts(0, 0))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
+	/// Derived from measured calls until the weights run measures it: `vote_on_proposal`'s
+	/// proposal read and write, and the approved budget.
+	fn finalize_proposal() -> Weight {
+		<Self as pezpallet_welati::WeightInfo>::vote_on_proposal()
+			.saturating_add(T::DbWeight::get().reads_writes(1, 1))
+	}
+	/// Derived from measured calls until the weights run measures it: `pay_airdrop`'s message
+	/// to the treasury chain, the finance portfolio and the budget.
+	fn spend_budget() -> Weight {
+		<Self as pezpallet_welati::WeightInfo>::pay_airdrop()
+			.saturating_add(T::DbWeight::get().reads_writes(2, 1))
+	}
+	/// Derived from measured calls until the weights run measures it: `submit_proposal`, the
+	/// trust score, the cooldown, the reserved deposit, the initiative and its first signature.
+	fn open_initiative() -> Weight {
+		<Self as pezpallet_welati::WeightInfo>::submit_proposal()
+			.saturating_add(T::DbWeight::get().reads_writes(4, 5))
+	}
+	/// Derived from measured calls until the weights run measures it: `vote_on_proposal`, and
+	/// the reissue chain read twice a key -- the retirement and the signature under it.
+	fn back_initiative() -> Weight {
+		<Self as pezpallet_welati::WeightInfo>::vote_on_proposal()
+			.saturating_add(T::DbWeight::get().reads_writes(18, 3))
+	}
+	/// Derived from measured calls until the weights run measures it: `submit_proposal`, and
+	/// the referendum the initiative becomes -- its count, deposit, record and alarm.
+	fn launch_initiative() -> Weight {
+		<Self as pezpallet_welati::WeightInfo>::submit_proposal()
+			.saturating_add(T::DbWeight::get().reads_writes(6, 6))
+	}
+	/// Derived from measured calls until the weights run measures it: `vote_on_proposal`, the
+	/// forfeited deposit, the treasury it goes to and the cooldown.
+	fn close_lapsed_initiative() -> Weight {
+		<Self as pezpallet_welati::WeightInfo>::vote_on_proposal()
+			.saturating_add(T::DbWeight::get().reads_writes(3, 4))
+	}
+	/// Derived from measured calls until the weights run measures it: `vote_on_proposal`, the
+	/// reissue chain read twice a key, and the referendum's tally.
+	fn answer_referendum() -> Weight {
+		<Self as pezpallet_welati::WeightInfo>::vote_on_proposal()
+			.saturating_add(T::DbWeight::get().reads_writes(20, 4))
+	}
+	/// Derived from measured calls until the weights run measures it: `register_candidate`, and
+	/// the reissue chain read twice a key.
+	fn endorse_candidate() -> Weight {
+		<Self as pezpallet_welati::WeightInfo>::register_candidate()
+			.saturating_add(T::DbWeight::get().reads(16))
+	}
+	/// Derived from measured calls until the weights run measures it: `approve_appointment`,
+	/// which writes the same records and grants the same tiki.
+	fn confirm_appointment() -> Weight {
+		<Self as pezpallet_welati::WeightInfo>::approve_appointment()
+	}
 }
