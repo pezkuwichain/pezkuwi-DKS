@@ -223,7 +223,7 @@ parameter_types! {
 
 impl pezpallet_identity_kyc::Config for Test {
 	type VouchingWaitingPeriod = VouchingWaitingPeriod;
-	type VouchingCapacity = ();
+	type VouchingStanding = ();
 	type OnCitizenshipRestored = ();
 	type Currency = Balances;
 	type WeightInfo = ();
@@ -278,6 +278,7 @@ parameter_types! {
 }
 
 impl crate::Config for Test {
+	type OnRoleRevoked = ();
 	type AdminOrigin = RootOrAPerson;
 	type ElectedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;

@@ -78,54 +78,116 @@ fn full_block_fee_ratio() {
 // THE PEZ ASSET TEAM
 // =============================================================================
 
-/// The genesis preset must hand PEZ to an account nobody can sign as.
+/// The owner every genesis preset gives `asset`, read from the preset the chain is actually
+/// built from, not a hand-written copy of it.
 ///
 /// `pallet-assets` gives the owner named at genesis all four roles -- owner, issuer, admin
-/// and freezer -- and two of those are not bookkeeping: the issuer creates tokens and the
-/// admin moves them out of accounts it does not hold. On a token whose entire point is a
-/// fixed five billion, and on a chain whose treasury sits in a keyless pot, neither may
-/// belong to a key.
+/// and freezer -- so this one account is everything a key could do to the asset.
+fn genesis_owner_in_every_preset(asset: u32) -> Vec<(pezsp_genesis_builder::PresetId, AccountId)> {
+	genesis_asset_in_every_preset(asset)
+		.into_iter()
+		.map(|(id, entry)| {
+			let owner: AccountId =
+				serde_json::from_value(entry[1].clone()).expect("the owner decodes");
+			(id, owner)
+		})
+		.collect()
+}
+
+/// The `(id, owner, is_sufficient, min_balance)` entry every genesis preset creates `asset`
+/// with.
+fn genesis_asset_in_every_preset(
+	asset: u32,
+) -> Vec<(pezsp_genesis_builder::PresetId, serde_json::Value)> {
+	// Building a preset reaches for host functions, so it needs an externalities environment.
+	pezsp_io::TestExternalities::default().execute_with(|| {
+		[
+			pezsp_genesis_builder::PresetId::from("genesis"),
+			pezsp_genesis_builder::PresetId::from(
+				pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET,
+			),
+			pezsp_genesis_builder::PresetId::from(pezsp_genesis_builder::DEV_RUNTIME_PRESET),
+		]
+		.into_iter()
+		.map(|id| {
+			let raw = crate::genesis_config_presets::get_preset(&id)
+				.unwrap_or_else(|| panic!("preset {id:?} exists"));
+			let json: serde_json::Value =
+				serde_json::from_slice(&raw).expect("the preset is valid json");
+			let entry = json["assets"]["assets"]
+				.as_array()
+				.unwrap_or_else(|| panic!("preset {id:?} declares assets"))
+				.iter()
+				.find(|entry| entry[0] == serde_json::json!(asset))
+				.unwrap_or_else(|| panic!("preset {id:?} creates asset {asset}"))
+				.clone();
+			(id, entry)
+		})
+		.collect()
+	})
+}
+
+/// The genesis preset must hand PEZ to an account nobody can sign as.
 ///
-/// This reads the preset the chain is actually built from, not a hand-written copy of it.
+/// Two of the owner's roles are not bookkeeping: the issuer creates tokens and the admin
+/// moves them out of accounts it does not hold. On a token whose entire point is a fixed
+/// five billion, and on a chain whose treasury sits in a keyless pot, neither may belong to
+/// a key.
 #[test]
 fn the_pez_asset_team_is_keyless_in_every_preset() {
 	use pezsp_runtime::traits::AccountIdConversion;
 
 	let expected: AccountId = PezAssetTeamId::get().into_account_truncating();
-
-	// Building a preset reaches for host functions, so it needs an externalities environment.
-	pezsp_io::TestExternalities::default().execute_with(|| {
-		for preset in [
-			Some(pezsp_genesis_builder::PresetId::from("genesis")),
-			Some(pezsp_genesis_builder::PresetId::from(
-				pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET,
-			)),
-			Some(pezsp_genesis_builder::PresetId::from(pezsp_genesis_builder::DEV_RUNTIME_PRESET)),
-		] {
-			let id = preset.expect("named preset");
-			let raw = crate::genesis_config_presets::get_preset(&id)
-				.unwrap_or_else(|| panic!("preset {id:?} exists"));
-			let json: serde_json::Value =
-				serde_json::from_slice(&raw).expect("the preset is valid json");
-
-			let assets = json["assets"]["assets"]
-				.as_array()
-				.unwrap_or_else(|| panic!("preset {id:?} declares assets"));
-
-			let pez = assets
-				.iter()
-				.find(|entry| entry[0] == serde_json::json!(PEZ_ASSET_ID))
-				.unwrap_or_else(|| panic!("preset {id:?} creates PEZ"));
-
-			let owner: AccountId =
-				serde_json::from_value(pez[1].clone()).expect("the owner decodes");
-
-			assert_eq!(
-				owner, expected,
-				"preset {id:?} gives PEZ an owner that can be signed for; \
+	for (id, owner) in genesis_owner_in_every_preset(PEZ_ASSET_ID) {
+		assert_eq!(
+			owner, expected,
+			"preset {id:?} gives PEZ an owner that can be signed for; \
 			 the issuer could then mint past the fixed supply and the admin could \
 			 force-transfer out of the treasury pot"
+		);
+	}
+}
+
+/// wHEZ belongs to the token wrapper's own account, which no seed produces.
+///
+/// Every wHEZ is a claim on a HEZ the wrapper holds, and the wrapper mints and burns it
+/// through `fungibles::Mutate` without being asked who the issuer is. An issuer that is a
+/// key could mint wHEZ with nothing behind it and unwrap it for the HEZ of everyone who
+/// wrapped honestly; an admin that is a key could burn or move anyone's wHEZ.
+#[test]
+fn whez_is_owned_by_the_wrapper_in_every_preset() {
+	use crate::genesis_config_presets::WHEZ_ASSET_ID;
+	use pezsp_runtime::traits::AccountIdConversion;
+
+	let expected: AccountId = TokenWrapperPalletId::get().into_account_truncating();
+	for (id, owner) in genesis_owner_in_every_preset(WHEZ_ASSET_ID) {
+		assert_eq!(
+			owner, expected,
+			"preset {id:?} gives wHEZ an owner that can be signed for; \
+			 the issuer could then mint wHEZ with no HEZ behind it and unwrap it"
+		);
+	}
+}
+
+/// Holding PEZ or wHEZ costs what holding HEZ costs: the existential deposit.
+///
+/// Both are sufficient, so a balance of either keeps an account in existence with no HEZ in
+/// it. At a minimum balance of one planck, sending one planck to an address that has never
+/// existed created an account for the price of the transfer fee alone, and nothing ever
+/// reaped it. wHEZ is HEZ, and PEZ has the same twelve decimals.
+#[test]
+fn holding_pez_or_whez_costs_an_existential_deposit_in_every_preset() {
+	use crate::genesis_config_presets::WHEZ_ASSET_ID;
+
+	for asset in [PEZ_ASSET_ID, WHEZ_ASSET_ID] {
+		for (id, entry) in genesis_asset_in_every_preset(asset) {
+			let min_balance: Balance =
+				serde_json::from_value(entry[3].clone()).expect("the minimum balance decodes");
+			assert_eq!(
+				min_balance,
+				ExistentialDeposit::get(),
+				"preset {id:?} lets one planck of asset {asset} keep an account alive"
 			);
 		}
-	});
+	}
 }

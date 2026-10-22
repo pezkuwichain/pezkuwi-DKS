@@ -639,3 +639,105 @@ fn an_epoch_is_a_month_and_matches_the_treasury_release() {
 		 same number -- they are in different crates and nothing else compares them"
 	);
 }
+
+// =============================================================================
+// 8. A CLOSED MONTH LEAVES NOTHING BEHIND
+// =============================================================================
+
+mod closed_months {
+	use super::*;
+	use pezframe_support::{traits::Hooks, weights::Weight};
+
+	/// Five citizens, all of whom claim epoch 0. Returns the block the epoch was finalised on.
+	fn five_claims() -> u64 {
+		start();
+		fund(1_000_000);
+		for who in 1..=5 {
+			set_trust(who, 1_000);
+		}
+		let at = finalize_current_epoch();
+		for who in 1..=5 {
+			assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(who), 0));
+		}
+		at
+	}
+
+	fn records(epoch: u32) -> usize {
+		crate::ClaimedRewards::<Test>::iter_prefix(epoch).count()
+	}
+
+	fn idle(weight: Weight) -> Weight {
+		let used = PezRewards::on_idle(System::block_number(), weight);
+		check_invariants();
+		used
+	}
+
+	#[test]
+	fn a_closed_months_claims_are_cleared_when_a_block_has_room() {
+		// One record per claimant per month, and nothing ever removed it: at the citizenry
+		// the chain is built for that is tens of millions of entries a month, kept for good,
+		// though a closed window can no longer be claimed against.
+		new_test_ext().execute_with(|| {
+			let at = five_claims();
+			let paid = PezRewards::paid_out_total();
+
+			jump_to_block(at + WINDOW + 1);
+			assert_eq!(PezRewards::epoch_status(0), EpochState::Closed);
+
+			idle(Weight::MAX);
+			assert_eq!(records(0), 0, "a closed month's claims stay in state");
+			assert_eq!(PezRewards::paid_out_total(), paid, "the ledger keeps what was paid");
+		});
+	}
+
+	#[test]
+	fn an_open_window_keeps_its_claims() {
+		// The claim record is what stops a second claim; while the window is open it stays.
+		new_test_ext().execute_with(|| {
+			five_claims();
+			idle(Weight::MAX);
+			assert_eq!(records(0), 5);
+			assert_noop!(
+				PezRewards::claim_reward(RuntimeOrigin::signed(1), 0),
+				Error::<Test>::RewardAlreadyClaimed
+			);
+		});
+	}
+
+	#[test]
+	fn clearing_takes_only_the_weight_it_is_given() {
+		new_test_ext().execute_with(|| {
+			let at = five_claims();
+			jump_to_block(at + WINDOW + 1);
+
+			// Room for the bookkeeping and about two records, not five.
+			let given = <Test as pezframe_system::Config>::DbWeight::get()
+				.reads_writes(6, 5)
+				.set_proof_size(10_000);
+			let mut passes = 0;
+			while records(0) > 0 {
+				let before = records(0);
+				let used = idle(given);
+				assert!(used.all_lte(given), "used {used:?} of {given:?}");
+				assert!(records(0) < before, "a pass with room for a record cleared none");
+				assert!(before - records(0) < 5, "one pass cleared more than it could pay for");
+				passes += 1;
+				assert!(passes < 10, "clearing never finished");
+			}
+
+			// And nothing at all when there is no room.
+			assert_eq!(idle(Weight::zero()), Weight::zero());
+		});
+	}
+
+	#[cfg(feature = "try-runtime")]
+	#[test]
+	#[should_panic(expected = "an epoch marked cleared still has claim records")]
+	fn a_cleared_month_with_claims_left_is_caught() {
+		new_test_ext().execute_with(|| {
+			five_claims();
+			crate::NextEpochToClear::<Test>::put(1);
+			check_invariants();
+		});
+	}
+}

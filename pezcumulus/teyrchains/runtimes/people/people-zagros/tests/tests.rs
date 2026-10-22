@@ -460,6 +460,87 @@ mod the_register_is_not_writable_from_abroad {
 		});
 		assert!(Filter::contains(&upgrade), "the upgrade path must stay open");
 	}
+
+	/// A register write wrapped in another call, or written to storage directly, is refused.
+	///
+	/// The filter used to look at the outermost call alone. Each of these carried a register
+	/// write past it as Root: `Utility` dispatches its inner calls around every filter when the
+	/// origin is Root, `Scheduler` runs a call later as Root, `set_storage` writes the register's
+	/// keys without any pallet, and the Council's roster is set by Root and then satisfies
+	/// `Tiki`'s admin origin. Found by the L-7 audit, 2026-10-21.
+	#[test]
+	fn a_register_write_wrapped_or_raw_is_refused() {
+		let revoke = RuntimeCall::IdentityKyc(pezpallet_identity_kyc::Call::revoke_citizenship {
+			who: ALICE.into(),
+		});
+		let calls = vec![
+			RuntimeCall::Utility(pezpallet_utility::Call::batch_all {
+				calls: vec![revoke.clone()],
+			}),
+			RuntimeCall::Utility(pezpallet_utility::Call::force_batch {
+				calls: vec![revoke.clone()],
+			}),
+			RuntimeCall::Utility(pezpallet_utility::Call::dispatch_as {
+				as_origin: Box::new(people_zagros_runtime::OriginCaller::system(
+					pezframe_system::RawOrigin::Root,
+				)),
+				call: Box::new(revoke.clone()),
+			}),
+			RuntimeCall::Scheduler(pezpallet_scheduler::Call::schedule {
+				when: 1,
+				maybe_periodic: None,
+				priority: 0,
+				call: Box::new(revoke.clone()),
+			}),
+			RuntimeCall::System(pezframe_system::Call::set_storage {
+				items: vec![(b"any key".to_vec(), b"any value".to_vec())],
+			}),
+			RuntimeCall::Council(pezpallet_collective::Call::set_members {
+				new_members: vec![ALICE.into()],
+				prime: None,
+				old_count: 0,
+			}),
+		];
+		for call in calls {
+			assert!(
+				!Filter::contains(&call),
+				"a register write reached the chain from abroad: {call:?}"
+			);
+		}
+	}
+
+	/// The paths other runtimes build still arrive.
+	///
+	/// An allowlist that forgot one would close it silently: a filtered `Transact` is not a
+	/// failed extrinsic on the chain that sent it. So every call another runtime's code
+	/// addresses here is named and must pass.
+	#[test]
+	fn the_paths_other_chains_build_still_arrive() {
+		let calls = vec![
+			RuntimeCall::Tnpos(pezpallet_tnpos::Call::note_bonded {
+				era: 1,
+				bonded: Default::default(),
+			}),
+			RuntimeCall::Tnpos(pezpallet_tnpos::Call::note_session_performance {
+				scored: vec![],
+				failed: vec![],
+			}),
+			RuntimeCall::PezRewards(pezpallet_pez_rewards::Call::note_incentive_funding {
+				total: 1,
+			}),
+			// The relay's governance administering identity, and a user on another chain
+			// setting their own.
+			RuntimeCall::Identity(pezpallet_identity::Call::add_registrar {
+				account: AccountId::from(ALICE).into(),
+			}),
+			RuntimeCall::Identity(pezpallet_identity::Call::set_identity {
+				info: Box::new(Default::default()),
+			}),
+		];
+		for call in calls {
+			assert!(Filter::contains(&call), "a cross-chain path was closed: {call:?}");
+		}
+	}
 }
 
 /// The register's scores are read locally, and the oracle's is the only one that can be stale.
@@ -552,9 +633,7 @@ mod register_parameters {
 				qeyd::VouchingWaitingPeriod::get(),
 				pezkuwi_runtime_common::rehearsal_period!(1 * DAYS, DAYS)
 			);
-			assert_eq!(qeyd::InitialVouchingCapacity::get(), 5);
-			assert_eq!(qeyd::SettledVouchesPerPlace::get(), 3);
-			assert_eq!(qeyd::MaxVouchingCapacity::get(), 50);
+			assert_eq!(qeyd::ReferralScoreCeiling::get(), 50);
 			assert_eq!(qeyd::SuspensionRevocationFloor::get(), 3);
 			assert_eq!(qeyd::SuspensionRevocationPercent::get(), 20);
 			assert_eq!(qeyd::PenaltyPerRevocation::get(), 10);
@@ -576,8 +655,8 @@ mod register_parameters {
 		};
 
 		let widen = || {
-			RuntimeParameters::Qeyd(qeyd::Parameters::MaxVouchingCapacity(
-				qeyd::MaxVouchingCapacity,
+			RuntimeParameters::Qeyd(qeyd::Parameters::ReferralScoreCeiling(
+				qeyd::ReferralScoreCeiling,
 				Some(50_000),
 			))
 		};
@@ -596,7 +675,7 @@ mod register_parameters {
 
 			let track = pezpallet_custom_origins::Origin::QeydRules;
 			assert_ok!(Parameters::set_parameter(track.into(), widen()));
-			assert_eq!(qeyd::MaxVouchingCapacity::get(), 50_000);
+			assert_eq!(qeyd::ReferralScoreCeiling::get(), 50_000);
 		});
 	}
 }
@@ -697,6 +776,102 @@ mod authorized_aliases {
 				&alice_on_sibling_para,
 				&local_alice
 			));
+		});
+	}
+}
+
+/// The founding Serok answers to the court, as an elected Serok would -- not to the Council.
+///
+/// Every founding office used to be recorded as an appointment, and an appointed role is
+/// revoked by the admin origin, which a Council majority satisfies. So the Council could take
+/// the founding Serok's tiki, and the register's own consistency check failed from genesis
+/// (L-7, 2026-10-21).
+mod the_founding_serok {
+	use super::*;
+	use people_zagros_runtime::{CouncilCollective, Tiki};
+	use pezsp_runtime::BuildStorage;
+
+	const SEROK: [u8; 32] = [21u8; 32];
+
+	#[test]
+	fn is_recorded_as_elected_and_beyond_the_councils_reach() {
+		let mut t = pezframe_system::GenesisConfig::<Runtime>::default().build_storage().unwrap();
+		pezpallet_tiki::GenesisConfig::<Runtime> {
+			founding_citizen: Some(AccountId::from([9u8; 32])),
+			founding_government: vec![(AccountId::from(SEROK), pezpallet_tiki::Tiki::Serok)],
+			..Default::default()
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
+
+		pezsp_io::TestExternalities::new(t).execute_with(|| {
+			let serok = AccountId::from(SEROK);
+			assert_eq!(
+				pezpallet_tiki::RoleAssignmentTypeOf::<Runtime>::get(
+					&serok,
+					pezpallet_tiki::Tiki::Serok
+				),
+				Some(pezpallet_tiki::RoleAssignmentType::Elected),
+			);
+
+			let council_majority: RuntimeOrigin =
+				pezpallet_collective::RawOrigin::<AccountId, CouncilCollective>::Members(3, 3)
+					.into();
+			assert!(Tiki::revoke_tiki(
+				council_majority,
+				serok.clone().into(),
+				pezpallet_tiki::Tiki::Serok
+			)
+			.is_err());
+			assert!(pezpallet_tiki::Pezpallet::<Runtime>::has_tiki(
+				&serok,
+				&pezpallet_tiki::Tiki::Serok
+			));
+		});
+	}
+}
+
+/// A staker confirmed by the noters stands for the Stake stratum however long they have held.
+///
+/// The committee read the score's holding duration as the height it was observed at, so after
+/// the chain's first hours every staker looked stale and the stratum admitted nobody
+/// (L-7, 2026-10-21).
+mod the_stake_stratum {
+	use super::*;
+	use people_zagros_runtime::people::{RegisterScores, TnposMaxScoreAge};
+	use pezkuwi_tnpos_primitives::scores::ScoreProvider;
+	use pezpallet_staking_score::StakingSource;
+
+	#[test]
+	fn a_long_held_confirmed_stake_is_fresh() {
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			let who = AccountId::from([31u8; 32]);
+			let now: u32 = 200_000;
+			pezframe_system::Pezpallet::<Runtime>::set_block_number(now);
+
+			pezpallet_staking_score::CachedStakingDetails::<Runtime>::insert(
+				&who,
+				StakingSource::RelayChain,
+				pezpallet_staking_score::StakingDetails {
+					staked_amount: 1_000 * pezpallet_staking_score::UNITS,
+					nominations_count: 1,
+					unlocking_chunks_count: 0,
+				},
+			);
+			// Held since block 50 000, confirmed by a noter a thousand blocks ago.
+			pezpallet_staking_score::StakingStartBlock::<Runtime>::insert(&who, 50_000u32);
+			pezpallet_staking_score::StakeFirstSeen::<Runtime>::insert(&who, 50_000u32);
+			pezpallet_staking_score::LastConfirmed::<Runtime>::insert(
+				&who,
+				StakingSource::RelayChain,
+				now - 1_000,
+			);
+
+			let snapshot = RegisterScores::staking_of(&who);
+			assert!(
+				snapshot.value_if_fresh(now, TnposMaxScoreAge::get()).is_some_and(|v| v > 0),
+				"a confirmed stake read as stale: {snapshot:?}"
+			);
 		});
 	}
 }

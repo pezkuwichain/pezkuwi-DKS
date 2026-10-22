@@ -89,6 +89,13 @@ fn give_standing(who: &AccountId, stratum: StratumId) {
 					})
 					.expect("the house has two hundred and one seats; fifty fit")
 			});
+			// A seat is a roll entry and the office's tiki together; either alone is not
+			// membership.
+			let tikis: BoundedVec<
+				pezpallet_tiki::Tiki,
+				<PeopleRuntime as pezpallet_tiki::Config>::MaxTikisPerUser,
+			> = vec![pezpallet_tiki::Tiki::Parlementer].try_into().expect("one tiki fits");
+			pezpallet_tiki::UserTikis::<PeopleRuntime>::insert(who, tikis);
 		},
 		StratumId::Divan => {
 			pezpallet_welati::DiwanMembers::<PeopleRuntime>::mutate(|court| {

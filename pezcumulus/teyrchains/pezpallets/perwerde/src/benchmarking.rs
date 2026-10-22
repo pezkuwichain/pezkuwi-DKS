@@ -123,6 +123,27 @@ mod benchmarks {
 	}
 
 	#[benchmark]
+	fn enroll_in_place_of() {
+		let owner: T::AccountId = account("owner", 0, 0);
+		let course_id = open_course::<T>(&owner);
+		let max = T::MaxStudentsPerCourse::get();
+		for i in 0..max {
+			let who: T::AccountId = account("stranger", i, 0);
+			T::BenchmarkHelper::make_stranger(&who);
+			assert_ok!(Perwerde::<T>::enroll(RawOrigin::Signed(who).into(), course_id));
+		}
+		let holder: T::AccountId = account("stranger", 0, 0);
+		let student: T::AccountId = whitelisted_caller();
+		T::BenchmarkHelper::make_citizen(&student);
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(student.clone()), course_id, holder.clone());
+
+		assert!(Enrollments::<T>::contains_key(course_id, &student));
+		assert!(!Enrollments::<T>::contains_key(course_id, &holder));
+	}
+
+	#[benchmark]
 	fn record_result() {
 		let owner: T::AccountId = whitelisted_caller();
 		let student: T::AccountId = account("student", 0, 0);

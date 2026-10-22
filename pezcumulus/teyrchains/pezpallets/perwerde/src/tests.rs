@@ -585,3 +585,130 @@ fn annulling_one_course_leaves_the_other_standing() {
 		assert_eq!(crate::Courses::<Test>::get(honest).unwrap().status, CourseStatus::Completed);
 	});
 }
+
+// =============================================================================
+// A FULL CLASS
+// =============================================================================
+
+mod a_full_class {
+	use super::*;
+	use crate::mock::{not_a_citizen, MaxStudentsPerCourse};
+
+	const FIRST_STRANGER: u64 = 1_000;
+
+	/// Fill every seat of a new course with accounts nobody has vouched for.
+	fn filled_by_strangers() -> u32 {
+		let id = open_course(10);
+		for who in FIRST_STRANGER..FIRST_STRANGER + MaxStudentsPerCourse::get() as u64 {
+			not_a_citizen(who);
+			assert_ok!(PerwerdePallet::enroll(RuntimeOrigin::signed(who), id));
+		}
+		id
+	}
+
+	#[test]
+	fn anyone_may_enrol_and_a_course_passed_before_citizenship_still_counts() {
+		// Studying is open to everyone, and what somebody learned before they became a
+		// citizen is part of their record once they are one.
+		new_test_ext().execute_with(|| {
+			not_a_citizen(STUDENT);
+			run_course_for(STUDENT, 10);
+			assert_eq!(PerwerdePallet::get_perwerde_score(&STUDENT), 10);
+		});
+	}
+
+	#[test]
+	fn a_citizen_takes_the_seat_of_a_stranger_who_has_no_result_yet() {
+		// Seats are bounded so that closing a course fits in a block, and accounts with no
+		// one behind them cost a transaction fee each: a class could be filled with them and
+		// every real student turned away.
+		new_test_ext().execute_with(|| {
+			let id = filled_by_strangers();
+			assert_noop!(
+				PerwerdePallet::enroll(RuntimeOrigin::signed(STUDENT), id),
+				Error::<Test>::TooManyStudents
+			);
+
+			assert_ok!(PerwerdePallet::enroll_in_place_of(
+				RuntimeOrigin::signed(STUDENT),
+				id,
+				FIRST_STRANGER
+			));
+			assert!(PerwerdePallet::enrollments(id, STUDENT).is_some());
+			assert!(PerwerdePallet::enrollments(id, FIRST_STRANGER).is_none());
+			assert_eq!(
+				PerwerdePallet::course_enrollment_count(id),
+				MaxStudentsPerCourse::get(),
+				"a seat changed hands; the class did not grow"
+			);
+		});
+	}
+
+	#[test]
+	fn a_seat_with_a_result_is_kept() {
+		// Somebody the teacher has already graded actually took the course.
+		new_test_ext().execute_with(|| {
+			let id = filled_by_strangers();
+			assert_ok!(PerwerdePallet::record_result(
+				RuntimeOrigin::signed(TEACHER),
+				FIRST_STRANGER,
+				id,
+				false
+			));
+			assert_noop!(
+				PerwerdePallet::enroll_in_place_of(
+					RuntimeOrigin::signed(STUDENT),
+					id,
+					FIRST_STRANGER
+				),
+				Error::<Test>::SeatIsKept
+			);
+		});
+	}
+
+	#[test]
+	fn a_citizens_seat_is_kept() {
+		new_test_ext().execute_with(|| {
+			let id = open_course(10);
+			for who in FIRST_STRANGER..FIRST_STRANGER + MaxStudentsPerCourse::get() as u64 {
+				assert_ok!(PerwerdePallet::enroll(RuntimeOrigin::signed(who), id));
+			}
+			assert_noop!(
+				PerwerdePallet::enroll_in_place_of(
+					RuntimeOrigin::signed(STUDENT),
+					id,
+					FIRST_STRANGER
+				),
+				Error::<Test>::SeatIsKept
+			);
+		});
+	}
+
+	#[test]
+	fn only_a_citizen_takes_a_seat_and_only_from_a_full_class() {
+		new_test_ext().execute_with(|| {
+			let id = filled_by_strangers();
+			not_a_citizen(OTHER);
+			assert_noop!(
+				PerwerdePallet::enroll_in_place_of(
+					RuntimeOrigin::signed(OTHER),
+					id,
+					FIRST_STRANGER
+				),
+				Error::<Test>::NotACitizen
+			);
+
+			let roomy = open_course(10);
+			not_a_citizen(FIRST_STRANGER);
+			assert_ok!(PerwerdePallet::enroll(RuntimeOrigin::signed(FIRST_STRANGER), roomy));
+			assert_noop!(
+				PerwerdePallet::enroll_in_place_of(
+					RuntimeOrigin::signed(STUDENT),
+					roomy,
+					FIRST_STRANGER
+				),
+				Error::<Test>::CourseNotFull
+			);
+		});
+	}
+}

@@ -872,7 +872,13 @@ pub struct CandidateInfo<T: pezframe_system::Config> {
 	pub account: T::AccountId,
 	pub district_id: Option<u32>,
 	pub registered_at: BlockNumberFor<T>,
-	pub endorsers: BoundedVec<T::AccountId, ConstU32<100>>,
+	/// How many citizens endorsed the candidacy -- not who: `Endorsements` already records
+	/// that, per endorser. The list used to be copied here, bounded at a hundred, while the
+	/// mainnet presidency asks for a thousand -- so above ten thousand citizens nobody could
+	/// register for President at all, and the founding period would have ended into elections
+	/// with no candidates, for ever (L-7, 2026-10-21). A thousand names here instead would
+	/// make every record of every candidate 32 KB, read again by every ballot.
+	pub endorsement_count: u32,
 	pub vote_count: u32,
 	pub deposit_paid: u128,
 	pub campaign_data: BoundedVec<u8, ConstU32<500>>,

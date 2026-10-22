@@ -309,8 +309,10 @@ fn cancel_application_works() {
 		// Cancel
 		assert_ok!(IdentityKycPallet::cancel_application(RuntimeOrigin::signed(APPLICANT)));
 
-		// Status should be reset to NotStarted
+		// Status should be reset to NotStarted -- and the record gone, not left behind as one
+		// more entry for the trust sweep to walk.
 		assert_eq!(IdentityKycPallet::kyc_status_of(APPLICANT), KycLevel::NotStarted);
+		assert!(!crate::KycStatuses::<Test>::contains_key(APPLICANT));
 
 		// Application should be removed
 		assert!(IdentityKycPallet::applications(APPLICANT).is_none());
@@ -783,6 +785,40 @@ mod honorary {
 			assert_eq!(IdentityKycPallet::honorary_citizen_count(), 1);
 			// And the ones who applied are not in the register.
 			assert!(IdentityKycPallet::is_honorary_citizen(CITIZEN_1).is_none());
+		});
+	}
+
+	/// The head of government cannot undo the court with an honour.
+	#[test]
+	fn a_revoked_citizenship_is_not_overwritten_by_an_honour() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(IdentityKycPallet::revoke_citizenship(RuntimeOrigin::root(), CITIZEN_1));
+			let count = IdentityKycPallet::approved_citizen_count();
+
+			assert_noop!(
+				IdentityKycPallet::register_honorary_citizen(&CITIZEN_1),
+				Error::<Test>::CitizenshipRevokedByTheCourt
+			);
+			assert_eq!(IdentityKycPallet::kyc_status_of(CITIZEN_1), KycLevel::Revoked);
+			assert_eq!(IdentityKycPallet::approved_citizen_count(), count);
+		});
+	}
+
+	/// An application in progress is finished or cancelled, not overwritten with its deposit
+	/// still reserved.
+	#[test]
+	fn an_application_in_progress_is_not_overwritten_by_an_honour() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(IdentityKycPallet::apply_for_citizenship(
+				RuntimeOrigin::signed(APPLICANT),
+				H256::from_low_u64_be(4242),
+				Some(CITIZEN_1),
+				None,
+			));
+			assert_noop!(
+				IdentityKycPallet::register_honorary_citizen(&APPLICANT),
+				Error::<Test>::ApplicationInProgress
+			);
 		});
 	}
 

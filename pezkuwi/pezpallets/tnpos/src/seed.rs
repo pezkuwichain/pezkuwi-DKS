@@ -19,6 +19,7 @@
 //! another era would let anyone compute that era's committee in advance.
 
 use crate::*;
+use pezframe_support::weights::WeightMeter;
 use pezsp_io::hashing::blake2_256;
 
 impl<T: Config> Pezpallet<T> {
@@ -62,6 +63,72 @@ impl<T: Config> Pezpallet<T> {
 			*slot = Some((blake2_256(&buf), era));
 		});
 		Ok(())
+	}
+
+	/// Most commitments one `on_idle` pass clears, however much weight it is given.
+	const MAX_CLEARED_PER_PASS: u32 = 1_000;
+
+	/// What clearing one commitment costs, or looking at one era that has none: reading and
+	/// removing it, the trie nodes that proves, and banning the member who withheld it.
+	fn clearing_weight_per_commitment() -> Weight {
+		T::DbWeight::get()
+			.reads_writes(1, 1)
+			.saturating_add(Weight::from_parts(0, 150))
+			.saturating_add(T::WeightInfo::report_offence())
+	}
+
+	/// How many commitments `remaining` pays for, at most `MAX_CLEARED_PER_PASS`.
+	fn commitments_affordable(remaining: Weight, each: Weight) -> u32 {
+		let by = |have: u64, per: u64| if per == 0 { u64::MAX } else { have / per };
+		by(remaining.ref_time(), each.ref_time())
+			.min(by(remaining.proof_size(), each.proof_size()))
+			.min(u64::from(Self::MAX_CLEARED_PER_PASS)) as u32
+	}
+
+	/// Clear what was committed to rounds already spent, within `limit`, and ban whoever
+	/// committed and never revealed.
+	///
+	/// The round open now is for `CurrentEra + 1`; every era up to `CurrentEra` has been
+	/// drawn, and its commitments can no longer be revealed. A commitment still here was
+	/// withheld: the last to reveal sees what the seed will be and can decline, steering the
+	/// draw for nothing. That costs what being seated and not voting costs (Serok
+	/// 2026-10-22), whether or not the member has left the pool since.
+	pub(crate) fn clear_spent_rounds(limit: Weight) -> Weight {
+		let mut meter = WeightMeter::with_limit(limit);
+		// The cursor and the current era, and the cursor written back.
+		if meter.try_consume(T::DbWeight::get().reads_writes(2, 1)).is_err() {
+			return Weight::zero();
+		}
+		let current = CurrentEra::<T>::get();
+		let start = NextSeedEraToClear::<T>::get();
+		let each = Self::clearing_weight_per_commitment();
+		let mut era = start;
+		while era <= current {
+			let budget = Self::commitments_affordable(meter.remaining(), each);
+			if budget == 0 {
+				break;
+			}
+			let withheld: Vec<T::AccountId> = SeedCommitments::<T>::drain_prefix(era)
+				.take(budget as usize)
+				.map(|(who, _)| who)
+				.collect();
+			let cleared = withheld.len() as u32;
+			for who in withheld {
+				let _ = Self::do_report_offence(who, Offence::SeedWithheld);
+			}
+			// An empty era still costs a look.
+			meter.consume(each.saturating_mul(u64::from(cleared.max(1))));
+			// Fewer than there was room for means the era ran out. Exactly as many leaves
+			// one more look, which finds it empty.
+			if cleared == budget {
+				break;
+			}
+			era = era.saturating_add(1);
+		}
+		if era != start {
+			NextSeedEraToClear::<T>::put(era);
+		}
+		meter.consumed()
 	}
 }
 

@@ -42,7 +42,7 @@ pub mod currency {
 	/// cannot silently change what either side mints.
 	pub const HEZ_VALIDATOR_FUNDING: Balance = 1_000 * UNITS;
 
-	/// What root starts with, so its first call can pay for itself.
+	/// What root's signers start with, together, so root's first call can pay for itself.
 	///
 	/// Root is its own account here rather than the founder's, and the moment it stopped being
 	/// the founder's it stopped being funded -- which is how Zagros launched on 2026-09-14:
@@ -56,7 +56,14 @@ pub mod currency {
 	/// Sized from measurement: five sudo calls on a live chain cost 0.000641 HEZ in total. A
 	/// thousand is a fee budget with a very wide margin, and small enough that the root account
 	/// can never be mistaken for a treasury.
-	pub const HEZ_SUDO_FUNDING: Balance = 1_000 * UNITS;
+	pub const HEZ_SUDO_FUNDING: Balance = 3 * HEZ_SUDO_SIGNER_FUNDING;
+
+	/// Each of root's three signers' share of `HEZ_SUDO_FUNDING`.
+	///
+	/// Root is a multisig (`genesis::SUDO_MULTISIG`), and a multisig account pays nothing: the
+	/// signer who submits `as_multi` pays the fee and holds the multisig deposit. So the fee
+	/// budget goes to the signers, and the multisig itself starts empty.
+	pub const HEZ_SUDO_SIGNER_FUNDING: Balance = 400 * UNITS;
 
 	/// What the founding office starts with, on each chain it has to act on.
 	///
@@ -166,6 +173,47 @@ pub mod currency {
 /// Generated from `res/genesis/mainnet/mainnet-wallets.json` (public keys only; that file
 /// never enters this repository).
 pub mod genesis {
+	/// Root's three signers, decided 2026-10-20: root is a 2-of-3 multisig, not one key.
+	///
+	/// One key that can rewrite every chain's code is one theft from losing the chain and one
+	/// loss from never being able to fix it. Two of three survives either. Two signers are the
+	/// Serok's, on separate devices in separate places; the third is a person the Serok trusts,
+	/// so the state is not one person away from an emergency it cannot answer.
+	pub const SUDO_SIGNERS: [[u8; 32]; 3] = [
+		// signer-1: 5HgejcfMFTVb9takvSqwZhFqi838S5EhGNiXBBsQwE7zfyyz
+		[
+			0xf8, 0x97, 0x7e, 0x5a, 0x24, 0x43, 0xe1, 0x84, 0xd8, 0xca, 0xca, 0xcd, 0x53, 0x66,
+			0xd6, 0x5a, 0xda, 0x48, 0x64, 0x81, 0x40, 0xf8, 0x55, 0x40, 0x9d, 0x17, 0xdb, 0xcd,
+			0xd5, 0xd1, 0xe4, 0x6f,
+		],
+		// signer-2: 5FsaMYwM9jYTAWBXfNxcsY7XHb2NayFhHTWWkh23bEthD17y
+		[
+			0xa8, 0x73, 0xfa, 0xf5, 0x4d, 0x62, 0x23, 0x62, 0xe8, 0x11, 0xaa, 0xcd, 0x98, 0xc5,
+			0xea, 0xc4, 0x73, 0x33, 0xee, 0xec, 0xef, 0xdf, 0x7c, 0xd1, 0x71, 0x00, 0x1b, 0xd0,
+			0x01, 0x0f, 0x8c, 0x02,
+		],
+		// signer-3: 5GE4o8GbMft5ehJSTX7HoCaYcCNaDw1h79fmjkt9zov53HjP
+		[
+			0xb8, 0x14, 0xa1, 0x0f, 0x60, 0x36, 0x69, 0x9f, 0xe4, 0x1f, 0x5a, 0x55, 0xbd, 0xcd,
+			0xa4, 0xd0, 0x80, 0x2b, 0xcf, 0x6d, 0xbe, 0x00, 0x49, 0xa0, 0x8f, 0x73, 0x69, 0x22,
+			0x20, 0x83, 0x3a, 0x20,
+		],
+	];
+
+	/// How many of `SUDO_SIGNERS` must approve a root call.
+	pub const SUDO_THRESHOLD: u16 = 2;
+
+	/// The root key: the multisig account of `SUDO_SIGNERS` at `SUDO_THRESHOLD`. It has no seed
+	/// of its own -- it is derived -- and the genesis preset's tests derive it again, so a signer
+	/// that changes without this changing fails the build rather than launching a chain whose
+	/// root nobody can sign for.
+	/// SS58: 5FkoDQZX5cd9vQBzaf2zAqSrE99j91Sman3cdZvjKDC3rzrD
+	pub const SUDO_MULTISIG: [u8; 32] = [
+		0xa3, 0x48, 0x8d, 0x3a, 0xad, 0xe0, 0x54, 0xac, 0xe7, 0x50, 0x0f, 0x51, 0xc3, 0xdb, 0x8c,
+		0x0b, 0xfb, 0x1f, 0xe6, 0x33, 0xa9, 0xec, 0x22, 0x7d, 0xd7, 0x56, 0x15, 0xbb, 0xac, 0x44,
+		0x8f, 0x95,
+	];
+
 	/// The twenty-seven genesis validators' stash public keys, in seating order.
 	pub const VALIDATOR_STASHES: [[u8; 32]; 27] = [
 		// Validator_01: 5G4e6KKUViiwUp6qPgvdqNxwtaGM7LzYB2KVr9bXMjJAfMDF

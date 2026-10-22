@@ -193,7 +193,11 @@ pub mod pezpallet {
 			if !DistributionStarted::<T>::get() {
 				return idle;
 			}
-			match Self::do_monthly_release() {
+			// One storage layer for the whole release. A hook has none of its own, so a
+			// release whose second transfer failed kept its first while the month went
+			// unrecorded, and every later block paid the incentive pot again (L-7,
+			// 2026-10-22).
+			match pezframe_support::storage::with_storage_layer(Self::do_monthly_release) {
 				Ok(()) => T::WeightInfo::release_monthly_funds(),
 				// `ReleaseTooEarly` is the ordinary answer on all but one block a month; the
 				// rest are worth seeing.

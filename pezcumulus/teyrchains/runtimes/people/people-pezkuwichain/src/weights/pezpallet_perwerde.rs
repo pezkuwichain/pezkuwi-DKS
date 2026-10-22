@@ -246,4 +246,11 @@ impl<T: pezframe_system::Config> pezpallet_perwerde::WeightInfo for WeightInfo<T
 			.saturating_add(T::DbWeight::get().writes((4_u64).saturating_mul(c.into())))
 			.saturating_add(Weight::from_parts(0, 2589).saturating_mul(c.into()))
 	}
+	/// Derived from measured calls until the weights run measures it: `enroll` writing the
+	/// new seat, `record_result` for the seat taken, and the two citizenship checks.
+	fn enroll_in_place_of() -> Weight {
+		<Self as pezpallet_perwerde::WeightInfo>::enroll()
+			.saturating_add(<Self as pezpallet_perwerde::WeightInfo>::record_result())
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+	}
 }

@@ -151,18 +151,56 @@ pub type FungibleTransactor = FungibleAdapter<
 /// filter takes away, and a rehearsal was written against the sentence rather than against the
 /// code: it drove the whole founding sequence through `Transact`, and every call was dropped
 /// here, silently, because a filtered `Transact` is not a failed extrinsic on the relay.
+///
+/// **An allowlist, not a denylist (2026-10-21).** It used to refuse the seven register pallets
+/// by name and let everything else through, and the executor only shows it the outermost call.
+/// So `Utility::batch_all([IdentityKyc::revoke_citizenship(..)])` arriving as Root passed it,
+/// and `Utility` dispatches its inner calls past every filter when the origin is Root; so did
+/// `Scheduler::schedule` of a register call, `System::set_storage` writing the register's keys
+/// directly, `Council::set_members`, and the Root paths of pallets that feed the register
+/// (`StakingScore`'s Root submission sets anyone's stake, which trust reads). No list of what
+/// to refuse can keep up with what a Root-shaped call can reach. So it names what another
+/// chain has a reason to send here, and refuses the rest -- each entry below is a path some
+/// other runtime's code builds, or the relay's governance doing a job only it can do.
 pub struct TheRegisterIsNotWritableFromAbroad;
 impl Contains<RuntimeCall> for TheRegisterIsNotWritableFromAbroad {
 	fn contains(call: &RuntimeCall) -> bool {
-		!matches!(
+		matches!(
 			call,
-			RuntimeCall::IdentityKyc(..)
-				| RuntimeCall::Referral(..)
-				| RuntimeCall::Tiki(..)
-				| RuntimeCall::Welati(..)
-				| RuntimeCall::Diwan(..)
-				| RuntimeCall::Parliament(..)
-				| RuntimeCall::Trust(..)
+			// The Asset Hub's bond report and the relay's session report into the committee
+			// register, and the treasury's funding report into the payroll. Each checks its own
+			// origin (`BondOrigin`, the relay, the hub) when it dispatches.
+			RuntimeCall::Tnpos(
+				pezpallet_tnpos::Call::note_bonded { .. }
+					| pezpallet_tnpos::Call::note_session_performance { .. }
+			) | RuntimeCall::PezRewards(pezpallet_pez_rewards::Call::note_incentive_funding { .. })
+				// Upgrading this chain's code: the relay's governance, checked against this
+				// chain's spec name and version. The register is in the code, so an upgrade is
+				// the one way abroad can change it -- and it is public before it lands.
+				| RuntimeCall::System(pezframe_system::Call::authorize_upgrade { .. })
+				// On-chain identity -- display names, registrars' judgements, usernames -- which is
+				// not the register: citizenship is `IdentityKyc`, and nothing here reads this
+				// pallet to decide who is a citizen. The relay's governance administers it as on
+				// every Polkadot-shaped People chain (registrars, killing an abusive identity,
+				// username authorities), and a user on another chain aliases into their own
+				// account here to set their own identity.
+				| RuntimeCall::Identity(..)
+				// Keeping the transport and the block producers running. None of it reads or
+				// writes the register.
+				| RuntimeCall::PezkuwiXcm(
+					pezpallet_xcm::Call::force_xcm_version { .. }
+						| pezpallet_xcm::Call::force_default_xcm_version { .. }
+						| pezpallet_xcm::Call::force_subscribe_version_notify { .. }
+						| pezpallet_xcm::Call::force_unsubscribe_version_notify { .. }
+						| pezpallet_xcm::Call::force_suspension { .. }
+				) | RuntimeCall::XcmpQueue(..)
+				| RuntimeCall::CollatorSelection(
+					pezpallet_collator_selection::Call::set_invulnerables { .. }
+						| pezpallet_collator_selection::Call::add_invulnerable { .. }
+						| pezpallet_collator_selection::Call::remove_invulnerable { .. }
+						| pezpallet_collator_selection::Call::set_desired_candidates { .. }
+						| pezpallet_collator_selection::Call::set_candidacy_bond { .. }
+				)
 		)
 	}
 }

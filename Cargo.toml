@@ -1633,7 +1633,7 @@ wasmtime = { version = "36.0.19", default-features = false }
 wat = { version = "1.0.0" }
 web-sys = { version = "0.3.70" }
 web-time = { version = "1.1", default-features = false }
-webpki-roots = { version = "1.0.5" }
+webpki-roots = { version = "1.0.10" }
 x25519-dalek = { version = "2.0" }
 xcm = { path = "pezkuwi/xcm", version = "7.0.1", default-features = false, package = "pezstaging-xcm" }
 xcm-builder = { path = "pezkuwi/xcm/xcm-builder", version = "7.0.0", default-features = false, package = "pezstaging-xcm-builder" }

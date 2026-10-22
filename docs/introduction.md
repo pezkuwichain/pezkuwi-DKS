@@ -214,22 +214,27 @@ Pezkuwi Network includes 12 custom pallets:
 ### 4.2. Asset Hub Genesis Configuration
 
 ```rust
-// AssetsConfig for PEZ and wHEZ
+// AssetsConfig for PEZ, wHEZ and wUSDT. Owners: (id, owner, is_sufficient, min_balance).
+// PEZ and wHEZ belong to keyless pallet accounts; only wUSDT, which the bridge mints and
+// burns, has an owner that can sign.
 assets: AssetsConfig {
     assets: vec![
-        (PEZ_ASSET_ID, treasury_account.clone(), true, 1),
-        (WHEZ_ASSET_ID, treasury_account.clone(), true, 1),
+        (PEZ_ASSET_ID, pez_asset_team(), true, ExistentialDeposit::get()),
+        (WHEZ_ASSET_ID, whez_owner(), true, ExistentialDeposit::get()),
+        (WUSDT_ASSET_ID, asset_owner.clone(), true, 10_000),
     ],
     metadata: vec![
-        (PEZ_ASSET_ID, b"Pez Token".to_vec(), b"PEZ".to_vec(), 12),
-        (WHEZ_ASSET_ID, b"Wrapped HEZ".to_vec(), b"wHEZ".to_vec(), 12),
+        (PEZ_ASSET_ID, b"Pez Token".to_vec(), b"PEZ".to_vec(), PEZ_DECIMALS),
+        (WHEZ_ASSET_ID, b"Wrapped HEZ".to_vec(), b"wHEZ".to_vec(), PEZ_DECIMALS),
+        (WUSDT_ASSET_ID, b"Wrapped USDT".to_vec(), b"wUSDT".to_vec(), WUSDT_DECIMALS),
     ],
     accounts: vec![
-        (PEZ_ASSET_ID, treasury_account.clone(), TREASURY_ALLOCATION + REWARDS_POOL),
-        (PEZ_ASSET_ID, founder_account.clone(), FOUNDER_ALLOCATION),
-        (PEZ_ASSET_ID, presale_account.clone(), PEZ_PRESALE_ALLOCATION),
+        (PEZ_ASSET_ID, pez_treasury_pot(), PEZ_TREASURY_ALLOCATION + PEZ_REWARDS_POOL),
+        (PEZ_ASSET_ID, PezFounderPotId::get().into_account_truncating(), PEZ_FOUNDER_ALLOCATION),
+        (PEZ_ASSET_ID, pez_presale_custody.clone(), PEZ_PRESALE_ALLOCATION),
     ],
-    next_asset_id: Some(3),
+    next_asset_id: Some(FIRST_AUTO_ASSET_ID),
+    ..Default::default()
 },
 ```
 

@@ -318,6 +318,14 @@ pub mod pezpallet {
 	pub type RelayKeys<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, BoundedVec<u8, ConstU32<512>>, OptionQuery>;
 
+	/// When each account last changed its relay keys.
+	///
+	/// Kept after a purge on purpose: purging and registering again is a change like any other,
+	/// and the limit it enforces is on messages to the relay, not on keys held.
+	#[pezpallet::storage]
+	pub type RelayKeysChangedAt<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
 	#[pezpallet::storage]
 	pub type CurrentEra<T: Config> = StorageValue<_, u32, ValueQuery>;
 
@@ -347,6 +355,13 @@ pub mod pezpallet {
 		[u8; 32],
 		OptionQuery,
 	>;
+
+	/// The first era whose round may still hold commitments nobody revealed.
+	///
+	/// A round is spent once its era is drawn; what was committed to it and never revealed
+	/// is cleared from there, in whatever weight blocks leave idle.
+	#[pezpallet::storage]
+	pub type NextSeedEraToClear<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// The mixed seed for an era's draw, and the era it belongs to.
 	///
@@ -495,6 +510,12 @@ pub mod pezpallet {
 		CouldNotReachRelay,
 		/// There are no keys registered for this account.
 		NoRelayKeys,
+		/// These are the keys already registered; nothing would change, so nothing is sent.
+		RelayKeysUnchanged,
+		/// The keys were changed less than an era ago.
+		RelayKeysChangedTooRecently,
+		/// Only an account the Asset Hub has reported as bonded may register relay keys.
+		NotBondedForRelayKeys,
 	}
 
 	#[pezpallet::genesis_config]
@@ -575,6 +596,15 @@ pub mod pezpallet {
 			weight
 		}
 
+		/// Clear commitments to rounds already spent, oldest era first.
+		///
+		/// A member who committed and never revealed left the commitment in state for good,
+		/// and a pool whose membership changes leaves a new set behind every era (L-7,
+		/// 2026-10-21).
+		fn on_idle(_: BlockNumberFor<T>, remaining: Weight) -> Weight {
+			Self::clear_spent_rounds(remaining)
+		}
+
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
 			let strata = Strata::<T>::get();
@@ -617,6 +647,17 @@ pub mod pezpallet {
 		/// whole call reverts if it cannot be sent, so this chain never records a key the relay
 		/// did not receive. The relay accepts key writes from here and nowhere else, which is
 		/// what makes the pair a single register rather than two that agree by habit.
+		///
+		/// Every call sends a message to the relay that nobody pays the relay for, and the relay
+		/// writes the keys with no deposit. So it used to be open to anyone, any number of times,
+		/// even with the keys already held -- one funded account could queue a couple of hundred
+		/// upward messages a block against a drain of five, and hold the committee's own export
+		/// and an equivocator's removal behind them for hours (L-7, 2026-10-21). Now: only an
+		/// account the Asset Hub reports as bonded, which is the only kind that can be seated;
+		/// never the keys already held; and at most one change per era. The relay's writes are
+		/// then bounded by the bonded set, and the messages by that set once an era. The bond
+		/// report must have arrived -- the pool's open gate before it is for joining, and the
+		/// genesis validators' keys are written by genesis, not here.
 		#[pezpallet::call_index(7)]
 		#[pezpallet::weight(T::WeightInfo::join())]
 		pub fn set_relay_keys(
@@ -625,6 +666,10 @@ pub mod pezpallet {
 			proof: alloc::vec::Vec<u8>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+			ensure!(
+				BondedOnAssetHub::<T>::get().is_some_and(|bonded| bonded.contains(&who)),
+				Error::<T>::NotBondedForRelayKeys
+			);
 
 			// Decoded as the relay's own key type, so a payload that would be rejected on
 			// arrival is rejected before it is recorded.
@@ -641,9 +686,21 @@ pub mod pezpallet {
 
 			let bounded: BoundedVec<u8, ConstU32<512>> =
 				keys.clone().try_into().map_err(|_| Error::<T>::RelayKeysTooLong)?;
+			ensure!(
+				RelayKeys::<T>::get(&who).as_ref() != Some(&bounded),
+				Error::<T>::RelayKeysUnchanged
+			);
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			if let Some(at) = RelayKeysChangedAt::<T>::get(&who) {
+				ensure!(
+					now >= at.saturating_add(T::EraLength::get()),
+					Error::<T>::RelayKeysChangedTooRecently
+				);
+			}
 
 			T::SendKeysToRelay::set_keys(&who, keys).map_err(|_| Error::<T>::CouldNotReachRelay)?;
 			RelayKeys::<T>::insert(&who, bounded);
+			RelayKeysChangedAt::<T>::insert(&who, now);
 
 			Self::deposit_event(Event::RelayKeysSet { who });
 			Ok(())

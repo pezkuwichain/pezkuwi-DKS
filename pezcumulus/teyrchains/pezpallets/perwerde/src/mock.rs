@@ -118,18 +118,29 @@ impl SortedMembers<AccountId> for TestAdminProvider {
 	}
 }
 
+thread_local! {
+	static NON_CITIZENS: core::cell::RefCell<pezsp_std::collections::btree_set::BTreeSet<AccountId>> =
+		Default::default();
+}
+
+/// Make `who` somebody without citizenship, whom the register would not recognise.
+pub fn not_a_citizen(who: AccountId) {
+	NON_CITIZENS.with(|n| n.borrow_mut().insert(who));
+}
+
 /// Every account is a teacher here. What the tests check is the board rule -- five distinct
 /// ratifiers, never the course owner -- not who is allowed to be on the board, which is tiki's.
+/// Every account is a citizen too, unless a test says otherwise with `not_a_citizen`.
 pub struct MockTikiProvider;
 impl pezpallet_tiki::TikiProvider<AccountId> for MockTikiProvider {
-	fn has_tiki(_who: &AccountId, _tiki: &pezpallet_tiki::Tiki) -> bool {
-		true
+	fn has_tiki(who: &AccountId, tiki: &pezpallet_tiki::Tiki) -> bool {
+		*tiki != pezpallet_tiki::Tiki::Welati || Self::is_citizen(who)
 	}
 	fn get_user_tikis(_who: &AccountId) -> pezsp_std::vec::Vec<pezpallet_tiki::Tiki> {
 		pezsp_std::vec::Vec::new()
 	}
-	fn is_citizen(_who: &AccountId) -> bool {
-		true
+	fn is_citizen(who: &AccountId) -> bool {
+		!NON_CITIZENS.with(|n| n.borrow().contains(who))
 	}
 }
 
@@ -140,6 +151,9 @@ pub struct MockBenchmarkSetup;
 #[cfg(feature = "runtime-benchmarks")]
 impl crate::BenchmarkSetup<AccountId> for MockBenchmarkSetup {
 	fn make_citizen(_who: &AccountId) {}
+	fn make_stranger(who: &AccountId) {
+		not_a_citizen(*who);
+	}
 }
 
 impl pezpallet_perwerde::Config for Test {
@@ -195,6 +209,7 @@ impl pezpallet_collective::Config<Instance1> for Test {
 }
 
 pub fn new_test_ext() -> pezsp_io::TestExternalities {
+	NON_CITIZENS.with(|n| n.borrow_mut().clear());
 	let t = pezframe_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 	// We no longer need to set up the genesis of `pezpallet-collective` because our test is no
 	// longer dependent on it.

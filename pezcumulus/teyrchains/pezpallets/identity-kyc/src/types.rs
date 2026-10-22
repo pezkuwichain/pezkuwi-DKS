@@ -213,7 +213,7 @@ pub trait OnCitizenshipRevoked<AccountId> {
 /// Revoking a citizenship charges whoever vouched for them, which is right: a guarantee costs
 /// the guarantor. But a revocation can be wrong, and the court that corrects it has to correct
 /// the charge as well -- otherwise the voucher is punished for a fraud that was never a fraud,
-/// and now permanently, because vouching capacity is computed from that same record.
+/// and now permanently, because suspension from vouching is judged from that same record.
 pub trait OnCitizenshipRestored<AccountId> {
 	fn on_citizenship_restored(who: &AccountId);
 }
@@ -300,17 +300,19 @@ mod stored_enum_encoding {
 	}
 }
 
-/// How many more citizens an account may vouch into the register.
+/// Whether an account's vouching is suspended.
 ///
-/// Asked of the pallet that counts vouching, so the register need not know how the number is
-/// arrived at -- only that there is one. `None` means unlimited, which is what the founder is:
-/// the root of the tree cannot be rate-limited by a record of vouching it predates.
-pub trait VouchingCapacity<AccountId> {
-	fn remaining(who: &AccountId) -> Option<u32>;
+/// Asked of the pallet that keeps the vouching record, so the register need not know how the
+/// judgement is reached. There is no quota: a citizen may vouch for as many people as they
+/// actually know, and the register grows as fast as the nation does. What a mass of vouches
+/// could buy is bounded elsewhere -- the referral score has a ceiling -- and the one stop here
+/// is a record of vouching for people the court later revoked.
+pub trait VouchingStanding<AccountId> {
+	fn is_suspended(who: &AccountId) -> bool;
 }
 
-impl<AccountId> VouchingCapacity<AccountId> for () {
-	fn remaining(_who: &AccountId) -> Option<u32> {
-		None
+impl<AccountId> VouchingStanding<AccountId> for () {
+	fn is_suspended(_who: &AccountId) -> bool {
+		false
 	}
 }

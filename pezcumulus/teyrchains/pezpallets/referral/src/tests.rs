@@ -996,76 +996,69 @@ mod accountability {
 	}
 }
 
-// ===== VOUCHING CAPACITY =====
+// ===== VOUCHING: NO QUOTA, SUSPENSION ONLY =====
 
-/// Bringing people into the register costs room, and the room is earned.
+/// Vouching has no quota: however many an account has brought in, it may bring in more.
 ///
-/// The register has no authority in its path: a citizen says "I know this person" and that is
-/// the whole of it. So the word has to cost something, or the population can be manufactured
-/// as cheaply as accounts can be made. It costs two things. Waiting -- a citizen admitted
-/// today vouches for nobody -- and having vouched well before: capacity starts small, grows
-/// with settled referrals, and shrinks when one of them is revoked.
-///
-/// The arithmetic here uses the mock's numbers: two places to begin with, one more for every
-/// two who stayed, never more than six.
+/// The register grows as fast as its citizens know people. What a mass of vouches could buy
+/// is capped by the referral score's ceiling, so the count is not a limit. It used to be: the
+/// register asked a capacity that subtracted settled invitations, so an account that had
+/// brought in a handful was refused at the door (L-7, 2026-10-21).
 #[test]
-fn vouching_capacity_is_earned_and_bounded() {
+fn vouching_has_no_quota() {
 	new_test_ext().execute_with(|| {
-		let who = REFERRER;
-
-		// Nothing vouched for yet: the opening allowance and no more.
-		assert_eq!(ReferralPallet::vouching_capacity(&who), 2);
-		assert_eq!(ReferralPallet::vouching_remaining(&who), 2);
-
-		// Two who stayed buys a third place.
+		// A prolific record: a thousand brought in, all still citizens, and a thousand
+		// invitations settled.
 		ReferrerStatsStorage::<Test>::insert(
-			who,
-			crate::types::ReferrerStats {
-				total_referrals: 2,
-				revoked_referrals: 0,
-				penalty_score: 0,
-			},
-		);
-		assert_eq!(ReferralPallet::vouching_capacity(&who), 3);
-
-		// One of them revoked and the place goes with it. Vouching carelessly costs the room
-		// to do it again, which is the part a penalty on the score alone does not reach.
-		ReferrerStatsStorage::<Test>::insert(
-			who,
-			crate::types::ReferrerStats {
-				total_referrals: 2,
-				revoked_referrals: 1,
-				penalty_score: 3,
-			},
-		);
-		assert_eq!(ReferralPallet::vouching_capacity(&who), 2);
-
-		// However good the record, there is a ceiling.
-		ReferrerStatsStorage::<Test>::insert(
-			who,
+			REFERRER,
 			crate::types::ReferrerStats {
 				total_referrals: 1_000,
 				revoked_referrals: 0,
 				penalty_score: 0,
 			},
 		);
-		assert_eq!(ReferralPallet::vouching_capacity(&who), 6);
+		crate::InvitationCount::<Test>::insert(REFERRER, 1_000);
+		assert!(!ReferralPallet::vouching_suspended(&REFERRER));
+
+		// And the register lets them vouch again.
+		assert_ok!(pezpallet_identity_kyc::Pezpallet::<Test>::apply_for_citizenship(
+			RuntimeOrigin::signed(REFERRED),
+			pezsp_core::H256::from_low_u64_be(77),
+			Some(REFERRER),
+			None,
+		));
+		assert_ok!(pezpallet_identity_kyc::Pezpallet::<Test>::approve_referral(
+			RuntimeOrigin::signed(REFERRER),
+			REFERRED,
+		));
 	});
 }
 
-/// What is left counts those already brought in, not only what was allowed.
+/// A suspended record is refused at the register's door, not only reported here.
 #[test]
-fn settled_invitations_use_up_the_allowance() {
+fn a_suspended_voucher_is_refused_by_the_register() {
 	new_test_ext().execute_with(|| {
-		let who = REFERRER;
-		assert_eq!(ReferralPallet::vouching_remaining(&who), 2);
-
-		crate::InvitationCount::<Test>::insert(who, 2);
-		assert_eq!(ReferralPallet::vouching_remaining(&who), 0);
-
-		// And the register asks this exact question before letting anyone vouch.
-		use pezpallet_identity_kyc::types::VouchingCapacity;
-		assert_eq!(<ReferralPallet as VouchingCapacity<AccountId>>::remaining(&who), Some(0));
+		ReferrerStatsStorage::<Test>::insert(
+			REFERRER,
+			crate::types::ReferrerStats {
+				total_referrals: 10,
+				revoked_referrals: 3,
+				penalty_score: 9,
+			},
+		);
+		assert_ok!(pezpallet_identity_kyc::Pezpallet::<Test>::apply_for_citizenship(
+			RuntimeOrigin::signed(REFERRED),
+			pezsp_core::H256::from_low_u64_be(77),
+			Some(REFERRER),
+			None,
+		));
+		assert_noop!(
+			pezpallet_identity_kyc::Pezpallet::<Test>::approve_referral(
+				RuntimeOrigin::signed(REFERRER),
+				REFERRED,
+			),
+			pezpallet_identity_kyc::Error::<Test>::VouchingSuspended
+		);
 	});
 }
 
@@ -1079,7 +1072,7 @@ fn settled_invitations_use_up_the_allowance() {
 /// The second half matters as much as the first. A revocation can be wrong. If restoring the
 /// citizenship left the voucher's record marked, the court would correct its own mistake and
 /// the person who vouched honestly would carry it for ever -- and now not only in standing but
-/// in the capacity to vouch again at all.
+/// in the right to vouch again at all.
 #[test]
 fn a_bad_record_suspends_vouching_and_the_court_can_lift_it() {
 	new_test_ext().execute_with(|| {
@@ -1095,7 +1088,7 @@ fn a_bad_record_suspends_vouching_and_the_court_can_lift_it() {
 				penalty_score: 6,
 			},
 		);
-		assert!(ReferralPallet::vouching_capacity(&who) > 0);
+		assert!(!ReferralPallet::vouching_suspended(&who));
 
 		// A third: floor reached and three in ten is above a fifth. Stopped.
 		ReferrerStatsStorage::<Test>::insert(
@@ -1106,7 +1099,7 @@ fn a_bad_record_suspends_vouching_and_the_court_can_lift_it() {
 				penalty_score: 9,
 			},
 		);
-		assert_eq!(ReferralPallet::vouching_capacity(&who), 0);
+		assert!(ReferralPallet::vouching_suspended(&who));
 
 		// Three in a hundred is not a pattern, and a prolific voucher is not stopped by it.
 		ReferrerStatsStorage::<Test>::insert(
@@ -1117,7 +1110,7 @@ fn a_bad_record_suspends_vouching_and_the_court_can_lift_it() {
 				penalty_score: 9,
 			},
 		);
-		assert!(ReferralPallet::vouching_capacity(&who) > 0);
+		assert!(!ReferralPallet::vouching_suspended(&who));
 	});
 }
 
@@ -1125,7 +1118,7 @@ fn a_bad_record_suspends_vouching_and_the_court_can_lift_it() {
 ///
 /// A guarantee costs the guarantor, and a wrongful finding must not. Before this, the court
 /// could restore a citizenship it had taken and the person who vouched for them kept the mark
-/// -- in standing, and now also in the capacity to vouch again, since capacity is computed
+/// -- in standing, and now also in the right to vouch again, since suspension is judged
 /// from that same record.
 #[test]
 fn restoring_a_citizenship_refunds_the_voucher() {

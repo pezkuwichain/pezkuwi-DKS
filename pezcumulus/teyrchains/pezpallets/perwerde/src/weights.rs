@@ -73,6 +73,7 @@ pub trait WeightInfo {
 	fn appoint_honorary_mamoste() -> Weight;
 	fn report_course_fraud() -> Weight;
 	fn annul_course(c: u32) -> Weight;
+	fn enroll_in_place_of() -> Weight;
 }
 
 /// Weights for `pezpallet_perwerde` using the Bizinikiwi node and recommended hardware.
@@ -142,6 +143,13 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 				T::DbWeight::get().reads_writes(4_u64, 4_u64).saturating_mul(c.into()),
 			)
 	}
+	/// Derived from measured calls until the weights run measures it: `enroll` writing the
+	/// new seat, `record_result` for the seat taken, and the two citizenship checks.
+	fn enroll_in_place_of() -> Weight {
+		Self::enroll()
+			.saturating_add(Self::record_result())
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+	}
 }
 
 impl WeightInfo for () {
@@ -195,5 +203,12 @@ impl WeightInfo for () {
 			.saturating_add(
 				RocksDbWeight::get().reads_writes(4_u64, 4_u64).saturating_mul(c.into()),
 			)
+	}
+	/// Derived from measured calls until the weights run measures it: `enroll` writing the
+	/// new seat, `record_result` for the seat taken, and the two citizenship checks.
+	fn enroll_in_place_of() -> Weight {
+		Self::enroll()
+			.saturating_add(Self::record_result())
+			.saturating_add(RocksDbWeight::get().reads(4_u64))
 	}
 }

@@ -236,8 +236,8 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type VouchingWaitingPeriod: Get<BlockNumberFor<Self>>;
 
-		/// How many more citizens an account may bring in, asked of whoever counts them.
-		type VouchingCapacity: crate::types::VouchingCapacity<Self::AccountId>;
+		/// Whether an account's vouching is suspended, asked of whoever keeps the record.
+		type VouchingStanding: crate::types::VouchingStanding<Self::AccountId>;
 
 		/// Deposit required to apply (spam prevention, returned on approval)
 		#[pezpallet::constant]
@@ -283,8 +283,8 @@ pub mod pezpallet {
 
 	/// When each citizen was admitted.
 	///
-	/// Needed because vouching capacity is earned rather than granted: an account that became
-	/// a citizen this block has none. Nothing else in the register knew the date -- membership
+	/// Needed because the right to vouch waits on it: an account that became a citizen this
+	/// block vouches for nobody yet. Nothing else in the register knew the date -- membership
 	/// was a yes or a no, with no age to it.
 	#[pezpallet::storage]
 	pub type CitizenSince<T: Config> =
@@ -328,6 +328,15 @@ pub mod pezpallet {
 	/// what stops a chain being built to launder standing through a series of accounts.
 	#[pezpallet::storage]
 	pub type SupersededBy<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, T::AccountId, OptionQuery>;
+
+	/// The account a reissue retired in favour of this one: `SupersededBy` read backwards.
+	///
+	/// What somebody has already done under an earlier key -- a ballot cast, an endorsement
+	/// given -- is recorded under that key. A check of "has this person already" has to ask
+	/// every key the person has held, or a reissue is a second vote (L-7, 2026-10-22).
+	#[pezpallet::storage]
+	pub type Supersedes<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, T::AccountId, OptionQuery>;
 
 	/// How many accounts currently hold `KycLevel::Approved`.
@@ -458,8 +467,9 @@ pub mod pezpallet {
 		NotEligibleToVouch,
 		/// A citizen admitted this recently may not vouch yet.
 		VouchingTooSoon,
-		/// This account has brought in as many as its record allows.
-		VouchingCapacityReached,
+		/// Too many of the people this account vouched for were revoked; it may not vouch
+		/// until the court restores enough of them.
+		VouchingSuspended,
 		/// Application already exists for this account
 		ApplicationAlreadyExists,
 		/// No application found for this account
@@ -493,6 +503,10 @@ pub mod pezpallet {
 		NotRevoked,
 		/// This account is already a citizen.
 		AlreadyACitizen,
+		/// The court revoked this citizenship; only the court's restoration brings it back.
+		CitizenshipRevokedByTheCourt,
+		/// This account has an application in progress; it finishes or is cancelled first.
+		ApplicationInProgress,
 	}
 
 	// ============= EXTRINSICS =============
@@ -603,16 +617,15 @@ pub mod pezpallet {
 		pub fn approve_referral(origin: OriginFor<T>, applicant: T::AccountId) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
-			// Two limits on the act of vouching, and neither is about the applicant.
+			// Two conditions on the act of vouching, and neither is about the applicant.
 			//
-			// The register admits people on one citizen's word, so the word has to cost
-			// something or the population can be manufactured. It costs waiting -- a citizen
-			// admitted today vouches for nobody -- and it costs having vouched well before:
-			// capacity is earned from settled referrals and lost to revoked ones.
+			// A citizen admitted today vouches for nobody yet, and a citizen whose vouches the
+			// court has revoked too often vouches for nobody until it restores them. There is
+			// no count: the nation grows as fast as its citizens know people, and what a mass
+			// of vouches could buy is capped by the referral score's ceiling, not here.
 			//
-			// The founder is exempt from both. The root of the tree has no earlier record to
-			// earn from, and the fallback that lets it approve a stalled application would
-			// stop working if it could run out.
+			// The founder is exempt from both. The root of the tree has no earlier record, and
+			// the fallback that lets it approve a stalled application must not be stoppable.
 			if caller != T::DefaultReferrer::get() {
 				let since =
 					CitizenSince::<T>::get(&caller).ok_or(Error::<T>::NotEligibleToVouch)?;
@@ -630,8 +643,10 @@ pub mod pezpallet {
 					Error::<T>::VouchingTooSoon
 				);
 				ensure!(
-					T::VouchingCapacity::remaining(&caller) != Some(0),
-					Error::<T>::VouchingCapacityReached
+					!<T::VouchingStanding as crate::types::VouchingStanding<_>>::is_suspended(
+						&caller
+					),
+					Error::<T>::VouchingSuspended
 				);
 			}
 
@@ -830,7 +845,10 @@ pub mod pezpallet {
 			T::CitizenNftProvider::burn_citizen_nft(&who)?;
 
 			// Reset status
-			KycStatuses::<T>::insert(&who, KycLevel::NotStarted);
+			// Removed, not written back as `NotStarted`: the map defaults to that, and an entry
+			// left behind is one more record the trust sweep has to walk for ever -- anyone
+			// could leave thousands by applying and cancelling (L-7, 2026-10-21).
+			KycStatuses::<T>::remove(&who);
 			CitizenCount::<T>::mutate(|n| *n = n.saturating_sub(1));
 
 			// Remove identity hash and reverse mapping
@@ -864,7 +882,10 @@ pub mod pezpallet {
 			IdentityHashToAccount::<T>::remove(application.identity_hash);
 
 			// Reset status
-			KycStatuses::<T>::insert(&applicant, KycLevel::NotStarted);
+			// Removed, not written back as `NotStarted`: the map defaults to that, and an entry
+			// left behind is one more record the trust sweep has to walk for ever -- anyone
+			// could leave thousands by applying and cancelling (L-7, 2026-10-21).
+			KycStatuses::<T>::remove(&applicant);
 
 			// Unreserve deposit
 			let deposit = T::KycApplicationDeposit::get();
@@ -971,7 +992,27 @@ impl<T: Config> Pezpallet<T> {
 
 		// The counters are unchanged on purpose: one person left and the same person arrived.
 		SupersededBy::<T>::insert(from, to.clone());
+		Supersedes::<T>::insert(to, from.clone());
 		Ok(())
+	}
+
+	/// The accounts `who` replaced, most recent first, at most `MAX_SUPERSESSION_HOPS`.
+	///
+	/// For a reader asking whether this person has already acted under an earlier key. Empty
+	/// for an account no reissue produced, which is one read.
+	pub fn earlier_accounts(who: &T::AccountId) -> alloc::vec::Vec<T::AccountId> {
+		let mut earlier = alloc::vec::Vec::new();
+		let mut current = who.clone();
+		for _ in 0..Self::MAX_SUPERSESSION_HOPS {
+			match Supersedes::<T>::get(&current) {
+				Some(previous) => {
+					earlier.push(previous.clone());
+					current = previous;
+				},
+				None => break,
+			}
+		}
+		earlier
 	}
 
 	/// Count total number of citizens.
@@ -1006,7 +1047,17 @@ impl<T: Config> Pezpallet<T> {
 	/// the honorary register, which exists so the chain can be asked how many citizens
 	/// applied and how many were named, and for nothing else.
 	pub fn register_honorary_citizen(who: &T::AccountId) -> pezsp_runtime::DispatchResult {
-		ensure!(KycStatuses::<T>::get(who) != KycLevel::Approved, Error::<T>::AlreadyACitizen);
+		// Only somebody with no standing record may be named. A revoked citizenship used to
+		// be overwritten here -- the head of government undoing the court's finding with a
+		// signature, where the court's own `restore_citizenship` is the way back. And an
+		// application in progress was overwritten too, leaving its deposit reserved for good
+		// (L-7, 2026-10-21).
+		match KycStatuses::<T>::get(who) {
+			KycLevel::NotStarted => {},
+			KycLevel::Approved => return Err(Error::<T>::AlreadyACitizen.into()),
+			KycLevel::Revoked => return Err(Error::<T>::CitizenshipRevokedByTheCourt.into()),
+			_ => return Err(Error::<T>::ApplicationInProgress.into()),
+		}
 
 		KycStatuses::<T>::insert(who, KycLevel::Approved);
 		CitizenCount::<T>::mutate(|n| *n = n.saturating_add(1));

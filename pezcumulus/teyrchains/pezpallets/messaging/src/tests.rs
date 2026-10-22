@@ -383,3 +383,151 @@ fn inbox_count_works() {
 		assert_eq!(Messaging::inbox_count(&2), 1);
 	});
 }
+
+// A free call is one that will go through. The exemption used to ask only whether the
+// sender was a citizen, so once a citizen's quota for the era was spent every further
+// message was refused -- and free, as often as they liked. The rate limit limited nothing
+// (L-7 Y4, 2026-10-21).
+mod free_only_when_it_goes_through {
+	use super::*;
+	use pezframe_support::dispatch::CheckIfFeeless;
+
+	fn free(who: u64, call: Call<Test>) -> bool {
+		call.is_feeless(&RuntimeOrigin::signed(who))
+	}
+
+	fn message(to: u64, len: usize) -> Call<Test> {
+		Call::send_message {
+			to,
+			ephemeral_public_key: dummy_pubkey(99),
+			nonce: dummy_nonce(),
+			ciphertext: dummy_ciphertext(len),
+		}
+	}
+
+	#[test]
+	fn sending_a_message() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(Messaging::register_encryption_key(
+				RuntimeOrigin::signed(2),
+				dummy_pubkey(2)
+			));
+			assert!(free(1, message(2, 50)));
+
+			assert!(!free(1, message(3, 50)), "the recipient has no key");
+			assert!(!free(1, message(1, 50)), "nobody messages themselves");
+			assert!(!free(1, message(2, 0)), "an empty message");
+			assert!(
+				!free(1, message(2, <<Test as Config>::MaxMessageSize as pezframe_support::traits::Get<u32>>::get() as usize + 1)),
+				"too large"
+			);
+			assert!(!free(11, message(2, 50)), "not a citizen");
+
+			for _ in 0..<<Test as Config>::MaxMessagesPerEra as pezframe_support::traits::Get<u32>>::get() {
+				assert_ok!(Messaging::send_message(
+					RuntimeOrigin::signed(1),
+					2,
+					dummy_pubkey(99),
+					dummy_nonce(),
+					dummy_ciphertext(50),
+				));
+			}
+			assert!(!free(1, message(2, 50)), "the era's quota is spent");
+		});
+	}
+
+	#[test]
+	fn registering_a_key() {
+		new_test_ext().execute_with(|| {
+			let key = || Call::register_encryption_key { public_key: dummy_pubkey(1) };
+			assert!(free(1, key()));
+			for _ in 0..<<Test as Config>::MaxMessagesPerEra as pezframe_support::traits::Get<
+				u32,
+			>>::get()
+			{
+				assert_ok!(Messaging::register_encryption_key(
+					RuntimeOrigin::signed(1),
+					dummy_pubkey(1)
+				));
+			}
+			assert!(!free(1, key()), "the era's quota is spent");
+		});
+	}
+
+	#[test]
+	fn acknowledging_an_empty_inbox_is_not_free() {
+		new_test_ext().execute_with(|| {
+			assert!(!free(2, Call::acknowledge_messages {}), "there is nothing to clear");
+
+			assert_ok!(Messaging::register_encryption_key(
+				RuntimeOrigin::signed(2),
+				dummy_pubkey(2)
+			));
+			assert_ok!(Messaging::send_message(
+				RuntimeOrigin::signed(1),
+				2,
+				dummy_pubkey(99),
+				dummy_nonce(),
+				dummy_ciphertext(50),
+			));
+			assert!(free(2, Call::acknowledge_messages {}));
+		});
+	}
+}
+
+// An expired era is cleared of its inboxes and both of its counters, within the weight
+// on_idle is given. The era was declared purged as soon as its inboxes were empty, so the
+// counters past the first fifty -- an era where many wrote to few -- stayed for good; and each
+// pass deleted up to a hundred and fifty entries having checked there was room for one
+// (L-7, 2026-10-21).
+mod era_cleanup {
+	use super::*;
+	use pezframe_support::{traits::Hooks, weights::Weight};
+
+	const ERA: u32 = 0;
+
+	fn expired_era(ext: &mut pezsp_io::TestExternalities, senders: u64) {
+		ext.execute_with(|| {
+			Inbox::<Test>::insert(ERA, 2u64, BoundedVec::default());
+			for who in 0..senders {
+				SendCount::<Test>::insert(ERA, 1_000 + who, 1);
+			}
+			CleanupCursor::<Test>::put((ERA, BoundedVec::default()));
+		});
+		// Into the backend, where an expired era's entries are by the time it is cleaned.
+		ext.commit_all().expect("the era commits");
+	}
+
+	#[test]
+	fn an_era_is_purged_only_when_its_counters_are_gone_too() {
+		let mut ext = new_test_ext();
+		expired_era(&mut ext, 120);
+		for _ in 0..10 {
+			ext.execute_with(|| {
+				Messaging::on_idle(1, Weight::MAX);
+			});
+			ext.commit_all().expect("each pass commits");
+		}
+		ext.execute_with(|| {
+			assert!(CleanupCursor::<Test>::get().is_none(), "the era was never finished");
+			assert_eq!(SendCount::<Test>::iter_prefix(ERA).count(), 0, "counters left behind");
+		});
+	}
+
+	#[test]
+	fn a_pass_deletes_no_more_than_it_was_given_room_for() {
+		let mut ext = new_test_ext();
+		expired_era(&mut ext, 120);
+		ext.execute_with(|| {
+			// Room for the cursor and ten entries.
+			let room = <Test as pezframe_system::Config>::DbWeight::get()
+				.reads_writes(1, 1)
+				.saturating_add(Messaging::cleanup_weight_per_entry().saturating_mul(10));
+			let used = Messaging::on_idle(1, room);
+			assert!(used.all_lte(room), "charged past what it was given");
+			let left = SendCount::<Test>::iter_prefix(ERA).count()
+				+ Inbox::<Test>::iter_prefix(ERA).count();
+			assert!((111..121).contains(&left), "deleted {} of 121 with room for ten", 121 - left);
+		});
+	}
+}

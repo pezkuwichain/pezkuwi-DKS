@@ -24,6 +24,8 @@ pezframe_support::construct_runtime!(
 #[derive_impl(pezframe_system::config_preludes::TestDefaultConfig)]
 impl pezframe_system::Config for Test {
 	type Block = Block;
+	// Real database costs, so the era cleanup's budget is a budget.
+	type DbWeight = pezframe_support::weights::constants::RocksDbWeight;
 	type AccountData = pezpallet_balances::AccountData<u128>;
 }
 

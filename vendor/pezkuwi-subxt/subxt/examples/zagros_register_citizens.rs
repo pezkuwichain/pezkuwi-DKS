@@ -21,10 +21,9 @@
 //!   2. founder `approve_referral(applicant)`               -- batched
 //!   3. `confirm_citizenship()`                             -- returns the deposit
 //!
-//! Step 2 works in bulk only because the founder is `DefaultReferrer`, which exempts it from
-//! the waiting period and the earned vouching capacity. That exemption was pointed at the
-//! mainnet founder until 2026-09-16; on a chain where it still is, this script stalls at step 2
-//! with `NotEligibleToVouch` after five approvals.
+//! Step 2 works in bulk because the founder is `DefaultReferrer`, which exempts it from the
+//! waiting period. That exemption was pointed at the mainnet founder until 2026-09-16; on a
+//! chain where it still is, this script stalls at step 2 with `NotEligibleToVouch`.
 //!
 //! Run:
 //!   FOUNDER_MNEMONIC="..." FOUNDER_PATH="//zagros//allocation//founder" \

@@ -122,6 +122,10 @@ pub use weights::WeightInfo;
 pub trait BenchmarkSetup<AccountId> {
 	/// Make `who` a citizen the tiki pallet will grant a role to.
 	fn make_citizen(who: &AccountId);
+
+	/// Make sure `who` is not a citizen. An account nobody registered is not one on a real
+	/// runtime, so by default there is nothing to do.
+	fn make_stranger(_who: &AccountId) {}
 }
 
 #[pezframe_support::pezpallet]
@@ -521,6 +525,12 @@ pub mod pezpallet {
 		HonoraryMamosteAppointed {
 			who: T::AccountId,
 		},
+		/// A citizen took the seat of a non-citizen who had no result yet, in a full class.
+		SeatTaken {
+			course_id: u32,
+			by: T::AccountId,
+			from: T::AccountId,
+		},
 	}
 
 	#[pezpallet::error]
@@ -553,6 +563,12 @@ pub mod pezpallet {
 		NotUnderReview,
 		/// A course that awarded nothing cannot be annulled.
 		NothingToAnnul,
+		/// Only a citizen may take somebody else's seat.
+		NotACitizen,
+		/// The class has room; enrol instead.
+		CourseNotFull,
+		/// That seat is a citizen's, or its holder already has a result.
+		SeatIsKept,
 	}
 
 	#[pezpallet::call]
@@ -834,6 +850,57 @@ pub mod pezpallet {
 			CoursesUnderReview::<T>::remove(course_id);
 
 			Self::deposit_event(Event::CourseAnnulled { course_id, points_reversed: reversed });
+			Ok(())
+		}
+
+		/// Take the seat of a non-citizen with no result yet, in a class that is full.
+		///
+		/// Anyone may enrol, and what a non-citizen learns counts once they are a citizen. But
+		/// seats are bounded -- closing a course walks the class in one block -- and an
+		/// account nobody vouched for costs a transaction fee, so a class could be filled with
+		/// them and every real student turned away (L-7, 2026-10-22). Citizenship is what
+		/// those accounts cannot cheaply have, so in a full class a citizen goes first. The
+		/// teacher has nothing to do: a seat the teacher has graded is kept, as is a citizen's.
+		#[pezpallet::call_index(9)]
+		#[pezpallet::weight(T::WeightInfo::enroll_in_place_of())]
+		pub fn enroll_in_place_of(
+			origin: OriginFor<T>,
+			course_id: u32,
+			holder: T::AccountId,
+		) -> DispatchResult {
+			let student = ensure_signed(origin)?;
+			ensure!(T::TikiSource::is_citizen(&student), Error::<T>::NotACitizen);
+			let course = Courses::<T>::get(course_id).ok_or(Error::<T>::CourseNotFound)?;
+			ensure!(course.status == CourseStatus::Enrolling, Error::<T>::CourseNotActive);
+			ensure!(student != course.owner, Error::<T>::OwnerCannotEnrol);
+			ensure!(
+				!Enrollments::<T>::contains_key(course_id, &student),
+				Error::<T>::AlreadyEnrolled
+			);
+			ensure!(
+				CourseEnrollmentCount::<T>::get(course_id) >= T::MaxStudentsPerCourse::get(),
+				Error::<T>::CourseNotFull
+			);
+			let seat = Enrollments::<T>::get(course_id, &holder).ok_or(Error::<T>::NotEnrolled)?;
+			ensure!(
+				seat.passed.is_none() && !T::TikiSource::is_citizen(&holder),
+				Error::<T>::SeatIsKept
+			);
+
+			Enrollments::<T>::remove(course_id, &holder);
+			Enrollments::<T>::insert(
+				course_id,
+				&student,
+				Enrollment {
+					student: student.clone(),
+					course_id,
+					enrolled_at: pezframe_system::Pezpallet::<T>::block_number(),
+					passed: None,
+					points_awarded: 0,
+				},
+			);
+
+			Self::deposit_event(Event::SeatTaken { course_id, by: student, from: holder });
 			Ok(())
 		}
 	}

@@ -1069,6 +1069,7 @@ fn punishing_an_unseated_member_sends_nothing() {
 #[test]
 fn a_key_the_relay_did_not_receive_is_not_recorded() {
 	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
 		let keys = mock_keys(ALICE);
 		let proof = mock_proof(ALICE);
 
@@ -1089,6 +1090,7 @@ fn a_key_the_relay_did_not_receive_is_not_recorded() {
 #[test]
 fn keys_that_would_not_decode_on_the_relay_are_refused_here() {
 	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
 		assert_noop!(
 			Tnpos::set_relay_keys(RuntimeOrigin::signed(ALICE), vec![0xff], vec![]),
 			Error::<Test>::InvalidRelayKeys
@@ -1101,6 +1103,7 @@ fn keys_that_would_not_decode_on_the_relay_are_refused_here() {
 #[test]
 fn the_proof_has_to_belong_to_the_account_offering_it() {
 	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
 		assert_noop!(
 			Tnpos::set_relay_keys(RuntimeOrigin::signed(ALICE), mock_keys(ALICE), mock_proof(BOB)),
 			Error::<Test>::InvalidKeyOwnershipProof
@@ -1117,6 +1120,7 @@ fn the_proof_has_to_belong_to_the_account_offering_it() {
 #[test]
 fn purging_keys_also_leaves_the_pool() {
 	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
 		assert_ok!(Tnpos::set_relay_keys(
 			RuntimeOrigin::signed(ALICE),
 			mock_keys(ALICE),
@@ -1130,6 +1134,109 @@ fn purging_keys_also_leaves_the_pool() {
 		assert!(!RelayKeys::<Test>::contains_key(ALICE));
 		assert!(!PoolMembers::<Test>::contains_key(ALICE));
 		assert_eq!(StratumSize::<Test>::get(StratumId::Perwerde), 0, "a seat was left behind");
+	});
+}
+
+/// Who the Asset Hub reports as bonded, which is who may register relay keys.
+fn bond_for_keys(who: &[AccountId]) {
+	let era = BondReportEra::<Test>::get() + 1;
+	assert_ok!(Tnpos::note_bonded(RuntimeOrigin::root(), era, bonded(who)));
+}
+
+fn keys_sent() -> u32 {
+	KEYS_SENT.with(|n| *n.borrow())
+}
+
+/// Only an account the Asset Hub reports as bonded may send keys to the relay.
+///
+/// Every registration is an upward message nobody pays the relay for, and a key write there
+/// with no deposit. Open to anyone, it was a way to queue messages faster than the relay drains
+/// them, in front of the committee's own export (L-7, 2026-10-21). Bonded is also the only kind
+/// of account that can be seated, so nobody with a reason to register is turned away. Before
+/// the first bond report the answer is no, not yes: the genesis validators' keys come from
+/// genesis.
+#[test]
+fn an_unbonded_account_cannot_send_keys_to_the_relay() {
+	new_test_ext().execute_with(|| {
+		assert_noop!(
+			Tnpos::set_relay_keys(
+				RuntimeOrigin::signed(ALICE),
+				mock_keys(ALICE),
+				mock_proof(ALICE)
+			),
+			Error::<Test>::NotBondedForRelayKeys
+		);
+		bond_for_keys(&[BOB]);
+		assert_noop!(
+			Tnpos::set_relay_keys(
+				RuntimeOrigin::signed(ALICE),
+				mock_keys(ALICE),
+				mock_proof(ALICE)
+			),
+			Error::<Test>::NotBondedForRelayKeys
+		);
+		assert_eq!(keys_sent(), 0, "an unbonded account reached the relay");
+
+		bond_for_keys(&[ALICE]);
+		assert_ok!(Tnpos::set_relay_keys(
+			RuntimeOrigin::signed(ALICE),
+			mock_keys(ALICE),
+			mock_proof(ALICE)
+		));
+		assert_eq!(keys_sent(), 1);
+	});
+}
+
+/// The keys already held are not sent again.
+#[test]
+fn the_same_keys_twice_reach_the_relay_once() {
+	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
+		assert_ok!(Tnpos::set_relay_keys(
+			RuntimeOrigin::signed(ALICE),
+			mock_keys(ALICE),
+			mock_proof(ALICE)
+		));
+		run_to_block(System::block_number() + EraLength::get());
+		assert_noop!(
+			Tnpos::set_relay_keys(
+				RuntimeOrigin::signed(ALICE),
+				mock_keys(ALICE),
+				mock_proof(ALICE)
+			),
+			Error::<Test>::RelayKeysUnchanged
+		);
+		assert_eq!(keys_sent(), 1, "the same keys were sent to the relay twice");
+	});
+}
+
+/// Keys change at most once an era, purging included.
+#[test]
+fn relay_keys_change_at_most_once_an_era() {
+	new_test_ext().execute_with(|| {
+		bond_for_keys(&[ALICE]);
+		assert_ok!(Tnpos::set_relay_keys(
+			RuntimeOrigin::signed(ALICE),
+			mock_keys(ALICE),
+			mock_proof(ALICE)
+		));
+		// Purging and registering again is a change like any other.
+		assert_ok!(Tnpos::purge_relay_keys(RuntimeOrigin::signed(ALICE)));
+		assert_noop!(
+			Tnpos::set_relay_keys(
+				RuntimeOrigin::signed(ALICE),
+				mock_keys(ALICE),
+				mock_proof(ALICE)
+			),
+			Error::<Test>::RelayKeysChangedTooRecently
+		);
+		run_to_block(System::block_number() + EraLength::get());
+		assert_ok!(Tnpos::set_relay_keys(
+			RuntimeOrigin::signed(ALICE),
+			mock_keys(ALICE),
+			mock_proof(ALICE)
+		));
+		assert_eq!(keys_sent(), 2);
 	});
 }
 
@@ -1285,4 +1392,116 @@ fn a_member_whose_bond_lapses_is_not_drawn() {
 			assert!(!committee.contains(&who), "a lapsed bond must stop being drawn");
 		}
 	});
+}
+
+mod spent_rounds {
+	use super::*;
+	use pezframe_support::{traits::Hooks, weights::Weight};
+
+	fn leftovers(era: u32) -> usize {
+		SeedCommitments::<Test>::iter_prefix(era).count()
+	}
+
+	/// Commitments to era 1's round that were never revealed, then era 1 drawn.
+	fn era_one_drawn_with_unrevealed(n: AccountId) {
+		fill_every_stratum(60);
+		for who in 0..n {
+			SeedCommitments::<Test>::insert(1, 7_000 + who, [7u8; 32]);
+		}
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		assert_eq!(CurrentEra::<Test>::get(), 1);
+	}
+
+	#[test]
+	fn an_unrevealed_commitment_goes_once_its_era_is_drawn() {
+		// A member who commits and never reveals left the commitment in state for good, and
+		// a pool that changes its membership leaves a new set behind every era.
+		new_test_ext().execute_with(|| {
+			era_one_drawn_with_unrevealed(5);
+			// The next round's commitment is live and stays.
+			SeedCommitments::<Test>::insert(2, 7_100, [8u8; 32]);
+
+			Tnpos::on_idle(System::block_number(), Weight::MAX);
+			assert_eq!(leftovers(1), 0, "a drawn era's commitments stay in state");
+			assert_eq!(leftovers(2), 1, "the open round's commitment was cleared");
+		});
+	}
+
+	#[test]
+	fn clearing_takes_only_the_weight_it_is_given() {
+		// `clear_prefix` removes keys still only in the overlay without counting them against
+		// its limit, and a second call in the same block walks the keys the first deleted. A
+		// real block reads committed state, so the setup and every pass are committed here.
+		let mut ext = new_test_ext();
+		ext.execute_with(|| era_one_drawn_with_unrevealed(5));
+		ext.commit_all().unwrap();
+
+		// Room for about two commitments, not five.
+		let each = 150 + <() as crate::weights::WeightInfo>::report_offence().proof_size();
+		let given = Weight::from_parts(u64::MAX / 2, 2 * each + 100);
+		let mut passes = 0;
+		while ext.execute_with(|| leftovers(1)) > 0 {
+			ext.execute_with(|| {
+				let before = leftovers(1);
+				let used = Tnpos::on_idle(System::block_number(), given);
+				assert!(used.all_lte(given), "used {used:?} of {given:?}");
+				assert!(before - leftovers(1) < 5, "one pass cleared more than it could pay for");
+			});
+			ext.commit_all().unwrap();
+			passes += 1;
+			assert!(passes < 10, "clearing never finished");
+		}
+		ext.execute_with(|| {
+			assert_eq!(Tnpos::on_idle(System::block_number(), Weight::zero()), Weight::zero());
+		});
+	}
+}
+
+mod withheld_seeds {
+	use super::*;
+	use pezframe_support::{traits::Hooks, weights::Weight};
+
+	#[test]
+	fn a_seed_committed_and_never_revealed_costs_its_member_24_eras() {
+		// The last to reveal sees what the seed will be and can decline to reveal, steering
+		// the draw by a bit for nothing. Committing and not following through is the same
+		// failure as being seated and not voting, and costs the same (Serok 2026-10-22).
+		new_test_ext().execute_with(|| {
+			fill_every_stratum(60);
+			let revealed = PoolMembers::<Test>::iter().next().map(|(w, _)| w).unwrap();
+			let withheld = PoolMembers::<Test>::iter().nth(1).map(|(w, _)| w).unwrap();
+			let next_round = PoolMembers::<Test>::iter().nth(2).map(|(w, _)| w).unwrap();
+			SeedCommitments::<Test>::insert(1, withheld, [7u8; 32]);
+			assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+			// Committed to the round now open, which can still be revealed.
+			SeedCommitments::<Test>::insert(2, next_round, [8u8; 32]);
+
+			Tnpos::on_idle(System::block_number(), Weight::MAX);
+
+			assert_eq!(
+				Banned::<Test>::get(withheld),
+				Some(1 + crate::slash::BAN_UNAVAILABLE),
+				"a withheld seed cost nothing"
+			);
+			assert!(!PoolMembers::<Test>::contains_key(withheld));
+			assert!(Banned::<Test>::get(revealed).is_none(), "a revealed seed was punished");
+			assert!(Banned::<Test>::get(next_round).is_none(), "an open round was punished");
+			assert!(PoolMembers::<Test>::contains_key(next_round));
+		});
+	}
+
+	#[test]
+	fn a_withheld_seed_is_punished_even_after_leaving_the_pool() {
+		// Leaving before the draw must not be the way out of it.
+		new_test_ext().execute_with(|| {
+			fill_every_stratum(60);
+			let withheld = PoolMembers::<Test>::iter().nth(1).map(|(w, _)| w).unwrap();
+			SeedCommitments::<Test>::insert(1, withheld, [7u8; 32]);
+			assert_ok!(Tnpos::leave(RuntimeOrigin::signed(withheld)));
+			assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+
+			Tnpos::on_idle(System::block_number(), Weight::MAX);
+			assert_eq!(Banned::<Test>::get(withheld), Some(1 + crate::slash::BAN_UNAVAILABLE));
+		});
+	}
 }
