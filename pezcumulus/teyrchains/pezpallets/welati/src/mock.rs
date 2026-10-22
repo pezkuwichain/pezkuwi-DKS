@@ -505,6 +505,8 @@ impl pezpallet_trust::Config for Test {
 	type PerwerdeScoreSource = MockPerwerdeScoreProvider;
 	type TikiScoreSource = MockTikiScoreProvider;
 	type CitizenshipSource = MockCitizenshipStatusProvider;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 // Welati Configuration - DEFINE ONLY ONCE

@@ -1012,6 +1012,29 @@ impl pezpallet_trust::Config for Runtime {
 	type PerwerdeScoreSource = PerwerdeScoreSource;
 	type TikiScoreSource = TikiScoreSource;
 	type CitizenshipSource = CitizenshipSource;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = TrustBenchmarkHelper;
+}
+
+/// A stake and an education, for the trust benchmark: with nothing staked a recomputation
+/// stops at the stake, and the benchmark would measure that early return.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct TrustBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_trust::BenchmarkHelper<AccountId> for TrustBenchmarkHelper {
+	fn make_scored(who: &AccountId) {
+		pezpallet_staking_score::CachedStakingDetails::<Runtime>::insert(
+			who,
+			pezpallet_staking_score::StakingSource::RelayChain,
+			pezpallet_staking_score::StakingDetails {
+				staked_amount: 1_000 * UNITS,
+				nominations_count: 1,
+				unlocking_chunks_count: 0,
+			},
+		);
+		pezpallet_staking_score::StakingStartBlock::<Runtime>::insert(who, BlockNumber::from(1u32));
+		pezpallet_perwerde::PerwerdeScores::<Runtime>::insert(who, 100u32);
+	}
 }
 
 // =============================================================================

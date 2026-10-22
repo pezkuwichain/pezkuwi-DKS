@@ -31,14 +31,17 @@ mod benchmarks {
 	#[benchmark]
 	fn force_recalculate_trust_score() -> Result<(), BenchmarkError> {
 		// Setup
+		// A staked citizen, so the recomputation reads every component and writes a new
+		// score and total -- the cost each citizen in a batch is charged.
 		let account: T::AccountId = whitelisted_caller();
 		setup_citizen::<T>(&account);
+		T::BenchmarkHelper::make_scored(&account);
 
 		#[extrinsic_call]
 		force_recalculate_trust_score(RawOrigin::Root, account.clone());
 
-		// Verify - trust score should be calculated (may be zero if no component scores)
-		assert!(TrustScores::<T>::contains_key(&account));
+		// If the score is still zero the benchmark measured the early return.
+		assert!(!TrustScores::<T>::get(&account).is_zero());
 		Ok(())
 	}
 

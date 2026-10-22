@@ -58,14 +58,13 @@ impl<T: pezframe_system::Config> pezpallet_trust::WeightInfo for WeightInfo<T> {
 	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	/// Storage: `StakingScore::CachedStakingDetails` (r:1 w:0)
 	/// Proof: `StakingScore::CachedStakingDetails` (`max_values`: None, `max_size`: Some(89), added: 2564, mode: `MaxEncodedLen`)
+	/// Derived until the weights run measures a staked citizen: the measured run stopped at
+	/// the stake. A full recomputation reads every component and writes the score and the
+	/// total, as the pallet's own reference figure does.
 	fn force_recalculate_trust_score() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `513`
-		//  Estimated: `3554`
-		// Minimum execution time: 31_471_000 picoseconds.
-		Weight::from_parts(51_881_000, 0)
-			.saturating_add(Weight::from_parts(0, 3554))
-			.saturating_add(T::DbWeight::get().reads(4))
+		Weight::from_parts(65_000_000, 5000)
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	/// Storage: `Trust::LastProcessedAccount` (r:1 w:1)
 	/// Proof: `Trust::LastProcessedAccount` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
