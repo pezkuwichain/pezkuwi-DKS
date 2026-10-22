@@ -213,6 +213,99 @@ mod benchmarks {
 		assert!(!CurrentCommittee::<T>::get().contains(&victim));
 	}
 
+	/// A key change by a member of a full bond report who already holds keys from an era ago:
+	/// the report is read whole, both of the old records are read and rewritten, the six
+	/// ownership proofs are checked and the message goes to the relay.
+	#[benchmark]
+	fn set_relay_keys() -> Result<(), BenchmarkError> {
+		let who = account::<T::AccountId>("member", 0, 0);
+		T::BenchmarkHelper::make_eligible(&who, StratumId::Meclis);
+		put_full_bond_report::<T>(&who)?;
+		RelayKeysChangedAt::<T>::insert(&who, pezframe_system::Pezpallet::<T>::block_number());
+		pezframe_system::Pezpallet::<T>::set_block_number(
+			pezframe_system::Pezpallet::<T>::block_number().saturating_add(T::EraLength::get()),
+		);
+		let (keys, proof) = T::BenchmarkHelper::relay_keys(&who);
+		T::BenchmarkHelper::ensure_relay_reachable();
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(who.clone()), keys.clone(), proof);
+
+		assert_eq!(RelayKeys::<T>::get(&who).map(|k| k.into_inner()), Some(keys));
+		Ok(())
+	}
+
+	/// Keys withdrawn by a pool member, which takes the member out of the pool as well.
+	#[benchmark]
+	fn purge_relay_keys() {
+		let who = account::<T::AccountId>("member", 0, 0);
+		T::BenchmarkHelper::make_eligible(&who, StratumId::Meclis);
+		Pezpallet::<T>::do_join(who.clone(), StratumId::Meclis).unwrap();
+		T::BenchmarkHelper::ensure_relay_reachable();
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(who.clone()));
+
+		assert!(!RelayKeys::<T>::contains_key(&who));
+		assert!(!PoolMembers::<T>::contains_key(&who));
+	}
+
+	/// A move into the stratum `join` is measured on, checked against a full bond report.
+	#[benchmark]
+	fn switch_stratum() -> Result<(), BenchmarkError> {
+		let who = account::<T::AccountId>("member", 0, 0);
+		T::BenchmarkHelper::make_eligible(&who, StratumId::WelatiLottery);
+		Pezpallet::<T>::do_join(who.clone(), StratumId::WelatiLottery).unwrap();
+		T::BenchmarkHelper::make_eligible(&who, StratumId::Meclis);
+		put_full_bond_report::<T>(&who)?;
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(who.clone()), StratumId::Meclis);
+
+		assert_eq!(PoolMembers::<T>::get(&who), Some(StratumId::Meclis));
+		Ok(())
+	}
+
+	/// A session report naming `n` validators, half of them failed: the most that can be
+	/// marked, since a session where more than half failed marks nobody. Every failed
+	/// validator's record is already full, so each mark also drops the oldest.
+	#[benchmark]
+	fn note_session_performance(n: Linear<0, 1_000>) -> Result<(), BenchmarkError> {
+		let failed: Vec<T::AccountId> = (0..n / 2).map(|i| account("failed", i, 0)).collect();
+		let scored: Vec<T::AccountId> = (n / 2..n).map(|i| account("scored", i, 0)).collect();
+		for who in &failed {
+			CoFailures::<T>::insert(
+				who,
+				BoundedVec::try_from(alloc::vec![0u32; 8])
+					.map_err(|_| BenchmarkError::Stop("eight marks fit the bound"))?,
+			);
+		}
+		let origin = T::PerformanceOrigin::try_successful_origin()
+			.map_err(|_| BenchmarkError::Weightless)?;
+
+		#[extrinsic_call]
+		_(origin as T::RuntimeOrigin, scored, failed);
+
+		assert_eq!(SessionsObserved::<T>::get(), 1);
+		Ok(())
+	}
+
 	#[cfg(test)]
 	impl_benchmark_test_suite!(Pezpallet, crate::mock::new_test_ext(), crate::mock::Test);
+}
+
+/// A bond report at its bound that names `who`: the largest set the gates ever read.
+fn put_full_bond_report<T: Config>(who: &T::AccountId) -> Result<(), BenchmarkError> {
+	let mut bonded = alloc::collections::BTreeSet::new();
+	bonded.insert(who.clone());
+	let mut i = 0u32;
+	while (bonded.len() as u32) < T::MaxBonded::get() {
+		bonded.insert(account::<T::AccountId>("bonded", i, 0));
+		i += 1;
+	}
+	BondedOnAssetHub::<T>::put(
+		BoundedBTreeSet::<T::AccountId, T::MaxBonded>::try_from(bonded)
+			.map_err(|_| BenchmarkError::Stop("bounded by MaxBonded"))?,
+	);
+	Ok(())
 }

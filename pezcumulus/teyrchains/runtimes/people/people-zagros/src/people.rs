@@ -2208,6 +2208,20 @@ impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
 			},
 		}
 	}
+
+	/// Fresh keys of the relay's own types, generated in the benchmark keystore and signed
+	/// over `who`, so the call checks six real ownership proofs.
+	fn relay_keys(who: &AccountId) -> (alloc::vec::Vec<u8>, alloc::vec::Vec<u8>) {
+		use codec::Encode;
+		let generated = RelaySessionKeys::generate(&who.encode(), None);
+		(generated.keys.encode(), generated.proof.encode())
+	}
+
+	/// Give the router a host configuration, without which it refuses every upward message.
+	fn ensure_relay_reachable() {
+		use pezcumulus_primitives_core::UpwardMessageSender;
+		<crate::TeyrchainSystem as UpwardMessageSender>::ensure_successful_delivery();
+	}
 }
 
 parameter_types! {

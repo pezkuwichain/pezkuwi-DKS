@@ -22,6 +22,11 @@ pub trait WeightInfo {
 	fn seat_committee(p: u32) -> Weight;
 	/// `n` is the number of accounts reported.
 	fn note_bonded(n: u32) -> Weight;
+	fn set_relay_keys() -> Weight;
+	fn purge_relay_keys() -> Weight;
+	fn switch_stratum() -> Weight;
+	/// `n` is the number of validators the session report names, scored and failed together.
+	fn note_session_performance(n: u32) -> Weight;
 }
 
 /// Measured, not estimated: each figure is the larger of the two People twins' generated
@@ -76,5 +81,28 @@ impl WeightInfo for () {
 			.saturating_add(Weight::from_parts(187_864, 0).saturating_mul(n.into()))
 			.saturating_add(RocksDbWeight::get().reads(2))
 			.saturating_add(RocksDbWeight::get().writes(2))
+	}
+	// The four below are derived from the measured calls until the weights run measures them;
+	// each borrowed `join` or `leave` outright before (L-7, 2026-10-22).
+	/// `join`'s gate and bond report, six key ownership proofs and the message to the relay.
+	fn set_relay_keys() -> Weight {
+		Self::join()
+			.saturating_add(Weight::from_parts(400_000_000, 0))
+			.saturating_add(RocksDbWeight::get().reads_writes(4, 4))
+	}
+	/// `leave`, the key record and the message to the relay.
+	fn purge_relay_keys() -> Weight {
+		Self::leave().saturating_add(RocksDbWeight::get().reads_writes(5, 3))
+	}
+	/// `join`'s gate and bond report, and the two stratum counts.
+	fn switch_stratum() -> Weight {
+		Self::join().saturating_add(RocksDbWeight::get().reads_writes(2, 2))
+	}
+	/// Every named validator's session count, and a co-failure mark for half of them.
+	fn note_session_performance(n: u32) -> Weight {
+		Weight::from_parts(20_000_000, 1_489)
+			.saturating_add(Weight::from_parts(25_000_000, 5_600).saturating_mul(n.into()))
+			.saturating_add(RocksDbWeight::get().reads_writes(1, 1))
+			.saturating_add(RocksDbWeight::get().reads_writes(2, 2).saturating_mul(n.into()))
 	}
 }

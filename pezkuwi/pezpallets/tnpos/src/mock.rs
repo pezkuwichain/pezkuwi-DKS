@@ -319,6 +319,18 @@ impl pezpallet_tnpos::BenchmarkHelper<AccountId> for BenchHelper {
 		// the runtime's own `BenchmarkHelper` guarantees.
 		ensure_has_keys(*who);
 	}
+
+	/// A key id of its own, so the keys differ from the ones `make_eligible` registered.
+	fn relay_keys(who: &AccountId) -> (Vec<u8>, Vec<u8>) {
+		use codec::Encode;
+		let id = who.saturating_add(1_000_000);
+		(
+			MockRelayKeys { dummy: pezsp_runtime::testing::UintAuthorityId(id) }.encode(),
+			pezsp_runtime::testing::TestSignature(id, who.encode()).encode(),
+		)
+	}
+
+	fn ensure_relay_reachable() {}
 }
 
 /// The nine strata at their specified sizes, at the design's floor. `FloorTooLow` refuses

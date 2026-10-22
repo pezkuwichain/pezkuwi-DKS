@@ -62,6 +62,16 @@ use slash::Offence;
 pub trait BenchmarkHelper<AccountId> {
 	/// Give `who` whatever standing `stratum` requires, including session keys.
 	fn make_eligible(who: &AccountId, stratum: StratumId);
+
+	/// Relay keys `who` does not hold yet, encoded, with a valid ownership proof for them.
+	///
+	/// Only the runtime holds the key types, and a real proof is one signature per key: a
+	/// benchmark fed keys that fail the check would measure the refusal.
+	fn relay_keys(who: &AccountId) -> (alloc::vec::Vec<u8>, alloc::vec::Vec<u8>);
+
+	/// Make a message to the relay deliverable. A benchmark genesis has no host
+	/// configuration, and without one the router refuses every upward message.
+	fn ensure_relay_reachable();
 }
 
 /// An origin `BondOrigin` accepts, for benchmarks.
@@ -659,7 +669,7 @@ pub mod pezpallet {
 		/// report must have arrived -- the pool's open gate before it is for joining, and the
 		/// genesis validators' keys are written by genesis, not here.
 		#[pezpallet::call_index(7)]
-		#[pezpallet::weight(T::WeightInfo::join())]
+		#[pezpallet::weight(T::WeightInfo::set_relay_keys())]
 		pub fn set_relay_keys(
 			origin: OriginFor<T>,
 			keys: alloc::vec::Vec<u8>,
@@ -719,7 +729,9 @@ pub mod pezpallet {
 		/// only view of infrastructure independence a chain can have, because it is the only
 		/// consequence of it that reaches the chain at all.
 		#[pezpallet::call_index(10)]
-		#[pezpallet::weight(T::WeightInfo::join())]
+		#[pezpallet::weight(T::WeightInfo::note_session_performance(
+			scored.len().saturating_add(failed.len()) as u32
+		))]
 		pub fn note_session_performance(
 			origin: OriginFor<T>,
 			scored: Vec<T::AccountId>,
@@ -767,7 +779,7 @@ pub mod pezpallet {
 		/// The new stratum's gate is checked exactly as `join` checks it. Somebody who cannot
 		/// enter a stratum from outside cannot enter it from inside either.
 		#[pezpallet::call_index(9)]
-		#[pezpallet::weight(T::WeightInfo::join())]
+		#[pezpallet::weight(T::WeightInfo::switch_stratum())]
 		pub fn switch_stratum(origin: OriginFor<T>, stratum: StratumId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let current = PoolMembers::<T>::get(&who).ok_or(Error::<T>::NotInPool)?;
@@ -789,7 +801,7 @@ pub mod pezpallet {
 		/// would silently drop -- the same reason `join` refuses one. Removing them from the
 		/// pool here is what keeps the stratum counts honest.
 		#[pezpallet::call_index(8)]
-		#[pezpallet::weight(T::WeightInfo::leave())]
+		#[pezpallet::weight(T::WeightInfo::purge_relay_keys())]
 		pub fn purge_relay_keys(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(RelayKeys::<T>::contains_key(&who), Error::<T>::NoRelayKeys);

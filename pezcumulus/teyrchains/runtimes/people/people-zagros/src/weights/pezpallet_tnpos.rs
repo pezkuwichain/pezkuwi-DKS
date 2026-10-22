@@ -266,4 +266,29 @@ impl<T: pezframe_system::Config> pezpallet_tnpos::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(39))
 			.saturating_add(T::DbWeight::get().writes(5))
 	}
+	// The four below are derived from the measured calls until the weights run measures them;
+	// each borrowed `join` or `leave` outright before (L-7, 2026-10-22).
+	/// `join`'s gate and bond report, six key ownership proofs and the message to the relay.
+	fn set_relay_keys() -> Weight {
+		<Self as pezpallet_tnpos::WeightInfo>::join()
+			.saturating_add(Weight::from_parts(400_000_000, 0))
+			.saturating_add(T::DbWeight::get().reads_writes(4, 4))
+	}
+	/// `leave`, the key record and the message to the relay.
+	fn purge_relay_keys() -> Weight {
+		<Self as pezpallet_tnpos::WeightInfo>::leave()
+			.saturating_add(T::DbWeight::get().reads_writes(5, 3))
+	}
+	/// `join`'s gate and bond report, and the two stratum counts.
+	fn switch_stratum() -> Weight {
+		<Self as pezpallet_tnpos::WeightInfo>::join()
+			.saturating_add(T::DbWeight::get().reads_writes(2, 2))
+	}
+	/// Every named validator's session count, and a co-failure mark for half of them.
+	fn note_session_performance(n: u32) -> Weight {
+		Weight::from_parts(20_000_000, 1_489)
+			.saturating_add(Weight::from_parts(25_000_000, 5_600).saturating_mul(n.into()))
+			.saturating_add(T::DbWeight::get().reads_writes(1, 1))
+			.saturating_add(T::DbWeight::get().reads_writes(2, 2).saturating_mul(n.into()))
+	}
 }
