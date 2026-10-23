@@ -2164,3 +2164,17 @@ mod a_reissued_noter {
 		});
 	}
 }
+
+mod a_noters_submission {
+	use crate::weights::WeightInfo;
+
+	/// A noter's submission applies a matured one before recording itself, so it is charged
+	/// at least what applying one costs. It was charged the Root path, which only applies.
+	#[test]
+	fn is_charged_for_the_submission_it_applies() {
+		let submit = <() as WeightInfo>::receive_staking_details();
+		let apply = <() as WeightInfo>::finalize_staking_details();
+		// Its own work adds reads and writes, not proof, so the time is what has to be larger.
+		assert!(submit.all_gte(apply) && submit.ref_time() > apply.ref_time());
+	}
+}

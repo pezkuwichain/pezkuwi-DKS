@@ -172,6 +172,23 @@ impl<AccountId> TrustScoreUpdater<AccountId> for () {
 	fn on_score_component_changed(_who: &AccountId) {}
 }
 
+/// Gives an account every component of a score, for benchmarking.
+///
+/// A recomputation for somebody with nothing staked stops at the stake and writes nothing, so a
+/// benchmark of one measured four reads -- and every batch was charged that for each citizen
+/// it recomputed (L-7, 2026-10-22). The components live in other pallets, so the runtime says
+/// how to fill them.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkHelper<AccountId> {
+	/// Give `who` a stake, and with it a score the recomputation has to work out and write.
+	fn make_scored(who: &AccountId);
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<AccountId> BenchmarkHelper<AccountId> for () {
+	fn make_scored(_who: &AccountId) {}
+}
+
 pub trait PerwerdeScoreProvider<AccountId> {
 	fn get_perwerde_score(who: &AccountId) -> u32;
 
@@ -264,6 +281,9 @@ pub mod pezpallet {
 		type PerwerdeScoreSource: PerwerdeScoreProvider<Self::AccountId>;
 		type TikiScoreSource: TikiScoreProvider<Self::AccountId>;
 		type CitizenshipSource: CitizenshipStatusProvider<Self::AccountId>;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::BenchmarkHelper<Self::AccountId>;
 	}
 
 	#[pezpallet::storage]
@@ -432,7 +452,8 @@ pub mod pezpallet {
 		/// implementation, not a second one: two copies of a paginated loop sharing the same
 		/// checkpoint would drift the moment a fix landed in one of them.
 		#[pezpallet::call_index(1)]
-		#[pezpallet::weight(<T as Config>::WeightInfo::update_all_trust_scores())]
+		#[pezpallet::weight(<T as Config>::WeightInfo::update_all_trust_scores()
+			.saturating_add(Pezpallet::<T>::full_batch_weight()))]
 		pub fn update_all_trust_scores(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
 			let _ = Self::do_batch_update();
@@ -441,7 +462,8 @@ pub mod pezpallet {
 
 		/// Function that starts the periodic update
 		#[pezpallet::call_index(2)]
-		#[pezpallet::weight(<T as Config>::WeightInfo::periodic_trust_score_update())]
+		#[pezpallet::weight(<T as Config>::WeightInfo::periodic_trust_score_update()
+			.saturating_add(Pezpallet::<T>::full_batch_weight()))]
 		pub fn periodic_trust_score_update(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
 
@@ -651,16 +673,31 @@ pub mod pezpallet {
 				Self::deposit_event(Event::BulkTrustScoreUpdate { count: updated_count });
 			}
 
-			// Each visit is a read of the record and its proof; each citizen is a recompute,
-			// charged as the benchmarked single recomputation.
-			let base_weight = T::DbWeight::get().reads_writes(2, 2);
+			Self::batch_weight(visited, updated_count)
+		}
+
+		/// What a batch that visited `visited` records and recomputed `updated` of them cost.
+		///
+		/// Each visit is a read of the record and its proof; each citizen is a recompute,
+		/// charged as the benchmarked single recomputation.
+		fn batch_weight(visited: u32, updated: u32) -> Weight {
 			let per_visit = T::DbWeight::get().reads(1).saturating_add(Weight::from_parts(0, 128));
-			base_weight
+			T::DbWeight::get()
+				.reads_writes(2, 2)
 				.saturating_add(per_visit.saturating_mul(u64::from(visited)))
 				.saturating_add(
 					<T as Config>::WeightInfo::force_recalculate_trust_score()
-						.saturating_mul(u64::from(updated_count)),
+						.saturating_mul(u64::from(updated)),
 				)
+		}
+
+		/// The most one batch can cost: a full batch, every record in it a citizen.
+		///
+		/// What the batch calls are charged up front. Their own benchmarks run on an empty
+		/// register and so measured a batch that recomputed nobody (L-7, 2026-10-22).
+		pub fn full_batch_weight() -> Weight {
+			let n = Self::calculate_optimal_batch_size();
+			Self::batch_weight(n, n)
 		}
 	}
 

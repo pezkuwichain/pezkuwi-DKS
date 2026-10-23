@@ -56,12 +56,18 @@ mod benchmarks {
 		assert!(StakingStartBlock::<T>::get(&caller).is_some());
 	}
 
-	/// Benchmark worst case: root origin, non-zero stake insert.
+	/// Benchmark worst case: a registered noter's submission, which is the Root path and
+	/// then some. The account has a matured submission waiting, so the call first applies it
+	/// -- a full `apply_staking_update`, the whole of the Root path -- and then checks the
+	/// noter and records the new submission in its place. Measuring Root alone charged the
+	/// noter path for half of what it does (L-7, 2026-10-22).
 	#[benchmark]
 	fn receive_staking_details() {
-		let target: T::AccountId = whitelisted_caller();
+		let noter: T::AccountId = whitelisted_caller();
+		fund_and_register_noter::<T>(&noter);
+		let target: T::AccountId = account("target", 0, 0);
 
-		// Pre-populate both sources for worst-case trust callback iteration.
+		// Pre-populate the other source for worst-case trust callback iteration.
 		CachedStakingDetails::<T>::insert(
 			&target,
 			StakingSource::AssetHub,
@@ -71,11 +77,27 @@ mod benchmarks {
 				unlocking_chunks_count: 0,
 			},
 		);
+		PendingStakingDetails::<T>::insert(
+			&target,
+			StakingSource::RelayChain,
+			PendingSubmission {
+				details: StakingDetails {
+					staked_amount: (400u128 * UNITS).into(),
+					nominations_count: 2,
+					unlocking_chunks_count: 0,
+				},
+				submitted_by: noter.clone(),
+				submitted_at: 0u32.into(),
+			},
+		);
+		pezframe_system::Pezpallet::<T>::set_block_number(
+			T::DisputeWindow::get().saturating_add(1u32.into()),
+		);
 		T::OnStakingUpdate::prepare_worst_case(&target);
 
 		#[extrinsic_call]
 		_(
-			RawOrigin::Root,
+			RawOrigin::Signed(noter.clone()),
 			target.clone(),
 			StakingSource::RelayChain,
 			(500u128 * UNITS).into(),
@@ -83,7 +105,13 @@ mod benchmarks {
 			0u32,
 		);
 
+		// The matured submission took effect and the new one waits in its place.
 		assert!(CachedStakingDetails::<T>::get(&target, StakingSource::RelayChain).is_some());
+		assert_eq!(
+			PendingStakingDetails::<T>::get(&target, StakingSource::RelayChain)
+				.map(|p| p.details.staked_amount),
+			Some((500u128 * UNITS).into())
+		);
 	}
 
 	#[benchmark]

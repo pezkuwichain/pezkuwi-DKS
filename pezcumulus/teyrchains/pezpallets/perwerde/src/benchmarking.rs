@@ -49,6 +49,8 @@ fn fill_class<T: Config>(course_id: u32, owner: &T::AccountId, count: u32) -> Ve
 	let mut students = Vec::new();
 	for i in 0..count {
 		let student: T::AccountId = account("student", i, 0);
+		// Closing and annulling the course recompute each student's standing.
+		T::TrustScoreUpdater::prepare_worst_case(&student);
 		assert_ok!(Perwerde::<T>::enroll(RawOrigin::Signed(student.clone()).into(), course_id));
 		assert_ok!(Perwerde::<T>::record_result(
 			RawOrigin::Signed(owner.clone()).into(),

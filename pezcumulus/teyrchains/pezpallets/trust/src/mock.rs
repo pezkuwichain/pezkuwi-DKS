@@ -237,6 +237,8 @@ impl pezpallet_trust::Config for Test {
 	type PerwerdeScoreSource = MockPerwerdeScoreProvider;
 	type TikiScoreSource = MockTikiScoreProvider;
 	type CitizenshipSource = MockCitizenshipStatusProvider;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 pub fn new_test_ext() -> pezsp_io::TestExternalities {

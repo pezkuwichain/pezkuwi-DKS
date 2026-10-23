@@ -882,3 +882,28 @@ fn a_sweep_across_batches_reaches_every_citizen() {
 		assert_eq!(updated, 250, "every citizen is recomputed exactly once per sweep");
 	});
 }
+
+mod batch_charge {
+	use super::*;
+	use crate::weights::WeightInfo;
+	use pezframe_support::dispatch::GetDispatchInfo;
+
+	/// A batch call recomputes up to a full batch of citizens, so it is charged for one. It
+	/// was charged its own benchmark, taken on an empty register, which recomputes nobody.
+	#[test]
+	fn a_batch_call_is_charged_for_a_full_batch() {
+		new_test_ext().execute_with(|| {
+			let full = <() as WeightInfo>::force_recalculate_trust_score()
+				.saturating_mul(u64::from(MaxBatchSizeValue::get()));
+			for call in [
+				crate::Call::<Test>::update_all_trust_scores {},
+				crate::Call::<Test>::periodic_trust_score_update {},
+			] {
+				assert!(RuntimeCall::TrustPallet(call)
+					.get_dispatch_info()
+					.call_weight
+					.all_gte(full));
+			}
+		});
+	}
+}

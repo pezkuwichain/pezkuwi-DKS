@@ -6746,3 +6746,50 @@ mod one_person_one_vote {
 		});
 	}
 }
+
+mod hook_charges {
+	use super::*;
+	use crate::weights::WeightInfo;
+	use pezframe_support::traits::Hooks;
+
+	/// Opening an election from the clock does what `initiate_election` does, so the block
+	/// pays at least that. It paid two writes.
+	#[test]
+	fn an_election_the_clock_opens_is_charged_as_one() {
+		ExtBuilder::default().build().execute_with(|| {
+			seat_president(1);
+			assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
+			run_to_block(System::block_number() + 2);
+			let term_end = System::block_number() + crate::mock::TermLength::get();
+			crate::TermEnds::<Test>::insert(ElectionType::Parliamentary, term_end);
+
+			let at = term_end - CYCLE;
+			System::set_block_number(at);
+			let charged = Welati::on_initialize(at);
+
+			assert!(Welati::scheduled_election(ElectionType::Parliamentary).is_some());
+			assert!(charged.all_gte(<() as WeightInfo>::initiate_election()));
+		});
+	}
+
+	/// Each seat handed over is a tiki granted, so a block that hands over ten pays for ten
+	/// grants. It paid four writes a seat.
+	#[test]
+	fn a_seat_handed_over_is_charged_as_a_grant() {
+		ExtBuilder::default().build().execute_with(|| {
+			let seats: Vec<u64> = (100..110).collect();
+			for who in &seats {
+				make_citizen(*who);
+			}
+			crate::PendingSeatGrants::<Test>::put(
+				BoundedVec::try_from(seats.clone()).expect("ten fit the house"),
+			);
+
+			let charged = Welati::on_initialize(System::block_number());
+
+			assert!(crate::PendingSeatGrants::<Test>::get().is_empty());
+			let grant = <() as pezpallet_tiki::weights::WeightInfo>::grant_elected_role();
+			assert!(charged.all_gte(grant.saturating_mul(seats.len() as u64)));
+		});
+	}
+}

@@ -311,10 +311,26 @@ parameter_types! {
 /// This avoids cyclic dependencies between component pallets and pezpallet-trust.
 pub struct TrustScoreNotifier;
 
+/// A citizen with a stake: the account whose recomputation reads every component and writes
+/// the score and the total. Each component pallet's benchmark notifies one of these.
+#[cfg(feature = "runtime-benchmarks")]
+fn trust_worst_case(who: &AccountId) {
+	use pezpallet_trust::BenchmarkHelper as _;
+	pezpallet_identity_kyc::KycStatuses::<Runtime>::insert(
+		who,
+		pezpallet_identity_kyc::types::KycLevel::Approved,
+	);
+	TrustBenchmarkHelper::make_scored(who);
+}
+
 impl pezpallet_referral::TrustScoreUpdater<AccountId> for TrustScoreNotifier {
 	fn on_score_component_changed(who: &AccountId) {
 		use pezpallet_trust::TrustScoreUpdater;
 		<Trust as TrustScoreUpdater<AccountId>>::on_score_component_changed(who);
+	}
+	#[cfg(feature = "runtime-benchmarks")]
+	fn prepare_worst_case(who: &AccountId) {
+		trust_worst_case(who);
 	}
 }
 
@@ -323,12 +339,20 @@ impl pezpallet_tiki::TrustScoreUpdater<AccountId> for TrustScoreNotifier {
 		use pezpallet_trust::TrustScoreUpdater;
 		<Trust as TrustScoreUpdater<AccountId>>::on_score_component_changed(who);
 	}
+	#[cfg(feature = "runtime-benchmarks")]
+	fn prepare_worst_case(who: &AccountId) {
+		trust_worst_case(who);
+	}
 }
 
 impl pezpallet_perwerde::TrustScoreUpdater<AccountId> for TrustScoreNotifier {
 	fn on_score_component_changed(who: &AccountId) {
 		use pezpallet_trust::TrustScoreUpdater;
 		<Trust as TrustScoreUpdater<AccountId>>::on_score_component_changed(who);
+	}
+	#[cfg(feature = "runtime-benchmarks")]
+	fn prepare_worst_case(who: &AccountId) {
+		trust_worst_case(who);
 	}
 }
 
@@ -1012,6 +1036,29 @@ impl pezpallet_trust::Config for Runtime {
 	type PerwerdeScoreSource = PerwerdeScoreSource;
 	type TikiScoreSource = TikiScoreSource;
 	type CitizenshipSource = CitizenshipSource;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = TrustBenchmarkHelper;
+}
+
+/// A stake and an education, for the trust benchmark: with nothing staked a recomputation
+/// stops at the stake, and the benchmark would measure that early return.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct TrustBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_trust::BenchmarkHelper<AccountId> for TrustBenchmarkHelper {
+	fn make_scored(who: &AccountId) {
+		pezpallet_staking_score::CachedStakingDetails::<Runtime>::insert(
+			who,
+			pezpallet_staking_score::StakingSource::RelayChain,
+			pezpallet_staking_score::StakingDetails {
+				staked_amount: 1_000 * UNITS,
+				nominations_count: 1,
+				unlocking_chunks_count: 0,
+			},
+		);
+		pezpallet_staking_score::StakingStartBlock::<Runtime>::insert(who, BlockNumber::from(1u32));
+		pezpallet_perwerde::PerwerdeScores::<Runtime>::insert(who, 100u32);
+	}
 }
 
 // =============================================================================
@@ -2157,6 +2204,24 @@ impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
 						});
 					}
 				});
+				// The house's register is half of membership; the seat's tiki is the other,
+				// and `is_parliament_member` asks for both since the seat became a tiki
+				// (L-7, 2026-10-21). Without it every benchmark that joins Meclis was refused
+				// (weights run 39788954023).
+				// A benchmark genesis may have no citizen collection to mint from; the
+				// welati helper creates it first.
+				<WelatiBenchmarkHelper as pezpallet_welati::BenchmarkHelper<AccountId>>::make_citizen(
+					who,
+				);
+				if !pezpallet_tiki::Pezpallet::<Runtime>::has_tiki(
+					who,
+					&pezpallet_tiki::Tiki::Parlementer,
+				) {
+					let _ = pezpallet_tiki::Pezpallet::<Runtime>::internal_grant_role(
+						who,
+						pezpallet_tiki::Tiki::Parlementer,
+					);
+				}
 			},
 			StratumId::Divan => {
 				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
@@ -2188,6 +2253,20 @@ impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
 				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
 			},
 		}
+	}
+
+	/// Fresh keys of the relay's own types, generated in the benchmark keystore and signed
+	/// over `who`, so the call checks six real ownership proofs.
+	fn relay_keys(who: &AccountId) -> (alloc::vec::Vec<u8>, alloc::vec::Vec<u8>) {
+		use codec::Encode;
+		let generated = RelaySessionKeys::generate(&who.encode(), None);
+		(generated.keys.encode(), generated.proof.encode())
+	}
+
+	/// Give the router a host configuration, without which it refuses every upward message.
+	fn ensure_relay_reachable() {
+		use pezcumulus_primitives_core::UpwardMessageSender;
+		<crate::TeyrchainSystem as UpwardMessageSender>::ensure_successful_delivery();
 	}
 }
 
@@ -2472,6 +2551,12 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 	fn ensure_relay_reachable() {
 		use pezcumulus_primitives_core::UpwardMessageSender;
 		<crate::TeyrchainSystem as UpwardMessageSender>::ensure_successful_delivery();
+	}
+
+	/// A trust score written straight into the register: a benchmark genesis has no citizen
+	/// with one, and voting, backing and opening an initiative all refuse an account without.
+	fn give_trust(who: &AccountId) {
+		pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
 	}
 }
 

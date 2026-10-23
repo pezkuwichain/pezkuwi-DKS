@@ -117,6 +117,15 @@ pub trait WeightInfo {
 	fn appoint_minister() -> Weight;
 	fn dismiss_minister() -> Weight;
 	fn set_confirmation_requirement() -> Weight;
+	fn finalize_proposal() -> Weight;
+	fn spend_budget() -> Weight;
+	fn open_initiative() -> Weight;
+	fn back_initiative() -> Weight;
+	fn launch_initiative() -> Weight;
+	fn close_lapsed_initiative() -> Weight;
+	fn answer_referendum() -> Weight;
+	fn endorse_candidate() -> Weight;
+	fn confirm_appointment() -> Weight;
 }
 
 /// Weights for `pezpallet_welati` using the Bizinikiwi node and recommended hardware.
@@ -327,13 +336,31 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	// Placeholders until the weights run measures these calls. How each figure is composed,
-	// and the one cost none of them covers, is noted on the trait in `pezpallet_welati::weights`.
-	/// Placeholder: `pay_airdrop` for the XCM send, plus the treasurer and the rate on record.
+	/// Storage: `Tiki::TikiHolder` (r:1 w:0)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:1 w:0)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::EmissionRate` (r:1 w:1)
+	/// Proof: `Welati::EmissionRate` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PezkuwiXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PezkuwiXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(2306), added: 2801, mode: `MaxEncodedLen`)
+	/// Storage: `TeyrchainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `TeyrchainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpMessages` (r:0 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	fn set_emission_rate() -> Weight {
-		Weight::from_parts(108_302_000, 4_058)
-			.saturating_add(T::DbWeight::get().reads(10_u64))
-			.saturating_add(T::DbWeight::get().writes(6_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `524`
+		//  Estimated: `3989`
+		// Minimum execution time: 67_532_000 picoseconds.
+		Weight::from_parts(111_323_000, 0)
+			.saturating_add(Weight::from_parts(0, 3989))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
 	/// Placeholder: `nominate_official`.
 	fn court_check_in() -> Weight {
@@ -462,6 +489,216 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 		Weight::from_parts(77_053_000, 3_638)
 			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Storage: `Welati::ActiveProposals` (r:1 w:1)
+	/// Proof: `Welati::ActiveProposals` (`max_values`: None, `max_size`: Some(1212), added: 3687, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::ApprovedBudget` (r:1 w:1)
+	/// Proof: `Welati::ApprovedBudget` (`max_values`: Some(1), `max_size`: Some(16), added: 511, mode: `MaxEncodedLen`)
+	fn finalize_proposal() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `275`
+		//  Estimated: `4677`
+		// Minimum execution time: 28_881_000 picoseconds.
+		Weight::from_parts(49_652_000, 0)
+			.saturating_add(Weight::from_parts(0, 4677))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
+	}
+	/// Storage: `Tiki::TikiHolder` (r:1 w:0)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:1 w:0)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::ApprovedBudget` (r:1 w:1)
+	/// Proof: `Welati::ApprovedBudget` (`max_values`: Some(1), `max_size`: Some(16), added: 511, mode: `MaxEncodedLen`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PezkuwiXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PezkuwiXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(2306), added: 2801, mode: `MaxEncodedLen`)
+	/// Storage: `TeyrchainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `TeyrchainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpMessages` (r:0 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
+	fn spend_budget() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `602`
+		//  Estimated: `4067`
+		// Minimum execution time: 68_472_000 picoseconds.
+		Weight::from_parts(117_734_000, 0)
+			.saturating_add(Weight::from_parts(0, 4067))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().writes(3))
+	}
+	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::InitiativeCooldownUntil` (r:1 w:0)
+	/// Proof: `Welati::InitiativeCooldownUntil` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::NextInitiativeId` (r:1 w:1)
+	/// Proof: `Welati::NextInitiativeId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Dormant` (r:1 w:0)
+	/// Proof: `Welati::Dormant` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::LastSeenInGovernance` (r:0 w:1)
+	/// Proof: `Welati::LastSeenInGovernance` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Initiatives` (r:0 w:1)
+	/// Proof: `Welati::Initiatives` (`max_values`: None, `max_size`: Some(106), added: 2581, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::InitiativeBacking` (r:0 w:1)
+	/// Proof: `Welati::InitiativeBacking` (`max_values`: None, `max_size`: Some(60), added: 2535, mode: `MaxEncodedLen`)
+	fn open_initiative() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `286`
+		//  Estimated: `3529`
+		// Minimum execution time: 59_632_000 picoseconds.
+		Weight::from_parts(97_904_000, 0)
+			.saturating_add(Weight::from_parts(0, 3529))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(4))
+	}
+	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::InitiativeBacking` (r:9 w:1)
+	/// Proof: `Welati::InitiativeBacking` (`max_values`: None, `max_size`: Some(60), added: 2535, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::Supersedes` (r:8 w:0)
+	/// Proof: `IdentityKyc::Supersedes` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Initiatives` (r:1 w:1)
+	/// Proof: `Welati::Initiatives` (`max_values`: None, `max_size`: Some(106), added: 2581, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Dormant` (r:1 w:0)
+	/// Proof: `Welati::Dormant` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::LastSeenInGovernance` (r:0 w:1)
+	/// Proof: `Welati::LastSeenInGovernance` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	fn back_initiative() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1365`
+		//  Estimated: `23805`
+		// Minimum execution time: 110_974_000 picoseconds.
+		Weight::from_parts(173_926_000, 0)
+			.saturating_add(Weight::from_parts(0, 23805))
+			.saturating_add(T::DbWeight::get().reads(20))
+			.saturating_add(T::DbWeight::get().writes(3))
+	}
+	/// Storage: `Welati::Initiatives` (r:1 w:1)
+	/// Proof: `Welati::Initiatives` (`max_values`: None, `max_size`: Some(106), added: 2581, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::CitizenCount` (r:1 w:0)
+	/// Proof: `IdentityKyc::CitizenCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Preimage::StatusFor` (r:1 w:0)
+	/// Proof: `Preimage::StatusFor` (`max_values`: None, `max_size`: Some(91), added: 2566, mode: `MaxEncodedLen`)
+	/// Storage: `Preimage::RequestStatusFor` (r:1 w:0)
+	/// Proof: `Preimage::RequestStatusFor` (`max_values`: None, `max_size`: Some(91), added: 2566, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Referenda::ReferendumCount` (r:1 w:1)
+	/// Proof: `Referenda::ReferendumCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Scheduler::Agenda` (r:1 w:1)
+	/// Proof: `Scheduler::Agenda` (`max_values`: None, `max_size`: Some(38963), added: 41438, mode: `MaxEncodedLen`)
+	/// Storage: `Referenda::ReferendumInfoFor` (r:0 w:1)
+	/// Proof: `Referenda::ReferendumInfoFor` (`max_values`: None, `max_size`: Some(896), added: 3371, mode: `MaxEncodedLen`)
+	fn launch_initiative() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `549`
+		//  Estimated: `42428`
+		// Minimum execution time: 94_233_000 picoseconds.
+		Weight::from_parts(147_505_000, 0)
+			.saturating_add(Weight::from_parts(0, 42428))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().writes(5))
+	}
+	/// Storage: `Welati::Initiatives` (r:1 w:1)
+	/// Proof: `Welati::Initiatives` (`max_values`: None, `max_size`: Some(106), added: 2581, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::CitizenCount` (r:1 w:0)
+	/// Proof: `IdentityKyc::CitizenCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:2 w:2)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::InitiativeCooldownUntil` (r:0 w:1)
+	/// Proof: `Welati::InitiativeCooldownUntil` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	fn close_lapsed_initiative() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `639`
+		//  Estimated: `6196`
+		// Minimum execution time: 80_172_000 picoseconds.
+		Weight::from_parts(122_125_000, 0)
+			.saturating_add(Weight::from_parts(0, 6196))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(4))
+	}
+	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `Referenda::ReferendumInfoFor` (r:1 w:1)
+	/// Proof: `Referenda::ReferendumInfoFor` (`max_values`: None, `max_size`: Some(896), added: 3371, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::Supersedes` (r:8 w:0)
+	/// Proof: `IdentityKyc::Supersedes` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::ReferendumVotes` (r:9 w:2)
+	/// Proof: `Welati::ReferendumVotes` (`max_values`: None, `max_size`: Some(61), added: 2536, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Dormant` (r:1 w:0)
+	/// Proof: `Welati::Dormant` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Scheduler::Agenda` (r:2 w:2)
+	/// Proof: `Scheduler::Agenda` (`max_values`: None, `max_size`: Some(38963), added: 41438, mode: `MaxEncodedLen`)
+	/// Storage: `Scheduler::Retries` (r:0 w:1)
+	/// Proof: `Scheduler::Retries` (`max_values`: None, `max_size`: Some(30), added: 2505, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::LastSeenInGovernance` (r:0 w:1)
+	/// Proof: `Welati::LastSeenInGovernance` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	fn answer_referendum() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1404`
+		//  Estimated: `83866`
+		// Minimum execution time: 141_985_000 picoseconds.
+		Weight::from_parts(215_717_000, 0)
+			.saturating_add(Weight::from_parts(0, 83866))
+			.saturating_add(T::DbWeight::get().reads(22))
+			.saturating_add(T::DbWeight::get().writes(7))
+	}
+	/// Storage: `Welati::ActiveElections` (r:1 w:0)
+	/// Proof: `Welati::ActiveElections` (`max_values`: None, `max_size`: Some(29354), added: 31829, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Endorsements` (r:9 w:1)
+	/// Proof: `Welati::Endorsements` (`max_values`: None, `max_size`: Some(100), added: 2575, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::Supersedes` (r:8 w:0)
+	/// Proof: `IdentityKyc::Supersedes` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Dormant` (r:1 w:0)
+	/// Proof: `Welati::Dormant` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::LastSeenInGovernance` (r:0 w:1)
+	/// Proof: `Welati::LastSeenInGovernance` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	fn endorse_candidate() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1026`
+		//  Estimated: `32819`
+		// Minimum execution time: 96_493_000 picoseconds.
+		Weight::from_parts(144_625_000, 0)
+			.saturating_add(Weight::from_parts(0, 32819))
+			.saturating_add(T::DbWeight::get().reads(19))
+			.saturating_add(T::DbWeight::get().writes(2))
+	}
+	/// Storage: `Welati::AppointmentProcesses` (r:1 w:1)
+	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10158), added: 12633, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::PendingNominations` (r:1 w:1)
+	/// Proof: `Welati::PendingNominations` (`max_values`: None, `max_size`: Some(173), added: 2648, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::CitizenNft` (r:1 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:1 w:1)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:2 w:0)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Collection` (r:1 w:1)
+	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemMetadataOf` (r:1 w:1)
+	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
+	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:1 w:0)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	fn confirm_appointment() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1590`
+		//  Estimated: `13623`
+		// Minimum execution time: 147_415_000 picoseconds.
+		Weight::from_parts(253_868_000, 0)
+			.saturating_add(Weight::from_parts(0, 13623))
+			.saturating_add(T::DbWeight::get().reads(13))
+			.saturating_add(T::DbWeight::get().writes(5))
 	}
 }
 
@@ -672,13 +909,31 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(2))
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
-	// Placeholders until the weights run measures these calls. How each figure is composed,
-	// and the one cost none of them covers, is noted on the trait in `pezpallet_welati::weights`.
-	/// Placeholder: `pay_airdrop` for the XCM send, plus the treasurer and the rate on record.
+	/// Storage: `Tiki::TikiHolder` (r:1 w:0)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:1 w:0)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::EmissionRate` (r:1 w:1)
+	/// Proof: `Welati::EmissionRate` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PezkuwiXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PezkuwiXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(2306), added: 2801, mode: `MaxEncodedLen`)
+	/// Storage: `TeyrchainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `TeyrchainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpMessages` (r:0 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	fn set_emission_rate() -> Weight {
-		Weight::from_parts(108_302_000, 4_058)
-			.saturating_add(RocksDbWeight::get().reads(10_u64))
-			.saturating_add(RocksDbWeight::get().writes(6_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `524`
+		//  Estimated: `3989`
+		// Minimum execution time: 67_532_000 picoseconds.
+		Weight::from_parts(111_323_000, 0)
+			.saturating_add(Weight::from_parts(0, 3989))
+			.saturating_add(RocksDbWeight::get().reads(7))
+			.saturating_add(RocksDbWeight::get().writes(3))
 	}
 	/// Placeholder: `nominate_official`.
 	fn court_check_in() -> Weight {
@@ -807,5 +1062,215 @@ impl WeightInfo for () {
 		Weight::from_parts(77_053_000, 3_638)
 			.saturating_add(RocksDbWeight::get().reads(6_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Storage: `Welati::ActiveProposals` (r:1 w:1)
+	/// Proof: `Welati::ActiveProposals` (`max_values`: None, `max_size`: Some(1212), added: 3687, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::ApprovedBudget` (r:1 w:1)
+	/// Proof: `Welati::ApprovedBudget` (`max_values`: Some(1), `max_size`: Some(16), added: 511, mode: `MaxEncodedLen`)
+	fn finalize_proposal() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `275`
+		//  Estimated: `4677`
+		// Minimum execution time: 28_881_000 picoseconds.
+		Weight::from_parts(49_652_000, 0)
+			.saturating_add(Weight::from_parts(0, 4677))
+			.saturating_add(RocksDbWeight::get().reads(2))
+			.saturating_add(RocksDbWeight::get().writes(2))
+	}
+	/// Storage: `Tiki::TikiHolder` (r:1 w:0)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:1 w:0)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::ApprovedBudget` (r:1 w:1)
+	/// Proof: `Welati::ApprovedBudget` (`max_values`: Some(1), `max_size`: Some(16), added: 511, mode: `MaxEncodedLen`)
+	/// Storage: `XcmpQueue::DeliveryFeeFactor` (r:1 w:0)
+	/// Proof: `XcmpQueue::DeliveryFeeFactor` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Storage: `PezkuwiXcm::SupportedVersion` (r:1 w:0)
+	/// Proof: `PezkuwiXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(2306), added: 2801, mode: `MaxEncodedLen`)
+	/// Storage: `TeyrchainSystem::RelevantMessagingState` (r:1 w:0)
+	/// Proof: `TeyrchainSystem::RelevantMessagingState` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `XcmpQueue::OutboundXcmpMessages` (r:0 w:1)
+	/// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
+	fn spend_budget() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `602`
+		//  Estimated: `4067`
+		// Minimum execution time: 68_472_000 picoseconds.
+		Weight::from_parts(117_734_000, 0)
+			.saturating_add(Weight::from_parts(0, 4067))
+			.saturating_add(RocksDbWeight::get().reads(7))
+			.saturating_add(RocksDbWeight::get().writes(3))
+	}
+	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::InitiativeCooldownUntil` (r:1 w:0)
+	/// Proof: `Welati::InitiativeCooldownUntil` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::NextInitiativeId` (r:1 w:1)
+	/// Proof: `Welati::NextInitiativeId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Dormant` (r:1 w:0)
+	/// Proof: `Welati::Dormant` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::LastSeenInGovernance` (r:0 w:1)
+	/// Proof: `Welati::LastSeenInGovernance` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Initiatives` (r:0 w:1)
+	/// Proof: `Welati::Initiatives` (`max_values`: None, `max_size`: Some(106), added: 2581, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::InitiativeBacking` (r:0 w:1)
+	/// Proof: `Welati::InitiativeBacking` (`max_values`: None, `max_size`: Some(60), added: 2535, mode: `MaxEncodedLen`)
+	fn open_initiative() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `286`
+		//  Estimated: `3529`
+		// Minimum execution time: 59_632_000 picoseconds.
+		Weight::from_parts(97_904_000, 0)
+			.saturating_add(Weight::from_parts(0, 3529))
+			.saturating_add(RocksDbWeight::get().reads(4))
+			.saturating_add(RocksDbWeight::get().writes(4))
+	}
+	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::InitiativeBacking` (r:9 w:1)
+	/// Proof: `Welati::InitiativeBacking` (`max_values`: None, `max_size`: Some(60), added: 2535, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::Supersedes` (r:8 w:0)
+	/// Proof: `IdentityKyc::Supersedes` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Initiatives` (r:1 w:1)
+	/// Proof: `Welati::Initiatives` (`max_values`: None, `max_size`: Some(106), added: 2581, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Dormant` (r:1 w:0)
+	/// Proof: `Welati::Dormant` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::LastSeenInGovernance` (r:0 w:1)
+	/// Proof: `Welati::LastSeenInGovernance` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	fn back_initiative() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1365`
+		//  Estimated: `23805`
+		// Minimum execution time: 110_974_000 picoseconds.
+		Weight::from_parts(173_926_000, 0)
+			.saturating_add(Weight::from_parts(0, 23805))
+			.saturating_add(RocksDbWeight::get().reads(20))
+			.saturating_add(RocksDbWeight::get().writes(3))
+	}
+	/// Storage: `Welati::Initiatives` (r:1 w:1)
+	/// Proof: `Welati::Initiatives` (`max_values`: None, `max_size`: Some(106), added: 2581, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::CitizenCount` (r:1 w:0)
+	/// Proof: `IdentityKyc::CitizenCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Preimage::StatusFor` (r:1 w:0)
+	/// Proof: `Preimage::StatusFor` (`max_values`: None, `max_size`: Some(91), added: 2566, mode: `MaxEncodedLen`)
+	/// Storage: `Preimage::RequestStatusFor` (r:1 w:0)
+	/// Proof: `Preimage::RequestStatusFor` (`max_values`: None, `max_size`: Some(91), added: 2566, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Referenda::ReferendumCount` (r:1 w:1)
+	/// Proof: `Referenda::ReferendumCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Scheduler::Agenda` (r:1 w:1)
+	/// Proof: `Scheduler::Agenda` (`max_values`: None, `max_size`: Some(38963), added: 41438, mode: `MaxEncodedLen`)
+	/// Storage: `Referenda::ReferendumInfoFor` (r:0 w:1)
+	/// Proof: `Referenda::ReferendumInfoFor` (`max_values`: None, `max_size`: Some(896), added: 3371, mode: `MaxEncodedLen`)
+	fn launch_initiative() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `549`
+		//  Estimated: `42428`
+		// Minimum execution time: 94_233_000 picoseconds.
+		Weight::from_parts(147_505_000, 0)
+			.saturating_add(Weight::from_parts(0, 42428))
+			.saturating_add(RocksDbWeight::get().reads(7))
+			.saturating_add(RocksDbWeight::get().writes(5))
+	}
+	/// Storage: `Welati::Initiatives` (r:1 w:1)
+	/// Proof: `Welati::Initiatives` (`max_values`: None, `max_size`: Some(106), added: 2581, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::CitizenCount` (r:1 w:0)
+	/// Proof: `IdentityKyc::CitizenCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:2 w:2)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::InitiativeCooldownUntil` (r:0 w:1)
+	/// Proof: `Welati::InitiativeCooldownUntil` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	fn close_lapsed_initiative() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `639`
+		//  Estimated: `6196`
+		// Minimum execution time: 80_172_000 picoseconds.
+		Weight::from_parts(122_125_000, 0)
+			.saturating_add(Weight::from_parts(0, 6196))
+			.saturating_add(RocksDbWeight::get().reads(4))
+			.saturating_add(RocksDbWeight::get().writes(4))
+	}
+	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `Referenda::ReferendumInfoFor` (r:1 w:1)
+	/// Proof: `Referenda::ReferendumInfoFor` (`max_values`: None, `max_size`: Some(896), added: 3371, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::Supersedes` (r:8 w:0)
+	/// Proof: `IdentityKyc::Supersedes` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::ReferendumVotes` (r:9 w:2)
+	/// Proof: `Welati::ReferendumVotes` (`max_values`: None, `max_size`: Some(61), added: 2536, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Dormant` (r:1 w:0)
+	/// Proof: `Welati::Dormant` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Scheduler::Agenda` (r:2 w:2)
+	/// Proof: `Scheduler::Agenda` (`max_values`: None, `max_size`: Some(38963), added: 41438, mode: `MaxEncodedLen`)
+	/// Storage: `Scheduler::Retries` (r:0 w:1)
+	/// Proof: `Scheduler::Retries` (`max_values`: None, `max_size`: Some(30), added: 2505, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::LastSeenInGovernance` (r:0 w:1)
+	/// Proof: `Welati::LastSeenInGovernance` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	fn answer_referendum() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1404`
+		//  Estimated: `83866`
+		// Minimum execution time: 141_985_000 picoseconds.
+		Weight::from_parts(215_717_000, 0)
+			.saturating_add(Weight::from_parts(0, 83866))
+			.saturating_add(RocksDbWeight::get().reads(22))
+			.saturating_add(RocksDbWeight::get().writes(7))
+	}
+	/// Storage: `Welati::ActiveElections` (r:1 w:0)
+	/// Proof: `Welati::ActiveElections` (`max_values`: None, `max_size`: Some(29354), added: 31829, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Endorsements` (r:9 w:1)
+	/// Proof: `Welati::Endorsements` (`max_values`: None, `max_size`: Some(100), added: 2575, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::Supersedes` (r:8 w:0)
+	/// Proof: `IdentityKyc::Supersedes` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::Dormant` (r:1 w:0)
+	/// Proof: `Welati::Dormant` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::LastSeenInGovernance` (r:0 w:1)
+	/// Proof: `Welati::LastSeenInGovernance` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	fn endorse_candidate() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1026`
+		//  Estimated: `32819`
+		// Minimum execution time: 96_493_000 picoseconds.
+		Weight::from_parts(144_625_000, 0)
+			.saturating_add(Weight::from_parts(0, 32819))
+			.saturating_add(RocksDbWeight::get().reads(19))
+			.saturating_add(RocksDbWeight::get().writes(2))
+	}
+	/// Storage: `Welati::AppointmentProcesses` (r:1 w:1)
+	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10158), added: 12633, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::PendingNominations` (r:1 w:1)
+	/// Proof: `Welati::PendingNominations` (`max_values`: None, `max_size`: Some(173), added: 2648, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::CitizenNft` (r:1 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:1 w:1)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:2 w:0)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Collection` (r:1 w:1)
+	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemMetadataOf` (r:1 w:1)
+	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
+	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:1 w:0)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	fn confirm_appointment() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1590`
+		//  Estimated: `13623`
+		// Minimum execution time: 147_415_000 picoseconds.
+		Weight::from_parts(253_868_000, 0)
+			.saturating_add(Weight::from_parts(0, 13623))
+			.saturating_add(RocksDbWeight::get().reads(13))
+			.saturating_add(RocksDbWeight::get().writes(5))
 	}
 }

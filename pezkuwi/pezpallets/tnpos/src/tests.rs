@@ -1505,3 +1505,25 @@ mod withheld_seeds {
 		});
 	}
 }
+
+mod session_report_weight {
+	use super::*;
+	use pezframe_support::dispatch::GetDispatchInfo;
+
+	fn charged_for(names: u64) -> pezframe_support::weights::Weight {
+		let scored: Vec<AccountId> = (0..names).collect();
+		RuntimeCall::Tnpos(crate::Call::note_session_performance { scored, failed: Vec::new() })
+			.get_dispatch_info()
+			.call_weight
+	}
+
+	/// The report writes a record for every validator it names, so a report naming a
+	/// thousand must cost more than one naming none. It cost the same: the call borrowed
+	/// `join`'s flat weight.
+	#[test]
+	fn a_longer_report_costs_more() {
+		new_test_ext().execute_with(|| {
+			assert!(charged_for(1_000).all_gt(charged_for(0)));
+		});
+	}
+}

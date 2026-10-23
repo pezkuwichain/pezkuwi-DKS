@@ -921,7 +921,7 @@ impl<T: Config> Pezpallet<T> {
 	/// there is a weight nobody has measured -- and because a cycle, which the reissue checks
 	/// are meant to make impossible, must not be able to hang a block if one is ever written
 	/// by a migration or a genesis.
-	const MAX_SUPERSESSION_HOPS: u32 = 8;
+	pub const MAX_SUPERSESSION_HOPS: u32 = 8;
 
 	/// The account that answers for this one today.
 	///

@@ -103,6 +103,7 @@ mod benchmarks {
 
 		// Ensure the dest account has a citizen NFT before granting a tiki
 		ensure_citizen_nft::<T>(dest.clone())?;
+		T::TrustScoreUpdater::prepare_worst_case(&dest);
 
 		#[extrinsic_call]
 		_(RawOrigin::Root, T::Lookup::unlookup(dest.clone()), tiki);
@@ -122,6 +123,7 @@ mod benchmarks {
 
 		// Ensure the dest account has a citizen NFT and the tiki before revoking
 		ensure_citizen_nft::<T>(dest.clone())?;
+		T::TrustScoreUpdater::prepare_worst_case(&dest);
 		Tiki::<T>::internal_grant_role(&dest, tiki)?; // Use internal function to grant without origin check
 
 		// Verify the role was granted
@@ -162,6 +164,7 @@ mod benchmarks {
 
 		// Precondition: must be a citizen
 		ensure_citizen_nft::<T>(dest.clone())?;
+		T::TrustScoreUpdater::prepare_worst_case(&dest);
 
 		#[extrinsic_call]
 		_(RawOrigin::Root, T::Lookup::unlookup(dest.clone()), tiki);
@@ -179,6 +182,7 @@ mod benchmarks {
 
 		// Precondition: must be a citizen
 		ensure_citizen_nft::<T>(dest.clone())?;
+		T::TrustScoreUpdater::prepare_worst_case(&dest);
 
 		#[extrinsic_call]
 		_(RawOrigin::Root, T::Lookup::unlookup(dest.clone()), tiki);

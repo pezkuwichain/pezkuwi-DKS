@@ -102,6 +102,8 @@ mod benchmarks {
 		pezframe_system::Pezpallet::<T>::set_block_number(election.voting_start);
 
 		let candidates_to_vote_for = vec![candidate];
+		// Nothing on the chain, so the check reads every key before it lets the vote in.
+		reissue_chain::<T>(&voter);
 
 		#[extrinsic_call]
 		cast_vote(RawOrigin::Signed(voter.clone()), 0, candidates_to_vote_for, None);
@@ -342,6 +344,7 @@ mod benchmarks {
 		// Ensure voter hasn't voted yet (clean state for benchmark)
 		// This tests our new ProposalAlreadyVoted check
 		assert!(!CollectiveVotes::<T>::contains_key(0, &voter));
+		reissue_chain::<T>(&voter);
 
 		#[extrinsic_call]
 		vote_on_proposal(RawOrigin::Signed(voter.clone()), 0, VoteChoice::Aye, rationale);
@@ -354,6 +357,208 @@ mod benchmarks {
 		// This benchmark successfully tests:
 		// 1. NotAuthorizedToVote check (voter is in ParliamentMembers)
 		// 2. ProposalAlreadyVoted check (voter hasn't voted before)
+	}
+
+	// ----------------------------------------------------------------
+	// CALLS THAT BORROWED ANOTHER CALL'S WEIGHT
+	//
+	// Each of these was charged `vote_on_proposal`, `submit_proposal`, `register_candidate` or
+	// `approve_appointment`, and three of them are free to their caller. A borrowed weight is a
+	// guess, and a free call priced by a guess that comes in low is a call anybody can fill
+	// blocks with (L-7, 2026-10-22).
+	// ----------------------------------------------------------------
+
+	/// A proposal that passed with a budget: the tally, the allowance and the record.
+	#[benchmark]
+	fn finalize_proposal() {
+		let proposer: T::AccountId = account("proposer", 1, 0);
+		parlementer::<T>(&proposer);
+		let member: ParliamentMember<T> = ParliamentMember {
+			account: proposer.clone(),
+			elected_at: 0u32.into(),
+			term_ends_at: 1000u32.into(),
+			votes_participated: 0,
+			total_votes_eligible: 0,
+			participation_rate: 100,
+			committees: Default::default(),
+		};
+		let members: BoundedVec<ParliamentMember<T>, T::ParliamentSize> =
+			vec![member].try_into().unwrap();
+		ParliamentMembers::<T>::put(members);
+		Pezpallet::<T>::submit_proposal(
+			RawOrigin::Signed(proposer).into(),
+			b"Test Proposal".to_vec().try_into().unwrap(),
+			b"Test proposal description".to_vec().try_into().unwrap(),
+			CollectiveDecisionType::ParliamentSimpleMajority,
+			ProposalPriority::Normal,
+			Some(1_000u128),
+		)
+		.unwrap();
+		ActiveProposals::<T>::mutate(0, |p| {
+			let p = p.as_mut().unwrap();
+			p.aye_votes = p.threshold;
+		});
+		let caller: T::AccountId = whitelisted_caller();
+
+		#[extrinsic_call]
+		finalize_proposal(RawOrigin::Signed(caller), 0);
+
+		assert_eq!(ActiveProposals::<T>::get(0).unwrap().status, ProposalStatus::Approved);
+		assert_eq!(ApprovedBudget::<T>::get(), 1_000u128);
+	}
+
+	/// A spend out of the approved budget, sent to the treasury chain.
+	#[benchmark]
+	fn spend_budget() {
+		let (_, _, finance_minister) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		ApprovedBudget::<T>::put(1_000u128);
+		// As with `pay_airdrop`: without a route the send is refused and the benchmark measures
+		// the refusal.
+		<T as Config>::BenchmarkHelper::ensure_treasury_reachable();
+
+		#[extrinsic_call]
+		spend_budget(RawOrigin::Signed(finance_minister), beneficiary, 1_000u128);
+
+		assert_eq!(ApprovedBudget::<T>::get(), 0);
+	}
+
+	/// An initiative from a proposer whose cooldown has run out: the cooldown is read, the
+	/// deposit reserved, the initiative and its first signature written.
+	#[benchmark]
+	fn open_initiative() {
+		let proposer: T::AccountId = whitelisted_caller();
+		fund::<T>(&proposer);
+		<T as Config>::BenchmarkHelper::give_trust(&proposer);
+		InitiativeCooldownUntil::<T>::insert(&proposer, BlockNumberFor::<T>::from(0u32));
+
+		#[extrinsic_call]
+		open_initiative(RawOrigin::Signed(proposer.clone()), 0, T::Hash::default(), 32);
+
+		assert!(Initiatives::<T>::get(0).is_some());
+		assert!(InitiativeBacking::<T>::contains_key(0, &proposer));
+	}
+
+	/// A signature from a reissued citizen who has not signed under any key, so the check
+	/// reads every one of them before the signature is counted.
+	#[benchmark]
+	fn back_initiative() {
+		let proposer: T::AccountId = account("proposer", 1, 0);
+		let id = open_initiative_by::<T>(&proposer);
+		let backer: T::AccountId = whitelisted_caller();
+		person::<T>(&backer);
+
+		#[extrinsic_call]
+		back_initiative(RawOrigin::Signed(backer.clone()), id);
+
+		assert!(InitiativeBacking::<T>::contains_key(id, &backer));
+		assert_eq!(Initiatives::<T>::get(id).unwrap().backing, 2);
+	}
+
+	/// An initiative with the backing it needs, put to the register.
+	#[benchmark]
+	fn launch_initiative() {
+		let proposer: T::AccountId = account("proposer", 1, 0);
+		let id = open_initiative_by::<T>(&proposer);
+		let threshold = Pezpallet::<T>::initiative_threshold();
+		Initiatives::<T>::mutate(id, |i| i.as_mut().unwrap().backing = threshold);
+		let caller: T::AccountId = whitelisted_caller();
+
+		#[extrinsic_call]
+		launch_initiative(RawOrigin::Signed(caller), id);
+
+		assert!(Initiatives::<T>::get(id).is_none());
+	}
+
+	/// An initiative whose window ran out short of the backing: the deposit is forfeit and the
+	/// proposer's cooldown starts.
+	#[benchmark]
+	fn close_lapsed_initiative() {
+		let proposer: T::AccountId = account("proposer", 1, 0);
+		let id = open_initiative_by::<T>(&proposer);
+		// Below any threshold, however small the roll.
+		Initiatives::<T>::mutate(id, |i| i.as_mut().unwrap().backing = 0);
+		let closes = Initiatives::<T>::get(id).unwrap().closes;
+		pezframe_system::Pezpallet::<T>::set_block_number(closes + 1u32.into());
+		let caller: T::AccountId = whitelisted_caller();
+
+		#[extrinsic_call]
+		close_lapsed_initiative(RawOrigin::Signed(caller), id);
+
+		assert!(Initiatives::<T>::get(id).is_none());
+		assert!(InitiativeCooldownUntil::<T>::contains_key(&proposer));
+	}
+
+	/// A changed answer from a reissued citizen whose first answer was given under the oldest
+	/// key: the whole chain is read to find it, it is taken out of the tally and the record,
+	/// and the new answer goes in.
+	#[benchmark]
+	fn answer_referendum() -> Result<(), BenchmarkError> {
+		let class = T::Polls::classes().into_iter().next().ok_or(BenchmarkError::Weightless)?;
+		let poll = T::Polls::create_ongoing(class).map_err(|_| BenchmarkError::Weightless)?;
+		let voter: T::AccountId = whitelisted_caller();
+		let oldest = person::<T>(&voter);
+		ReferendumVotes::<T>::insert(poll, &oldest, false);
+		T::Polls::access_poll(poll, |status| {
+			if let Some((tally, _)) = status.ensure_ongoing() {
+				tally.nays = tally.nays.saturating_add(1);
+			}
+		});
+
+		#[extrinsic_call]
+		answer_referendum(RawOrigin::Signed(voter.clone()), poll, true);
+
+		assert_eq!(ReferendumVotes::<T>::get(poll, &voter), Some(true));
+		assert!(ReferendumVotes::<T>::get(poll, &oldest).is_none());
+		Ok(())
+	}
+
+	/// An endorsement from a reissued citizen who has endorsed nobody under any key.
+	#[benchmark]
+	fn endorse_candidate() {
+		Pezpallet::<T>::initiate_election(
+			RawOrigin::Root.into(),
+			ElectionType::Parliamentary,
+			None,
+			None,
+		)
+		.unwrap();
+		let candidate: T::AccountId = account("candidate", 1, 0);
+		let endorser: T::AccountId = whitelisted_caller();
+		reissue_chain::<T>(&endorser);
+
+		#[extrinsic_call]
+		endorse_candidate(RawOrigin::Signed(endorser.clone()), 0, candidate.clone());
+
+		assert_eq!(Endorsements::<T>::get(0, &endorser), Some(candidate));
+	}
+
+	/// The house confirming an appointment that waits on it, which seats the appointee.
+	#[benchmark]
+	fn confirm_appointment() -> Result<(), BenchmarkError> {
+		let nominator: T::AccountId = account("nominator", 2, 0);
+		let nominee: T::AccountId = account("nominee", 3, 0);
+		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, nominator.clone());
+		Pezpallet::<T>::nominate_official(
+			RawOrigin::Signed(nominator).into(),
+			nominee.clone(),
+			OfficialRole::Dozger,
+			b"Test nomination".to_vec().try_into().unwrap(),
+		)
+		.unwrap();
+		// The process as `nominate_official` leaves it for an office that needs the house.
+		AppointmentProcesses::<T>::mutate(0, |p| {
+			p.as_mut().unwrap().status = AppointmentStatus::WaitingParliamentaryApproval
+		});
+		<T as Config>::BenchmarkHelper::make_citizen(&nominee);
+		let origin = T::ConfirmationOrigin::try_successful_origin()
+			.map_err(|_| BenchmarkError::Weightless)?;
+
+		#[extrinsic_call]
+		confirm_appointment(origin as T::RuntimeOrigin, 0);
+
+		assert!(pezpallet_tiki::UserTikis::<T>::get(&nominee).contains(&Tiki::Dozger));
+		Ok(())
 	}
 
 	// ----------------------------------------------------------------
@@ -650,13 +855,57 @@ mod benchmarks {
 		pezpallet_identity_kyc::CitizenCount::<T>::mutate(|n| *n = n.saturating_add(1));
 	}
 
-	/// Seat `who` in a single-holder office the way the pallet does, NFT and all, so that
-	/// unseating them later does the register's full work.
+	/// Retire `MAX_SUPERSESSION_HOPS` keys behind `who`, as reissues would, and return the
+	/// oldest.
+	///
+	/// Every check of "has this person already" asks each key the person has held, and when
+	/// nothing is found it reads the whole chain. A benchmark whose caller was never reissued
+	/// measured one read where the call can make nine (L-7, 2026-10-22).
+	fn reissue_chain<T: Config>(who: &T::AccountId) -> T::AccountId {
+		let mut current = who.clone();
+		for i in 0..pezpallet_identity_kyc::Pezpallet::<T>::MAX_SUPERSESSION_HOPS {
+			let earlier: T::AccountId = account("retired", i, 0);
+			pezpallet_identity_kyc::Supersedes::<T>::insert(&current, &earlier);
+			current = earlier;
+		}
+		current
+	}
+
+	/// A citizen the register lets act: trusted, with a full reissue chain behind them.
+	fn person<T: Config>(who: &T::AccountId) -> T::AccountId {
+		<T as Config>::BenchmarkHelper::give_trust(who);
+		reissue_chain::<T>(who)
+	}
+
+	/// Enough of the native currency to put up any deposit these calls take.
+	fn fund<T: Config>(who: &T::AccountId) {
+		let amount: <<T as Config>::NativeCurrency as Currency<T::AccountId>>::Balance =
+			T::InitiativeDeposit::get().saturating_mul(1_000_000).saturated_into();
+		let _ = <T as Config>::NativeCurrency::make_free_balance_be(who, amount);
+	}
+
+	/// An initiative opened by `proposer`, and the id it was given.
+	fn open_initiative_by<T: Config>(proposer: &T::AccountId) -> u32 {
+		fund::<T>(proposer);
+		<T as Config>::BenchmarkHelper::give_trust(proposer);
+		let id = NextInitiativeId::<T>::get();
+		Pezpallet::<T>::open_initiative(
+			RawOrigin::Signed(proposer.clone()).into(),
+			0,
+			T::Hash::default(),
+			32,
+		)
+		.unwrap();
+		id
+	}
+
 	fn parlementer<T: Config>(who: &T::AccountId) {
 		<T as Config>::BenchmarkHelper::make_citizen(who);
 		pezpallet_tiki::Pezpallet::<T>::internal_grant_role(who, Tiki::Parlementer).unwrap();
 	}
 
+	/// Seat `who` in a single-holder office the way the pallet does, NFT and all, so that
+	/// unseating them later does the register's full work.
 	fn seat<T: Config>(who: &T::AccountId, office: Tiki) {
 		<T as Config>::BenchmarkHelper::make_citizen(who);
 		Pezpallet::<T>::seat_unique_tiki(who, office).unwrap();
