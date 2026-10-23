@@ -143,12 +143,23 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 				T::DbWeight::get().reads_writes(4_u64, 4_u64).saturating_mul(c.into()),
 			)
 	}
-	/// Derived from measured calls until the weights run measures it: `enroll` writing the
-	/// new seat, `record_result` for the seat taken, and the two citizenship checks.
+	/// Storage: `Tiki::CitizenNft` (r:2 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Perwerde::Courses` (r:1 w:0)
+	/// Proof: `Perwerde::Courses` (`max_values`: None, `max_size`: Some(972), added: 3447, mode: `MaxEncodedLen`)
+	/// Storage: `Perwerde::Enrollments` (r:2 w:2)
+	/// Proof: `Perwerde::Enrollments` (`max_values`: None, `max_size`: Some(114), added: 2589, mode: `MaxEncodedLen`)
+	/// Storage: `Perwerde::CourseEnrollmentCount` (r:1 w:0)
+	/// Proof: `Perwerde::CourseEnrollmentCount` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
 	fn enroll_in_place_of() -> Weight {
-		Self::enroll()
-			.saturating_add(Self::record_result())
-			.saturating_add(T::DbWeight::get().reads(4_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `2316`
+		//  Estimated: `6168`
+		// Minimum execution time: 128_184_000 picoseconds.
+		Weight::from_parts(164_385_000, 0)
+			.saturating_add(Weight::from_parts(0, 6168))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
 }
 
@@ -204,11 +215,22 @@ impl WeightInfo for () {
 				RocksDbWeight::get().reads_writes(4_u64, 4_u64).saturating_mul(c.into()),
 			)
 	}
-	/// Derived from measured calls until the weights run measures it: `enroll` writing the
-	/// new seat, `record_result` for the seat taken, and the two citizenship checks.
+	/// Storage: `Tiki::CitizenNft` (r:2 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Perwerde::Courses` (r:1 w:0)
+	/// Proof: `Perwerde::Courses` (`max_values`: None, `max_size`: Some(972), added: 3447, mode: `MaxEncodedLen`)
+	/// Storage: `Perwerde::Enrollments` (r:2 w:2)
+	/// Proof: `Perwerde::Enrollments` (`max_values`: None, `max_size`: Some(114), added: 2589, mode: `MaxEncodedLen`)
+	/// Storage: `Perwerde::CourseEnrollmentCount` (r:1 w:0)
+	/// Proof: `Perwerde::CourseEnrollmentCount` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
 	fn enroll_in_place_of() -> Weight {
-		Self::enroll()
-			.saturating_add(Self::record_result())
-			.saturating_add(RocksDbWeight::get().reads(4_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `2316`
+		//  Estimated: `6168`
+		// Minimum execution time: 128_184_000 picoseconds.
+		Weight::from_parts(164_385_000, 0)
+			.saturating_add(Weight::from_parts(0, 6168))
+			.saturating_add(RocksDbWeight::get().reads(6))
+			.saturating_add(RocksDbWeight::get().writes(2))
 	}
 }

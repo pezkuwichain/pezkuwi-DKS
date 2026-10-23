@@ -76,27 +76,41 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	/// Placeholder until the weights run measures it.
 	/// Storage: `Referral::Invitations` (r:1 w:1)
 	/// Proof: `Referral::Invitations` (`max_values`: None, `max_size`: Some(96), added: 2571, mode: `MaxEncodedLen`)
 	fn withdraw_referral() -> Weight {
-		Weight::from_parts(26_089_000, 3561)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `126`
+		//  Estimated: `3561`
+		// Minimum execution time: 19_900_000 picoseconds.
+		Weight::from_parts(34_051_000, 0)
+			.saturating_add(Weight::from_parts(0, 3561))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Placeholder until the weights run measures it.
 	/// Storage: `Referral::CleanupHead` (r:1 w:1)
+	/// Proof: `Referral::CleanupHead` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	/// Storage: `Referral::CleanupTail` (r:1 w:0)
+	/// Proof: `Referral::CleanupTail` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	/// Storage: `Referral::CleanupQueue` (r:1 w:1)
-	/// Storage: `Referral::Invitations` (r:`n` w:`n`)
+	/// Proof: `Referral::CleanupQueue` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Referral::Invitations` (r:64 w:64)
+	/// Proof: `Referral::Invitations` (`max_values`: None, `max_size`: Some(96), added: 2571, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[1, 64]`.
 	fn clean_claims(n: u32, ) -> Weight {
-		Weight::from_parts(30_000_000, 3513)
-			.saturating_add(Weight::from_parts(10_000_000, 2571).saturating_mul(n.into()))
-			.saturating_add(T::DbWeight::get().reads(3_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `170 + n * (54 ±0)`
+		//  Estimated: `3513 + n * (2571 ±0)`
+		// Minimum execution time: 19_811_000 picoseconds.
+		Weight::from_parts(27_603_605, 0)
+			.saturating_add(Weight::from_parts(0, 3513))
+			// Standard Error: 7_406
+			.saturating_add(Weight::from_parts(2_152_997, 0).saturating_mul(n.into()))
+			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(n.into())))
+			.saturating_add(Weight::from_parts(0, 2571).saturating_mul(n.into()))
 	}
 }
 
@@ -115,26 +129,40 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
-	/// Placeholder until the weights run measures it.
 	/// Storage: `Referral::Invitations` (r:1 w:1)
 	/// Proof: `Referral::Invitations` (`max_values`: None, `max_size`: Some(96), added: 2571, mode: `MaxEncodedLen`)
 	fn withdraw_referral() -> Weight {
-		Weight::from_parts(26_089_000, 3561)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `126`
+		//  Estimated: `3561`
+		// Minimum execution time: 19_900_000 picoseconds.
+		Weight::from_parts(34_051_000, 0)
+			.saturating_add(Weight::from_parts(0, 3561))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
-	/// Placeholder until the weights run measures it.
 	/// Storage: `Referral::CleanupHead` (r:1 w:1)
+	/// Proof: `Referral::CleanupHead` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	/// Storage: `Referral::CleanupTail` (r:1 w:0)
+	/// Proof: `Referral::CleanupTail` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	/// Storage: `Referral::CleanupQueue` (r:1 w:1)
-	/// Storage: `Referral::Invitations` (r:`n` w:`n`)
+	/// Proof: `Referral::CleanupQueue` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Referral::Invitations` (r:64 w:64)
+	/// Proof: `Referral::Invitations` (`max_values`: None, `max_size`: Some(96), added: 2571, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[1, 64]`.
 	fn clean_claims(n: u32, ) -> Weight {
-		Weight::from_parts(30_000_000, 3513)
-			.saturating_add(Weight::from_parts(10_000_000, 2571).saturating_mul(n.into()))
-			.saturating_add(RocksDbWeight::get().reads(3_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `170 + n * (54 ±0)`
+		//  Estimated: `3513 + n * (2571 ±0)`
+		// Minimum execution time: 19_811_000 picoseconds.
+		Weight::from_parts(27_603_605, 0)
+			.saturating_add(Weight::from_parts(0, 3513))
+			// Standard Error: 7_406
+			.saturating_add(Weight::from_parts(2_152_997, 0).saturating_mul(n.into()))
+			.saturating_add(RocksDbWeight::get().reads(3))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(n.into())))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2))
 			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(n.into())))
+			.saturating_add(Weight::from_parts(0, 2571).saturating_mul(n.into()))
 	}
 }
