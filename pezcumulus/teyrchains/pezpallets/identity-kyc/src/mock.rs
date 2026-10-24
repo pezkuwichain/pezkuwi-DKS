@@ -58,6 +58,24 @@ impl crate::types::OnKycApproved<AccountId> for MockOnKycApproved {
 	}
 }
 
+std::thread_local! {
+	/// Everyone the register has told the rest of the state became a citizen, in order.
+	pub static CITIZENSHIPS_GRANTED: core::cell::RefCell<Vec<AccountId>> =
+		const { core::cell::RefCell::new(Vec::new()) };
+}
+
+pub struct MockOnCitizenshipGranted;
+impl crate::types::OnCitizenshipGranted<AccountId> for MockOnCitizenshipGranted {
+	fn on_citizenship_granted(who: &AccountId) {
+		CITIZENSHIPS_GRANTED.with(|g| g.borrow_mut().push(*who));
+	}
+}
+
+/// Who the register has announced as new citizens so far, and forget them.
+pub fn take_citizenships_granted() -> Vec<AccountId> {
+	CITIZENSHIPS_GRANTED.with(|g| core::mem::take(&mut *g.borrow_mut()))
+}
+
 // Mock implementation for OnCitizenshipRevoked hook
 pub struct MockOnCitizenshipRevoked;
 impl crate::types::OnCitizenshipRevoked<AccountId> for MockOnCitizenshipRevoked {
@@ -97,6 +115,7 @@ parameter_types! {
 
 impl crate::Config for Test {
 	type OnCitizenshipRestored = ();
+	type OnCitizenshipGranted = MockOnCitizenshipGranted;
 	type VouchingWaitingPeriod = VouchingWaitingPeriod;
 	// Counting vouches is the referral pallet's job and it is not in this mock; unlimited
 	// here means this pallet's tests exercise the waiting period alone.

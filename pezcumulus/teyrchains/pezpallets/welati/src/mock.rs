@@ -298,6 +298,7 @@ parameter_types! {
 
 impl pezpallet_identity_kyc::Config for Test {
 	type OnCitizenshipRestored = ();
+	type OnCitizenshipGranted = ();
 	type VouchingWaitingPeriod = VouchingWaitingPeriod;
 	type VouchingStanding = ();
 	type Currency = Balances;

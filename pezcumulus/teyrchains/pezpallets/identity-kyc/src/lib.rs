@@ -212,6 +212,9 @@ pub mod pezpallet {
 		/// refunded.
 		type OnCitizenshipRestored: crate::types::OnCitizenshipRestored<Self::AccountId>;
 
+		/// Told whenever an account becomes a citizen, by any of the ways one does.
+		type OnCitizenshipGranted: crate::types::OnCitizenshipGranted<Self::AccountId>;
+
 		/// Provider for minting citizen NFTs - used by tiki pezpallet
 		type CitizenNftProvider: crate::types::CitizenNftProvider<Self::AccountId>;
 
@@ -760,6 +763,7 @@ pub mod pezpallet {
 				&application.referrer,
 				application.inviter.as_ref(),
 			);
+			T::OnCitizenshipGranted::on_citizenship_granted(&applicant);
 
 			Self::deposit_event(Event::CitizenshipConfirmed { who: applicant });
 			Ok(())
@@ -826,6 +830,7 @@ pub mod pezpallet {
 			// finding the court has just reversed.
 			<T::OnCitizenshipRestored as crate::types::OnCitizenshipRestored<T::AccountId>>::
 				on_citizenship_restored(&who);
+			T::OnCitizenshipGranted::on_citizenship_granted(&who);
 
 			Self::deposit_event(Event::CitizenshipRestored { who });
 			Ok(())
@@ -1063,6 +1068,7 @@ impl<T: Config> Pezpallet<T> {
 		CitizenCount::<T>::mutate(|n| *n = n.saturating_add(1));
 		HonoraryCitizens::<T>::insert(who, ());
 		HonoraryCitizenCount::<T>::mutate(|n| *n = n.saturating_add(1));
+		T::OnCitizenshipGranted::on_citizenship_granted(who);
 
 		Self::deposit_event(Event::HonoraryCitizenshipRegistered { who: who.clone() });
 		Ok(())

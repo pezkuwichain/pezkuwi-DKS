@@ -225,6 +225,7 @@ impl pezpallet_identity_kyc::Config for Test {
 	type VouchingWaitingPeriod = VouchingWaitingPeriod;
 	type VouchingStanding = ();
 	type OnCitizenshipRestored = ();
+	type OnCitizenshipGranted = ();
 	type Currency = Balances;
 	type WeightInfo = ();
 	type GovernanceOrigin = pezframe_system::EnsureRoot<AccountId>;

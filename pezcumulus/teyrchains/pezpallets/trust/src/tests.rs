@@ -907,3 +907,140 @@ mod batch_charge {
 		});
 	}
 }
+
+// =============================================================================
+// WHAT THE FREEZE HOLDS BACK IS OWED, NOT LOST
+// =============================================================================
+//
+// The roll is held still a week in every month. A change in that week used to wait for the
+// full sweep of the register, which at forty million takes weeks; and the sweep itself kept
+// running through the week, recomputing nobody and moving its checkpoint past everyone it
+// visited. A new citizen waited for the sweep too, for whatever they earned beforehand.
+
+mod owed {
+	use super::*;
+	use crate::{BatchUpdateInProgress, LastProcessedAccount, PendingRecompute};
+	use pezframe_support::traits::Hooks;
+	use pezpallet_identity_kyc::types::{KycLevel, OnCitizenshipGranted};
+
+	/// Run the hook for `block`, a block the sweep is not due at unless the test says so.
+	fn block(n: u64) {
+		System::set_block_number(n);
+		<TrustPallet as Hooks<u64>>::on_initialize(n);
+	}
+
+	#[test]
+	fn a_change_held_by_the_freeze_is_applied_when_the_hold_ends() {
+		new_test_ext().execute_with(|| {
+			clear_profiles();
+			block(1);
+			set_profile(1, 100, 500, 50_000, 1_000);
+			assert_ok!(TrustPallet::force_recalculate_trust_score(RuntimeOrigin::root(), 1));
+			let before = TrustPallet::trust_score_of(1);
+
+			TrustPallet::freeze_until(10);
+			set_profile(1, 1, 1, 1, 1);
+			<TrustPallet as crate::TrustScoreUpdater<u64>>::on_score_component_changed(&1);
+			block(5);
+			assert_eq!(TrustPallet::trust_score_of(1), before, "held still through the week");
+
+			block(11);
+			assert!(TrustPallet::trust_score_of(1) < before, "and applied the block it ends");
+			assert!(PendingRecompute::<Test>::iter().next().is_none(), "and no longer owed");
+		});
+	}
+
+	#[test]
+	fn the_sweep_waits_out_the_freeze() {
+		new_test_ext().execute_with(|| {
+			block(1);
+			for who in 1..=150u64 {
+				pezpallet_identity_kyc::KycStatuses::<Test>::insert(who, KycLevel::Approved);
+			}
+			assert_ok!(TrustPallet::update_all_trust_scores(RuntimeOrigin::root()));
+			let checkpoint = LastProcessedAccount::<Test>::get();
+			assert!(BatchUpdateInProgress::<Test>::get());
+
+			TrustPallet::freeze_until(10);
+			block(5);
+			assert_eq!(LastProcessedAccount::<Test>::get(), checkpoint, "the sweep stood still");
+			assert!(BatchUpdateInProgress::<Test>::get(), "and is still owed");
+			assert_ok!(TrustPallet::update_all_trust_scores(RuntimeOrigin::root()));
+			assert_eq!(LastProcessedAccount::<Test>::get(), checkpoint, "by the call as well");
+
+			block(11);
+			assert!(!BatchUpdateInProgress::<Test>::get(), "and finished once the hold ended");
+		});
+	}
+
+	#[test]
+	fn a_sweep_that_falls_due_in_the_freeze_runs_after_it() {
+		new_test_ext().execute_with(|| {
+			clear_profiles();
+			block(1);
+			set_profile(1, 100, 500, 50_000, 1_000);
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(1, KycLevel::Approved);
+			assert_ok!(TrustPallet::force_recalculate_trust_score(RuntimeOrigin::root(), 1));
+			let before = TrustPallet::trust_score_of(1);
+
+			// A change nothing announced, which only a sweep can find.
+			set_profile(1, 1, 1, 1, 1);
+			TrustPallet::freeze_until(105);
+			block(100); // the mock's interval
+			assert_eq!(TrustPallet::trust_score_of(1), before);
+
+			block(106);
+			assert!(
+				TrustPallet::trust_score_of(1) < before,
+				"the sweep due in the hold ran when it ended, not an interval later"
+			);
+		});
+	}
+
+	#[test]
+	fn a_new_citizen_is_scored_without_waiting_for_the_sweep() {
+		new_test_ext().execute_with(|| {
+			clear_profiles();
+			block(1);
+			// Not a citizen by the mock's range: only the approved record makes them one.
+			let newcomer = 500u64;
+			set_profile(newcomer, 100, 500, 50_000, 1_000);
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(newcomer, KycLevel::Approved);
+
+			<TrustPallet as OnCitizenshipGranted<u64>>::on_citizenship_granted(&newcomer);
+			assert_eq!(
+				TrustPallet::trust_score_of(newcomer),
+				0,
+				"queued, not worked out in the call"
+			);
+
+			block(2);
+			assert!(TrustPallet::trust_score_of(newcomer) > 0, "scored the next block");
+		});
+	}
+
+	#[test]
+	fn what_is_owed_is_worked_off_a_batch_a_block() {
+		new_test_ext().execute_with(|| {
+			clear_profiles();
+			block(1);
+			TrustPallet::freeze_until(3);
+			for who in 1..=100u64 {
+				set_profile(who, 100, 500, 50_000, 1_000);
+				<TrustPallet as crate::TrustScoreUpdater<u64>>::on_score_component_changed(&who);
+			}
+			for who in 1_000..1_150u64 {
+				PendingRecompute::<Test>::insert(who, ());
+			}
+			assert_eq!(PendingRecompute::<Test>::iter().count(), 250);
+
+			// The mock's batch is a hundred.
+			block(4);
+			assert_eq!(PendingRecompute::<Test>::iter().count(), 150);
+			block(5);
+			block(6);
+			assert_eq!(PendingRecompute::<Test>::iter().count(), 0);
+			assert!((1..=100u64).all(|who| TrustPallet::trust_score_of(who) > 0));
+		});
+	}
+}

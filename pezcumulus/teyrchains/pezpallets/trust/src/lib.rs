@@ -57,15 +57,23 @@
 //!
 //! ## Update Mechanisms
 //!
-//! ### Automatic Updates
-//! - Periodic batch updates scheduled at `UpdateInterval` (e.g., daily)
-//! - Processes all citizens in batches to manage computational load
-//! - Maintains update progress across blocks for large user bases
+//! A score is recomputed when something it is made of changes: each component pallet says
+//! so (`TrustScoreUpdater`, `OnStakingDataUpdate`), and the register says when an account
+//! becomes a citizen (`OnCitizenshipGranted`). That is what keeps it current.
+//!
+//! Two things wait in `PendingRecompute` and are worked off a batch a block:
+//! - a change that arrived while the payroll held the roll still (`FrozenUntil`);
+//! - a new citizen, whose components may have accrued before the day they could count.
+//!
+//! The full sweep of the register, every `UpdateInterval`, is a safety net behind that and
+//! not the mechanism. It does not run while the roll is held still -- it would recompute
+//! nothing and move its checkpoint past everyone it skipped -- and one that falls due then
+//! starts when the hold ends. It cannot be the mechanism: a sweep visits every record, and at
+//! forty million a batch a block small enough to leave room for anything else takes weeks.
 //!
 //! ### Manual Updates
 //! - Individual score recalculation via privileged call
 //! - Full batch update trigger (root only)
-//! - Component change hooks from other pallets
 //!
 //! ## Storage
 //!
@@ -73,6 +81,7 @@
 //! - `TotalActiveTrustScore` - Aggregate trust score across all citizens
 //! - `BatchUpdateInProgress` - Flag for ongoing batch update process
 //! - `LastProcessedAccount` - Checkpoint for resumable batch updates
+//! - `PendingRecompute` - Accounts owed a recomputation the moment one can be done
 //!
 //! ## Interface
 //!
@@ -107,7 +116,7 @@
 //!     type ReferralWeight = ConstU32<25>;
 //!     type PerwerdeWeight = ConstU32<30>;
 //!     type TikiWeight = ConstU32<25>;
-//!     type UpdateInterval = ConstU32<7_200>; // a day, at a teyrchain's 12s blocks
+//!     type UpdateInterval = ConstU32<432_000>; // thirty days, at 6s blocks
 //!     type StakingScoreSource = StakingScore;
 //!     type ReferralScoreSource = Referral;
 //!     type PerwerdeScoreSource = Perwerde;
@@ -316,6 +325,16 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type BatchUpdateInProgress<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+	/// Accounts owed a recomputation, worked off a batch a block while the roll is not held.
+	///
+	/// A change that lands while the roll is frozen cannot be applied then, and a new citizen
+	/// is owed one for whatever they earned before. Both used to wait for the full sweep, and
+	/// at forty million the sweep takes weeks. One key per account, so a change made twice is
+	/// owed once.
+	#[pezpallet::storage]
+	pub type PendingRecompute<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, (), OptionQuery>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -413,21 +432,32 @@ pub mod pezpallet {
 		}
 
 		fn on_initialize(n: BlockNumberFor<T>) -> Weight {
-			let batch_in_progress = BatchUpdateInProgress::<T>::get();
 			let interval = T::UpdateInterval::get();
+			let sweep_due = !interval.is_zero() && !n.is_zero() && (n % interval).is_zero();
+			let db = T::DbWeight::get();
 
-			// Continue in-progress batch update
-			if batch_in_progress {
-				return Self::do_batch_update();
+			// Nothing is recomputed while the roll is held still. A sweep falling due now is
+			// noted and runs once the hold ends; missing its block would put it off a whole
+			// interval.
+			if Self::roll_is_frozen() {
+				if sweep_due && !BatchUpdateInProgress::<T>::get() {
+					BatchUpdateInProgress::<T>::put(true);
+					return db.reads_writes(2, 1);
+				}
+				return db.reads(2);
 			}
 
-			// Start new batch at periodic interval
-			if !interval.is_zero() && !n.is_zero() && (n % interval).is_zero() {
-				return Self::do_batch_update();
+			// What is owed comes first: those are the scores known to be wrong.
+			let (drained, weight) = Self::drain_pending();
+			if drained > 0 {
+				return weight.saturating_add(db.reads(1));
 			}
 
-			// Fast path: just reading BatchUpdateInProgress
-			T::DbWeight::get().reads(1)
+			if BatchUpdateInProgress::<T>::get() || sweep_due {
+				return Self::do_batch_update().saturating_add(weight).saturating_add(db.reads(2));
+			}
+
+			weight.saturating_add(db.reads(2))
 		}
 	}
 
@@ -572,7 +602,9 @@ pub mod pezpallet {
 			// While the roll is frozen the stored score is the answer, unchanged. Note what
 			// this does *not* block: `on_citizenship_revoked` takes the score by a different
 			// path, so somebody who stops being a citizen mid-payroll still stops being paid.
+			// The change is not lost, though: it is owed, and paid when the hold ends.
 			if Self::roll_is_frozen() {
+				PendingRecompute::<T>::insert(who, ());
 				return Ok(Self::trust_score_of(who));
 			}
 
@@ -624,6 +656,12 @@ pub mod pezpallet {
 		/// Internal batch update logic used by both on_initialize and extrinsics.
 		/// Returns consumed weight.
 		fn do_batch_update() -> Weight {
+			// A sweep while the roll is held still recomputes nobody and moves its checkpoint
+			// past everyone it visited, who then wait for the next sweep. It waits instead.
+			if Self::roll_is_frozen() {
+				return T::DbWeight::get().reads(1);
+			}
+
 			// Every record the walk visits counts against the batch, citizen or not. Only
 			// citizens used to count, and a record that was not one cost nothing and was not
 			// charged -- while anyone could leave such records behind for a few fees each, by
@@ -676,6 +714,26 @@ pub mod pezpallet {
 			Self::batch_weight(visited, updated_count)
 		}
 
+		/// Recompute up to a batch of the accounts that are owed it. Returns how many were
+		/// taken, and what that cost.
+		fn drain_pending() -> (u32, Weight) {
+			let batch_size = Self::calculate_optimal_batch_size();
+			let mut drained = 0u32;
+			for (who, ()) in PendingRecompute::<T>::drain().take(batch_size as usize) {
+				// Somebody who stopped being a citizen meanwhile is refused here, and their
+				// score was already taken when they stopped.
+				let _ = Self::update_score_for_account(&who);
+				drained += 1;
+			}
+			if drained == 0 {
+				// Finding the queue empty is a read.
+				return (0, T::DbWeight::get().reads(1));
+			}
+			let weight = Self::batch_weight(drained, drained)
+				.saturating_add(T::DbWeight::get().writes(u64::from(drained)));
+			(drained, weight)
+		}
+
 		/// What a batch that visited `visited` records and recomputed `updated` of them cost.
 		///
 		/// Each visit is a read of the record and its proof; each citizen is a recompute,
@@ -722,6 +780,15 @@ pub mod pezpallet {
 				TotalActiveTrustScore::<T>::put(new_total);
 				Self::deposit_event(Event::TotalTrustScoreUpdated { new_total });
 			}
+		}
+	}
+
+	impl<T: Config> pezpallet_identity_kyc::types::OnCitizenshipGranted<T::AccountId> for Pezpallet<T> {
+		/// A new citizen is owed a score for whatever they earned before the day came. It is
+		/// queued rather than worked out here, so the call that made them a citizen is not
+		/// charged for a recomputation it cannot see the size of.
+		fn on_citizenship_granted(who: &T::AccountId) {
+			PendingRecompute::<T>::insert(who, ());
 		}
 	}
 
