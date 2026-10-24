@@ -429,7 +429,7 @@ Pallets present on one twin only. Each must be recorded with its reason in
 
 ## people-zagros
 
-`pezcumulus/teyrchains/runtimes/people/people-zagros/src/lib.rs` · spec `people-zagros` 1_020_019 · 47 pallets
+`pezcumulus/teyrchains/runtimes/people/people-zagros/src/lib.rs` · spec `people-zagros` 1_020_020 · 47 pallets
 
 | index | pallet | crate |
 |---:|---|---|

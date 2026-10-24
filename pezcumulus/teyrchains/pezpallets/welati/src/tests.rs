@@ -3411,6 +3411,20 @@ mod invariant {
 	}
 
 	#[test]
+	fn a_founding_house_with_a_term_is_caught() {
+		// The first elected house would take this term as its predecessor's and be given the
+		// wrong calendar; meanwhile it opens a Speaker's election the founding house cannot hold.
+		ExtBuilder::default().build().execute_with(|| {
+			seated_president();
+			crate::FoundingPeriodEnded::<Test>::put(true);
+			crate::FirstElectionOwed::<Test>::insert(ElectionType::Parliamentary, ());
+			assert_ok!(check());
+			TermEnds::<Test>::insert(ElectionType::Parliamentary, 10_714_544);
+			assert_rejected("the founding house carried a term");
+		});
+	}
+
+	#[test]
 	fn an_office_voting_on_an_election_that_does_not_exist_is_caught() {
 		// A stale entry here stops the scheduler from ever opening another election for that
 		// office -- it would quietly stop being contested, with nothing to say why.
@@ -6481,6 +6495,7 @@ fn a_first_round_that_goes_to_a_runoff_returns_its_deposits() {
 mod the_speakers_election {
 	use super::*;
 	use crate::{OpenElection, TermEnds};
+	use pezframe_support::traits::Hooks;
 
 	#[test]
 	fn an_elected_house_without_a_speaker_opens_the_election() {
@@ -6503,6 +6518,27 @@ mod the_speakers_election {
 				add_parliament_member(member);
 			}
 			run_to_block(System::block_number() + 1);
+			assert!(!OpenElection::<Test>::contains_key(ElectionType::SpeakerElection));
+		});
+	}
+
+	#[test]
+	fn a_founding_house_that_still_carries_a_term_does_not_open_it() {
+		ExtBuilder::default().build().execute_with(|| {
+			// Zagros on 2026-10-24: the founding period over, the house's first election
+			// owed, and the founding house still carrying the term it was seated with before
+			// the founding term was abolished.
+			crate::FoundingPeriodEnded::<Test>::put(true);
+			crate::FirstElectionOwed::<Test>::insert(ElectionType::Parliamentary, ());
+			TermEnds::<Test>::insert(ElectionType::Parliamentary, System::block_number() + 100_000);
+			for member in 7..=10u64 {
+				add_parliament_member(member);
+			}
+			// One hook call rather than `run_to_block`: `try_state` refuses this state, and the
+			// question here is what the scheduler does when it meets it anyway.
+			let next = System::block_number() + 1;
+			System::set_block_number(next);
+			Welati::on_initialize(next);
 			assert!(!OpenElection::<Test>::contains_key(ElectionType::SpeakerElection));
 		});
 	}
