@@ -18,7 +18,6 @@ keywords = ["extrinsic", "parity", "signer", "subxt"]
 default = ["ecdsa", "sr25519", "std", "subxt"]
 std = [
 	"base64?/std",
-	"bip32?/std",
 	"bip39/std",
 	"codec/std",
 	"crypto_secretbox?/std",

@@ -132,6 +132,9 @@ pub type UncheckedExtrinsic =
 /// runtime's genesis starts with every pallet at its in-code storage version and none of that
 /// state.
 pub type Migrations = (
+	// A founding house seated before the founding term was abolished keeps no term
+	// (Zagros; on a chain founded since, its genesis writes version 2 and this is a no-op).
+	pezpallet_welati::migrations::v2::DropTheFoundingHousesTerm<Runtime>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 );
@@ -156,7 +159,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("people-zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("people-zagros"),
 	authoring_version: 1,
-	spec_version: 1_020_019,
+	spec_version: 1_020_020,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,

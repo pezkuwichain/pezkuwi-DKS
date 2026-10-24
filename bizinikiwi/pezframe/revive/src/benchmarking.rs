@@ -2999,8 +2999,7 @@ mod benchmarks {
 		.into();
 
 		let hashed_payload = pezsp_io::hashing::keccak_256(&unsigned_tx.unsigned_payload());
-		let (signature, recovery_id) =
-			signer_key.sign_prehash_recoverable(&hashed_payload).expect("signing success");
+		let (signature, recovery_id) = signer_key.sign_prehash_recoverable(&hashed_payload);
 
 		let mut sig_bytes = [0u8; 65];
 		sig_bytes[..64].copy_from_slice(&signature.to_bytes());

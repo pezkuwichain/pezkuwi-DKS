@@ -1923,6 +1923,15 @@ pub mod pezpallet {
 				"a first election is owed while the founding period is still running"
 			);
 
+			// The founding house sits under no term. A term recorded for it opens a Speaker's
+			// election the founding house cannot hold, and the first elected house would
+			// inherit it as the end of a previous mandate and be given the wrong calendar.
+			ensure!(
+				!Self::the_founding_house_sits()
+					|| !TermEnds::<T>::contains_key(ElectionType::Parliamentary),
+				"the founding house carries a term"
+			);
+
 			// Nobody is serving more consecutive terms than the office allows. The limit is
 			// checked when a candidacy is filed; this is what catches a path that seats
 			// somebody without going through one.
@@ -1967,8 +1976,12 @@ pub mod pezpallet {
 					// had cleared it, so an elected house never got a Speaker; and the house's
 					// term while one sat, so the chair would have been re-elected in the
 					// outgoing house's last weeks (L-7, 2026-10-21). The founding house has no
-					// term, so this opens nothing for it.
+					// term, so this opens nothing for it -- and it is asked directly as well,
+					// because a house seated before the founding term was abolished still
+					// carried one, and on Zagros that opened a Speaker's election nobody in
+					// the founding house could stand in or vote in (2026-10-24).
 					TermEnds::<T>::contains_key(ElectionType::Parliamentary)
+						&& !Self::the_founding_house_sits()
 						&& Self::office_is_vacant(&election_type)
 				} else {
 					match TermEnds::<T>::get(election_type) {
@@ -2007,6 +2020,17 @@ pub mod pezpallet {
 			T::DbWeight::get().reads(8).saturating_add(
 				<T as Config>::WeightInfo::initiate_election().saturating_mul(u64::from(opened)),
 			)
+		}
+
+		/// Whether the house sitting now is the founding one.
+		///
+		/// The founding house is replaced by the first parliamentary election, and that
+		/// election stays owed until it seats somebody, so while it is owed the house in the
+		/// chamber is the one the founding President seated. Before the founding period ends
+		/// nothing is owed yet and this says no; a founding house seated by today's code has
+		/// no term then, so there is nothing for the answer to mislead.
+		pub(crate) fn the_founding_house_sits() -> bool {
+			FirstElectionOwed::<T>::contains_key(ElectionType::Parliamentary)
 		}
 
 		/// Whether a single-holder office that should be filled is empty.

@@ -134,6 +134,9 @@ pub type UncheckedExtrinsic =
 /// runtime's genesis starts with every pallet at its in-code storage version and none of that
 /// state.
 pub type Migrations = (
+	// A founding house seated before the founding term was abolished keeps no term
+	// (Zagros; on a chain founded since, its genesis writes version 2 and this is a no-op).
+	pezpallet_welati::migrations::v2::DropTheFoundingHousesTerm<Runtime>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 );

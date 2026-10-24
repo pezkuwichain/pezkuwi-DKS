@@ -715,7 +715,7 @@ mod secp_utils {
 	}
 	pub fn eth(secret: &SecretKey) -> EthereumAddress {
 		let mut res = EthereumAddress::default();
-		let public = secret.verifying_key().to_encoded_point(false);
+		let public = secret.verifying_key().to_sec1_point(false);
 		res.0.copy_from_slice(&keccak_256(&public.as_bytes()[1..65])[12..]);
 		res
 	}
@@ -724,8 +724,7 @@ mod secp_utils {
 			&to_ascii_hex(what)[..],
 			extra,
 		));
-		let (sig, recovery_id) =
-			secret.sign_prehash_recoverable(&msg).expect("signing a 32-byte digest; qed");
+		let (sig, recovery_id) = secret.sign_prehash_recoverable(&msg);
 		let mut r = [0u8; 65];
 		r[0..64].copy_from_slice(&sig.to_bytes()[..]);
 		r[64] = recovery_id.to_byte();

@@ -92,21 +92,24 @@ pub fn recover_overflowing(
 	v: u8,
 	prehash: &[u8; 32],
 ) -> Result<[u8; 65], OverflowingRecoverError> {
-	use k256::ecdsa::{RecoveryId as K256RecoveryId, Signature as K256Signature};
+	use k256::{
+		ecdsa::{RecoveryId as K256RecoveryId, Signature as K256Signature},
+		elliptic_curve::scalar::IsHigh,
+	};
 	let mut rid = K256RecoveryId::from_byte(v).ok_or(OverflowingRecoverError::BadV)?;
 	let mut rs = *rs;
 	reduce_mod_n(&mut rs[..32]);
 	reduce_mod_n(&mut rs[32..]);
 	let mut sig =
 		K256Signature::from_slice(&rs).map_err(|_| OverflowingRecoverError::BadSignature)?;
-	if let Some(low) = sig.normalize_s() {
-		sig = low;
+	if bool::from(sig.s().is_high()) {
+		sig = sig.normalize_s();
 		rid = K256RecoveryId::new(!rid.is_y_odd(), rid.is_x_reduced());
 	}
 	let key = k256::ecdsa::VerifyingKey::recover_from_prehash(prehash, &sig, rid)
 		.map_err(|_| OverflowingRecoverError::BadSignature)?;
 	let mut out = [0u8; 65];
-	out.copy_from_slice(key.to_encoded_point(false).as_bytes());
+	out.copy_from_slice(key.to_sec1_point(false).as_bytes());
 	Ok(out)
 }
 
@@ -245,10 +248,27 @@ impl<PUBLIC: From<PublicKey>> GenericSignature<PUBLIC> {
 impl<PUBLIC: From<VerifyingKey>> GenericSignature<PUBLIC> {
 	/// Recover the public key from this signature and a pre-hashed message.
 	pub fn recover_prehashed(&self, message: &[u8; 32]) -> Option<PUBLIC> {
-		let rid = k256::ecdsa::RecoveryId::from_byte(self.0[64])?;
-		let sig = k256::ecdsa::Signature::from_bytes((&self.0[..64]).into()).ok()?;
-		VerifyingKey::recover_from_prehash(message, &sig, rid).map(From::from).ok()
+		k256_recover_prehashed(&self.0, message).map(From::from)
 	}
+}
+
+/// The no_std recovery behind [`GenericSignature::recover_prehashed`].
+///
+/// A high-s signature recovers no key. k256 0.13 refused one by verifying the recovered key
+/// against the signature, which is low-s only; k256 0.14 no longer verifies after recovering,
+/// and would return a key. Refusing it here keeps what a runtime accepts exactly as it was.
+#[cfg_attr(feature = "std", allow(dead_code))]
+fn k256_recover_prehashed(
+	signature: &[u8; 65],
+	message: &[u8; 32],
+) -> Option<k256::ecdsa::VerifyingKey> {
+	use k256::elliptic_curve::scalar::IsHigh;
+	let rid = k256::ecdsa::RecoveryId::from_byte(signature[64])?;
+	let sig = k256::ecdsa::Signature::from_slice(&signature[..64]).ok()?;
+	if bool::from(sig.s().is_high()) {
+		return None;
+	}
+	k256::ecdsa::VerifyingKey::recover_from_prehash(message, &sig, rid).ok()
 }
 
 /// Proof of Possession is the same as Signature.
@@ -536,10 +556,7 @@ where
 		{
 			// Signing fails only if the `message` number of bytes is less than the field length
 			// (unfallible as we're using a fixed message length of 32).
-			self.secret
-				.sign_prehash_recoverable(message)
-				.expect("Signing can't fail when using 32 bytes message hash. qed.")
-				.into()
+			self.secret.sign_prehash_recoverable(message).into()
 		}
 	}
 }
@@ -613,6 +630,31 @@ mod overflowing_vectors;
 
 #[cfg(test)]
 mod test {
+
+	/// The no_std recovery refuses a high-s signature, as it did on k256 0.13, and still
+	/// recovers the signer from the same signature in low-s form.
+	#[test]
+	fn the_no_std_recovery_refuses_a_high_s_signature() {
+		use k256::ecdsa::{RecoveryId as Rid, Signature as Sig, SigningKey};
+		let key = SigningKey::from_slice(&[0x42; 32]).unwrap();
+		let prehash = [7u8; 32];
+		let (low, rid) = key.sign_prehash_recoverable(&prehash);
+		let mut sig = [0u8; 65];
+		sig[..64].copy_from_slice(&low.to_bytes());
+		sig[64] = rid.to_byte();
+		assert_eq!(super::k256_recover_prehashed(&sig, &prehash), Some(*key.verifying_key()));
+
+		let high = Sig::from_scalars(low.r().to_bytes(), (-*low.s()).to_bytes()).unwrap();
+		let flipped = Rid::new(!rid.is_y_odd(), rid.is_x_reduced());
+		// The same signer, so the guard is what refuses it, not a wrong key.
+		assert_eq!(
+			k256::ecdsa::VerifyingKey::recover_from_prehash(&prehash, &high, flipped).ok(),
+			Some(*key.verifying_key())
+		);
+		sig[..64].copy_from_slice(&high.to_bytes());
+		sig[64] = flipped.to_byte();
+		assert_eq!(super::k256_recover_prehashed(&sig, &prehash), None);
+	}
 
 	#[test]
 	fn recover_overflowing_matches_libsecp256k1() {
@@ -921,10 +963,7 @@ mod test {
 			}
 			#[cfg(not(feature = "std"))]
 			{
-				pair.secret
-					.sign_prehash_recoverable(&msg)
-					.expect("signing may not fail (???). qed.")
-					.into()
+				pair.secret.sign_prehash_recoverable(&msg).into()
 			}
 		};
 		assert_eq!(sig1, sig2);

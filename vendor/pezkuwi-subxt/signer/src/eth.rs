@@ -72,7 +72,7 @@ impl Keypair {
 		// It'd be great if we could 100% use just one of the two crypto libs. bip32 has
 		// a feature flag to use secp256k1, but it's unfortunately a different version (older)
 		// than ours.
-		let private = bip32::XPrv::derive_from_path(seed, &derivation_path.inner)
+		let private = bip32::XPrv::derive_from_path(&seed, &derivation_path.inner)
 			.map_err(|_| Error::DeriveFromPath)?;
 
 		Keypair::from_secret_key(private.to_bytes())
@@ -407,7 +407,7 @@ mod test {
 			let mnemonic = bip39::Mnemonic::from_entropy(&entropy).expect("valid mnemonic");
 			let derivation_path = format!("m/44'/60'/{address}'/0/{account_idx}").parse().expect("valid derivation path");
 			let private = bip32::XPrv::derive_from_path(
-				mnemonic.to_seed(password.clone().unwrap_or("".to_string())),
+				&mnemonic.to_seed(password.clone().unwrap_or("".to_string())),
 				&derivation_path,
 			).expect("valid private");
 

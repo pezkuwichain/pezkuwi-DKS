@@ -240,12 +240,17 @@ jobs:
         # Catches a crate that is in the tree but absent from the workspace, which is
         # how pezpallet-staking-async-teyrchain-runtime stayed broken on main unnoticed.
         run: |
-          # vendor/revm-precompile and vendor/ruint are [patch.crates-io] replacements, not
+          # The vendored alloy crates, revm-precompile and ruint are [patch.crates-io] replacements, not
           # workspace members: a member is locked with every optional feature and its
           # dev-dependencies, which would bring back what the patch keeps out. See the comments
           # on their patch entries and the `exclude` key in the root Cargo.toml.
           python3 .github/scripts/check-workspace.py . \
-            --exclude "vendor/revm-precompile" \
+            --exclude "vendor/alloy-consensus" \
+                      "vendor/alloy-eip7702" \
+                      "vendor/alloy-primitives" \
+                      "vendor/alloy-signer" \
+                      "vendor/alloy-signer-local" \
+                      "vendor/revm-precompile" \
                       "vendor/ruint"
       - name: Deny git dependencies
         run: python3 .github/scripts/deny-git-deps.py .
