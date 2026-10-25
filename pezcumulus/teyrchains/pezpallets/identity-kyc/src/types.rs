@@ -228,6 +228,21 @@ impl<AccountId> OnCitizenshipRestored<AccountId> for () {
 	fn on_citizenship_restored(_who: &AccountId) {}
 }
 
+/// Told every time an account becomes a citizen, whichever of the three ways it happens: an
+/// application approved, a revocation the court undoes, or honorary citizenship.
+///
+/// Not `OnKycApproved`, which is about the voucher and fires for one of the three. This is
+/// about the new citizen's own record. What they earned before they were a citizen -- a
+/// course, a stake -- is not counted until they are one, and nothing else will tell the
+/// pallets that count it that the day has come.
+pub trait OnCitizenshipGranted<AccountId> {
+	fn on_citizenship_granted(who: &AccountId);
+}
+
+impl<AccountId> OnCitizenshipGranted<AccountId> for () {
+	fn on_citizenship_granted(_who: &AccountId) {}
+}
+
 /// No-op implementation for when no hook is needed
 impl<AccountId> OnCitizenshipRevoked<AccountId> for () {
 	fn on_citizenship_revoked(_who: &AccountId) {}

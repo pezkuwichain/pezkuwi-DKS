@@ -378,6 +378,8 @@ impl pezpallet_identity_kyc::Config for Runtime {
 	type OnCitizenshipRevoked = (Referral, Trust, Welati);
 	// The other direction: a revocation the court reverses refunds what it charged the voucher.
 	type OnCitizenshipRestored = Referral;
+	// The new citizen's own standing, from whatever they earned before the day came.
+	type OnCitizenshipGranted = Trust;
 	type CitizenNftProvider = Tiki;
 	type KycApplicationDeposit = KycApplicationDeposit;
 	type MaxStringLength = MaxStringLength;
@@ -933,12 +935,20 @@ parameter_types! {
 	pub const TrustReferralWeight: u32 = 25;
 	pub const TrustTikiWeight: u32 = 25;
 	pub const TrustStakingWeight: u32 = 20;
-	/// Update interval for trust scores (roughly 1 day in blocks)
-	// The sweep is what applies a stake report that landed while the payroll held the roll
-	// still; a rehearsal has to see that sweep, so it runs every couple of blocks there.
-	pub const TrustUpdateInterval: BlockNumber = rehearsal_period!(DAYS, DAYS);
-	/// Maximum batch size for trust score updates
-	pub const TrustMaxBatchSize: u32 = 100;
+	/// How often the whole register is swept: a safety net, not how scores stay current.
+	///
+	/// Scores follow their components as they change, and what the payroll's hold kept back
+	/// is owed and paid when it ends. A sweep visits every record, and at forty million it
+	/// cannot be daily: that is 2 778 recomputations a block, about 1.9 s of a 2 s block and
+	/// 17 MB of proof. Monthly, it is out of the way.
+	pub const TrustUpdateInterval: BlockNumber = rehearsal_period!(30 * DAYS, DAYS);
+	/// Recomputations a block, for the sweep and for what is owed alike.
+	///
+	/// A recomputation is about 685 us and 6.2 KB of proof, so this is ~86 ms and ~780 KB:
+	/// four per cent of the block. The sweep does not run during the week the roll is held
+	/// still, and at this size forty million records take 22 days, inside the 23 that are
+	/// left.
+	pub const TrustMaxBatchSize: u32 = 125;
 }
 
 /// Staking score source for Trust pezpallet
