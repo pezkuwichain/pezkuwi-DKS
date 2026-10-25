@@ -807,6 +807,12 @@ pub mod pezpallet {
 			}
 		}
 
+		/// Owed rather than worked out here: crossings come due by the block, many at once,
+		/// and are drained in this pallet's own batch with everything else that is owed.
+		fn on_staking_tier_reached(who: &T::AccountId) {
+			PendingRecompute::<T>::insert(who, ());
+		}
+
 		/// A citizen, the way the chain makes one: an approved KYC record, which is what every
 		/// runtime's `CitizenshipSource` reads. Anyone else is turned away before the score is
 		/// computed or written.

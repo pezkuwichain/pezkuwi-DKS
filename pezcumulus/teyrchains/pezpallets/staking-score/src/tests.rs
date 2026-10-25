@@ -2178,3 +2178,155 @@ mod a_noters_submission {
 		assert!(submit.all_gte(apply) && submit.ref_time() > apply.ref_time());
 	}
 }
+
+// ============================================================================
+// A TIER IS REACHED BY TIME, AND IS ANNOUNCED
+// ============================================================================
+//
+// The multiplier is worked out when it is read, so reaching three months changes nothing that
+// anyone is told about; a score derived from it -- trust -- kept the old value until a noter
+// next confirmed the stake or the full sweep came round. The dates are known when the clock
+// starts, so they are written down then and announced when they come.
+
+mod tiers {
+	use super::*;
+	use crate::{CrossingsScheduledFrom, NextCrossingBlock, TierCrossings, TIER_MONTHS};
+	use pezframe_support::traits::Hooks;
+
+	const M: u64 = MONTH_IN_BLOCKS as u64;
+
+	fn stake(who: AccountId, hez: u128) {
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::root(),
+			who,
+			StakingSource::RelayChain,
+			hez * UNITS,
+			1,
+			0,
+		));
+	}
+
+	fn run_to(n: u64) {
+		System::set_block_number(n);
+		<StakingScore as Hooks<u64>>::on_initialize(n);
+	}
+
+	#[test]
+	fn each_tier_is_announced_on_the_block_it_is_reached() {
+		ExtBuilder::default().build_and_execute(|| {
+			run_to(1);
+			assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+			stake(USER_STASH, 500);
+			take_tiers_reached();
+
+			let origin = StakingScore::duration_origin(&USER_STASH).unwrap();
+			for months in TIER_MONTHS {
+				let at = origin + u64::from(months) * M;
+				run_to(at - 1);
+				assert!(take_tiers_reached().is_empty(), "not before {months} months");
+				// The cursor walks a bounded number of blocks each time; jumping the clock
+				// ahead is the test's doing, so let it catch up first.
+				NextCrossingBlock::<Test>::put(at);
+				run_to(at);
+				assert_eq!(take_tiers_reached(), vec![USER_STASH], "at {months} months");
+			}
+			assert_eq!(TierCrossings::<Test>::iter().count(), 0);
+		});
+	}
+
+	#[test]
+	fn a_confirmation_that_changes_nothing_writes_nothing() {
+		ExtBuilder::default().build_and_execute(|| {
+			run_to(1);
+			assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+			stake(USER_STASH, 500);
+			assert_eq!(TierCrossings::<Test>::iter().count(), TIER_MONTHS.len());
+			// Take one away: a confirmation that rewrote the dates would put it back.
+			let (at, _, ()) = TierCrossings::<Test>::iter().next().unwrap();
+			TierCrossings::<Test>::remove(at, USER_STASH);
+
+			run_to(100);
+			stake(USER_STASH, 500);
+			assert_eq!(
+				TierCrossings::<Test>::iter().count(),
+				TIER_MONTHS.len() - 1,
+				"the same clock, so nothing was written"
+			);
+		});
+	}
+
+	#[test]
+	fn a_clock_that_restarts_is_rescheduled_from_its_new_start() {
+		ExtBuilder::default().build_and_execute(|| {
+			run_to(1);
+			assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+			stake(USER_STASH, 500);
+			let first = CrossingsScheduledFrom::<Test>::get(USER_STASH).unwrap();
+
+			// More stake restarts the clock.
+			run_to(2 * M);
+			stake(USER_STASH, 900);
+			let second = CrossingsScheduledFrom::<Test>::get(USER_STASH).unwrap();
+			assert!(second > first);
+			for months in TIER_MONTHS {
+				assert!(TierCrossings::<Test>::contains_key(
+					second + u64::from(months) * M,
+					USER_STASH
+				));
+			}
+		});
+	}
+
+	#[test]
+	fn no_stake_no_dates() {
+		ExtBuilder::default().build_and_execute(|| {
+			run_to(1);
+			assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+			assert_eq!(TierCrossings::<Test>::iter().count(), 0, "nothing to count yet");
+		});
+	}
+
+	#[test]
+	fn more_than_a_block_can_announce_waits_for_the_next() {
+		ExtBuilder::default().build_and_execute(|| {
+			run_to(1);
+			let at = 50u64;
+			for who in 0..(crate::MAX_TIER_CROSSINGS_PER_BLOCK as u64 + 10) {
+				TierCrossings::<Test>::insert(at, 10_000 + who, ());
+			}
+			NextCrossingBlock::<Test>::put(at);
+			run_to(at);
+			assert_eq!(take_tiers_reached().len(), crate::MAX_TIER_CROSSINGS_PER_BLOCK as usize);
+			run_to(at + 1);
+			assert_eq!(take_tiers_reached().len(), 10, "the rest the block after");
+			assert_eq!(TierCrossings::<Test>::iter().count(), 0);
+		});
+	}
+
+	#[test]
+	fn the_upgrade_writes_dates_for_clocks_already_running() {
+		use pezframe_support::traits::{OnRuntimeUpgrade, StorageVersion};
+		ExtBuilder::default().build_and_execute(|| {
+			run_to(1);
+			assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+			stake(USER_STASH, 500);
+			// As a clock started before version 2 left it.
+			let _ = TierCrossings::<Test>::clear(u32::MAX, None);
+			CrossingsScheduledFrom::<Test>::remove(USER_STASH);
+			StorageVersion::new(1).put::<StakingScore>();
+
+			run_to(10);
+			crate::migrations::v2::ScheduleTierCrossings::<Test>::on_runtime_upgrade();
+
+			let origin = StakingScore::duration_origin(&USER_STASH).unwrap();
+			for months in TIER_MONTHS {
+				assert!(TierCrossings::<Test>::contains_key(
+					origin + u64::from(months) * M,
+					USER_STASH
+				));
+			}
+			assert_eq!(NextCrossingBlock::<Test>::get(), Some(10));
+			assert_eq!(StorageVersion::get::<StakingScore>(), StorageVersion::new(2));
+		});
+	}
+}

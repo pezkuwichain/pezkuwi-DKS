@@ -12,6 +12,7 @@ documentation.workspace = true
 
 [dependencies]
 codec = { workspace = true, default-features = false, features = ["derive"] }
+log = { default-features = false, workspace = true }
 pezframe-benchmarking = { workspace = true, optional = true }
 pezframe-support = { default-features = false, workspace = true }
 pezframe-system = { default-features = false, workspace = true }
@@ -39,6 +40,7 @@ pezsp-io = { workspace = true, features = ["std"] }
 default = ["std"]
 std = [
 	"codec/std",
+	"log/std",
 	"pezframe-benchmarking?/std",
 	"pezframe-support/std",
 	"pezframe-system/std",

@@ -67,6 +67,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub mod migrations;
 pub mod weights;
 
 // Re-exported so the generated runtime weights can name it.
@@ -86,7 +87,7 @@ pub mod pezpallet {
 		traits::{BalanceStatus, Currency, OnUnbalanced, ReservableCurrency},
 	};
 	use pezframe_system::pezpallet_prelude::*;
-	use pezsp_runtime::traits::{Saturating, Zero};
+	use pezsp_runtime::traits::{One, Saturating, Zero};
 
 	// --- Constants ---
 	//
@@ -104,6 +105,15 @@ pub mod pezpallet {
 	// updating to match — they are not derived automatically.
 	pub const MONTH_IN_BLOCKS: u32 = 30 * 24 * 60 * 10;
 	pub const HOUR_IN_BLOCKS: u32 = 60 * 10;
+
+	/// The months at which a stake's duration multiplier steps up.
+	pub const TIER_MONTHS: [u32; 4] = [1, 3, 6, 12];
+
+	/// The most accounts told in one block that their stake has reached a longer tier, and
+	/// the most blocks looked through to find them. Each is a read, a removal and one write
+	/// on the listener's side: 250 is a few per cent of a block.
+	pub const MAX_TIER_CROSSINGS_PER_BLOCK: u32 = 250;
+	pub const MAX_CROSSING_BLOCKS_SCANNED: u32 = 16;
 	pub const UNITS: u128 = 1_000_000_000_000;
 
 	/// The ceiling the score is clamped to: the largest amount tier (50) at the longest
@@ -138,7 +148,7 @@ pub mod pezpallet {
 	/// Declared so that the first migration has a baseline to compare against. Without it the
 	/// in-code and on-chain versions are both an implicit zero, and a migration cannot tell a
 	/// chain that has never been migrated from one that has been migrated to zero.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 	#[pezpallet::pezpallet]
 	#[pezpallet::storage_version(STORAGE_VERSION)]
@@ -149,6 +159,10 @@ pub mod pezpallet {
 	where
 		BlockNumberFor<T>: From<u32>,
 	{
+		fn on_initialize(now: BlockNumberFor<T>) -> Weight {
+			Self::announce_tier_crossings(now)
+		}
+
 		/// What the pallet has recorded about noters and stake has to hold together.
 		///
 		/// This is the one input to the trust score that the People chain cannot see for
@@ -177,6 +191,13 @@ pub mod pezpallet {
 					"a noter submitted staking data about themselves"
 				);
 				let _ = source;
+			}
+
+			// A crossing behind the cursor would never be announced.
+			if let Some(next) = NextCrossingBlock::<T>::get() {
+				for (at, _, ()) in TierCrossings::<T>::iter() {
+					ensure!(at >= next, "a tier crossing was left behind by the cursor");
+				}
 			}
 
 			// A confirmation vouches for a stake. One with no stake behind it would keep an
@@ -411,6 +432,33 @@ pub mod pezpallet {
 		OptionQuery,
 	>;
 
+	/// Who reaches a longer duration tier at a block, by that block.
+	///
+	/// A tier is reached by time passing and by nothing else, so nothing announces it: the
+	/// multiplier is worked out when it is read, and a score derived from it -- trust -- keeps
+	/// the old value until something makes it look again. The dates are known the moment the
+	/// clock starts, so they are written down then and announced when they come.
+	#[pezpallet::storage]
+	pub type TierCrossings<T: Config> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		BlockNumberFor<T>,
+		Blake2_128Concat,
+		T::AccountId,
+		(),
+		OptionQuery,
+	>;
+
+	/// The block `who`'s duration is counted from, as of the last time their crossings were
+	/// written down. A confirmation that changes nothing writes nothing.
+	#[pezpallet::storage]
+	pub type CrossingsScheduledFrom<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
+	/// The first block whose tier crossings are still to be announced.
+	#[pezpallet::storage]
+	pub type NextCrossingBlock<T: Config> = StorageValue<_, BlockNumberFor<T>, OptionQuery>;
+
 	/// Accounts that have asked for their staking time to be counted.
 	///
 	/// Separate from the block the clock starts at. Opting in says "count my duration"; the
@@ -570,6 +618,7 @@ pub mod pezpallet {
 			// the user duration they actually held the stake for. See
 			// `duration_counts_from_optin_not_from_data_arrival`.
 			StakingStartBlock::<T>::insert(&who, current_block);
+			Self::schedule_tier_crossings(&who);
 
 			// Notify trust pallet. Score may be 0 if CachedStakingDetails is empty.
 			T::OnStakingUpdate::on_staking_data_changed(&who);
@@ -869,6 +918,14 @@ pub mod pezpallet {
 	pub trait OnStakingDataUpdate<AccountId> {
 		fn on_staking_data_changed(who: &AccountId);
 
+		/// `who`'s stake has reached a longer duration tier. Nothing about it changed; the
+		/// time did. Announced from `on_initialize`, up to `MAX_TIER_CROSSINGS_PER_BLOCK` a
+		/// block, and charged as one write: a listener should note it and do the work in its
+		/// own budget, not here.
+		fn on_staking_tier_reached(who: &AccountId) {
+			Self::on_staking_data_changed(who);
+		}
+
 		/// Put `who` where the callback does its full work, for benchmarking only. Without it
 		/// a listener that bails out early for most accounts -- the trust pallet skips anyone
 		/// who is not a citizen -- is measured on its cheap path, and every call that notifies
@@ -1038,12 +1095,68 @@ pub mod pezpallet {
 				}
 			}
 
+			Self::schedule_tier_crossings(who);
 			T::OnStakingUpdate::on_staking_data_changed(who);
 			Self::deposit_event(Event::StakingDetailsReceived {
 				who: who.clone(),
 				source,
 				staked_amount,
 			});
+		}
+
+		/// The block `who`'s duration is counted from: the later of the opt-in and the stake
+		/// first being seen less the grace period -- the two limits `get_staking_score` takes
+		/// the smaller of. None while either is missing, when there is no duration at all.
+		pub fn duration_origin(who: &T::AccountId) -> Option<BlockNumberFor<T>> {
+			let start = StakingStartBlock::<T>::get(who)?;
+			let first_seen = StakeFirstSeen::<T>::get(who)?;
+			Some(start.max(first_seen.saturating_sub(T::OracleGracePeriod::get())))
+		}
+
+		/// Write down the blocks at which `who` reaches each longer tier, if the block their
+		/// duration counts from has moved since the last time.
+		///
+		/// A date written for a clock that was later reset stays where it is: announcing it
+		/// costs a recomputation that finds nothing changed, which is cheaper than finding and
+		/// removing it.
+		pub(crate) fn schedule_tier_crossings(who: &T::AccountId) {
+			let Some(origin) = Self::duration_origin(who) else { return };
+			if CrossingsScheduledFrom::<T>::get(who) == Some(origin) {
+				return;
+			}
+			CrossingsScheduledFrom::<T>::insert(who, origin);
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			for months in TIER_MONTHS {
+				let at = origin.saturating_add((months * MONTH_IN_BLOCKS).into());
+				if at > now {
+					TierCrossings::<T>::insert(at, who, ());
+				}
+			}
+		}
+
+		/// Announce the tier crossings that have come due, oldest first, within a block's
+		/// budget. What does not fit waits for the next block; the cursor does not move past
+		/// a block until all of it is announced.
+		pub(crate) fn announce_tier_crossings(now: BlockNumberFor<T>) -> Weight {
+			let db = T::DbWeight::get();
+			let mut cursor = NextCrossingBlock::<T>::get().unwrap_or(now);
+			let mut announced = 0u32;
+			let mut scanned = 0u32;
+			while cursor <= now && scanned < MAX_CROSSING_BLOCKS_SCANNED {
+				scanned += 1;
+				let room = MAX_TIER_CROSSINGS_PER_BLOCK.saturating_sub(announced) as usize;
+				for (who, ()) in TierCrossings::<T>::drain_prefix(cursor).take(room) {
+					T::OnStakingUpdate::on_staking_tier_reached(&who);
+					announced += 1;
+				}
+				if announced >= MAX_TIER_CROSSINGS_PER_BLOCK {
+					break;
+				}
+				cursor = cursor.saturating_add(One::one());
+			}
+			NextCrossingBlock::<T>::put(cursor);
+			db.reads_writes(1u64.saturating_add(scanned.into()), 1)
+				.saturating_add(db.reads_writes(1, 2).saturating_mul(announced.into()))
 		}
 
 		/// The block the duration multiplier may count up to for `who`.

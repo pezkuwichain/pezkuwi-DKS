@@ -7,12 +7,12 @@
 
 use crate::{
 	BalanceOf, CachedStakingDetails, Call, Config, NoterBonds, NoterCheck, OnStakingDataUpdate,
-	PendingStakingDetails, PendingSubmission, Pezpallet, StakingDetails, StakingSource,
-	StakingStartBlock, UNITS,
+	PendingStakingDetails, PendingSubmission, Pezpallet, StakeFirstSeen, StakingDetails,
+	StakingSource, StakingStartBlock, UNITS,
 };
 use pezframe_benchmarking::v2::*;
 use pezframe_support::traits::{Currency, EnsureOrigin, Get};
-use pezframe_system::RawOrigin;
+use pezframe_system::{pezpallet_prelude::BlockNumberFor, RawOrigin};
 use pezsp_runtime::traits::Saturating;
 
 /// Fund `who` with double the noter bond and register them as an active
@@ -48,6 +48,8 @@ mod benchmarks {
 				unlocking_chunks_count: 2,
 			},
 		);
+		// Stake already seen, so opting in starts a clock and writes its tier crossings.
+		StakeFirstSeen::<T>::insert(&caller, BlockNumberFor::<T>::from(1u32));
 		T::OnStakingUpdate::prepare_worst_case(&caller);
 
 		#[extrinsic_call]
@@ -93,6 +95,9 @@ mod benchmarks {
 		pezframe_system::Pezpallet::<T>::set_block_number(
 			T::DisputeWindow::get().saturating_add(1u32.into()),
 		);
+		// A running clock that this update restarts, so its tier crossings are written anew.
+		StakingStartBlock::<T>::insert(&target, BlockNumberFor::<T>::from(1u32));
+		StakeFirstSeen::<T>::insert(&target, BlockNumberFor::<T>::from(1u32));
 		T::OnStakingUpdate::prepare_worst_case(&target);
 
 		#[extrinsic_call]
@@ -208,6 +213,9 @@ mod benchmarks {
 		pezframe_system::Pezpallet::<T>::set_block_number(
 			T::DisputeWindow::get().saturating_add(1u32.into()),
 		);
+		// A running clock that this update restarts, so its tier crossings are written anew.
+		StakingStartBlock::<T>::insert(&target, BlockNumberFor::<T>::from(1u32));
+		StakeFirstSeen::<T>::insert(&target, BlockNumberFor::<T>::from(1u32));
 		T::OnStakingUpdate::prepare_worst_case(&target);
 
 		let caller: T::AccountId = account("finalizer", 0, 0);

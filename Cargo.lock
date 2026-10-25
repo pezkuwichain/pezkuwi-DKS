@@ -17577,6 +17577,7 @@ dependencies = [
 name = "pezpallet-staking-score"
 version = "1.0.0"
 dependencies = [
+ "log",
  "parity-scale-codec",
  "pezframe-benchmarking",
  "pezframe-support",

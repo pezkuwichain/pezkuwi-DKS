@@ -1020,6 +1020,26 @@ mod owed {
 	}
 
 	#[test]
+	fn a_stake_reaching_a_longer_tier_is_owed_a_recomputation() {
+		use pezpallet_staking_score::OnStakingDataUpdate;
+		new_test_ext().execute_with(|| {
+			clear_profiles();
+			block(1);
+			set_profile(1, 50, 500, 50_000, 1_000);
+			assert_ok!(TrustPallet::force_recalculate_trust_score(RuntimeOrigin::root(), 1));
+			let before = TrustPallet::trust_score_of(1);
+
+			// The multiplier stepped up; nothing about the stake changed.
+			set_profile(1, 100, 500, 50_000, 1_000);
+			<TrustPallet as OnStakingDataUpdate<u64>>::on_staking_tier_reached(&1);
+			assert_eq!(TrustPallet::trust_score_of(1), before, "queued, not worked out there");
+
+			block(2);
+			assert!(TrustPallet::trust_score_of(1) > before, "and worked off the next block");
+		});
+	}
+
+	#[test]
 	fn what_is_owed_is_worked_off_a_batch_a_block() {
 		new_test_ext().execute_with(|| {
 			clear_profiles();
