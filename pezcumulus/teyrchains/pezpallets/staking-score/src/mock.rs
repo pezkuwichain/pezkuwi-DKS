@@ -109,7 +109,7 @@ impl crate::NoterCheck<AccountId> for MockNoterChecker {
 impl crate::Config for Test {
 	type Balance = Balance;
 	type WeightInfo = ();
-	type OnStakingUpdate = ();
+	type OnStakingUpdate = TierListener;
 	type NoterChecker = MockNoterChecker;
 	type Currency = Balances;
 	type NoterBondAmount = NoterBondAmount;
@@ -122,6 +122,26 @@ impl crate::Config for Test {
 }
 
 // --- ExtBuilder ---
+std::thread_local! {
+	/// Everyone the pallet has announced as having reached a longer tier, in order.
+	pub static TIERS_REACHED: core::cell::RefCell<Vec<AccountId>> =
+		const { core::cell::RefCell::new(Vec::new()) };
+}
+
+/// Hears only the crossings; a data change is not what the tier tests measure.
+pub struct TierListener;
+impl crate::OnStakingDataUpdate<AccountId> for TierListener {
+	fn on_staking_data_changed(_who: &AccountId) {}
+	fn on_staking_tier_reached(who: &AccountId) {
+		TIERS_REACHED.with(|t| t.borrow_mut().push(*who));
+	}
+}
+
+/// Who has been announced so far, and forget them.
+pub fn take_tiers_reached() -> Vec<AccountId> {
+	TIERS_REACHED.with(|t| core::mem::take(&mut *t.borrow_mut()))
+}
+
 pub struct ExtBuilder;
 
 impl Default for ExtBuilder {
