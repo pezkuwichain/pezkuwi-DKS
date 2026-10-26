@@ -25,6 +25,7 @@ exclude = [
 	"vendor/alloy-signer-local",
 	"vendor/revm-precompile",
 	"vendor/ruint",
+	"vendor/wasmtime-internal-cache",
 ]
 
 members = [
@@ -1664,7 +1665,7 @@ pezkuwi-zombienet-prom-metrics-parser = { path = "vendor/pezkuwi-zombienet-sdk/c
 pezkuwi-zombienet-provider = { path = "vendor/pezkuwi-zombienet-sdk/crates/provider", version = "0.44.0" }
 pezkuwi-zombienet-sdk = { path = "vendor/pezkuwi-zombienet-sdk/crates/sdk", version = "0.44.0" }
 pezkuwi-zombienet-support = { path = "vendor/pezkuwi-zombienet-sdk/crates/support", version = "0.44.0" }
-zstd = { version = "0.12.4", default-features = false }
+zstd = { version = "0.14.3", default-features = false }
 
 [profile.release]
 # Pezkuwi runtime requires unwinding.
@@ -1776,6 +1777,11 @@ alloy-eip7702 = { path = "vendor/alloy-eip7702" }
 alloy-primitives = { path = "vendor/alloy-primitives" }
 alloy-signer = { path = "vendor/alloy-signer" }
 alloy-signer-local = { path = "vendor/alloy-signer-local" }
+# zstd before 0.14.3 / zstd-safe before 8.2 (RUSTSEC-2026-0391, -0398, -0403): the executor's
+# compiled-module cache in wasmtime 36, its LTS line, still asks for zstd 0.13. The vendored copy
+# only moves it to 0.14.3; `encode_all`, `decode_all` and `DEFAULT_COMPRESSION_LEVEL` are
+# unchanged. Drop it once wasmtime 36 releases on zstd 0.14 or the executor moves past 36.
+wasmtime-internal-cache = { path = "vendor/wasmtime-internal-cache" }
 serde = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 serde_core = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 # arrayvec was vendored because 0.7.6 failed on wasm32v1-none (E0223 ambiguity from the
