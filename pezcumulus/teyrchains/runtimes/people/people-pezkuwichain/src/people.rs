@@ -763,6 +763,11 @@ impl pezpallet_staking_score::Config for Runtime {
 	// that, time is only credited for a stake that has actually existed.
 	type OracleGracePeriod = StakingOracleGracePeriod;
 	type MaxDataAge = StakingMaxDataAge;
+	// A stake is proven from the Asset Hub's own state, through the relay; see `prove_stake`.
+	type RelayParent = HubProofRelayParent;
+	type RelayRootsKept = StakingRelayRootsKept;
+	type AssetHubParaId = StakingAssetHubParaId;
+	type HubPoolsPalletId = StakingHubPoolsPalletId;
 	type SlashDestination = PenaltiesToTreasury;
 }
 
@@ -2596,6 +2601,156 @@ mod tests {
 	/// The Asset Hub builds `note_bonded` by hand as (83, 11, era, accounts) -- it cannot name
 	/// this runtime's types. This pins the receiving end: if the pallet moves or the call
 	/// renumbers, this fails here instead of the report landing on whatever now sits there.
+	/// A stake proven here from proofs the live Zagros relay and Asset Hub produced, through this
+	/// runtime's own configuration: the hub's para id, the pools pallet id, 32-byte accounts.
+	mod proven_stake {
+		use super::*;
+		use pezpallet_staking_score::{hub_fixture as fx, CachedStakingDetails, StakingSource};
+
+		use pezframe_support::{assert_noop, assert_ok};
+
+		type Score = pezpallet_staking_score::Pezpallet<Runtime>;
+
+		fn nodes(n: &[&[u8]]) -> Vec<Vec<u8>> {
+			n.iter().map(|x| x.to_vec()).collect()
+		}
+
+		fn setup(who: &AccountId) {
+			pezpallet_staking_score::TrackingOptIn::<Runtime>::insert(who, ());
+			pezpallet_staking_score::RelayRoots::<Runtime>::insert(
+				fx::RELAY_BLOCK,
+				pezsp_core::H256(fx::RELAY_ROOT),
+			);
+		}
+
+		fn prove(
+			who: &AccountId,
+			proof: &[&[u8]],
+		) -> pezframe_support::dispatch::DispatchResultWithPostInfo {
+			Score::prove_stake(
+				RuntimeOrigin::signed(AccountId::from([9u8; 32])),
+				who.clone(),
+				fx::RELAY_BLOCK,
+				nodes(fx::RELAY_PROOF),
+				nodes(proof),
+			)
+		}
+
+		#[test]
+		fn a_direct_bond_is_proven_and_free_when_it_changes_the_record() {
+			pezsp_io::TestExternalities::default().execute_with(|| {
+				let who = AccountId::from(fx::STAKER);
+				setup(&who);
+				let post = prove(&who, fx::STAKER_PROOF).expect("proves");
+				assert_eq!(post.pays_fee, pezframe_support::dispatch::Pays::No);
+				assert_eq!(
+					CachedStakingDetails::<Runtime>::get(&who, StakingSource::AssetHub)
+						.map(|d| d.staked_amount),
+					Some(fx::STAKER_ACTIVE)
+				);
+				assert!(pezpallet_staking_score::ReportedByChain::<Runtime>::contains_key(&who));
+			});
+		}
+
+		#[test]
+		fn a_pool_members_share_is_proven_through_the_pool() {
+			pezsp_io::TestExternalities::default().execute_with(|| {
+				let who = AccountId::from(fx::MEMBER);
+				setup(&who);
+				assert_ok!(prove(&who, fx::MEMBER_PROOF));
+				assert_eq!(
+					CachedStakingDetails::<Runtime>::get(&who, StakingSource::AssetHub)
+						.map(|d| d.staked_amount),
+					Some(fx::MEMBER_POINTS * fx::POOL_ACTIVE / fx::POOL_POINTS)
+				);
+			});
+		}
+
+		#[test]
+		fn showing_the_same_stake_again_is_refused_and_a_repeat_is_charged() {
+			pezsp_io::TestExternalities::default().execute_with(|| {
+				let who = AccountId::from(fx::STAKER);
+				setup(&who);
+				assert_ok!(prove(&who, fx::STAKER_PROOF));
+				// The same relay block again: not newer, refused before any work.
+				assert_noop!(
+					prove(&who, fx::STAKER_PROOF),
+					pezpallet_staking_score::Error::<Runtime>::ProofNotNewer
+				);
+				// A newer anchor for the same stake changes nothing and is paid for.
+				pezpallet_staking_score::RelayRoots::<Runtime>::insert(
+					fx::RELAY_BLOCK + 1,
+					pezsp_core::H256(fx::RELAY_ROOT),
+				);
+				let post = Score::prove_stake(
+					RuntimeOrigin::signed(AccountId::from([9u8; 32])),
+					who.clone(),
+					fx::RELAY_BLOCK + 1,
+					nodes(fx::RELAY_PROOF),
+					nodes(fx::STAKER_PROOF),
+				)
+				.expect("proves");
+				assert_eq!(post.pays_fee, pezframe_support::dispatch::Pays::Yes);
+			});
+		}
+
+		#[test]
+		fn a_proof_supersedes_a_noters_figure_still_in_its_window() {
+			pezsp_io::TestExternalities::default().execute_with(|| {
+				let who = AccountId::from(fx::STAKER);
+				setup(&who);
+				pezpallet_staking_score::PendingStakingDetails::<Runtime>::insert(
+					&who,
+					StakingSource::AssetHub,
+					pezpallet_staking_score::PendingSubmission {
+						details: pezpallet_staking_score::StakingDetails {
+							staked_amount: 1,
+							nominations_count: 0,
+							unlocking_chunks_count: 0,
+						},
+						submitted_by: AccountId::from([3u8; 32]),
+						submitted_at: 0,
+					},
+				);
+				assert_ok!(prove(&who, fx::STAKER_PROOF));
+				assert!(pezpallet_staking_score::PendingStakingDetails::<Runtime>::get(
+					&who,
+					StakingSource::AssetHub
+				)
+				.is_none());
+			});
+		}
+
+		#[test]
+		fn a_proven_stakes_clock_runs_without_reconfirmation() {
+			pezsp_io::TestExternalities::default().execute_with(|| {
+				let who = AccountId::from(fx::STAKER);
+				pezframe_system::Pezpallet::<Runtime>::set_block_number(1);
+				setup(&who);
+				pezpallet_staking_score::StakingStartBlock::<Runtime>::insert(&who, 1);
+				assert_ok!(prove(&who, fx::STAKER_PROOF));
+				// Long past `MaxDataAge`, with nothing changed and nobody confirming anything.
+				let later = 1 + 3 * StakingMaxDataAge::get();
+				pezframe_system::Pezpallet::<Runtime>::set_block_number(later);
+				use pezpallet_staking_score::StakingScoreProvider;
+				let (_, held) = Score::get_staking_score(&who);
+				assert!(held > StakingMaxDataAge::get(), "the clock ran past the confirmation age");
+			});
+		}
+
+		#[test]
+		fn a_proof_for_another_account_is_refused() {
+			pezsp_io::TestExternalities::default().execute_with(|| {
+				let who = AccountId::from(fx::MEMBER);
+				setup(&who);
+				assert_noop!(
+					prove(&who, fx::STAKER_PROOF),
+					pezpallet_staking_score::Error::<Runtime>::InvalidProof
+				);
+			});
+		}
+	}
+
 	#[test]
 	fn the_bond_report_decodes_the_way_the_asset_hub_builds_it() {
 		use codec::{Decode, Encode};
@@ -2932,5 +3087,25 @@ mod tests {
 				 nothing -- re-derive the expectation instead of deleting it"
 			);
 		});
+	}
+}
+
+parameter_types! {
+	/// An hour of relay blocks: how far back a stake proof may be anchored.
+	pub const StakingRelayRootsKept: u32 = 600;
+	pub StakingAssetHubParaId: u32 =
+		u32::from(testnet_teyrchains_constants::pezkuwichain::locations::AssetHubParaId::get());
+	/// The Asset Hub's nomination-pools pallet id, `PoolsPalletId` there. A pool member's
+	/// share is read from the pool's bonded account, which derives from it.
+	pub const StakingHubPoolsPalletId: pezframe_support::PalletId =
+		pezframe_support::PalletId(*b"py/nopls");
+}
+
+/// This block's relay parent and its storage root, from the validation data the collator put in.
+pub struct HubProofRelayParent;
+impl pezpallet_staking_score::RelayParentProvider for HubProofRelayParent {
+	fn relay_parent() -> Option<(u32, pezsp_core::H256)> {
+		pezcumulus_pezpallet_teyrchain_system::ValidationData::<Runtime>::get()
+			.map(|v| (v.relay_parent_number, v.relay_parent_storage_root))
 	}
 }

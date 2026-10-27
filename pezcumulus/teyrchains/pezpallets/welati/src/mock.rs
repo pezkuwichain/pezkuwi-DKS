@@ -334,6 +334,14 @@ impl pezpallet_staking_score::Config for Test {
 	type SlashDestination = SlashesTo<StakingScoreSlashDestination>;
 	type OracleGracePeriod = OracleGracePeriod;
 	type MaxDataAge = StakingMaxDataAge;
+	type RelayParent = ();
+	type RelayRootsKept = pezframe_support::traits::ConstU32<600>;
+	type AssetHubParaId = pezframe_support::traits::ConstU32<1000>;
+	type HubPoolsPalletId = HubPoolsPalletId;
+}
+
+pezframe_support::parameter_types! {
+	pub const HubPoolsPalletId: pezframe_support::PalletId = pezframe_support::PalletId(*b"py/nopls");
 }
 
 // Referral Configuration

@@ -2330,3 +2330,114 @@ mod tiers {
 		});
 	}
 }
+
+// ============================================================================
+// A STAKE IS PROVEN FROM THE HUB'S OWN STATE
+// ============================================================================
+//
+// The stake is on the Asset Hub. Rather than believe a noter about it, or let the hub's own
+// governance write it here, anyone may prove it: a relay proof to the hub's head, a hub proof
+// to the bond. The happy path needs 32-byte accounts and runs in the People runtime's tests
+// against proofs the live chains produced; these are the checks that come before the proof.
+
+mod proven {
+	use super::*;
+	use crate::{OldestRelayRoot, RelayRoots};
+	use pezframe_support::traits::Hooks;
+
+	fn finalize(n: u64) {
+		System::set_block_number(n);
+		<StakingScore as Hooks<u64>>::on_finalize(n);
+	}
+
+	fn prove(relay_block: u32) -> pezframe_support::dispatch::DispatchResultWithPostInfo {
+		StakingScore::prove_stake(
+			RuntimeOrigin::signed(30),
+			USER_STASH,
+			relay_block,
+			vec![],
+			vec![],
+		)
+	}
+
+	#[test]
+	fn each_blocks_relay_root_is_kept_and_the_old_ones_pruned() {
+		ExtBuilder::default().build_and_execute(|| {
+			for (n, relay) in (1u64..=30).zip(100u32..) {
+				set_relay_parent(relay, [relay as u8; 32]);
+				finalize(n);
+			}
+			// Kept for ten relay blocks back from 129, pruned below.
+			assert!(RelayRoots::<Test>::get(129).is_some());
+			assert!(RelayRoots::<Test>::get(119).is_some());
+			assert!(RelayRoots::<Test>::get(118).is_none());
+			assert!(RelayRoots::<Test>::get(100).is_none());
+			assert_eq!(OldestRelayRoot::<Test>::get(), Some(119));
+		});
+	}
+
+	#[test]
+	fn a_relay_parent_that_jumps_does_not_leave_roots_behind() {
+		ExtBuilder::default().build_and_execute(|| {
+			set_relay_parent(100, [1; 32]);
+			finalize(1);
+			// The chain missed relay blocks; pruning catches up a few a block.
+			for (n, relay) in (2u64..=8).zip([103u32, 106, 109, 112, 115, 118, 121]) {
+				set_relay_parent(relay, [relay as u8; 32]);
+				finalize(n);
+			}
+			assert_eq!(RelayRoots::<Test>::iter().filter(|(k, _)| *k < 111).count(), 0);
+		});
+	}
+
+	#[test]
+	fn a_proof_for_an_account_that_has_not_opted_in_is_refused() {
+		ExtBuilder::default().build_and_execute(|| {
+			set_relay_parent(100, [1; 32]);
+			finalize(1);
+			assert_noop!(prove(100), Error::<Test>::NotTracking);
+		});
+	}
+
+	#[test]
+	fn a_proof_from_a_relay_block_not_kept_is_refused() {
+		ExtBuilder::default().build_and_execute(|| {
+			set_relay_parent(100, [1; 32]);
+			finalize(1);
+			assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+			assert_noop!(prove(99), Error::<Test>::UnknownRelayBlock);
+		});
+	}
+
+	#[test]
+	fn a_proof_no_newer_than_the_last_is_refused() {
+		ExtBuilder::default().build_and_execute(|| {
+			set_relay_parent(100, [1; 32]);
+			finalize(1);
+			assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+			crate::ProvenAt::<Test>::insert(USER_STASH, 100);
+			assert_noop!(prove(100), Error::<Test>::ProofNotNewer);
+		});
+	}
+
+	#[test]
+	fn a_proof_that_does_not_verify_is_refused() {
+		ExtBuilder::default().build_and_execute(|| {
+			set_relay_parent(100, [1; 32]);
+			finalize(1);
+			assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+			assert_noop!(prove(100), Error::<Test>::InvalidProof);
+		});
+	}
+
+	#[test]
+	fn more_proof_than_a_stake_needs_is_refused() {
+		ExtBuilder::default().build_and_execute(|| {
+			let big = vec![vec![0u8; 1024]; (crate::MAX_PROOF_KIB + 1) as usize];
+			assert_noop!(
+				StakingScore::prove_stake(RuntimeOrigin::signed(30), USER_STASH, 1, big, vec![]),
+				Error::<Test>::ProofTooLarge
+			);
+		});
+	}
+}

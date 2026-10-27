@@ -16,8 +16,11 @@ log = { default-features = false, workspace = true }
 pezframe-benchmarking = { workspace = true, optional = true }
 pezframe-support = { default-features = false, workspace = true }
 pezframe-system = { default-features = false, workspace = true }
+pezsp-core = { default-features = false, workspace = true }
 pezsp-runtime = { default-features = false, workspace = true }
+pezsp-state-machine = { default-features = false, workspace = true }
 pezsp-std = { default-features = false, workspace = true }
+pezsp-trie = { default-features = false, workspace = true }
 scale-info = { default-features = false, features = [
 	"derive",
 ], workspace = true }
@@ -46,9 +49,12 @@ std = [
 	"pezframe-system/std",
 	"pezkuwi-primitives/std",
 	"pezpallet-balances?/std",
+	"pezsp-core/std",
 	"pezsp-io?/std",
 	"pezsp-runtime/std",
+	"pezsp-state-machine/std",
 	"pezsp-std/std",
+	"pezsp-trie/std",
 	"scale-info/std",
 	"serde?/std",
 ]
@@ -60,6 +66,8 @@ runtime-benchmarks = [
 	"pezpallet-balances/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
 ]
 try-runtime = [
 	"pezframe-benchmarking?/try-runtime",

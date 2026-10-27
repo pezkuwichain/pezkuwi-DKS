@@ -17584,9 +17584,12 @@ dependencies = [
  "pezframe-system",
  "pezkuwi-primitives",
  "pezpallet-balances",
+ "pezsp-core",
  "pezsp-io",
  "pezsp-runtime",
+ "pezsp-state-machine",
  "pezsp-std",
+ "pezsp-trie",
  "scale-info",
  "serde",
 ]

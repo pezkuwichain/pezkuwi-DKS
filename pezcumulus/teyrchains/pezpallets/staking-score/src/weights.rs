@@ -57,6 +57,7 @@ use core::marker::PhantomData;
 pub trait WeightInfo {
 	fn start_score_tracking() -> Weight;
 	fn receive_staking_details() -> Weight;
+	fn prove_stake(k: u32) -> Weight;
 	fn register_as_noter() -> Weight;
 	fn unregister_as_noter() -> Weight;
 	fn dispute_staking_details() -> Weight;
@@ -129,6 +130,19 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(Weight::from_parts(0, 8682))
 			.saturating_add(T::DbWeight::get().reads(16))
 			.saturating_add(T::DbWeight::get().writes(6))
+	}
+	/// Placeholder until measured: the noter path's weight, and a nanosecond and a byte of
+	/// proof size per byte of proof for hashing and carrying it.
+	fn prove_stake(k: u32) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1121`
+		//  Estimated: `8682`
+		// Minimum execution time: 157_715_000 picoseconds.
+		Weight::from_parts(246_858_000, 0)
+			.saturating_add(Weight::from_parts(0, 8682))
+			.saturating_add(T::DbWeight::get().reads(16))
+			.saturating_add(T::DbWeight::get().writes(6))
+			.saturating_add(Weight::from_parts(1_000_000, 1024).saturating_mul(k.into()))
 	}
 	/// Storage: `Tiki::UserTikis` (r:1 w:0)
 	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
@@ -273,6 +287,19 @@ impl WeightInfo for () {
 			.saturating_add(Weight::from_parts(0, 8682))
 			.saturating_add(RocksDbWeight::get().reads(16))
 			.saturating_add(RocksDbWeight::get().writes(6))
+	}
+	/// Placeholder until measured: the noter path's weight, and a nanosecond and a byte of
+	/// proof size per byte of proof for hashing and carrying it.
+	fn prove_stake(k: u32) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1121`
+		//  Estimated: `8682`
+		// Minimum execution time: 157_715_000 picoseconds.
+		Weight::from_parts(246_858_000, 0)
+			.saturating_add(Weight::from_parts(0, 8682))
+			.saturating_add(RocksDbWeight::get().reads(16))
+			.saturating_add(RocksDbWeight::get().writes(6))
+			.saturating_add(Weight::from_parts(1_000_000, 1024).saturating_mul(k.into()))
 	}
 	/// Storage: `Tiki::UserTikis` (r:1 w:0)
 	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)

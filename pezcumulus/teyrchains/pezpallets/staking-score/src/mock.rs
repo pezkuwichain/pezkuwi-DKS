@@ -118,6 +118,10 @@ impl crate::Config for Test {
 	type SlashOrigin = EnsureSignedBy<SlashMemberProvider, AccountId>;
 	type OracleGracePeriod = OracleGracePeriod;
 	type MaxDataAge = MaxDataAge;
+	type RelayParent = TestRelayParent;
+	type RelayRootsKept = RelayRootsKept;
+	type AssetHubParaId = AssetHubParaId;
+	type HubPoolsPalletId = HubPoolsPalletId;
 	type SlashDestination = SlashesTo<SlashDestinationAccount>;
 }
 
@@ -140,6 +144,29 @@ impl crate::OnStakingDataUpdate<AccountId> for TierListener {
 /// Who has been announced so far, and forget them.
 pub fn take_tiers_reached() -> Vec<AccountId> {
 	TIERS_REACHED.with(|t| core::mem::take(&mut *t.borrow_mut()))
+}
+
+std::thread_local! {
+	/// The relay parent the next `on_finalize` sees, set by the tests.
+	pub static RELAY_PARENT: core::cell::RefCell<Option<(u32, pezsp_core::H256)>> =
+		const { core::cell::RefCell::new(None) };
+}
+
+pub struct TestRelayParent;
+impl crate::RelayParentProvider for TestRelayParent {
+	fn relay_parent() -> Option<(u32, pezsp_core::H256)> {
+		RELAY_PARENT.with(|r| *r.borrow())
+	}
+}
+
+pub fn set_relay_parent(number: u32, root: [u8; 32]) {
+	RELAY_PARENT.with(|r| *r.borrow_mut() = Some((number, pezsp_core::H256(root))));
+}
+
+parameter_types! {
+	pub const RelayRootsKept: u32 = 10;
+	pub const AssetHubParaId: u32 = 1000;
+	pub const HubPoolsPalletId: pezframe_support::PalletId = pezframe_support::PalletId(*b"py/nopls");
 }
 
 pub struct ExtBuilder;

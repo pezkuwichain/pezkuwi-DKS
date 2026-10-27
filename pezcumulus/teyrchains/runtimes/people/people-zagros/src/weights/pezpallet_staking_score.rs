@@ -136,6 +136,19 @@ impl<T: pezframe_system::Config> pezpallet_staking_score::WeightInfo for WeightI
 			.saturating_add(T::DbWeight::get().reads(20))
 			.saturating_add(T::DbWeight::get().writes(12))
 	}
+	/// Placeholder until measured: the noter path's weight, and a nanosecond and a byte of
+	/// proof size per byte of proof for hashing and carrying it.
+	fn prove_stake(k: u32) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1204`
+		//  Estimated: `8682`
+		// Minimum execution time: 190_946_000 picoseconds.
+		Weight::from_parts(302_119_000, 0)
+			.saturating_add(Weight::from_parts(0, 8682))
+			.saturating_add(T::DbWeight::get().reads(20))
+			.saturating_add(T::DbWeight::get().writes(12))
+			.saturating_add(Weight::from_parts(1_000_000, 1024).saturating_mul(k.into()))
+	}
 	/// Storage: `Tiki::UserTikis` (r:1 w:0)
 	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
 	/// Storage: `Tiki::TikiExpiry` (r:1 w:0)
