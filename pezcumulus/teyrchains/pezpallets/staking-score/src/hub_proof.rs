@@ -304,7 +304,7 @@ mod tests {
 		}
 
 		fn state(entries: Vec<(Vec<u8>, Vec<u8>)>, keys: &[Vec<u8>]) -> (H256, Vec<Vec<u8>>) {
-			use pezsp_state_machine::{prove_read, Backend, InMemoryBackend};
+			use pezsp_state_machine::{prove_read, InMemoryBackend};
 			let backend = InMemoryBackend::<BlakeTwo256>::from((
 				vec![(None, entries.into_iter().map(|(k, v)| (k, Some(v))).collect())],
 				pezsp_core::storage::StateVersion::V1,
