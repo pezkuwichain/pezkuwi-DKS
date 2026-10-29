@@ -400,6 +400,34 @@ mod the_register_is_not_writable_from_abroad {
 		}
 	}
 
+	/// The `.kurd` register: the state's names, where payments and sites point. Every call,
+	/// including the ones only Parliament or the court may make, is refused from abroad.
+	#[test]
+	fn the_name_register_is_not_writable_from_abroad() {
+		use pezpallet_navnisan::{Call as N, Change, Owner};
+		let node = pezpallet_navnisan::kurd_node();
+		let who: AccountId = ALICE.into();
+		let calls = vec![
+			N::commit { commitment: node },
+			N::register { label: b"ahmet".to_vec(), owner: who.clone(), secret: [0; 32], years: 1 },
+			N::transfer { node, to: who.clone() },
+			N::set_account { node, account: Some(who.clone()) },
+			N::set_content { node, content: None },
+			N::grant { parent: None, label: b"gov".to_vec(), owner: Owner::Governance },
+			N::revoke { node },
+			N::force_change { node, change: Change::Account(None) },
+			N::schedule_revocation { node, reason: node },
+			N::set_prices { prices: Default::default() },
+			N::lock { label: b"serok".to_vec(), category: 5 },
+		];
+		for call in calls {
+			assert!(
+				!Filter::contains(&RuntimeCall::Navnisan(call)),
+				"an off-chain message reached the name register"
+			);
+		}
+	}
+
 	/// The founding calls are refused too, so the founding hand is not the relay's.
 	///
 	/// Three true facts that do not compose: `seat_founding_parliament` accepts Root, a testnet

@@ -25,6 +25,7 @@ use alloc::{vec, vec::Vec};
 use hex_literal::hex;
 use pezcumulus_primitives_core::ParaId;
 use pezframe_support::build_struct_json_patch;
+use pezpallet_navnisan::migrations::v1::SeedSet;
 use pezpallet_tiki::Tiki;
 use pezsp_core::{crypto::UncheckedInto, H256};
 use pezsp_genesis_builder::PresetId;
@@ -145,6 +146,16 @@ fn people_pezkuwichain_genesis(
 		// Creates Collection 0 in pezpallet_nfts and mints NFT #0 for the founder
 		// This is required before any citizenship NFTs can be minted
 		tiki: TikiConfig { founding_citizen, founding_government },
+
+		// ====================================================================
+		// Navnisan - the `.kurd` register: gov.kurd, the zone roots, locked labels, prices
+		// ====================================================================
+		navnisan: NavnisanConfig {
+			zones: <crate::people::NavnisanSeed as SeedSet<Runtime>>::zones(),
+			gov_subnames: <crate::people::NavnisanSeed as SeedSet<Runtime>>::gov_subnames(),
+			locked: <crate::people::NavnisanSeed as SeedSet<Runtime>>::locked(),
+			prices: <crate::people::NavnisanSeed as SeedSet<Runtime>>::prices(),
+		},
 	})
 }
 

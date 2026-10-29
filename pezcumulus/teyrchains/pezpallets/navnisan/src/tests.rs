@@ -522,3 +522,78 @@ fn locking_stops_new_purchases_only() {
 		assert_noop!(N::lock(RuntimeOrigin::root(), b"a--b".to_vec(), 1), Error::<Test>::BadLabel);
 	});
 }
+
+// --- what wallets ask -----------------------------------------------------------------------
+
+#[test]
+fn the_api_resolves_marks_official_and_reverses() {
+	new_test_ext().execute_with(|| {
+		use runtime_api::Availability as A;
+		let node = buy(ALICE, b"ahmet", 1);
+		assert_ok!(N::set_content(RuntimeOrigin::signed(ALICE), node, Some(Content::Ipfs(cid(4)))));
+		let r = N::api_resolve(b"ahmet.kurd").unwrap();
+		assert_eq!((r.account, r.official, r.status), (Some(ALICE), false, Status::Active));
+		assert_eq!(r.content, Some(Content::Ipfs(cid(4))));
+		let gov = N::api_resolve(b"darayi.gov.kurd").unwrap();
+		assert!(gov.official);
+		assert_eq!(N::api_resolve(b"nobody.kurd"), None);
+
+		assert_ok!(N::set_primary(RuntimeOrigin::signed(ALICE), node));
+		assert_eq!(N::api_reverse(&ALICE), Some(b"ahmet.kurd".to_vec()));
+		assert_eq!(N::api_reverse(&BOB), None);
+		assert_eq!(
+			N::full_name(child_node(&top(b"gov"), b"darayi")),
+			Some(b"darayi.gov.kurd".to_vec())
+		);
+
+		assert_eq!(N::api_availability(b"ahmet"), A::Taken);
+		assert_eq!(N::api_availability(b"serok"), A::Locked);
+		assert_eq!(N::api_availability(b"zz"), A::GrantOnly);
+		assert_eq!(N::api_availability(b"a--b"), A::Invalid);
+		assert_eq!(N::api_availability(b"freename"), A::Free);
+		assert_eq!(N::api_price(b"abcd", 2), Some(200));
+		advance(YEAR);
+		assert_eq!(N::api_availability(b"ahmet"), A::Grace);
+		assert_eq!(N::api_resolve(b"ahmet.kurd").unwrap().status, Status::Grace);
+	});
+}
+
+// --- a chain that gains the pallet by upgrade ---------------------------------------------
+
+struct TestSeed;
+impl migrations::v1::SeedSet<Test> for TestSeed {
+	fn zones() -> Vec<Vec<u8>> {
+		vec![b"gov".to_vec()]
+	}
+	fn gov_subnames() -> Vec<(Vec<u8>, Option<u8>)> {
+		vec![(b"darayi".to_vec(), Some(FINANCE))]
+	}
+	fn locked() -> Vec<(Vec<u8>, u8)> {
+		vec![(b"dks".to_vec(), 2)]
+	}
+	fn prices() -> PriceBands<Balance> {
+		PRICES
+	}
+}
+
+#[test]
+fn the_seed_migration_writes_the_genesis_set_once() {
+	use pezframe_support::traits::{GetStorageVersion, OnRuntimeUpgrade, StorageVersion};
+	use pezsp_runtime::BuildStorage;
+	let mut ext: pezsp_io::TestExternalities = pezframe_system::GenesisConfig::<Test>::default()
+		.build_storage()
+		.unwrap()
+		.into();
+	ext.execute_with(|| {
+		StorageVersion::new(0).put::<N>();
+		migrations::v1::SeedNavnisan::<Test, TestSeed>::on_runtime_upgrade();
+		assert_eq!(N::on_chain_storage_version(), 1);
+		assert!(Names::<Test>::get(child_node(&top(b"gov"), b"darayi")).is_some());
+		assert!(Locked::<Test>::contains_key(top(b"dks")));
+		let reg = NextRegistration::<Test>::get();
+		// Run again: version 1 now, nothing written.
+		migrations::v1::SeedNavnisan::<Test, TestSeed>::on_runtime_upgrade();
+		assert_eq!(NextRegistration::<Test>::get(), reg);
+		check();
+	});
+}

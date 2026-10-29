@@ -47,6 +47,7 @@ pezpallet-message-queue = { workspace = true }
 pezpallet-messaging = { workspace = true }
 pezpallet-migrations = { workspace = true }
 pezpallet-multisig = { workspace = true }
+pezpallet-navnisan = { workspace = true }
 pezpallet-nfts = { workspace = true }
 pezpallet-parameters = { workspace = true }
 pezpallet-perwerde = { workspace = true }
@@ -180,6 +181,7 @@ std = [
 	"pezpallet-messaging/std",
 	"pezpallet-migrations/std",
 	"pezpallet-multisig/std",
+	"pezpallet-navnisan/std",
 	"pezpallet-nfts/std",
 	"pezpallet-parameters/std",
 	"pezpallet-perwerde/std",
@@ -272,6 +274,7 @@ runtime-benchmarks = [
 	"pezpallet-messaging/runtime-benchmarks",
 	"pezpallet-migrations/runtime-benchmarks",
 	"pezpallet-multisig/runtime-benchmarks",
+	"pezpallet-navnisan/runtime-benchmarks",
 	"pezpallet-nfts/runtime-benchmarks",
 	"pezpallet-parameters/runtime-benchmarks",
 	"pezpallet-perwerde/runtime-benchmarks",
@@ -357,6 +360,7 @@ try-runtime = [
 	"pezpallet-messaging/try-runtime",
 	"pezpallet-migrations/try-runtime",
 	"pezpallet-multisig/try-runtime",
+	"pezpallet-navnisan/try-runtime",
 	"pezpallet-nfts/try-runtime",
 	"pezpallet-parameters/try-runtime",
 	"pezpallet-perwerde/try-runtime",

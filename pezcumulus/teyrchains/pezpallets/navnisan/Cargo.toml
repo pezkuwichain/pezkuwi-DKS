@@ -15,6 +15,7 @@ codec = { workspace = true, default-features = false, features = ["derive"] }
 pezframe-benchmarking = { workspace = true, optional = true }
 pezframe-support = { default-features = false, workspace = true }
 pezframe-system = { default-features = false, workspace = true }
+pezsp-api = { default-features = false, workspace = true }
 pezsp-core = { default-features = false, workspace = true }
 pezsp-runtime = { default-features = false, workspace = true }
 scale-info = { default-features = false, features = [
@@ -40,6 +41,7 @@ std = [
 	"pezframe-support/std",
 	"pezframe-system/std",
 	"pezpallet-balances?/std",
+	"pezsp-api/std",
 	"pezsp-core/std",
 	"pezsp-io?/std",
 	"pezsp-runtime/std",
@@ -51,6 +53,7 @@ runtime-benchmarks = [
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 ]
@@ -59,5 +62,6 @@ try-runtime = [
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
 	"pezpallet-balances?/try-runtime",
+	"pezsp-api/try-runtime",
 	"pezsp-runtime/try-runtime",
 ]

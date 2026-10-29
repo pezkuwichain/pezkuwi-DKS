@@ -35,6 +35,7 @@ pub mod pezpallet_message_queue;
 pub mod pezpallet_messaging;
 pub mod pezpallet_migrations;
 pub mod pezpallet_multisig;
+pub mod pezpallet_navnisan;
 pub mod pezpallet_nfts;
 pub mod pezpallet_parameters;
 pub mod pezpallet_perwerde;

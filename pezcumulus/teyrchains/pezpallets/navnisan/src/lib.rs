@@ -43,7 +43,10 @@ extern crate alloc;
 
 pub use pezpallet::*;
 
+pub mod genesis_set;
 pub mod label;
+pub mod migrations;
+pub mod runtime_api;
 pub mod weights;
 pub use weights::WeightInfo;
 
@@ -309,7 +312,10 @@ pub mod pezpallet {
 	use pezframe_system::pezpallet_prelude::*;
 	use pezsp_runtime::traits::{Saturating, Zero};
 
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
+	/// 1 from birth. A chain founded with this pallet writes it at genesis; a chain that gains
+	/// the pallet in an upgrade starts at 0 and `migrations::v1::SeedNavnisan` writes the
+	/// genesis set once.
+	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub type RecordOf<T> =
 		NameRecord<<T as pezframe_system::Config>::AccountId, OfficeOf<T>, BalanceOf<T>>;
@@ -1449,6 +1455,81 @@ pub mod pezpallet {
 				node = child_node(&node, l);
 			}
 			Some(node)
+		}
+
+		/// `runtime_api::NavnisanApi::resolve`.
+		pub fn api_resolve(
+			name: &[u8],
+		) -> Option<runtime_api::Resolution<T::AccountId, OfficeOf<T>>> {
+			let node = Self::node_of(name)?;
+			let rec = Names::<T>::get(node)?;
+			let status = Self::effective_status(&rec, Self::now())?;
+			Some(runtime_api::Resolution {
+				node,
+				account: rec.account.clone(),
+				content: rec.content.clone(),
+				owner: rec.owner.clone(),
+				kind: rec.kind,
+				status,
+				expiry: rec.expiry,
+				reg: rec.reg,
+				official: rec.is_institutional(),
+			})
+		}
+
+		pub fn api_text(name: &[u8], key: &[u8]) -> Option<Vec<u8>> {
+			let node = Self::node_of(name)?;
+			let rec = Names::<T>::get(node)?;
+			Self::effective_status(&rec, Self::now())?;
+			let key: label::TextKey = key.to_vec().try_into().ok()?;
+			TextRecords::<T>::get(rec.reg, key).map(|(v, _, _)| v.into_inner())
+		}
+
+		/// The full dotted name of `node`, built from the labels upward.
+		pub fn full_name(node: NameHash) -> Option<Vec<u8>> {
+			let mut labels = Vec::new();
+			let mut cur = node;
+			for _ in 0..label::MAX_DEPTH {
+				let rec = Names::<T>::get(cur)?;
+				labels.push(rec.label.into_inner());
+				if rec.parent == kurd_node() {
+					labels.push(b"kurd".to_vec());
+					return Some(labels.join(&b'.'));
+				}
+				cur = rec.parent;
+			}
+			None
+		}
+
+		pub fn api_reverse(who: &T::AccountId) -> Option<Vec<u8>> {
+			let node = Primary::<T>::get(who)?;
+			Self::resolves_to(node, who).then(|| Self::full_name(node)).flatten()
+		}
+
+		pub fn api_price(raw: &[u8], years: u32) -> Option<BalanceOf<T>> {
+			let l = label::validate(raw, label::Use::Buy).ok()?;
+			(years >= 1 && years <= T::MaxYears::get()).then(|| Self::price(l.len(), years))
+		}
+
+		pub fn api_availability(raw: &[u8]) -> runtime_api::Availability {
+			use runtime_api::Availability as A;
+			match label::validate(raw, label::Use::Buy) {
+				Err(label::LabelError::TooShortToBuy) => return A::GrantOnly,
+				Err(_) => return A::Invalid,
+				Ok(_) => {},
+			}
+			let node = child_node(&kurd_node(), raw);
+			if Locked::<T>::contains_key(node) {
+				return A::Locked;
+			}
+			if PendingRevocations::<T>::contains_key(node) {
+				return A::Taken;
+			}
+			match Names::<T>::get(node).and_then(|r| Self::status(&r, Self::now())) {
+				Some(Status::Active) => A::Taken,
+				Some(Status::Grace) => A::Grace,
+				None => A::Free,
+			}
 		}
 
 		/// Writes the genesis set; also the Zagros seed migration.
