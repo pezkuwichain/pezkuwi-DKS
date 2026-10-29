@@ -88,7 +88,10 @@ pub fn pezkuwichain_mainnet_config() -> Result<PezkuwichainChainSpec, String> {
 		Default::default(),
 	)
 	.with_name("PezkuwiChain Mainnet")
-	.with_id("pezkuwichain_mainnet")
+	// The id the Asset Hub and People specs name as their `relay_chain`. A light client
+	// (smoldot) attaches a teyrchain only to a relay whose id matches it exactly; with the
+	// underscore spelling this had, a wallet's light client could open neither.
+	.with_id("pezkuwichain-mainnet")
 	.with_chain_type(ChainType::Live)
 	.with_genesis_config_preset_name("genesis")
 	.with_telemetry_endpoints(

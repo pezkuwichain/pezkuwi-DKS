@@ -219,9 +219,24 @@ def verify_spec(path, name, expected_id):
         return False
 
 ok = True
-ok = verify_spec("$OUTPUT_DIR/relay-raw.json", "Relay Chain", "pezkuwichain_mainnet") and ok
+ok = verify_spec("$OUTPUT_DIR/relay-raw.json", "Relay Chain", "pezkuwichain-mainnet") and ok
 ok = verify_spec("$OUTPUT_DIR/asset-hub-raw.json", "Asset Hub", "asset-hub-pezkuwichain") and ok
 ok = verify_spec("$OUTPUT_DIR/people-raw.json", "People Chain", "people-pezkuwichain-genesis") and ok
+
+# A light client attaches a teyrchain only to the relay whose id its `relay_chain` names,
+# byte for byte. Nodes do not care, so nothing else would catch a mismatch.
+def relay_of(path):
+    with open(path) as f:
+        return json.load(f).get("relay_chain")
+with open("$OUTPUT_DIR/relay-raw.json") as f:
+    relay_id = json.load(f).get("id")
+for path, name in [("$OUTPUT_DIR/asset-hub-raw.json", "Asset Hub"), ("$OUTPUT_DIR/people-raw.json", "People Chain")]:
+    rc = relay_of(path)
+    if rc == relay_id:
+        print(f"  ✓ {name}: relay_chain={rc} matches the relay id")
+    else:
+        print(f"  ✗ {name}: relay_chain={rc}, relay id={relay_id} -- a light client cannot attach it")
+        ok = False
 
 if not ok:
     sys.exit(1)
