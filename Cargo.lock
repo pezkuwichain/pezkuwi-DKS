@@ -16303,6 +16303,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezpallet-navnisan"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "pezframe-benchmarking",
+ "pezframe-support",
+ "pezframe-system",
+ "pezpallet-balances",
+ "pezsp-core",
+ "pezsp-io",
+ "pezsp-runtime",
+ "scale-info",
+ "serde",
+]
+
+[[package]]
 name = "pezpallet-nft-fractionalization"
 version = "10.0.0"
 dependencies = [

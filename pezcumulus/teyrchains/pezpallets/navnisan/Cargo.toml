@@ -1,0 +1,63 @@
+[package]
+name = "pezpallet-navnisan"
+version = "1.0.0"
+description = "PezkuwiChain .kurd name register"
+authors.workspace = true
+homepage.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+documentation.workspace = true
+
+[dependencies]
+codec = { workspace = true, default-features = false, features = ["derive"] }
+pezframe-benchmarking = { workspace = true, optional = true }
+pezframe-support = { default-features = false, workspace = true }
+pezframe-system = { default-features = false, workspace = true }
+pezsp-core = { default-features = false, workspace = true }
+pezsp-runtime = { default-features = false, workspace = true }
+scale-info = { default-features = false, features = [
+	"derive",
+], workspace = true }
+serde = { version = "1.0.197", default-features = false, features = [
+	"derive",
+] }
+
+# dev / test dependencies (also optional, so features can propagate to them)
+pezpallet-balances = { workspace = true, default-features = false, optional = true }
+pezsp-io = { workspace = true, default-features = false, optional = true }
+
+[dev-dependencies]
+pezpallet-balances = { workspace = true, features = ["std"] }
+pezsp-io = { workspace = true, features = ["std"] }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances?/std",
+	"pezsp-core/std",
+	"pezsp-io?/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+	"serde/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances?/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
