@@ -240,4 +240,32 @@ mod benchmarks {
 
 		assert!(NoterBonds::<T>::get(&noter).is_none());
 	}
+
+	/// A direct bond proven from the live Zagros proofs in `hub_fixture`, padded to `k` KiB:
+	/// every node of a proof is hashed before any is read, so its size is what it costs. The
+	/// account's stake changes, so the whole update runs.
+	#[benchmark]
+	fn prove_stake(k: Linear<6, { crate::MAX_PROOF_KIB }>) {
+		use crate::hub_fixture as fx;
+		use codec::Decode;
+		let who = T::AccountId::decode(&mut &fx::STAKER[..]).expect("32-byte accounts");
+		crate::TrackingOptIn::<T>::insert(&who, ());
+		crate::RelayRoots::<T>::insert(fx::RELAY_BLOCK, pezsp_core::H256(fx::RELAY_ROOT));
+		T::OnStakingUpdate::prepare_worst_case(&who);
+		let relay: pezsp_std::vec::Vec<pezsp_std::vec::Vec<u8>> =
+			fx::RELAY_PROOF.iter().map(|n| n.to_vec()).collect();
+		let mut hub: pezsp_std::vec::Vec<pezsp_std::vec::Vec<u8>> =
+			fx::STAKER_PROOF.iter().map(|n| n.to_vec()).collect();
+		let mut filler = 0u32;
+		while crate::proof_kib(&relay, &hub) < k {
+			hub.push([&filler.to_le_bytes()[..], &[0u8; 1020][..]].concat());
+			filler += 1;
+		}
+		let caller: T::AccountId = whitelisted_caller();
+
+		#[extrinsic_call]
+		_(RawOrigin::Signed(caller), who.clone(), fx::RELAY_BLOCK, relay, hub);
+
+		assert!(CachedStakingDetails::<T>::get(&who, StakingSource::AssetHub).is_some());
+	}
 }
