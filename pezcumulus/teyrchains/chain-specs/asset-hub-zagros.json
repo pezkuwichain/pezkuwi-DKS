@@ -1,5 +1,8 @@
 {
-  "bootNodes": [],
+  "bootNodes": [
+    "/ip4/217.77.6.126/tcp/30533/p2p/12D3KooWMKwVAseWRWmFVDzL4GzqkqNHHfzqQ9udULn65LMRYUCF",
+    "/ip4/62.171.166.90/tcp/30533/p2p/12D3KooWDuebeJZPW7HRa8xGhgibQeK2ek4sSheLWDFbm7UXE5bV"
+  ],
   "chainType": "Live",
   "codeSubstitutes": {},
   "genesis": {
