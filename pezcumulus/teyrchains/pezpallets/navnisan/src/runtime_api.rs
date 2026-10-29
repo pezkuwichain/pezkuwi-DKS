@@ -18,8 +18,8 @@ pub struct Resolution<AccountId, Office> {
 	/// The lease's own end; `None` for granted names and open-ended subnames.
 	pub expiry: Option<Moment>,
 	pub reg: RegistrationId,
-	/// Granted, Parliament's, an office's, or under one of them. Only these may be shown as
-	/// official; a bought name never is.
+	/// Given by Parliament, or under a name that was. Only these may be shown as official; a
+	/// bought name never is, whoever owns it.
 	pub official: bool,
 }
 

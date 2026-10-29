@@ -198,6 +198,13 @@ impl<A, O, B> NameRecord<A, O, B> {
 	pub fn is_institutional(&self) -> bool {
 		self.locked_transfer || !matches!(self.owner, Owner::Account(_))
 	}
+
+	/// Whether a wallet may show the name as official. From provenance -- given by Parliament,
+	/// or under a name that was -- never from the owner type alone, so no path that changes an
+	/// owner can manufacture the badge.
+	pub fn is_official(&self) -> bool {
+		self.locked_transfer || self.kind == Kind::Granted
+	}
 }
 
 /// Where a name stands, computed on read and never stored.
@@ -1261,6 +1268,10 @@ pub mod pezpallet {
 		) -> DispatchResult {
 			let mut rec = Self::managed_active(who, node)?;
 			Self::check_change(&change)?;
+			// Only Parliament (`force_change`) makes an office or itself the owner of a name.
+			if let Change::Owner(o) = &change {
+				ensure!(matches!(o, Owner::Account(_)), Error::<T>::NotInstitutional);
+			}
 			if rec.is_institutional() {
 				let due = Self::now().saturating_add(T::InstitutionDelay::get());
 				PendingChanges::<T>::insert(
@@ -1473,7 +1484,7 @@ pub mod pezpallet {
 				status,
 				expiry: rec.expiry,
 				reg: rec.reg,
-				official: rec.is_institutional(),
+				official: rec.is_official(),
 			})
 		}
 
