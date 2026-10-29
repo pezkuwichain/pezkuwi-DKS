@@ -460,3 +460,47 @@ fn the_collators_pot_starts_at_its_existential_deposit() {
 		.sum();
 	assert_eq!(funded, ed, "the collators' pot must start at the existential deposit");
 }
+
+/// The `.kurd` genesis set builds with the real office register: `gov.kurd` is Parliament's,
+/// the finance ministry's name is the finance ministry's, and a locked label cannot be bought.
+/// The pallet's own tests use a mock office type; only this one sees `Tiki`.
+#[test]
+fn the_name_register_is_born_with_the_state_tree() {
+	let preset = get_preset(&PresetId::from(preset_names::PRESET_GENESIS))
+		.expect("the genesis preset exists");
+	pezsp_io::TestExternalities::new(Default::default()).execute_with(|| {
+		// A preset is a patch over the default config, merged the way the chain-spec builder
+		// merges it: objects key by key, everything else replaced.
+		fn merge(base: &mut serde_json::Value, patch: serde_json::Value) {
+			match (base, patch) {
+				(serde_json::Value::Object(b), serde_json::Value::Object(p)) => {
+					for (k, v) in p {
+						merge(b.entry(k).or_insert(serde_json::Value::Null), v);
+					}
+				},
+				(b, p) => *b = p,
+			}
+		}
+		let mut config = serde_json::to_value(RuntimeGenesisConfig::default()).unwrap();
+		merge(&mut config, serde_json::from_slice(&preset).unwrap());
+		pezframe_support::genesis_builder_helper::build_state::<RuntimeGenesisConfig>(
+			serde_json::to_vec(&config).unwrap(),
+		)
+		.expect("the whole genesis builds");
+		use pezpallet_navnisan::{child_node, kurd_node, Locked, Names, Owner};
+		let gov = child_node(&kurd_node(), b"gov");
+		assert_eq!(Names::<Runtime>::get(gov).unwrap().owner, Owner::Governance);
+		let darayi = Names::<Runtime>::get(child_node(&gov, b"darayi")).unwrap();
+		assert_eq!(darayi.owner, Owner::Office(Tiki::WezireDarayiye));
+		assert!(darayi.locked_transfer);
+		let meclis = Names::<Runtime>::get(child_node(&gov, b"meclis")).unwrap();
+		assert_eq!(meclis.owner, Owner::Governance);
+		assert!(Locked::<Runtime>::contains_key(child_node(&kurd_node(), b"dks")));
+		assert_eq!(
+			pezpallet_navnisan::Pezpallet::<Runtime>::api_availability(b"serok"),
+			pezpallet_navnisan::runtime_api::Availability::Locked
+		);
+		assert!(pezpallet_navnisan::Pezpallet::<Runtime>::api_resolve(b"darayi.gov.kurd")
+			.is_some_and(|r| r.official));
+	});
+}
