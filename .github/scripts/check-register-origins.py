@@ -46,6 +46,9 @@ REGISTER_PALLETS = {
     "pezpallet_trust",
     "pezpallet_perwerde",
     "pezpallet_staking_score",
+    # The `.kurd` name register: who the state's names point to. Not who is a person, but a
+    # government site rewritten from abroad is the same capture by other means.
+    "pezpallet_navnisan",
     # Not a register itself: it holds the register's *rules* -- how long a new citizen waits
     # before vouching, how wide one person's vouching reaches. Whoever turns those decides how
     # fast the electorate can be manufactured, which is the same power one step back.

@@ -137,6 +137,8 @@ pub type Migrations = (
 	pezpallet_welati::migrations::v2::DropTheFoundingHousesTerm<Runtime>,
 	// Tier crossings for the clocks already running (Zagros; a no-op on a chain founded since).
 	pezpallet_staking_score::migrations::v2::ScheduleTierCrossings<Runtime>,
+	// The `.kurd` register's genesis set (Zagros; a no-op on a chain founded since).
+	pezpallet_navnisan::migrations::v1::SeedNavnisan<Runtime, people::NavnisanSeed>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 );
@@ -161,7 +163,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("people-zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("people-zagros"),
 	authoring_version: 1,
-	spec_version: 1_020_022,
+	spec_version: 1_020_023,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -623,7 +625,10 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Referenda(pezpallet_referenda::Call::submit { .. }) |
 				RuntimeCall::Referenda(
 					pezpallet_referenda::Call::place_decision_deposit { .. }
-				)
+				) |
+				// Names are bought, sold and pointed at accounts and sites: a delegate that
+				// may not move funds may not move a name, or redirect where payments to it go.
+				RuntimeCall::Navnisan { .. }
 			),
 			ProxyType::CancelProxy => matches!(
 				c,
@@ -772,6 +777,7 @@ construct_runtime!(
 		IdentityKyc: pezpallet_identity_kyc = 51,
 		Referral: pezpallet_referral = 52,
 		Perwerde: pezpallet_perwerde = 53,
+		Navnisan: pezpallet_navnisan = 54,
 		Messaging: pezpallet_messaging = 55,
 
 		// NFTs and Roles
@@ -852,6 +858,7 @@ mod benches {
 		[pezpallet_perwerde, Perwerde]
 		[pezpallet_referral, Referral]
 		[pezpallet_tiki, Tiki]
+		[pezpallet_navnisan, Navnisan]
 		[pezpallet_staking_score, StakingScore]
 		[pezpallet_accumulate_and_forward, AccumulateAndForward]
 		[pezpallet_tnpos, Tnpos]
@@ -1371,6 +1378,24 @@ impl_runtime_apis! {
 	impl pezcumulus_primitives_core::TargetBlockRate<Block> for Runtime {
 		fn target_block_rate() -> u32 {
 			1
+		}
+	}
+
+	impl pezpallet_navnisan::runtime_api::NavnisanApi<Block, AccountId, pezpallet_tiki::Tiki, Balance> for Runtime {
+		fn resolve(name: Vec<u8>) -> Option<pezpallet_navnisan::runtime_api::Resolution<AccountId, pezpallet_tiki::Tiki>> {
+			Navnisan::api_resolve(&name)
+		}
+		fn text(name: Vec<u8>, key: Vec<u8>) -> Option<Vec<u8>> {
+			Navnisan::api_text(&name, &key)
+		}
+		fn reverse(who: AccountId) -> Option<Vec<u8>> {
+			Navnisan::api_reverse(&who)
+		}
+		fn price(label: Vec<u8>, years: u32) -> Option<Balance> {
+			Navnisan::api_price(&label, years)
+		}
+		fn availability(label: Vec<u8>) -> pezpallet_navnisan::runtime_api::Availability {
+			Navnisan::api_availability(&label)
 		}
 	}
 }

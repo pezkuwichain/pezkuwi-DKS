@@ -2575,9 +2575,153 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 	}
 }
 
+// =============================================================================
+// Navnisan Pezpallet Configuration -- the `.kurd` name register
+// =============================================================================
+//
+// Rent is revenue: it goes to the treasury through AccumulateAndForward, never burnt.
+// Parliament grants free names and sets prices; the Diwan, as a court, takes back a name bought
+// in bad faith. Every origin is local: the XCM call filter does not name this pallet, and
+// `the_name_register_is_not_writable_from_abroad` below keeps it that way.
+//
+// Times are in milliseconds of the Timestamp pallet, not blocks: a lease is a year whatever the
+// block time becomes.
+
+const NAVNISAN_MINUTE: u64 = 60 * 1000;
+const NAVNISAN_DAY: u64 = 24 * 60 * NAVNISAN_MINUTE;
+
+parameter_types! {
+	pub const NavnisanCommitDeposit: Balance = deposit(1, 72);
+	pub const NavnisanSubnameDeposit: Balance = deposit(1, 304);
+	pub const NavnisanTextDepositBase: Balance = deposit(1, 48);
+	pub const NavnisanTextDepositPerByte: Balance = deposit(0, 1);
+	// Ten blocks: a collator who sees a reveal cannot have committed to the same name in the
+	// blocks before it unless it held every one of them.
+	pub const NavnisanMinCommitmentAge: u64 = NAVNISAN_MINUTE;
+	pub const NavnisanMaxCommitmentAge: u64 = NAVNISAN_DAY;
+	pub const NavnisanGracePeriod: u64 = 30 * NAVNISAN_DAY;
+	pub const NavnisanMaxYears: u32 = 5;
+	pub const NavnisanMaxHorizon: u64 = 10 * pezpallet_navnisan::YEAR;
+	pub const NavnisanInstitutionDelay: u64 = NAVNISAN_DAY;
+	pub const NavnisanDisputeDelay: u64 = 7 * NAVNISAN_DAY;
+}
+
+/// Single-seat offices from the tiki register: a minister's name follows the ministry.
+pub struct TikiOffices;
+impl pezpallet_navnisan::Offices<AccountId> for TikiOffices {
+	type Office = pezpallet_tiki::Tiki;
+	fn is_single_seat(office: &pezpallet_tiki::Tiki) -> bool {
+		pezpallet_tiki::Pezpallet::<Runtime>::is_unique_role(office)
+	}
+	fn holder(office: &pezpallet_tiki::Tiki) -> Option<AccountId> {
+		pezpallet_tiki::Pezpallet::<Runtime>::current_holder(office)
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct NavnisanBenchmarkClock;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_navnisan::BenchmarkHelper for NavnisanBenchmarkClock {
+	fn set_time(ms: u64) {
+		pezpallet_timestamp::Now::<Runtime>::put(ms);
+	}
+}
+
+/// The names the state starts with: the pallet's list, offices from the tiki register.
+/// Used by the genesis preset and by the seed migration of a chain that gains the pallet by
+/// upgrade, so the two cannot drift.
+pub struct NavnisanSeed;
+impl NavnisanSeed {
+	/// Single-seat ministries manage their own names; the rest are Parliament's (2026-10-29).
+	fn office(label: &[u8]) -> Option<pezpallet_tiki::Tiki> {
+		use pezpallet_tiki::Tiki;
+		Some(match label {
+			b"serok" => Tiki::Serok,
+			b"wezaret" => Tiki::SerokWeziran,
+			b"darayi" => Tiki::WezireDarayiye,
+			b"parez" => Tiki::WezireParez,
+			b"dad" => Tiki::WezireDad,
+			b"belaw" => Tiki::WezireBelaw,
+			b"tend" => Tiki::WezireTend,
+			b"ava" => Tiki::WezireAva,
+			b"cand" => Tiki::WezireCand,
+			b"xezine" => Tiki::Xezinedar,
+			b"balyoz" => Tiki::Balyoz,
+			_ => return None,
+		})
+	}
+}
+impl pezpallet_navnisan::migrations::v1::SeedSet<Runtime> for NavnisanSeed {
+	fn zones() -> alloc::vec::Vec<alloc::vec::Vec<u8>> {
+		pezpallet_navnisan::genesis_set::ZONES.iter().map(|l| l.to_vec()).collect()
+	}
+	fn gov_subnames() -> alloc::vec::Vec<(alloc::vec::Vec<u8>, Option<pezpallet_tiki::Tiki>)> {
+		pezpallet_navnisan::genesis_set::GOV_SUBNAMES
+			.iter()
+			.map(|l| (l.to_vec(), Self::office(l)))
+			.collect()
+	}
+	fn locked() -> alloc::vec::Vec<(alloc::vec::Vec<u8>, u8)> {
+		pezpallet_navnisan::genesis_set::LOCKED
+			.iter()
+			.map(|(l, c)| (l.to_vec(), *c))
+			.collect()
+	}
+	/// Yearly, in HEZ: three letters 500, four 100, five and more 10.
+	fn prices() -> pezpallet_navnisan::PriceBands<Balance> {
+		pezpallet_navnisan::PriceBands {
+			len3: 500 * UNITS,
+			len4: 100 * UNITS,
+			len5plus: 10 * UNITS,
+		}
+	}
+}
+
+impl pezpallet_navnisan::Config for Runtime {
+	type Currency = Balances;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type RentDestination = AccumulateAndForward;
+	type Time = Timestamp;
+	type Offices = TikiOffices;
+	type GrantOrigin = crate::RootOrParliament;
+	type PriceOrigin = crate::RootOrParliament;
+	type DisputeOrigin = crate::RootOrDiwan;
+	type CommitDeposit = NavnisanCommitDeposit;
+	type SubnameDeposit = NavnisanSubnameDeposit;
+	type TextDepositBase = NavnisanTextDepositBase;
+	type TextDepositPerByte = NavnisanTextDepositPerByte;
+	type MinCommitmentAge = NavnisanMinCommitmentAge;
+	type MaxCommitmentAge = NavnisanMaxCommitmentAge;
+	type GracePeriod = NavnisanGracePeriod;
+	type MaxYears = NavnisanMaxYears;
+	type MaxHorizon = NavnisanMaxHorizon;
+	type InstitutionDelay = NavnisanInstitutionDelay;
+	type DisputeDelay = NavnisanDisputeDelay;
+	type WeightInfo = weights::pezpallet_navnisan::WeightInfo<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = NavnisanBenchmarkClock;
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	/// A NonTransfer delegate may not buy, sell, or repoint a name: each of those moves money
+	/// or redirects where payments to a name go. The filter is a denylist, so this pins it.
+	#[test]
+	fn a_non_transfer_proxy_cannot_touch_names() {
+		use pezframe_support::traits::InstanceFilter;
+		let node = pezpallet_navnisan::kurd_node();
+		let who: AccountId = AccountId::new([1; 32]);
+		for call in [
+			pezpallet_navnisan::Call::<Runtime>::transfer { node, to: who.clone() },
+			pezpallet_navnisan::Call::<Runtime>::set_account { node, account: Some(who.clone()) },
+			pezpallet_navnisan::Call::<Runtime>::commit { commitment: node },
+			pezpallet_navnisan::Call::<Runtime>::renew { node, years: 1 },
+		] {
+			assert!(!crate::ProxyType::NonTransfer.filter(&RuntimeCall::Navnisan(call)));
+		}
+	}
 
 	/// Seating runs in `on_initialize` and charges its worst case -- the full pool -- whether
 	/// or not the pool is full, as mandatory weight nothing can refuse. Above the block it
