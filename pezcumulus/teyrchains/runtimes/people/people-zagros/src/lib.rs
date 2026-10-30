@@ -163,7 +163,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("people-zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("people-zagros"),
 	authoring_version: 1,
-	spec_version: 1_020_023,
+	spec_version: 1_020_024,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
