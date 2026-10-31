@@ -319,9 +319,9 @@ pub mod pezpallet {
 	use pezframe_system::pezpallet_prelude::*;
 	use pezsp_runtime::traits::{Saturating, Zero};
 
-	/// 1 from birth. A chain founded with this pallet writes it at genesis; a chain that gains
-	/// the pallet in an upgrade starts at 0 and `migrations::v1::SeedNavnisan` writes the
-	/// genesis set once.
+	/// 1 from birth. A chain founded with this pallet writes it at genesis; on a chain that
+	/// gains the pallet in an upgrade, Executive stamps it before the migrations run, so
+	/// `migrations::v1::SeedNavnisan` keys on the register being empty, not on this.
 	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub type RecordOf<T> =

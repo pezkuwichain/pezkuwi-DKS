@@ -576,6 +576,31 @@ impl migrations::v1::SeedSet<Test> for TestSeed {
 	}
 }
 
+// The order a live upgrade runs in: Executive stamps a newly added pallet with its in-code
+// storage version first, and only then runs the runtime's migrations. A migration keyed on
+// this pallet's 0 -> 1 never fires on that path, which is how Zagros People 1020023 came up
+// with an empty register.
+#[test]
+fn the_seed_migration_runs_after_frame_stamps_the_new_pallet() {
+	use pezframe_support::traits::{
+		BeforeAllRuntimeMigrations, GetStorageVersion, OnRuntimeUpgrade,
+	};
+	use pezsp_runtime::BuildStorage;
+	let mut ext: pezsp_io::TestExternalities = pezframe_system::GenesisConfig::<Test>::default()
+		.build_storage()
+		.unwrap()
+		.into();
+	ext.execute_with(|| {
+		assert_eq!(N::on_chain_storage_version(), 0);
+		AllPalletsWithSystem::before_all_runtime_migrations();
+		assert_eq!(N::on_chain_storage_version(), 1);
+		migrations::v1::SeedNavnisan::<Test, TestSeed>::on_runtime_upgrade();
+		assert!(Names::<Test>::get(child_node(&top(b"gov"), b"darayi")).is_some());
+		assert!(Locked::<Test>::contains_key(top(b"dks")));
+		check();
+	});
+}
+
 #[test]
 fn the_seed_migration_writes_the_genesis_set_once() {
 	use pezframe_support::traits::{GetStorageVersion, OnRuntimeUpgrade, StorageVersion};

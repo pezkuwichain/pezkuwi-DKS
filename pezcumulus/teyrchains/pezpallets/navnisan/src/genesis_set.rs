@@ -37,10 +37,15 @@ pub mod category {
 	pub const CITY: u8 = 4;
 	pub const TITLE: u8 = 5;
 	pub const SAFETY: u8 = 6;
+	/// The founder's own names, kept for the founder (Serok, 2026-10-30).
+	pub const FOUNDER: u8 = 7;
 }
 
 /// Top-level labels nobody may buy; Parliament grants them.
 pub const LOCKED: &[(&[u8], u8)] = &[
+	// The founder's names: never sold, granted to the founder (Serok, 2026-10-30).
+	(b"satoshiqazi", category::FOUNDER),
+	(b"sqm", category::FOUNDER),
 	// Institutions and products. `dks.kurd` is the news site's name (Serok, 2026-10-29).
 	(b"dks", category::INSTITUTION),
 	(b"pezkuwi", category::INSTITUTION),
