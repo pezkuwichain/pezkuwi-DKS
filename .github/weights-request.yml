@@ -136,7 +136,15 @@
 #   - runtime: people-zagros people-pezkuwichain
 #     pallet: pezpallet_staking_score pezpallet_trust
 #     why: staking score keeps a confirmation per source (MaxDataAge); its writes and trust's score read changed
+# Previous request (measured, files in the tree 2026-10-28, c7df4780e):
+#   - runtime: people-zagros people-pezkuwichain
+#     pallet: pezpallet_staking_score
+#
+# 2026-11-08: navnisan gained four calls (suspend, lift_suspension, set_emergency_council,
+# emergency_suspend) whose weights are hand-written ceilings, and every call through
+# `managed_active` now also reads `Suspensions` for the name and each ancestor, which the
+# 10-29 measurement did not include.
 runs:
   - runtime: people-zagros people-pezkuwichain
-    pallet: pezpallet_staking_score
-    why: its benchmarks now measure the trust update for a citizen, not the early exit for a stranger
+    pallet: pezpallet_navnisan
+    why: four new calls on hand-written ceilings; the manager's calls now read a suspension per ancestor
