@@ -7429,6 +7429,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "kurd-mirror"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cid",
+ "clap",
+ "hex",
+ "parity-scale-codec",
+ "pezpallet-navnisan",
+ "pezpallet-tiki",
+ "pezsp-core",
+ "pezsp-crypto-hashing",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "kvdb"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

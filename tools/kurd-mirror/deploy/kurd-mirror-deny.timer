@@ -1,0 +1,10 @@
+[Unit]
+Description=kurd-mirror: denylist from the .kurd register, every two minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=2min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

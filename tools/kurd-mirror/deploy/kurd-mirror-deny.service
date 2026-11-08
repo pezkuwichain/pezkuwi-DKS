@@ -1,0 +1,13 @@
+# Refuses, on this IPFS node, the content of .kurd names the register has stopped (D23).
+# The People node to read is set in /etc/kurd-mirror.env as KURD_MIRROR_RPC=https://...
+[Unit]
+Description=kurd-mirror: denylist from the .kurd register
+After=network-online.target ipfs.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/kurd-mirror.env
+ExecStart=/usr/local/bin/kurd-mirror deny --rpc ${KURD_MIRROR_RPC}
+# Root, because a lifted suspension has to restart kubo; nothing else here needs it.
+StateDirectory=kurd-mirror

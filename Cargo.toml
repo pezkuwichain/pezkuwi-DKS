@@ -628,6 +628,7 @@ members = [
 	"templates/teyrchain/pezpallets/template",
 	"templates/teyrchain/runtime",
 	"templates/zombienet",
+	"tools/kurd-mirror",
 	"tools/usdt-bridge",
 	"umbrella",
 	"vendor/ark-bn254",
