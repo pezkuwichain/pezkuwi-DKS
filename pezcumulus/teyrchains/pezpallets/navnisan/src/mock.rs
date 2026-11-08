@@ -28,6 +28,10 @@ pub const COURT: AccountId = 40;
 pub const TREASURY: AccountId = 999;
 pub const MINISTER: AccountId = 7;
 pub const ANCHORER: AccountId = 8;
+/// Appoints the emergency council, standing in for the Serok.
+pub const SEROK: AccountId = 50;
+/// The emergency council the tests appoint.
+pub const COUNCIL: [AccountId; 5] = [61, 62, 63, 64, 65];
 
 /// A single-seat office and a many-seat one.
 pub const FINANCE: u8 = 1;
@@ -48,6 +52,10 @@ parameter_types! {
 	pub const MaxHorizon: Moment = 10 * crate::YEAR;
 	pub const InstitutionDelay: Moment = MILLIS_PER_DAY;
 	pub const DisputeDelay: Moment = 7 * MILLIS_PER_DAY;
+	pub const MaxSuspension: Moment = 30 * MILLIS_PER_DAY;
+	pub const EmergencySuspension: Moment = 3 * MILLIS_PER_DAY;
+	pub const EmergencySeats: u32 = 5;
+	pub const EmergencyThreshold: u32 = 3;
 }
 
 construct_runtime!(
@@ -115,6 +123,13 @@ impl OnUnbalanced<crate::CreditOf<Test>> for ToTreasury {
 	}
 }
 
+pub struct SerokSeat;
+impl SortedMembers<AccountId> for SerokSeat {
+	fn sorted_members() -> Vec<AccountId> {
+		vec![SEROK]
+	}
+}
+
 pub struct CourtMembers;
 impl SortedMembers<AccountId> for CourtMembers {
 	fn sorted_members() -> Vec<AccountId> {
@@ -131,6 +146,7 @@ impl crate::Config for Test {
 	type GrantOrigin = EnsureRoot<AccountId>;
 	type PriceOrigin = EnsureRoot<AccountId>;
 	type DisputeOrigin = EnsureSignedBy<CourtMembers, AccountId>;
+	type EmergencyAppointOrigin = EnsureSignedBy<SerokSeat, AccountId>;
 	type CommitDeposit = CommitDeposit;
 	type SubnameDeposit = SubnameDeposit;
 	type TextDepositBase = TextDepositBase;
@@ -142,6 +158,10 @@ impl crate::Config for Test {
 	type MaxHorizon = MaxHorizon;
 	type InstitutionDelay = InstitutionDelay;
 	type DisputeDelay = DisputeDelay;
+	type MaxSuspension = MaxSuspension;
+	type EmergencySuspension = EmergencySuspension;
+	type EmergencySeats = EmergencySeats;
+	type EmergencyThreshold = EmergencyThreshold;
 	type WeightInfo = ();
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = BenchClock;

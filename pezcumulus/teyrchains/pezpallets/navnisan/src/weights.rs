@@ -41,6 +41,10 @@ pub trait WeightInfo {
 	fn reap(d: u32, t: u32) -> Weight;
 	fn reap_primary(d: u32) -> Weight;
 	fn remove_commitment() -> Weight;
+	fn suspend() -> Weight;
+	fn lift_suspension() -> Weight;
+	fn set_emergency_council() -> Weight;
+	fn emergency_suspend() -> Weight;
 }
 
 pub struct BizinikiwiWeight<T>(PhantomData<T>);
@@ -213,6 +217,27 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
+	fn suspend() -> Weight {
+		Weight::from_parts(50_000_000, 8_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(crate::label::MAX_DEPTH as u64)))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
+	fn lift_suspension() -> Weight {
+		Weight::from_parts(30_000_000, 8_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	fn set_emergency_council() -> Weight {
+		Weight::from_parts(40_000_000, 4_000)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	fn emergency_suspend() -> Weight {
+		Weight::from_parts(80_000_000, 8_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64.saturating_mul(crate::label::MAX_DEPTH as u64)))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
 }
 
 impl WeightInfo for () {
@@ -383,5 +408,26 @@ impl WeightInfo for () {
 		Weight::from_parts(50_000_000, 8_000)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	}
+	fn suspend() -> Weight {
+		Weight::from_parts(50_000_000, 8_000)
+			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(crate::label::MAX_DEPTH as u64)))
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	}
+	fn lift_suspension() -> Weight {
+		Weight::from_parts(30_000_000, 8_000)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	fn set_emergency_council() -> Weight {
+		Weight::from_parts(40_000_000, 4_000)
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	fn emergency_suspend() -> Weight {
+		Weight::from_parts(80_000_000, 8_000)
+			.saturating_add(RocksDbWeight::get().reads(2_u64.saturating_mul(crate::label::MAX_DEPTH as u64)))
+			.saturating_add(RocksDbWeight::get().reads(5_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 }

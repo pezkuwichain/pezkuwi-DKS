@@ -568,4 +568,25 @@ impl<T: pezframe_system::Config> pezpallet_navnisan::WeightInfo for WeightInfo<T
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
+	// Written by hand until the next weights run measures them: upper bounds, as in the
+	// pallet's provisional `weights.rs`.
+	fn suspend() -> Weight {
+		Weight::from_parts(50_000_000, 8_000)
+			.saturating_add(T::DbWeight::get().reads(2 + pezpallet_navnisan::label::MAX_DEPTH as u64))
+			.saturating_add(T::DbWeight::get().writes(2))
+	}
+	fn lift_suspension() -> Weight {
+		Weight::from_parts(30_000_000, 8_000)
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	fn set_emergency_council() -> Weight {
+		Weight::from_parts(40_000_000, 4_000)
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	fn emergency_suspend() -> Weight {
+		Weight::from_parts(80_000_000, 8_000)
+			.saturating_add(T::DbWeight::get().reads(5 + 2 * pezpallet_navnisan::label::MAX_DEPTH as u64))
+			.saturating_add(T::DbWeight::get().writes(3))
+	}
 }

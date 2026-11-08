@@ -39,6 +39,8 @@ pub mod category {
 	pub const SAFETY: u8 = 6;
 	/// The founder's own names, kept for the founder (Serok, 2026-10-30).
 	pub const FOUNDER: u8 = 7;
+	/// Taken back by the court; never written at genesis, only by `enact_revocation`.
+	pub const REVOKED: u8 = 8;
 }
 
 /// Top-level labels nobody may buy; Parliament grants them.

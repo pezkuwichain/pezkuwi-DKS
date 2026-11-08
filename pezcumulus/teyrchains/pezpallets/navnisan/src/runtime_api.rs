@@ -10,8 +10,12 @@ use scale_info::TypeInfo;
 #[derive(Clone, Encode, Decode, Eq, PartialEq, Debug, TypeInfo)]
 pub struct Resolution<AccountId, Office> {
 	pub node: NameHash,
+	/// `None` while the name is suspended.
 	pub account: Option<AccountId>,
+	/// `None` while the name is suspended.
 	pub content: Option<Content<AccountId>>,
+	/// The name, or one above it, is suspended: it points nowhere until the suspension ends.
+	pub suspended: bool,
 	pub owner: Owner<AccountId, Office>,
 	pub kind: Kind,
 	pub status: Status,
