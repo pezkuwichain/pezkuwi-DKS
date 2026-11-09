@@ -111,7 +111,12 @@ fn test_harness<T: Future<Output = VirtualOverseer>>(
 	state
 }
 
-const TIMEOUT: Duration = Duration::from_millis(200);
+// How long to wait for something the test expects. It is only reached when the subsystem is
+// stuck, so it can be generous: a loaded test runner left 200 ms short, failing whichever test
+// happened to be waiting.
+const TIMEOUT: Duration = Duration::from_secs(10);
+// How long to listen before concluding that no message is coming.
+const NO_MESSAGE: Duration = Duration::from_millis(200);
 const REPUTATION_CHANGE_TEST_INTERVAL: Duration = Duration::from_millis(1);
 
 async fn overseer_send(overseer: &mut VirtualOverseer, msg: ApprovalDistributionMessage) {
@@ -608,7 +613,10 @@ fn try_import_the_same_assignment_v2() {
 			expect_reputation_change(overseer, &peer_d, COST_UNEXPECTED_MESSAGE).await;
 			expect_reputation_change(overseer, &peer_d, BENEFIT_VALID_MESSAGE).await;
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -677,7 +685,10 @@ fn delay_reputation_change() {
 				vec![COST_UNEXPECTED_MESSAGE, BENEFIT_VALID_MESSAGE_FIRST],
 			)
 			.await;
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 
 			virtual_overseer
 		},
@@ -873,7 +884,7 @@ fn peer_sending_us_the_same_we_just_sent_them_is_ok() {
 			send_message_from_peer_v3(overseer, peer, msg.clone()).await;
 
 			assert!(
-				overseer.recv().timeout(TIMEOUT).await.is_none(),
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
 				"we should not punish the peer"
 			);
 
@@ -973,7 +984,7 @@ fn peer_sending_us_duplicates_while_aggression_enabled_is_ok() {
 			send_message_from_peer_v3(overseer, peer, msg.clone()).await;
 
 			assert!(
-				overseer.recv().timeout(TIMEOUT).await.is_none(),
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
 				"we should not punish the peer"
 			);
 
@@ -1016,7 +1027,10 @@ fn peer_sending_us_duplicates_while_aggression_enabled_is_ok() {
 			// enabled.
 			send_message_from_peer_v3(overseer, peer, msg).await;
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -2284,7 +2298,7 @@ fn update_peer_authority_id() {
 			)
 			.await;
 			assert!(
-				overseer.recv().timeout(TIMEOUT).await.is_none(),
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
 				"no message should be sent peers are already known"
 			);
 
@@ -2368,7 +2382,10 @@ fn import_remotely_then_locally() {
 			)
 			.await;
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 
 			// send the approval remotely
 			let approval = IndirectSignedApprovalVoteV2 {
@@ -2394,7 +2411,10 @@ fn import_remotely_then_locally() {
 			overseer_send(overseer, ApprovalDistributionMessage::DistributeApproval(approval))
 				.await;
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -2517,7 +2537,10 @@ fn sends_assignments_even_when_state_is_approved_v2() {
 				}
 			);
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -2741,7 +2764,10 @@ fn propagates_locally_generated_assignment_to_both_dimensions() {
 				}
 			);
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -2900,7 +2926,10 @@ fn propagates_assignments_along_unshared_dimension() {
 				);
 			};
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -3065,7 +3094,10 @@ fn propagates_to_required_after_connect() {
 				);
 			}
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -3199,7 +3231,10 @@ fn sends_to_more_peers_after_getting_topology() {
 				);
 			}
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -3380,7 +3415,10 @@ fn originator_aggression_l1() {
 				);
 			}
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -3504,7 +3542,10 @@ fn non_originator_aggression_l1() {
 
 			// No-op on non-originator
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -3690,7 +3731,10 @@ fn non_originator_aggression_l2() {
 				);
 			}
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
@@ -3854,7 +3898,10 @@ fn resends_messages_periodically() {
 				}
 			}
 
-			assert!(overseer.recv().timeout(TIMEOUT).await.is_none(), "no message should be sent");
+			assert!(
+				overseer.recv().timeout(NO_MESSAGE).await.is_none(),
+				"no message should be sent"
+			);
 			virtual_overseer
 		},
 	);
