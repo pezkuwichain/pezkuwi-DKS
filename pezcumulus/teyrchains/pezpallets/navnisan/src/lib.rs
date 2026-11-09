@@ -27,10 +27,27 @@
 //! exception: it can only move the same feed forward, and it is posted by a key that can do
 //! nothing else.
 //!
+//! ## Stopping a name that is abused
+//!
+//! A bought name used for a crime is stopped in two steps. The court (the Diwan, two thirds)
+//! suspends it for up to [`Config::MaxSuspension`] and, to take it back for good, schedules its
+//! revocation, which waits [`Config::DisputeDelay`]. A revoked label is locked, so the same
+//! hands cannot buy it again the next minute; Parliament may unlock it.
+//!
+//! Because the court can take days to sit, an emergency council of
+//! [`Config::EmergencySeats`] people, appointed by the Serok, can suspend a name at once when
+//! [`Config::EmergencyThreshold`] of them agree. Such a suspension ends by itself after
+//! [`Config::EmergencySuspension`], is open to each registration once, and the court may lift
+//! it or replace it with its own at any time: the council buys time, the court decides.
+//!
+//! A suspended name resolves to nothing, and neither its manager nor its feed's anchorer can
+//! change it. Institutional names are outside all of this: they answer to Parliament.
+//!
 //! ## What a light client reads
 //!
-//! Resolution is a handful of storage reads with no runtime code involved: `Names[node]` for
-//! the name and each ancestor, plus `Timestamp::Now` when a lease is involved. That is why
+//! Resolution is a handful of storage reads with no runtime code involved: `Names[node]` and
+//! `Suspensions[node]` for the name and each ancestor, plus `Timestamp::Now` when a lease or a
+//! suspension is involved. That is why
 //! there is no pluggable resolver, and why the storage layout here is part of the wallet's
 //! interface: renaming the pallet or an item changes every proof key.
 //!
@@ -294,6 +311,56 @@ pub struct Revocation {
 	pub reason: H256,
 }
 
+/// Who stopped a name.
+#[derive(
+	Clone,
+	Copy,
+	Encode,
+	Decode,
+	DecodeWithMemTracking,
+	Eq,
+	PartialEq,
+	Debug,
+	TypeInfo,
+	MaxEncodedLen,
+)]
+pub enum SuspendedBy {
+	#[codec(index = 0)]
+	Court,
+	#[codec(index = 1)]
+	Emergency,
+}
+
+#[derive(
+	Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
+)]
+pub struct Suspension {
+	/// Ends by itself at this time; nobody has to lift it.
+	pub until: Moment,
+	/// The registration suspended; a name registered anew is not.
+	pub reg: RegistrationId,
+	/// Hash of the written reasons.
+	pub reason: H256,
+	pub by: SuspendedBy,
+}
+
+/// Most seats an emergency council may have; [`Config::EmergencySeats`] is checked against it.
+pub const MAX_EMERGENCY_SEATS: u32 = 9;
+
+pub type EmergencyCouncilOf<AccountId> = BoundedVec<AccountId, ConstU32<MAX_EMERGENCY_SEATS>>;
+
+/// Members of the emergency council who have asked to suspend a name, for the same reasons,
+/// within one [`Config::EmergencySuspension`] of the first of them.
+#[derive(
+	Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
+)]
+pub struct EmergencyCall<AccountId> {
+	pub reg: RegistrationId,
+	pub reason: H256,
+	pub opened: Moment,
+	pub approvals: EmergencyCouncilOf<AccountId>,
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 pub trait BenchmarkHelper {
 	fn set_time(ms: Moment);
@@ -360,9 +427,12 @@ pub mod pezpallet {
 		/// Sets the yearly prices. Parliament.
 		type PriceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
-		/// Takes back a name bought in bad faith, after [`Config::DisputeDelay`]. The Diwan,
-		/// two thirds.
+		/// Takes back a name bought in bad faith, after [`Config::DisputeDelay`], and suspends
+		/// or lifts the suspension of an abused one. The Diwan, two thirds.
 		type DisputeOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Appoints the emergency council. The Serok.
+		type EmergencyAppointOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
 		#[pezpallet::constant]
 		type CommitDeposit: Get<BalanceOf<Self>>;
@@ -391,6 +461,19 @@ pub mod pezpallet {
 		type InstitutionDelay: Get<Moment>;
 		#[pezpallet::constant]
 		type DisputeDelay: Get<Moment>;
+		/// Longest suspension the court orders in one call.
+		#[pezpallet::constant]
+		type MaxSuspension: Get<Moment>;
+		/// How long an emergency suspension lasts, and how long the council's agreement on one
+		/// stays open.
+		#[pezpallet::constant]
+		type EmergencySuspension: Get<Moment>;
+		/// Seats on the emergency council: it is appointed full or not at all.
+		#[pezpallet::constant]
+		type EmergencySeats: Get<u32>;
+		/// Members who must agree to suspend a name.
+		#[pezpallet::constant]
+		type EmergencyThreshold: Get<u32>;
 
 		type WeightInfo: WeightInfo;
 
@@ -463,6 +546,24 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type PendingRevocations<T: Config> =
 		StorageMap<_, Identity, NameHash, Revocation, OptionQuery>;
+
+	/// Names that resolve to nothing until `until`. Part of the wallet's interface, like
+	/// `Names`: a light client reads it beside each record.
+	#[pezpallet::storage]
+	pub type Suspensions<T: Config> = StorageMap<_, Identity, NameHash, Suspension, OptionQuery>;
+
+	#[pezpallet::storage]
+	pub type EmergencyCouncil<T: Config> =
+		StorageValue<_, EmergencyCouncilOf<T::AccountId>, ValueQuery>;
+
+	#[pezpallet::storage]
+	pub type EmergencyCalls<T: Config> =
+		StorageMap<_, Identity, NameHash, EmergencyCall<T::AccountId>, OptionQuery>;
+
+	/// Registrations the emergency council has suspended once; it may not again.
+	#[pezpallet::storage]
+	pub type EmergencyUsed<T: Config> =
+		StorageMap<_, Twox64Concat, RegistrationId, (), OptionQuery>;
 
 	#[pezpallet::genesis_config]
 	#[derive(pezframe_support::DefaultNoBound)]
@@ -604,6 +705,24 @@ pub mod pezpallet {
 		CommitmentRemoved {
 			commitment: H256,
 		},
+		Suspended {
+			node: NameHash,
+			until: Moment,
+			reason: H256,
+			by: SuspendedBy,
+		},
+		SuspensionLifted {
+			node: NameHash,
+		},
+		EmergencyCouncilSet {
+			members: Vec<T::AccountId>,
+		},
+		/// A member asked to suspend a name; `approvals` counts the current members who have.
+		EmergencyApproved {
+			node: NameHash,
+			who: T::AccountId,
+			approvals: u32,
+		},
 	}
 
 	#[pezpallet::error]
@@ -646,10 +765,33 @@ pub mod pezpallet {
 		BadPrices,
 		AlreadyScheduled,
 		NotPrimary,
+		/// The name, or a name above it, is suspended.
+		Suspended,
+		/// The court suspends for at least a moment and at most [`Config::MaxSuspension`].
+		BadDuration,
+		/// An emergency council is appointed with every seat filled, each by someone else.
+		BadCouncil,
+		NotEmergencyMember,
+		/// The emergency council has already suspended this registration once.
+		EmergencyUsed,
+		AlreadyApproved,
+		/// An open emergency call is for other reasons; agree to it or let it lapse.
+		OtherReason,
 	}
 
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
+		fn integrity_test() {
+			let (seats, threshold) = (T::EmergencySeats::get(), T::EmergencyThreshold::get());
+			assert!(seats <= MAX_EMERGENCY_SEATS, "more emergency seats than the bound");
+			// A majority of the seats, so no minority of the council acts alone
+			assert!(
+				threshold * 2 > seats && threshold <= seats,
+				"emergency threshold out of range"
+			);
+			assert!(T::EmergencySuspension::get() > 0 && T::MaxSuspension::get() > 0);
+		}
+
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
 			Self::do_try_state()
@@ -820,6 +962,7 @@ pub mod pezpallet {
 			ensure!(label::is_contenthash(&anchor), Error::<T>::BadContent);
 			let mut rec = Names::<T>::get(node).ok_or(Error::<T>::UnknownName)?;
 			ensure!(Self::effective_status(&rec, Self::now()).is_some(), Error::<T>::NotActive);
+			ensure!(!Self::is_suspended(node, &rec), Error::<T>::Suspended);
 			let Some(Content::Feed { anchorer, seq: old, anchor: a, .. }) = rec.content.as_mut()
 			else {
 				return Err(Error::<T>::NotAFeed.into());
@@ -1044,6 +1187,10 @@ pub mod pezpallet {
 				if rec.reg == r.reg {
 					Self::delete(node, &rec);
 					Self::deposit_event(Event::Revoked { node });
+					// Not for sale to the same hands the next minute; Parliament may unlock it
+					let category = genesis_set::category::REVOKED;
+					Locked::<T>::insert(node, category);
+					Self::deposit_event(Event::LabelLocked { node, label: rec.label, category });
 				}
 			}
 			Ok(())
@@ -1127,6 +1274,112 @@ pub mod pezpallet {
 				Precision::BestEffort,
 			)?;
 			Self::deposit_event(Event::CommitmentRemoved { commitment });
+			Ok(())
+		}
+
+		/// The court stops a name for `duration` (at most [`Config::MaxSuspension`]): it and
+		/// every name under it resolve to nothing and cannot be changed. Replaces any
+		/// suspension the name has, an emergency one included.
+		#[pezpallet::call_index(26)]
+		#[pezpallet::weight(T::WeightInfo::suspend())]
+		pub fn suspend(
+			origin: OriginFor<T>,
+			node: NameHash,
+			reason: H256,
+			duration: Moment,
+		) -> DispatchResult {
+			T::DisputeOrigin::ensure_origin(origin)?;
+			ensure!(duration > 0 && duration <= T::MaxSuspension::get(), Error::<T>::BadDuration);
+			let rec = Self::suspendable(node)?;
+			EmergencyCalls::<T>::remove(node);
+			Self::put_suspension(node, rec.reg, reason, duration, SuspendedBy::Court);
+			Ok(())
+		}
+
+		/// The court ends a suspension, whoever ordered it.
+		#[pezpallet::call_index(27)]
+		#[pezpallet::weight(T::WeightInfo::lift_suspension())]
+		pub fn lift_suspension(origin: OriginFor<T>, node: NameHash) -> DispatchResult {
+			T::DisputeOrigin::ensure_origin(origin)?;
+			ensure!(Suspensions::<T>::take(node).is_some(), Error::<T>::NothingPending);
+			Self::deposit_event(Event::SuspensionLifted { node });
+			Ok(())
+		}
+
+		/// Appoint the emergency council: every one of [`Config::EmergencySeats`] seats, each
+		/// a different account, or none to dissolve it. Agreements already open count only
+		/// the members who still sit.
+		#[pezpallet::call_index(28)]
+		#[pezpallet::weight(T::WeightInfo::set_emergency_council())]
+		pub fn set_emergency_council(
+			origin: OriginFor<T>,
+			members: Vec<T::AccountId>,
+		) -> DispatchResult {
+			T::EmergencyAppointOrigin::ensure_origin(origin)?;
+			ensure!(
+				members.is_empty() || members.len() == T::EmergencySeats::get() as usize,
+				Error::<T>::BadCouncil
+			);
+			let mut sorted = members.clone();
+			sorted.sort();
+			sorted.dedup();
+			ensure!(sorted.len() == members.len(), Error::<T>::BadCouncil);
+			let council: EmergencyCouncilOf<T::AccountId> =
+				members.clone().try_into().map_err(|_| Error::<T>::BadCouncil)?;
+			EmergencyCouncil::<T>::put(council);
+			Self::deposit_event(Event::EmergencyCouncilSet { members });
+			Ok(())
+		}
+
+		/// A member of the emergency council asks to suspend a name. When
+		/// [`Config::EmergencyThreshold`] sitting members have asked, for the same reasons and
+		/// within [`Config::EmergencySuspension`] of the first, the name is suspended for that
+		/// long. Once per registration; the court may lift or replace it.
+		#[pezpallet::call_index(29)]
+		#[pezpallet::weight(T::WeightInfo::emergency_suspend())]
+		pub fn emergency_suspend(
+			origin: OriginFor<T>,
+			node: NameHash,
+			reason: H256,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let council = EmergencyCouncil::<T>::get();
+			ensure!(council.contains(&who), Error::<T>::NotEmergencyMember);
+			let rec = Self::suspendable(node)?;
+			ensure!(!EmergencyUsed::<T>::contains_key(rec.reg), Error::<T>::EmergencyUsed);
+			ensure!(Self::suspension_of(node, &rec).is_none(), Error::<T>::Suspended);
+
+			let now = Self::now();
+			let mut call = match EmergencyCalls::<T>::get(node) {
+				Some(c)
+					if c.reg == rec.reg
+						&& now < c.opened.saturating_add(T::EmergencySuspension::get()) =>
+				{
+					ensure!(c.reason == reason, Error::<T>::OtherReason);
+					c
+				},
+				_ => EmergencyCall {
+					reg: rec.reg,
+					reason,
+					opened: now,
+					approvals: Default::default(),
+				},
+			};
+			ensure!(!call.approvals.contains(&who), Error::<T>::AlreadyApproved);
+			// Old members' approvals make room: only sitting members count
+			call.approvals.retain(|a| council.contains(a));
+			call.approvals.try_push(who.clone()).map_err(|_| Error::<T>::BadCouncil)?;
+
+			let approvals = call.approvals.len() as u32;
+			Self::deposit_event(Event::EmergencyApproved { node, who, approvals });
+			if approvals >= T::EmergencyThreshold::get() {
+				EmergencyCalls::<T>::remove(node);
+				EmergencyUsed::<T>::insert(rec.reg, ());
+				let duration = T::EmergencySuspension::get();
+				Self::put_suspension(node, rec.reg, reason, duration, SuspendedBy::Emergency);
+			} else {
+				EmergencyCalls::<T>::insert(node, call);
+			}
 			Ok(())
 		}
 	}
@@ -1245,7 +1498,53 @@ pub mod pezpallet {
 				Self::effective_status(&rec, Self::now()) == Some(Status::Active),
 				Error::<T>::NotActive
 			);
+			ensure!(!Self::is_suspended(node, &rec), Error::<T>::Suspended);
 			Ok(rec)
+		}
+
+		/// A name the court or the emergency council may suspend: bought or under a bought
+		/// name, and resolving now.
+		fn suspendable(node: NameHash) -> Result<RecordOf<T>, DispatchError> {
+			let rec = Names::<T>::get(node).ok_or(Error::<T>::UnknownName)?;
+			ensure!(!rec.is_institutional(), Error::<T>::Institutional);
+			ensure!(Self::effective_status(&rec, Self::now()).is_some(), Error::<T>::NotActive);
+			Ok(rec)
+		}
+
+		fn put_suspension(
+			node: NameHash,
+			reg: RegistrationId,
+			reason: H256,
+			duration: Moment,
+			by: SuspendedBy,
+		) {
+			let until = Self::now().saturating_add(duration);
+			Suspensions::<T>::insert(node, Suspension { until, reg, reason, by });
+			Self::deposit_event(Event::Suspended { node, until, reason, by });
+		}
+
+		/// `node`'s own suspension, if it holds now for the registration `rec`.
+		pub fn suspension_of(node: NameHash, rec: &RecordOf<T>) -> Option<Suspension> {
+			Suspensions::<T>::get(node).filter(|s| s.reg == rec.reg && Self::now() < s.until)
+		}
+
+		/// Whether `node` or a name above it is suspended now.
+		pub fn is_suspended(node: NameHash, rec: &RecordOf<T>) -> bool {
+			let (mut node, mut rec) = (node, rec.clone());
+			for _ in 0..=label::MAX_DEPTH {
+				if Self::suspension_of(node, &rec).is_some() {
+					return true;
+				}
+				if rec.kind != Kind::Sub {
+					return false;
+				}
+				node = rec.parent;
+				match Names::<T>::get(node) {
+					Some(parent) => rec = parent,
+					None => return false,
+				}
+			}
+			false
 		}
 
 		fn check_change(change: &ChangeOf<T>) -> DispatchResult {
@@ -1446,6 +1745,9 @@ pub mod pezpallet {
 		fn delete(node: NameHash, rec: &RecordOf<T>) {
 			Self::clear_registration(rec);
 			let _ = PendingChanges::<T>::clear_prefix(node, 3, None);
+			Suspensions::<T>::remove(node);
+			EmergencyCalls::<T>::remove(node);
+			EmergencyUsed::<T>::remove(rec.reg);
 			Names::<T>::remove(node);
 		}
 
@@ -1454,6 +1756,7 @@ pub mod pezpallet {
 			Names::<T>::get(node).is_some_and(|rec| {
 				rec.account.as_ref() == Some(who)
 					&& Self::effective_status(&rec, Self::now()).is_some()
+					&& !Self::is_suspended(node, &rec)
 			})
 		}
 
@@ -1475,10 +1778,13 @@ pub mod pezpallet {
 			let node = Self::node_of(name)?;
 			let rec = Names::<T>::get(node)?;
 			let status = Self::effective_status(&rec, Self::now())?;
+			// A suspended name says that it is, and points nowhere
+			let suspended = Self::is_suspended(node, &rec);
 			Some(runtime_api::Resolution {
 				node,
-				account: rec.account.clone(),
-				content: rec.content.clone(),
+				account: if suspended { None } else { rec.account.clone() },
+				content: if suspended { None } else { rec.content.clone() },
+				suspended,
 				owner: rec.owner.clone(),
 				kind: rec.kind,
 				status,
@@ -1492,6 +1798,9 @@ pub mod pezpallet {
 			let node = Self::node_of(name)?;
 			let rec = Names::<T>::get(node)?;
 			Self::effective_status(&rec, Self::now())?;
+			if Self::is_suspended(node, &rec) {
+				return None;
+			}
 			let key: label::TextKey = key.to_vec().try_into().ok()?;
 			TextRecords::<T>::get(rec.reg, key).map(|(v, _, _)| v.into_inner())
 		}
@@ -1612,6 +1921,11 @@ pub mod pezpallet {
 			ensure!(
 				Self::prices_are_valid(&Prices::<T>::get()) || Names::<T>::iter().next().is_none(),
 				E::Other("prices invalid")
+			);
+			let council = EmergencyCouncil::<T>::get();
+			ensure!(
+				council.is_empty() || council.len() == T::EmergencySeats::get() as usize,
+				E::Other("emergency council not full")
 			);
 			Ok(())
 		}

@@ -425,5 +425,72 @@ mod benchmarks {
 		_(RawOrigin::Signed(who), H256::repeat_byte(1));
 	}
 
+	#[benchmark]
+	fn suspend() {
+		setup::<T>();
+		let who = funded::<T>("who", 0);
+		let node = buy::<T>(&who, b"benchname");
+		let origin = T::DisputeOrigin::try_successful_origin().expect("DisputeOrigin");
+		#[extrinsic_call]
+		_(origin as T::RuntimeOrigin, node, H256::repeat_byte(3), T::MaxSuspension::get());
+
+		assert!(Suspensions::<T>::contains_key(node));
+	}
+
+	#[benchmark]
+	fn lift_suspension() {
+		setup::<T>();
+		let who = funded::<T>("who", 0);
+		let node = buy::<T>(&who, b"benchname");
+		let reg = Names::<T>::get(node).unwrap().reg;
+		Suspensions::<T>::insert(
+			node,
+			Suspension { until: START + 1, reg, reason: H256::zero(), by: SuspendedBy::Court },
+		);
+		let origin = T::DisputeOrigin::try_successful_origin().expect("DisputeOrigin");
+		#[extrinsic_call]
+		_(origin as T::RuntimeOrigin, node);
+	}
+
+	#[benchmark]
+	fn set_emergency_council() {
+		let members: Vec<T::AccountId> =
+			(0..T::EmergencySeats::get()).map(|i| account("member", i, 0)).collect();
+		let origin =
+			T::EmergencyAppointOrigin::try_successful_origin().expect("EmergencyAppointOrigin");
+		#[extrinsic_call]
+		_(origin as T::RuntimeOrigin, members);
+	}
+
+	/// The approval that reaches the threshold and writes the suspension.
+	#[benchmark]
+	fn emergency_suspend() {
+		setup::<T>();
+		let who = funded::<T>("who", 0);
+		let node = buy::<T>(&who, b"benchname");
+		let reg = Names::<T>::get(node).unwrap().reg;
+		let members: Vec<T::AccountId> =
+			(0..T::EmergencySeats::get()).map(|i| account("member", i, 0)).collect();
+		EmergencyCouncil::<T>::put(EmergencyCouncilOf::<T::AccountId>::truncate_from(
+			members.clone(),
+		));
+		let earlier = (T::EmergencyThreshold::get() - 1) as usize;
+		EmergencyCalls::<T>::insert(
+			node,
+			EmergencyCall {
+				reg,
+				reason: H256::zero(),
+				opened: START,
+				approvals: EmergencyCouncilOf::<T::AccountId>::truncate_from(
+					members[..earlier].to_vec(),
+				),
+			},
+		);
+		#[extrinsic_call]
+		_(RawOrigin::Signed(members[earlier].clone()), node, H256::zero());
+
+		assert!(Suspensions::<T>::contains_key(node));
+	}
+
 	impl_benchmark_test_suite!(Pezpallet, crate::mock::new_test_ext(), crate::mock::Test);
 }

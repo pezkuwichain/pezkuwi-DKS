@@ -427,6 +427,309 @@ fn the_court_takes_back_a_bad_faith_name_after_a_week() {
 }
 
 #[test]
+fn a_revoked_label_is_locked_until_parliament_frees_it() {
+	new_test_ext().execute_with(|| {
+		let node = buy(ALICE, b"satinal", 1);
+		assert_ok!(N::schedule_revocation(RuntimeOrigin::signed(COURT), node, H256::zero()));
+		advance(DisputeDelay::get());
+		assert_ok!(N::enact_revocation(RuntimeOrigin::signed(CAROL), node));
+		assert_eq!(Locked::<Test>::get(node), Some(genesis_set::category::REVOKED));
+
+		// The same hands, under another account, the next minute
+		let secret = [2u8; 32];
+		assert_ok!(N::commit(
+			RuntimeOrigin::signed(BOB),
+			commitment(b"satinal", &BOB, &BOB, &secret)
+		));
+		advance(60_000);
+		assert_noop!(
+			N::register(RuntimeOrigin::signed(BOB), b"satinal".to_vec(), BOB, secret, 1),
+			Error::<Test>::LabelLocked
+		);
+
+		assert_ok!(N::unlock(RuntimeOrigin::root(), node));
+		assert_ok!(N::register(RuntimeOrigin::signed(BOB), b"satinal".to_vec(), BOB, secret, 1));
+		check();
+	});
+}
+
+// --- suspension ---------------------------------------------------------------------------
+
+fn resolve(name: &[u8]) -> runtime_api::Resolution<AccountId, u8> {
+	N::api_resolve(name).unwrap()
+}
+
+fn appoint_council() {
+	assert_ok!(N::set_emergency_council(RuntimeOrigin::signed(SEROK), COUNCIL.to_vec()));
+}
+
+#[test]
+fn the_court_suspends_a_name_which_then_points_nowhere_and_cannot_change() {
+	new_test_ext().execute_with(|| {
+		let node = buy(ALICE, b"satinal", 1);
+		assert_ok!(N::set_content(RuntimeOrigin::signed(ALICE), node, Some(Content::Ipfs(cid(1)))));
+		let why = H256::repeat_byte(7);
+
+		assert_noop!(
+			N::suspend(RuntimeOrigin::signed(BOB), node, why, MILLIS_PER_DAY),
+			DispatchError::BadOrigin
+		);
+		assert_noop!(
+			N::suspend(RuntimeOrigin::signed(COURT), node, why, 0),
+			Error::<Test>::BadDuration
+		);
+		assert_noop!(
+			N::suspend(RuntimeOrigin::signed(COURT), node, why, MaxSuspension::get() + 1),
+			Error::<Test>::BadDuration
+		);
+		assert_ok!(N::suspend(RuntimeOrigin::signed(COURT), node, why, 10 * MILLIS_PER_DAY));
+
+		let r = resolve(b"satinal.kurd");
+		assert!(r.suspended);
+		assert_eq!((r.content, r.account), (None, None));
+		assert!(!N::resolves_to(node, &ALICE));
+		assert_noop!(
+			N::set_content(RuntimeOrigin::signed(ALICE), node, Some(Content::Ipfs(cid(2)))),
+			Error::<Test>::Suspended
+		);
+		assert_noop!(
+			N::transfer(RuntimeOrigin::signed(ALICE), node, BOB),
+			Error::<Test>::Suspended
+		);
+		assert_noop!(
+			N::set_subname(RuntimeOrigin::signed(ALICE), node, b"x".to_vec(), BOB, None),
+			Error::<Test>::Suspended
+		);
+
+		// It ends by itself
+		advance(10 * MILLIS_PER_DAY);
+		let r = resolve(b"satinal.kurd");
+		assert!(!r.suspended);
+		assert_eq!(r.content, Some(Content::Ipfs(cid(1))));
+		assert_ok!(N::transfer(RuntimeOrigin::signed(ALICE), node, BOB));
+		check();
+	});
+}
+
+#[test]
+fn a_suspended_name_takes_its_subnames_with_it() {
+	new_test_ext().execute_with(|| {
+		let node = buy(ALICE, b"satinal", 1);
+		assert_ok!(N::set_subname(
+			RuntimeOrigin::signed(ALICE),
+			node,
+			b"dukan".to_vec(),
+			BOB,
+			None
+		));
+		let sub = child_node(&node, b"dukan");
+		assert_ok!(N::suspend(RuntimeOrigin::signed(COURT), node, H256::zero(), MILLIS_PER_DAY));
+
+		assert!(resolve(b"dukan.satinal.kurd").suspended);
+		assert_noop!(
+			N::set_content(RuntimeOrigin::signed(BOB), sub, Some(Content::Ipfs(cid(3)))),
+			Error::<Test>::Suspended
+		);
+	});
+}
+
+#[test]
+fn the_court_lifts_a_suspension() {
+	new_test_ext().execute_with(|| {
+		let node = buy(ALICE, b"satinal", 1);
+		assert_ok!(N::suspend(RuntimeOrigin::signed(COURT), node, H256::zero(), MILLIS_PER_DAY));
+		assert_noop!(
+			N::lift_suspension(RuntimeOrigin::signed(BOB), node),
+			DispatchError::BadOrigin
+		);
+		assert_ok!(N::lift_suspension(RuntimeOrigin::signed(COURT), node));
+		assert!(!resolve(b"satinal.kurd").suspended);
+		assert_noop!(
+			N::lift_suspension(RuntimeOrigin::signed(COURT), node),
+			Error::<Test>::NothingPending
+		);
+	});
+}
+
+#[test]
+fn institutional_names_answer_to_parliament_not_to_suspension() {
+	new_test_ext().execute_with(|| {
+		appoint_council();
+		let darayi = child_node(&top(b"gov"), b"darayi");
+		assert_noop!(
+			N::suspend(RuntimeOrigin::signed(COURT), darayi, H256::zero(), MILLIS_PER_DAY),
+			Error::<Test>::Institutional
+		);
+		assert_noop!(
+			N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[0]), darayi, H256::zero()),
+			Error::<Test>::Institutional
+		);
+	});
+}
+
+#[test]
+fn the_serok_appoints_a_full_council_of_different_people() {
+	new_test_ext().execute_with(|| {
+		assert_noop!(
+			N::set_emergency_council(RuntimeOrigin::signed(COURT), COUNCIL.to_vec()),
+			DispatchError::BadOrigin
+		);
+		assert_noop!(
+			N::set_emergency_council(RuntimeOrigin::signed(SEROK), COUNCIL[..4].to_vec()),
+			Error::<Test>::BadCouncil
+		);
+		let mut twice = COUNCIL.to_vec();
+		twice[4] = twice[0];
+		assert_noop!(
+			N::set_emergency_council(RuntimeOrigin::signed(SEROK), twice),
+			Error::<Test>::BadCouncil
+		);
+		appoint_council();
+		assert_eq!(EmergencyCouncil::<Test>::get().into_inner(), COUNCIL.to_vec());
+		// Dissolved
+		assert_ok!(N::set_emergency_council(RuntimeOrigin::signed(SEROK), vec![]));
+		assert!(EmergencyCouncil::<Test>::get().is_empty());
+		check();
+	});
+}
+
+#[test]
+fn three_of_the_five_suspend_at_once_for_seventy_two_hours() {
+	new_test_ext().execute_with(|| {
+		appoint_council();
+		let node = buy(ALICE, b"satinal", 1);
+		let why = H256::repeat_byte(9);
+
+		assert_noop!(
+			N::emergency_suspend(RuntimeOrigin::signed(BOB), node, why),
+			Error::<Test>::NotEmergencyMember
+		);
+		assert_ok!(N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[0]), node, why));
+		assert_noop!(
+			N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[0]), node, why),
+			Error::<Test>::AlreadyApproved
+		);
+		assert_ok!(N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[1]), node, why));
+		assert!(!resolve(b"satinal.kurd").suspended);
+		assert_noop!(
+			N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[2]), node, H256::repeat_byte(1)),
+			Error::<Test>::OtherReason
+		);
+		assert_ok!(N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[2]), node, why));
+
+		let s = Suspensions::<Test>::get(node).unwrap();
+		assert_eq!(
+			(s.by, s.until, s.reason),
+			(SuspendedBy::Emergency, now() + EmergencySuspension::get(), why)
+		);
+		assert!(resolve(b"satinal.kurd").suspended);
+
+		advance(EmergencySuspension::get());
+		assert!(!resolve(b"satinal.kurd").suspended);
+		check();
+	});
+}
+
+#[test]
+fn the_council_suspends_a_registration_once() {
+	new_test_ext().execute_with(|| {
+		appoint_council();
+		let node = buy(ALICE, b"satinal", 1);
+		for m in &COUNCIL[..3] {
+			assert_ok!(N::emergency_suspend(RuntimeOrigin::signed(*m), node, H256::zero()));
+		}
+		assert_noop!(
+			N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[3]), node, H256::zero()),
+			Error::<Test>::EmergencyUsed
+		);
+		advance(EmergencySuspension::get());
+		assert_noop!(
+			N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[3]), node, H256::zero()),
+			Error::<Test>::EmergencyUsed
+		);
+		// The court is not bound by it
+		assert_ok!(N::suspend(RuntimeOrigin::signed(COURT), node, H256::zero(), MILLIS_PER_DAY));
+	});
+}
+
+#[test]
+fn the_court_lifts_or_replaces_an_emergency_suspension() {
+	new_test_ext().execute_with(|| {
+		appoint_council();
+		let node = buy(ALICE, b"satinal", 1);
+		for m in &COUNCIL[..3] {
+			assert_ok!(N::emergency_suspend(RuntimeOrigin::signed(*m), node, H256::zero()));
+		}
+		assert_ok!(N::suspend(
+			RuntimeOrigin::signed(COURT),
+			node,
+			H256::zero(),
+			20 * MILLIS_PER_DAY
+		));
+		assert_eq!(Suspensions::<Test>::get(node).unwrap().by, SuspendedBy::Court);
+		advance(EmergencySuspension::get());
+		assert!(resolve(b"satinal.kurd").suspended);
+
+		assert_ok!(N::lift_suspension(RuntimeOrigin::signed(COURT), node));
+		assert!(!resolve(b"satinal.kurd").suspended);
+	});
+}
+
+#[test]
+fn only_sitting_members_and_fresh_agreement_count() {
+	new_test_ext().execute_with(|| {
+		appoint_council();
+		let node = buy(ALICE, b"satinal", 1);
+		assert_ok!(N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[0]), node, H256::zero()));
+		assert_ok!(N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[1]), node, H256::zero()));
+
+		// The Serok replaces both who agreed; the third agreement is then the first that counts
+		let next = vec![COUNCIL[2], COUNCIL[3], COUNCIL[4], 66, 67];
+		assert_ok!(N::set_emergency_council(RuntimeOrigin::signed(SEROK), next));
+		assert_noop!(
+			N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[0]), node, H256::zero()),
+			Error::<Test>::NotEmergencyMember
+		);
+		assert_ok!(N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[2]), node, H256::zero()));
+		assert_eq!(EmergencyCalls::<Test>::get(node).unwrap().approvals.len(), 1);
+
+		// Agreement older than the suspension it would order has lapsed
+		assert_ok!(N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[3]), node, H256::zero()));
+		advance(EmergencySuspension::get());
+		assert_ok!(N::emergency_suspend(RuntimeOrigin::signed(COUNCIL[4]), node, H256::zero()));
+		assert!(!resolve(b"satinal.kurd").suspended);
+		assert_eq!(EmergencyCalls::<Test>::get(node).unwrap().approvals.len(), 1);
+	});
+}
+
+#[test]
+fn a_suspension_belongs_to_its_registration() {
+	new_test_ext().execute_with(|| {
+		let node = buy(ALICE, b"satinal", 1);
+		// Suspended on the last day of its grace period, for a month
+		advance(YEAR + GracePeriod::get() - MILLIS_PER_DAY);
+		assert_ok!(N::suspend(
+			RuntimeOrigin::signed(COURT),
+			node,
+			H256::zero(),
+			MaxSuspension::get()
+		));
+		// The lease lapses and someone else buys the name: the old suspension is not theirs
+		advance(MILLIS_PER_DAY);
+		let fresh = buy(BOB, b"satinal", 1);
+		assert!(Suspensions::<Test>::get(node).is_some_and(|s| now() < s.until));
+		assert!(!resolve(b"satinal.kurd").suspended);
+		assert_ok!(N::set_content(RuntimeOrigin::signed(BOB), fresh, Some(Content::Ipfs(cid(4)))));
+	});
+}
+
+#[test]
+fn the_council_parameters_hold_together() {
+	use pezframe_support::traits::Hooks;
+	<N as Hooks<u64>>::integrity_test();
+}
+
+#[test]
 fn a_name_under_scheduled_revocation_cannot_be_bought_out_from_under_it() {
 	new_test_ext().execute_with(|| {
 		let node = buy(ALICE, b"wezaret", 1);

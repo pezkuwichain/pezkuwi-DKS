@@ -1,0 +1,39 @@
+[package]
+name = "kurd-mirror"
+version = "0.1.0"
+edition.workspace = true
+description = "Keeps an IPFS node that serves .kurd sites in step with the register: refuses what the court or the emergency council has stopped"
+authors = ["Dijital Kurdistan Tech Institute"]
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+# A service binary deployed to the gateway and the mirrors, not a library anyone links against.
+publish = false
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "kurd-mirror"
+path = "src/main.rs"
+
+[dependencies]
+# Records are decoded with the pallet's own types, so a change to them breaks this build
+# instead of being misread at run time.
+codec = { workspace = true, default-features = true }
+pezpallet-navnisan = { workspace = true, default-features = true }
+pezpallet-tiki = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, features = ["std"] }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
+
+anyhow = { workspace = true, default-features = true }
+cid = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+hex = { workspace = true, default-features = true }
+reqwest = { workspace = true }
+serde = { workspace = true, default-features = true, features = ["derive"] }
+serde_json = { workspace = true, default-features = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }

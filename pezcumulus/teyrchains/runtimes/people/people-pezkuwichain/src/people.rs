@@ -2604,6 +2604,14 @@ parameter_types! {
 	pub const NavnisanMaxHorizon: u64 = 10 * pezpallet_navnisan::YEAR;
 	pub const NavnisanInstitutionDelay: u64 = NAVNISAN_DAY;
 	pub const NavnisanDisputeDelay: u64 = 7 * NAVNISAN_DAY;
+	/// The court suspends an abused name for at most a month at a time.
+	pub const NavnisanMaxSuspension: u64 = 30 * NAVNISAN_DAY;
+	/// The emergency council's suspension: long enough for the court to sit (Serok
+	/// 2026-11-08: the Diwan meets within 72 hours), short enough not to stand in for it.
+	pub const NavnisanEmergencySuspension: u64 = 3 * NAVNISAN_DAY;
+	/// Five people the Serok appoints; three of them act (Serok 2026-11-08).
+	pub const NavnisanEmergencySeats: u32 = 5;
+	pub const NavnisanEmergencyThreshold: u32 = 3;
 }
 
 /// Single-seat offices from the tiki register: a minister's name follows the ministry.
@@ -2686,6 +2694,7 @@ impl pezpallet_navnisan::Config for Runtime {
 	type GrantOrigin = crate::RootOrParliament;
 	type PriceOrigin = crate::RootOrParliament;
 	type DisputeOrigin = crate::RootOrDiwan;
+	type EmergencyAppointOrigin = crate::RootOrSerok;
 	type CommitDeposit = NavnisanCommitDeposit;
 	type SubnameDeposit = NavnisanSubnameDeposit;
 	type TextDepositBase = NavnisanTextDepositBase;
@@ -2697,6 +2706,10 @@ impl pezpallet_navnisan::Config for Runtime {
 	type MaxHorizon = NavnisanMaxHorizon;
 	type InstitutionDelay = NavnisanInstitutionDelay;
 	type DisputeDelay = NavnisanDisputeDelay;
+	type MaxSuspension = NavnisanMaxSuspension;
+	type EmergencySuspension = NavnisanEmergencySuspension;
+	type EmergencySeats = NavnisanEmergencySeats;
+	type EmergencyThreshold = NavnisanEmergencyThreshold;
 	type WeightInfo = weights::pezpallet_navnisan::WeightInfo<Runtime>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = NavnisanBenchmarkClock;
