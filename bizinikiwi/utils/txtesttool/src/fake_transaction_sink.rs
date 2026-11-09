@@ -137,7 +137,9 @@ mod test {
 		assert_eq!(r, 111u32.to_le_bytes().into());
 	}
 
-	#[tokio::test]
+	// The check at 200 ms must land before both transactions finalize at 250 ms. On wall-clock
+	// time a loaded machine missed that 50 ms margin; paused time keeps the order exact.
+	#[tokio::test(start_paused = true)]
 	async fn fake_sink_submit_work_valid_2() {
 		init_logger();
 		info!("start");

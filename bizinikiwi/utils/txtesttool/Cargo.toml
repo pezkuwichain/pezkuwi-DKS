@@ -78,3 +78,6 @@ runtime-benchmarks = [
 	"pezkuwi-subxt-signer/runtime-benchmarks",
 	"pezkuwi-subxt/runtime-benchmarks",
 ]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
