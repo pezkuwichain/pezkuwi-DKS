@@ -198,41 +198,67 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 			.saturating_add(T::DbWeight::get().reads(c.into()))
 	}
-	/// Storage: `Welati::CurrentOfficials` (r:1 w:0)
-	/// Proof: `Welati::CurrentOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
-	/// Storage: `Welati::AppointedOfficials` (r:1 w:0)
-	/// Proof: `Welati::AppointedOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiHolder` (r:1 w:0)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:1 w:0)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:1 w:0)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::PendingNominations` (r:1 w:1)
 	/// Proof: `Welati::PendingNominations` (`max_values`: None, `max_size`: Some(173), added: 2648, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::NextAppointmentId` (r:1 w:1)
 	/// Proof: `Welati::NextAppointmentId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::ConfirmationRequired` (r:1 w:0)
+	/// Proof: `Welati::ConfirmationRequired` (`max_values`: None, `max_size`: Some(10), added: 2485, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::AppointmentProcesses` (r:0 w:1)
-	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10119), added: 12594, mode: `MaxEncodedLen`)
+	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10158), added: 12633, mode: `MaxEncodedLen`)
 	fn nominate_official() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `121`
+		//  Measured:  `398`
 		//  Estimated: `3638`
-		// Minimum execution time: 25_456_000 picoseconds.
-		Weight::from_parts(26_826_000, 3638)
-			.saturating_add(T::DbWeight::get().reads(5_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		// Minimum execution time: 51_982_000 picoseconds.
+		Weight::from_parts(80_272_000, 0)
+			.saturating_add(Weight::from_parts(0, 3638))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
-	/// Storage: `Welati::CurrentOfficials` (r:1 w:0)
-	/// Proof: `Welati::CurrentOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiHolder` (r:2 w:1)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:5 w:1)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::AppointmentProcesses` (r:1 w:1)
-	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10119), added: 12594, mode: `MaxEncodedLen`)
+	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10158), added: 12633, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::PendingNominations` (r:1 w:1)
 	/// Proof: `Welati::PendingNominations` (`max_values`: None, `max_size`: Some(173), added: 2648, mode: `MaxEncodedLen`)
-	/// Storage: `Welati::AppointedOfficials` (r:0 w:1)
-	/// Proof: `Welati::AppointedOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:1 w:2)
+	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:2 w:2)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::CitizenNft` (r:2 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Collection` (r:1 w:1)
+	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemConfigOf` (r:2 w:0)
+	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemMetadataOf` (r:2 w:2)
+	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
+	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:2 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:2 w:0)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	fn approve_appointment() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `444`
-		//  Estimated: `13584`
-		// Minimum execution time: 28_797_000 picoseconds.
-		Weight::from_parts(30_151_000, 13584)
-			.saturating_add(T::DbWeight::get().reads(3_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		//  Measured:  `2124`
+		//  Estimated: `13710`
+		// Minimum execution time: 360_630_000 picoseconds.
+		Weight::from_parts(548_696_000, 0)
+			.saturating_add(Weight::from_parts(0, 13710))
+			.saturating_add(T::DbWeight::get().reads(25))
+			.saturating_add(T::DbWeight::get().writes(11))
 	}
 	/// Storage: `Welati::ParliamentMembers` (r:1 w:0)
 	/// Proof: `Welati::ParliamentMembers` (`max_values`: Some(1), `max_size`: Some(11057), added: 11552, mode: `MaxEncodedLen`)
@@ -454,11 +480,41 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
-	/// Placeholder: `nominate_official`, plus one office unseated and one seated.
+	/// Storage: `Welati::PendingPrimeMinister` (r:1 w:1)
+	/// Proof: `Welati::PendingPrimeMinister` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiHolder` (r:1 w:1)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:1 w:2)
+	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:2 w:2)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::CitizenNft` (r:2 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:4 w:1)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Collection` (r:1 w:1)
+	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemConfigOf` (r:2 w:0)
+	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemMetadataOf` (r:2 w:2)
+	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
+	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:2 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:2 w:0)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	fn confirm_prime_minister() -> Weight {
-		Weight::from_parts(491_565_000, 30_884)
-			.saturating_add(T::DbWeight::get().reads(36_u64))
-			.saturating_add(T::DbWeight::get().writes(13_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `1791`
+		//  Estimated: `11166`
+		// Minimum execution time: 294_869_000 picoseconds.
+		Weight::from_parts(483_744_000, 0)
+			.saturating_add(Weight::from_parts(0, 11166))
+			.saturating_add(T::DbWeight::get().reads(22))
+			.saturating_add(T::DbWeight::get().writes(10))
 	}
 	/// Placeholder: `nominate_official`.
 	fn reject_prime_minister() -> Weight {
@@ -472,11 +528,39 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(21_u64))
 			.saturating_add(T::DbWeight::get().writes(8_u64))
 	}
-	/// Placeholder: `nominate_official`, plus one office unseated and one seated.
+	/// Storage: `Tiki::TikiHolder` (r:2 w:1)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:5 w:1)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:1 w:2)
+	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:2 w:2)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::CitizenNft` (r:2 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Collection` (r:1 w:1)
+	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemConfigOf` (r:2 w:0)
+	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemMetadataOf` (r:2 w:2)
+	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
+	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:2 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:2 w:0)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	fn appoint_minister() -> Weight {
-		Weight::from_parts(491_565_000, 30_884)
-			.saturating_add(T::DbWeight::get().reads(36_u64))
-			.saturating_add(T::DbWeight::get().writes(13_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `1796`
+		//  Estimated: `13710`
+		// Minimum execution time: 328_000_000 picoseconds.
+		Weight::from_parts(500_605_000, 0)
+			.saturating_add(Weight::from_parts(0, 13710))
+			.saturating_add(T::DbWeight::get().reads(23))
+			.saturating_add(T::DbWeight::get().writes(9))
 	}
 	/// Placeholder: `nominate_official`, plus one office unseated.
 	fn dismiss_minister() -> Weight {
@@ -670,35 +754,39 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10158), added: 12633, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::PendingNominations` (r:1 w:1)
 	/// Proof: `Welati::PendingNominations` (`max_values`: None, `max_size`: Some(173), added: 2648, mode: `MaxEncodedLen`)
-	/// Storage: `Tiki::CitizenNft` (r:1 w:0)
-	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
-	/// Storage: `Tiki::UserTikis` (r:1 w:1)
+	/// Storage: `Tiki::TikiHolder` (r:1 w:1)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:1 w:2)
+	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:2 w:2)
 	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
-	/// Storage: `Tiki::TikiExpiry` (r:2 w:0)
+	/// Storage: `Tiki::CitizenNft` (r:2 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:4 w:1)
 	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::Collection` (r:1 w:1)
 	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
-	/// Storage: `Nfts::ItemConfigOf` (r:1 w:0)
+	/// Storage: `Nfts::ItemConfigOf` (r:2 w:0)
 	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
 	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
-	/// Storage: `Nfts::ItemMetadataOf` (r:1 w:1)
+	/// Storage: `Nfts::ItemMetadataOf` (r:2 w:2)
 	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
 	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
 	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
-	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Storage: `Trust::TrustScores` (r:2 w:0)
 	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
-	/// Storage: `IdentityKyc::KycStatuses` (r:1 w:0)
+	/// Storage: `IdentityKyc::KycStatuses` (r:2 w:0)
 	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	fn confirm_appointment() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1590`
+		//  Measured:  `2104`
 		//  Estimated: `13623`
-		// Minimum execution time: 147_415_000 picoseconds.
-		Weight::from_parts(253_868_000, 0)
+		// Minimum execution time: 336_810_000 picoseconds.
+		Weight::from_parts(537_006_000, 0)
 			.saturating_add(Weight::from_parts(0, 13623))
-			.saturating_add(T::DbWeight::get().reads(13))
-			.saturating_add(T::DbWeight::get().writes(5))
+			.saturating_add(T::DbWeight::get().reads(23))
+			.saturating_add(T::DbWeight::get().writes(11))
 	}
 }
 
@@ -771,41 +859,67 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 			.saturating_add(RocksDbWeight::get().reads(c.into()))
 	}
-	/// Storage: `Welati::CurrentOfficials` (r:1 w:0)
-	/// Proof: `Welati::CurrentOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
-	/// Storage: `Welati::AppointedOfficials` (r:1 w:0)
-	/// Proof: `Welati::AppointedOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiHolder` (r:1 w:0)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:1 w:0)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:1 w:0)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::PendingNominations` (r:1 w:1)
 	/// Proof: `Welati::PendingNominations` (`max_values`: None, `max_size`: Some(173), added: 2648, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::NextAppointmentId` (r:1 w:1)
 	/// Proof: `Welati::NextAppointmentId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Welati::ConfirmationRequired` (r:1 w:0)
+	/// Proof: `Welati::ConfirmationRequired` (`max_values`: None, `max_size`: Some(10), added: 2485, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::AppointmentProcesses` (r:0 w:1)
-	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10119), added: 12594, mode: `MaxEncodedLen`)
+	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10158), added: 12633, mode: `MaxEncodedLen`)
 	fn nominate_official() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `121`
+		//  Measured:  `398`
 		//  Estimated: `3638`
-		// Minimum execution time: 25_456_000 picoseconds.
-		Weight::from_parts(26_826_000, 3638)
-			.saturating_add(RocksDbWeight::get().reads(5_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+		// Minimum execution time: 51_982_000 picoseconds.
+		Weight::from_parts(80_272_000, 0)
+			.saturating_add(Weight::from_parts(0, 3638))
+			.saturating_add(RocksDbWeight::get().reads(6))
+			.saturating_add(RocksDbWeight::get().writes(3))
 	}
-	/// Storage: `Welati::CurrentOfficials` (r:1 w:0)
-	/// Proof: `Welati::CurrentOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiHolder` (r:2 w:1)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:5 w:1)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::AppointmentProcesses` (r:1 w:1)
-	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10119), added: 12594, mode: `MaxEncodedLen`)
+	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10158), added: 12633, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::PendingNominations` (r:1 w:1)
 	/// Proof: `Welati::PendingNominations` (`max_values`: None, `max_size`: Some(173), added: 2648, mode: `MaxEncodedLen`)
-	/// Storage: `Welati::AppointedOfficials` (r:0 w:1)
-	/// Proof: `Welati::AppointedOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:1 w:2)
+	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:2 w:2)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::CitizenNft` (r:2 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Collection` (r:1 w:1)
+	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemConfigOf` (r:2 w:0)
+	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemMetadataOf` (r:2 w:2)
+	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
+	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:2 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:2 w:0)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	fn approve_appointment() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `444`
-		//  Estimated: `13584`
-		// Minimum execution time: 28_797_000 picoseconds.
-		Weight::from_parts(30_151_000, 13584)
-			.saturating_add(RocksDbWeight::get().reads(3_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+		//  Measured:  `2124`
+		//  Estimated: `13710`
+		// Minimum execution time: 360_630_000 picoseconds.
+		Weight::from_parts(548_696_000, 0)
+			.saturating_add(Weight::from_parts(0, 13710))
+			.saturating_add(RocksDbWeight::get().reads(25))
+			.saturating_add(RocksDbWeight::get().writes(11))
 	}
 	/// Storage: `Welati::ParliamentMembers` (r:1 w:0)
 	/// Proof: `Welati::ParliamentMembers` (`max_values`: Some(1), `max_size`: Some(11057), added: 11552, mode: `MaxEncodedLen`)
@@ -1027,11 +1141,41 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(6_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
-	/// Placeholder: `nominate_official`, plus one office unseated and one seated.
+	/// Storage: `Welati::PendingPrimeMinister` (r:1 w:1)
+	/// Proof: `Welati::PendingPrimeMinister` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiHolder` (r:1 w:1)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:1 w:2)
+	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:2 w:2)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::CitizenNft` (r:2 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:4 w:1)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Collection` (r:1 w:1)
+	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemConfigOf` (r:2 w:0)
+	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemMetadataOf` (r:2 w:2)
+	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
+	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:2 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:2 w:0)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	fn confirm_prime_minister() -> Weight {
-		Weight::from_parts(491_565_000, 30_884)
-			.saturating_add(RocksDbWeight::get().reads(36_u64))
-			.saturating_add(RocksDbWeight::get().writes(13_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `1791`
+		//  Estimated: `11166`
+		// Minimum execution time: 294_869_000 picoseconds.
+		Weight::from_parts(483_744_000, 0)
+			.saturating_add(Weight::from_parts(0, 11166))
+			.saturating_add(RocksDbWeight::get().reads(22))
+			.saturating_add(RocksDbWeight::get().writes(10))
 	}
 	/// Placeholder: `nominate_official`.
 	fn reject_prime_minister() -> Weight {
@@ -1045,11 +1189,39 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(21_u64))
 			.saturating_add(RocksDbWeight::get().writes(8_u64))
 	}
-	/// Placeholder: `nominate_official`, plus one office unseated and one seated.
+	/// Storage: `Tiki::TikiHolder` (r:2 w:1)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:5 w:1)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:1 w:2)
+	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:2 w:2)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::CitizenNft` (r:2 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Collection` (r:1 w:1)
+	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemConfigOf` (r:2 w:0)
+	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemMetadataOf` (r:2 w:2)
+	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
+	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:2 w:0)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:2 w:0)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	fn appoint_minister() -> Weight {
-		Weight::from_parts(491_565_000, 30_884)
-			.saturating_add(RocksDbWeight::get().reads(36_u64))
-			.saturating_add(RocksDbWeight::get().writes(13_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `1796`
+		//  Estimated: `13710`
+		// Minimum execution time: 328_000_000 picoseconds.
+		Weight::from_parts(500_605_000, 0)
+			.saturating_add(Weight::from_parts(0, 13710))
+			.saturating_add(RocksDbWeight::get().reads(23))
+			.saturating_add(RocksDbWeight::get().writes(9))
 	}
 	/// Placeholder: `nominate_official`, plus one office unseated.
 	fn dismiss_minister() -> Weight {
@@ -1243,34 +1415,38 @@ impl WeightInfo for () {
 	/// Proof: `Welati::AppointmentProcesses` (`max_values`: None, `max_size`: Some(10158), added: 12633, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::PendingNominations` (r:1 w:1)
 	/// Proof: `Welati::PendingNominations` (`max_values`: None, `max_size`: Some(173), added: 2648, mode: `MaxEncodedLen`)
-	/// Storage: `Tiki::CitizenNft` (r:1 w:0)
-	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
-	/// Storage: `Tiki::UserTikis` (r:1 w:1)
+	/// Storage: `Tiki::TikiHolder` (r:1 w:1)
+	/// Proof: `Tiki::TikiHolder` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:1 w:2)
+	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:2 w:2)
 	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
-	/// Storage: `Tiki::TikiExpiry` (r:2 w:0)
+	/// Storage: `Tiki::CitizenNft` (r:2 w:0)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:4 w:1)
 	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::Collection` (r:1 w:1)
 	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
-	/// Storage: `Nfts::ItemConfigOf` (r:1 w:0)
+	/// Storage: `Nfts::ItemConfigOf` (r:2 w:0)
 	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
 	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
-	/// Storage: `Nfts::ItemMetadataOf` (r:1 w:1)
+	/// Storage: `Nfts::ItemMetadataOf` (r:2 w:2)
 	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
 	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
 	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
-	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Storage: `Trust::TrustScores` (r:2 w:0)
 	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
-	/// Storage: `IdentityKyc::KycStatuses` (r:1 w:0)
+	/// Storage: `IdentityKyc::KycStatuses` (r:2 w:0)
 	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	fn confirm_appointment() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1590`
+		//  Measured:  `2104`
 		//  Estimated: `13623`
-		// Minimum execution time: 147_415_000 picoseconds.
-		Weight::from_parts(253_868_000, 0)
+		// Minimum execution time: 336_810_000 picoseconds.
+		Weight::from_parts(537_006_000, 0)
 			.saturating_add(Weight::from_parts(0, 13623))
-			.saturating_add(RocksDbWeight::get().reads(13))
-			.saturating_add(RocksDbWeight::get().writes(5))
+			.saturating_add(RocksDbWeight::get().reads(23))
+			.saturating_add(RocksDbWeight::get().writes(11))
 	}
 }
