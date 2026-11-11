@@ -438,6 +438,12 @@ pub mod pezpallet {
 		Karguzar, // Human-resources officer
 		#[codec(index = 55)]
 		Plansaz, // Budget planner
+		/// Retired from an appointed office: given to whoever held it when a successor was
+		/// appointed in their place. A record of service, not an office -- no origin, vote or
+		/// qualification reads it. Not given on dismissal, and not given when an election ends
+		/// a seat: the first is not a retirement, and the second is a term ending.
+		#[codec(index = 56)]
+		Xanenişîn,
 	}
 
 	impl From<Tiki> for u32 {
@@ -549,6 +555,8 @@ pub mod pezpallet {
 		TikiGranted { who: T::AccountId, tiki: Tiki },
 		/// Tiki (role) revoked
 		TikiRevoked { who: T::AccountId, tiki: Tiki },
+		/// A successor was appointed to `office`, and the one they replaced retired from it.
+		Retired { who: T::AccountId, office: Tiki },
 		/// NFT transfer blocked
 		TransferBlocked {
 			collection_id: T::CollectionId,
@@ -745,6 +753,16 @@ pub mod pezpallet {
 
 				// Step 4: Seat the founding government.
 				for (holder, tiki) in self.founding_government.iter() {
+					// A seat in the house or on the court is a line on welati's roll and a
+					// member of a collective as well as a tiki. Granted here it would be the
+					// tiki alone -- a seat no roll names, which welati's own checks reject.
+					assert!(
+						!matches!(
+							tiki,
+							Tiki::Parlementer | Tiki::SerokiMeclise | Tiki::EndameDiwane
+						),
+						"Tiki genesis: seat the house, its Speaker and the court through welati"
+					);
 					if CitizenNft::<T>::get(holder).is_none() {
 						Pezpallet::<T>::mint_citizen_nft_for_user(holder)
 							.expect("Tiki genesis: failed to mint a minister's citizen NFT");
@@ -1005,6 +1023,23 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// Record that `who` retired from `office` because a successor was appointed to it.
+		///
+		/// Called by the path that seats the successor, after it has taken the office away;
+		/// this only writes the record. Someone who retires twice holds the record once.
+		pub fn retire(who: &T::AccountId, office: Tiki) -> DispatchResult {
+			if !Self::user_tikis(who).contains(&Tiki::Xanenişîn) {
+				Self::internal_grant_role(who, Tiki::Xanenişîn)?;
+				RoleAssignmentTypeOf::<T>::insert(
+					who,
+					Tiki::Xanenişîn,
+					RoleAssignmentType::Automatic,
+				);
+			}
+			Self::deposit_event(Event::Retired { who: who.clone(), office });
+			Ok(())
+		}
+
 		/// Move every tiki this account holds onto another, for a court-ordered reissue.
 		///
 		/// Offices move. That was decided rather than derived, and it is the one part of a
@@ -1256,19 +1291,27 @@ pub mod pezpallet {
 		/// `OfficialRole`, so the nomination path seats them -- and
 		/// `OfficialRole::requires_parliament_approval` names these two among the five a
 		/// parliament confirms at founding. There is a second door and it is the better one.
+		///
+		/// `Xanenişîn` is here for the same reason from the other side: a retirement is written
+		/// by the appointment that caused it, and an admin able to add or strike one would be
+		/// editing somebody's record of service.
 		pub fn is_seated_by_governance(tiki: &Tiki) -> bool {
 			Self::is_cabinet_tiki(tiki)
 				|| matches!(
 					tiki,
-					Tiki::SerokWeziran | Tiki::EndameDiwane | Tiki::Xezinedar | Tiki::Balyoz
+					Tiki::SerokWeziran
+						| Tiki::EndameDiwane
+						| Tiki::Xezinedar | Tiki::Balyoz
+						| Tiki::Xanenişîn
 				)
 		}
 
 		/// Returns the assignment type of a specific role
 		pub fn get_role_assignment_type(tiki: &Tiki) -> RoleAssignmentType {
 			match tiki {
-				// Automatic roles
-				Tiki::Welati => RoleAssignmentType::Automatic,
+				// Automatic roles. Retirement is the system's to record, never an admin's: a
+				// record of service anyone could hand out would be a record of nothing.
+				Tiki::Welati | Tiki::Xanenişîn => RoleAssignmentType::Automatic,
 
 				// Elected roles
 				Tiki::Parlementer | Tiki::SerokiMeclise | Tiki::Serok => {
@@ -1506,6 +1549,11 @@ impl<T: Config> Pezpallet<T> {
 			Tiki::PisporêBazarkirinê => 40,
 			Tiki::Karguzar => 40,
 
+			// Service record. Nothing until governance says otherwise: standing is the divisor
+			// of every reward, so a figure here is a pension, and that is a decision to make
+			// on its own rather than a default to inherit.
+			Tiki::Xanenişîn => 0,
+
 			// Basic Citizenship
 			Tiki::Welati => 10,
 		}
@@ -1651,6 +1699,7 @@ mod stored_enum_encoding {
 			("Îcrakar", 53u8, &|| Tiki::Îcrakar.encode()),
 			("Karguzar", 54u8, &|| Tiki::Karguzar.encode()),
 			("Plansaz", 55u8, &|| Tiki::Plansaz.encode()),
+			("Xanenişîn", 56u8, &|| Tiki::Xanenişîn.encode()),
 		];
 		let moved: Vec<&str> = pinned
 			.iter()
@@ -1658,7 +1707,7 @@ mod stored_enum_encoding {
 			.map(|(name, _, _)| *name)
 			.collect();
 		assert!(moved.is_empty(), "`Tiki` indices moved: {moved:?}");
-		assert_eq!(pinned.len(), 56, "a variant was added or removed");
+		assert_eq!(pinned.len(), 57, "a variant was added or removed");
 	}
 
 	#[test]

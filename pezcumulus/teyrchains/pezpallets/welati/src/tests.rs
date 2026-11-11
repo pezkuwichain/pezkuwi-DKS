@@ -1513,10 +1513,16 @@ fn a_bench_takes_more_than_one_judge_and_a_single_seat_takes_one() {
 		assert!(pezpallet_tiki::UserTikis::<Test>::get(2).contains(&Tiki::Dadger));
 		assert!(pezpallet_tiki::UserTikis::<Test>::get(3).contains(&Tiki::Dadger));
 
-		// The Treasury has one seat, and `tiki` is where that is written down.
+		// The Treasury has one seat, and `tiki` is where that is written down. Appointing a
+		// successor moves it, and the Treasurer it is taken from retires.
 		assert_ok!(appoint(4, OfficialRole::Xezinedar));
-		assert_noop!(appoint(5, OfficialRole::Xezinedar), Error::<Test>::RoleAlreadyFilled);
-		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::Xezinedar), Some(4));
+		assert_ok!(appoint(5, OfficialRole::Xezinedar));
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::Xezinedar), Some(5));
+		let held_by_4 = pezpallet_tiki::UserTikis::<Test>::get(4);
+		assert!(!held_by_4.contains(&Tiki::Xezinedar));
+		assert!(held_by_4.contains(&Tiki::Xanenişîn));
+		// A judge added beside another replaces nobody, so nobody retires.
+		assert!(!pezpallet_tiki::UserTikis::<Test>::get(2).contains(&Tiki::Xanenişîn));
 	});
 }
 
@@ -6826,6 +6832,312 @@ mod hook_charges {
 			assert!(crate::PendingSeatGrants::<Test>::get().is_empty());
 			let grant = <() as pezpallet_tiki::weights::WeightInfo>::grant_elected_role();
 			assert!(charged.all_gte(grant.saturating_mul(seats.len() as u64)));
+		});
+	}
+}
+
+// ===== RETIREMENT =====
+//
+// An appointee leaves when a successor is appointed, and leaves retired (`Xanenişîn`). A
+// dismissal is not a retirement, and an elected officeholder replaced at the ballot box has
+// reached the end of a term, so neither records one.
+
+mod retirement {
+	use super::*;
+	use crate::mock::{holder_of, seat_president};
+
+	fn retired(who: u64) -> bool {
+		pezpallet_tiki::UserTikis::<Test>::get(who).contains(&Tiki::Xanenişîn)
+	}
+
+	#[test]
+	fn a_prime_minister_replaced_by_a_successor_retires() {
+		ExtBuilder::default().build().execute_with(|| {
+			seat_president(1);
+			make_citizen(2);
+			make_citizen(3);
+			install_prime_minister(RuntimeOrigin::signed(1), 2);
+
+			install_prime_minister(RuntimeOrigin::signed(1), 3);
+
+			assert_eq!(holder_of(Tiki::SerokWeziran), Some(3));
+			assert!(retired(2), "the Prime Minister the successor replaced retired");
+			assert!(!retired(3));
+			System::assert_has_event(RuntimeEvent::Tiki(pezpallet_tiki::Event::Retired {
+				who: 2,
+				office: Tiki::SerokWeziran,
+			}));
+		});
+	}
+
+	#[test]
+	fn a_minister_replaced_by_a_successor_retires() {
+		ExtBuilder::default().build().execute_with(|| {
+			make_citizen(2);
+			make_citizen(3);
+			make_citizen(4);
+			install_prime_minister(RuntimeOrigin::root(), 2);
+			assert_ok!(Welati::appoint_minister(RuntimeOrigin::signed(2), 3, Tiki::WezireDarayiye));
+
+			assert_ok!(Welati::appoint_minister(RuntimeOrigin::signed(2), 4, Tiki::WezireDarayiye));
+
+			assert!(retired(3));
+			// Reappointing the holder to the office they hold replaces nobody.
+			assert_ok!(Welati::appoint_minister(RuntimeOrigin::signed(2), 4, Tiki::WezireDarayiye));
+			assert!(!retired(4));
+		});
+	}
+
+	#[test]
+	fn a_dismissal_is_not_a_retirement() {
+		ExtBuilder::default().build().execute_with(|| {
+			make_citizen(2);
+			make_citizen(3);
+			install_prime_minister(RuntimeOrigin::root(), 2);
+			assert_ok!(Welati::appoint_minister(RuntimeOrigin::signed(2), 3, Tiki::WezireDarayiye));
+
+			assert_ok!(Welati::dismiss_minister(RuntimeOrigin::signed(2), 3, Tiki::WezireDarayiye));
+			assert_ok!(Welati::dismiss_prime_minister(RuntimeOrigin::root()));
+
+			assert!(!retired(3), "a dismissed minister");
+			assert!(!retired(2), "a dismissed Prime Minister");
+		});
+	}
+
+	#[test]
+	fn a_second_retirement_is_recorded_once() {
+		ExtBuilder::default().build().execute_with(|| {
+			make_citizen(2);
+			make_citizen(3);
+			make_citizen(4);
+			install_prime_minister(RuntimeOrigin::root(), 2);
+			assert_ok!(Welati::appoint_minister(RuntimeOrigin::signed(2), 3, Tiki::WezireDarayiye));
+			assert_ok!(Welati::appoint_minister(RuntimeOrigin::signed(2), 4, Tiki::WezireDarayiye));
+			assert_ok!(Welati::appoint_minister(RuntimeOrigin::signed(2), 3, Tiki::WezireParez));
+			assert_ok!(Welati::appoint_minister(RuntimeOrigin::signed(2), 4, Tiki::WezireParez));
+
+			let held = pezpallet_tiki::UserTikis::<Test>::get(3);
+			assert_eq!(held.iter().filter(|t| **t == Tiki::Xanenişîn).count(), 1);
+		});
+	}
+
+	#[test]
+	fn nobody_can_hand_out_or_strike_a_retirement() {
+		ExtBuilder::default().build().execute_with(|| {
+			make_citizen(5);
+			assert_noop!(
+				pezpallet_tiki::Pezpallet::<Test>::grant_tiki(
+					RuntimeOrigin::root(),
+					5,
+					Tiki::Xanenişîn
+				),
+				pezpallet_tiki::Error::<Test>::SeatedByGovernance
+			);
+			assert_ok!(pezpallet_tiki::Pezpallet::<Test>::retire(&5, Tiki::Xezinedar));
+			assert_noop!(
+				pezpallet_tiki::Pezpallet::<Test>::revoke_tiki(
+					RuntimeOrigin::root(),
+					5,
+					Tiki::Xanenişîn
+				),
+				pezpallet_tiki::Error::<Test>::SeatedByGovernance
+			);
+		});
+	}
+}
+
+// ===== THE FOUNDING BODIES AT GENESIS =====
+//
+// The whole interim state starts in the first block: the President and cabinet through
+// `tiki`'s genesis, and the house, its Speaker and the court through this pallet's.
+
+mod founding_bodies_at_genesis {
+	use super::*;
+	use crate::{
+		mock::{holder_of, seat_president},
+		DiwanMembers, FirstElectionOwed, FoundingPeriodEnded, GenesisConfig, OpenElection,
+		TermEnds,
+	};
+	use pezframe_support::traits::{BuildGenesisConfig, Hooks};
+
+	fn founding_president() {
+		seat_president(1);
+		TermEnds::<Test>::remove(ElectionType::Presidential);
+	}
+
+	fn qualified(who: u64) {
+		make_citizen(who);
+		assert_ok!(pezpallet_tiki::Pezpallet::<Test>::internal_grant_role(&who, Tiki::Hiquqnas));
+	}
+
+	fn bodies() -> GenesisConfig<Test> {
+		GenesisConfig {
+			founding_parliament: vec![20, 21, 22],
+			founding_speaker: Some(20),
+			founding_court_elected: vec![23],
+			founding_court_appointed: vec![24],
+		}
+	}
+
+	fn found() {
+		founding_president();
+		qualified(24);
+		bodies().build();
+	}
+
+	#[test]
+	fn the_whole_interim_state_sits_in_the_first_block() {
+		ExtBuilder::default().build().execute_with(|| {
+			found();
+
+			let mut house: Vec<u64> =
+				Welati::parliament_members().iter().map(|member| member.account).collect();
+			house.sort();
+			assert_eq!(house, vec![20, 21, 22]);
+			// Seated now, not queued for the blocks after: there are none before this one.
+			assert!(Welati::pending_seat_grants().is_empty());
+			for member in [20, 21, 22] {
+				assert!(pezpallet_tiki::Pezpallet::<Test>::has_tiki(&member, &Tiki::Parlementer));
+				assert_eq!(
+					pezpallet_tiki::TikiExpiry::<Test>::get(member, Tiki::Parlementer),
+					None
+				);
+			}
+			assert_eq!(holder_of(Tiki::SerokiMeclise), Some(20));
+
+			let bench = DiwanMembers::<Test>::get();
+			assert_eq!(bench.len(), 2);
+			assert!(bench
+				.iter()
+				.any(|m| m.account == 23 && m.appointed_by == AppointmentAuthority::Parliament));
+			assert!(bench
+				.iter()
+				.any(|m| m.account == 24 && m.appointed_by == AppointmentAuthority::President(1)));
+			for judge in [23, 24] {
+				assert!(pezpallet_tiki::Pezpallet::<Test>::has_tiki(&judge, &Tiki::EndameDiwane));
+			}
+
+			// And the constitution's invariants hold of it, block after block.
+			crate::mock::check_invariants();
+			run_to_block(System::block_number() + 5);
+		});
+	}
+
+	#[test]
+	#[should_panic(expected = "the founding Speaker does not sit in the founding house")]
+	fn the_founding_speaker_comes_from_the_founding_house() {
+		ExtBuilder::default().build().execute_with(|| {
+			founding_president();
+			GenesisConfig::<Test> { founding_speaker: Some(30), ..bodies() }.build();
+		});
+	}
+
+	#[test]
+	#[should_panic(expected = "needs a founding President")]
+	fn the_presidents_half_of_the_court_needs_a_president() {
+		ExtBuilder::default().build().execute_with(|| {
+			qualified(24);
+			bodies().build();
+		});
+	}
+
+	#[test]
+	#[should_panic(expected = "an appointed founding judge cannot take a seat")]
+	fn an_appointed_founding_judge_has_to_be_qualified() {
+		ExtBuilder::default().build().execute_with(|| {
+			founding_president();
+			bodies().build();
+		});
+	}
+
+	#[test]
+	fn the_founding_court_waits_for_the_first_elected_house() {
+		ExtBuilder::default().build().execute_with(|| {
+			found();
+
+			// The founding period over, but the founding house still sits: the court's
+			// election is the house's to cast, and this is not the house that casts it.
+			FoundingPeriodEnded::<Test>::put(true);
+			FirstElectionOwed::<Test>::insert(ElectionType::Parliamentary, ());
+			let next = System::block_number() + 1;
+			System::set_block_number(next);
+			Welati::on_initialize(next);
+			assert!(!OpenElection::<Test>::contains_key(ElectionType::ConstitutionalCourt));
+
+			// The first elected house sits: its first business includes the court.
+			FirstElectionOwed::<Test>::remove(ElectionType::Parliamentary);
+			TermEnds::<Test>::insert(ElectionType::Parliamentary, next + 100_000);
+			let next = next + 1;
+			System::set_block_number(next);
+			Welati::on_initialize(next);
+			assert!(OpenElection::<Test>::contains_key(ElectionType::ConstitutionalCourt));
+		});
+	}
+
+	/// The founding Speaker needs no term only while the founding house sits.
+	#[cfg(feature = "try-runtime")]
+	#[test]
+	#[should_panic(expected = "an elected office is held under no mandate")]
+	fn a_founding_speaker_outliving_the_founding_house_is_caught() {
+		ExtBuilder::default().build().execute_with(|| {
+			found();
+			crate::mock::check_invariants();
+
+			FoundingPeriodEnded::<Test>::put(true);
+			crate::mock::check_invariants();
+		});
+	}
+
+	#[test]
+	fn the_founding_speaker_leaves_with_the_founding_house() {
+		ExtBuilder::default().build().execute_with(|| {
+			found();
+			// The founding period over, as `end_founding_period` leaves it: both first
+			// elections owed, the founding President and house still sitting.
+			FoundingPeriodEnded::<Test>::put(true);
+			FirstElectionOwed::<Test>::insert(ElectionType::Presidential, ());
+			FirstElectionOwed::<Test>::insert(ElectionType::Parliamentary, ());
+
+			let id = Welati::next_election_id();
+			assert_ok!(Welati::initiate_election(
+				RuntimeOrigin::root(),
+				ElectionType::Parliamentary,
+				None,
+				None,
+			));
+			// Each endorser speaks for one candidate, so the two draw from separate halves.
+			for (candidate, pool) in [(7u64, 1..=55u64), (8u64, 56..=110u64)] {
+				let endorsers: Vec<u64> = pool
+					.filter(|w| *w != candidate)
+					.take(crate::mock::ParliamentaryEndorsements::get() as usize)
+					.collect();
+				for who in endorsers.iter() {
+					assert_ok!(Welati::endorse_candidate(
+						RuntimeOrigin::signed(*who),
+						id,
+						candidate
+					));
+				}
+				assert_ok!(Welati::register_candidate(
+					RuntimeOrigin::signed(candidate),
+					id,
+					None,
+					endorsers
+				));
+			}
+			let election = Welati::active_elections(id).unwrap();
+			run_to_block(election.voting_start + 1);
+			for voter in 1..=60u64 {
+				assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(voter), id, vec![7], None));
+			}
+			run_to_block(election.end_block + 1);
+			assert_ok!(Welati::finalize_election(RuntimeOrigin::signed(99), id));
+
+			assert_eq!(holder_of(Tiki::SerokiMeclise), None, "the chair left with the house");
+			assert!(
+				!pezpallet_tiki::UserTikis::<Test>::get(20).contains(&Tiki::Xanenişîn),
+				"a term that ends at an election is not a retirement"
+			);
 		});
 	}
 }

@@ -300,6 +300,64 @@ mod the_court_roster {
 		Welati::diwan_members().iter().map(|member| member.account.clone()).collect()
 	}
 
+	/// The house, its Speaker and the court that genesis seats reach their collectives.
+	///
+	/// Built as the chain builds it, from the whole runtime's genesis, because the order is the
+	/// risk: welati writes the collectives' members, and the collectives' own genesis runs after
+	/// it. If that genesis overwrote what welati wrote, the founding house and court would hold
+	/// their seats and be unable to vote in either body -- which no pallet's mock can show.
+	#[test]
+	fn the_founding_bodies_reach_their_collectives_at_genesis() {
+		use people_pezkuwichain_runtime::{
+			ParliamentCollective, RuntimeGenesisConfig, TikiConfig, WelatiConfig,
+		};
+		let serok = account([20u8; 32]);
+		let (speaker, member, judge) =
+			(account([21u8; 32]), account([22u8; 32]), account([23u8; 32]));
+		let sorted = |mut v: Vec<AccountId>| {
+			v.sort();
+			v
+		};
+
+		let t = RuntimeGenesisConfig {
+			tiki: TikiConfig {
+				founding_citizen: Some(account(FOUNDER)),
+				founding_government: vec![
+					(serok.clone(), pezpallet_tiki::Tiki::Serok),
+					(account(JURIST), pezpallet_tiki::Tiki::Hiquqnas),
+				],
+				..Default::default()
+			},
+			welati: WelatiConfig {
+				founding_parliament: vec![speaker.clone(), member.clone()],
+				founding_speaker: Some(speaker.clone()),
+				founding_court_elected: vec![judge.clone()],
+				founding_court_appointed: vec![account(JURIST)],
+				..Default::default()
+			},
+			..Default::default()
+		}
+		.build_storage()
+		.unwrap();
+
+		pezsp_io::TestExternalities::new(t).execute_with(|| {
+			assert_eq!(
+				pezpallet_collective::Members::<Runtime, ParliamentCollective>::get(),
+				sorted(vec![speaker.clone(), member.clone()]),
+				"the founding house cannot vote in its own chamber"
+			);
+			assert_eq!(
+				collective(),
+				sorted(vec![judge.clone(), account(JURIST)]),
+				"the founding court cannot vote as a court"
+			);
+			assert_eq!(
+				pezpallet_tiki::TikiHolder::<Runtime>::get(pezpallet_tiki::Tiki::SerokiMeclise),
+				Some(speaker.clone())
+			);
+		});
+	}
+
 	fn collective() -> Vec<AccountId> {
 		pezpallet_collective::Members::<Runtime, DiwanCollective>::get()
 	}

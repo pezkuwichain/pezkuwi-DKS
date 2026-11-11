@@ -1763,6 +1763,152 @@ pub mod pezpallet {
 		ElectionNotFinished,
 	}
 
+	/// The founding bodies, seated in the first block.
+	///
+	/// The founding President and cabinet are `tiki`'s genesis (`founding_government`); the
+	/// house, its Speaker and the court are here, because a seat in them is a line on this
+	/// pallet's roll and a member of a collective as well as a tiki, and only this pallet
+	/// writes all three together. Everything here is interim, and each part ends the way the
+	/// constitution ends it:
+	///
+	/// - the house and its Speaker sit until the first parliamentary election, which the
+	///   register reaching `FoundingPeriodThreshold` opens (`end_founding_period`);
+	/// - the court's elected half sits until the first elected house holds the court's
+	///   election (`schedule_due_elections`);
+	/// - the President's half of the court sits its ordinary term, as any appointed seat does.
+	///
+	/// Empty by default, and empty is a valid founding: the President seats the house by call
+	/// instead (`seat_founding_parliament`).
+	#[pezpallet::genesis_config]
+	#[derive(pezframe_support::DefaultNoBound)]
+	pub struct GenesisConfig<T: Config> {
+		/// The founding house. Seated with no term, as `seat_founding_parliament` seats it.
+		pub founding_parliament: Vec<T::AccountId>,
+		/// The founding Speaker, who must sit in the founding house.
+		pub founding_speaker: Option<T::AccountId>,
+		/// The court's elected half for the founding period, up to `DiwanElectedSeats`.
+		pub founding_court_elected: Vec<T::AccountId>,
+		/// The President's half of the founding court. Needs a founding President, and each
+		/// member has to hold a qualifying tiki (`qualifies_for_an_appointed_seat`).
+		pub founding_court_appointed: Vec<T::AccountId>,
+	}
+
+	#[pezpallet::genesis_build]
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+		fn build(&self) {
+			// A chain spec that asks for something the constitution forbids fails here, when
+			// the spec is built, rather than as a chain that starts and then breaks its own
+			// invariants.
+			let citizen = |who: &T::AccountId| {
+				if pezpallet_tiki::CitizenNft::<T>::get(who).is_none() {
+					pezpallet_tiki::Pezpallet::<T>::mint_citizen_nft_for_user(who)
+						.expect("Welati genesis: failed to make a founding member a citizen");
+				}
+			};
+
+			if !self.founding_parliament.is_empty() {
+				let house: BoundedVec<_, T::ParliamentSize> = self
+					.founding_parliament
+					.iter()
+					.map(|who| ParliamentMember {
+						account: who.clone(),
+						elected_at: Default::default(),
+						term_ends_at: BlockNumberFor::<T>::max_value(),
+						votes_participated: 0,
+						total_votes_eligible: 0,
+						participation_rate: 100,
+						committees: Default::default(),
+					})
+					.collect::<Vec<_>>()
+					.try_into()
+					.expect("Welati genesis: the founding house is larger than the house");
+				ParliamentMembers::<T>::put(house);
+				T::HouseRoster::set_members(self.founding_parliament.clone());
+				// Seated now rather than queued: there is no block before this one for a
+				// handover to run in.
+				for who in self.founding_parliament.iter() {
+					citizen(who);
+					Pezpallet::<T>::seat_parliamentarian(who, None)
+						.expect("Welati genesis: failed to seat a founding member");
+				}
+			}
+
+			if let Some(speaker) = self.founding_speaker.as_ref() {
+				assert!(
+					self.founding_parliament.contains(speaker),
+					"Welati genesis: the founding Speaker does not sit in the founding house"
+				);
+				pezpallet_tiki::Pezpallet::<T>::internal_grant_role(speaker, Tiki::SerokiMeclise)
+					.expect("Welati genesis: failed to seat the founding Speaker");
+				// Recorded as the kind of office it is, as `tiki`'s genesis records the founding
+				// President: the register checks that every holding says how it was given.
+				pezpallet_tiki::RoleAssignmentTypeOf::<T>::insert(
+					speaker,
+					Tiki::SerokiMeclise,
+					pezpallet_tiki::Pezpallet::<T>::get_role_assignment_type(&Tiki::SerokiMeclise),
+				);
+				OfficeLastActive::<T>::insert(
+					Tiki::SerokiMeclise,
+					(speaker.clone(), BlockNumberFor::<T>::default()),
+				);
+			}
+
+			assert!(
+				self.founding_court_elected.len() as u32 <= T::DiwanElectedSeats::get(),
+				"Welati genesis: the court's founding elected half is larger than that half"
+			);
+			let president = pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok);
+			assert!(
+				self.founding_court_appointed.is_empty() || president.is_some(),
+				"Welati genesis: the President's half of the court needs a founding President"
+			);
+			let interim = BlockNumberFor::<T>::max_value();
+			let appointed_term = T::CourtTermLength::get();
+			let seats = self
+				.founding_court_elected
+				.iter()
+				.map(|who| (who, AppointmentAuthority::Parliament, interim))
+				.chain(self.founding_court_appointed.iter().map(|who| {
+					(
+						who,
+						AppointmentAuthority::President(president.clone().unwrap()),
+						appointed_term,
+					)
+				}));
+			for (who, appointed_by, term_ends_at) in seats {
+				citizen(who);
+				let mut bench = DiwanMembers::<T>::get();
+				if matches!(appointed_by, AppointmentAuthority::President(_)) {
+					// The President's own door, with its qualification and its five seats.
+					Pezpallet::<T>::a_court_seat_is_open_for(who)
+						.expect("Welati genesis: an appointed founding judge cannot take a seat");
+				} else {
+					assert!(
+						!bench.iter().any(|member| &member.account == who),
+						"Welati genesis: a founding judge is named twice"
+					);
+				}
+				bench
+					.try_push(DiwanMember {
+						account: who.clone(),
+						appointed_at: Default::default(),
+						term_ends_at,
+						appointed_by,
+					})
+					.expect("Welati genesis: the founding court is larger than the court");
+				DiwanMembers::<T>::put(bench);
+				Pezpallet::<T>::seat_on_the_bench(
+					who,
+					term_ends_at.saturating_add(Pezpallet::<T>::election_cycle_length()),
+				)
+				.expect("Welati genesis: failed to seat a founding judge");
+			}
+			if !DiwanMembers::<T>::get().is_empty() {
+				Pezpallet::<T>::publish_the_bench();
+			}
+		}
+	}
+
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
 		/// Once an era, ask whether the state has enough citizens to start paying them.
@@ -1828,21 +1974,27 @@ pub mod pezpallet {
 			// seated in an elected office with no mandate recorded at all, which is an
 			// officeholder no clock will ever remove.
 			//
-			// With one exception, and only one: the founding President. Genesis seats them
+			// With two exceptions, both founding offices. Genesis seats the founding President
 			// with no term, because what replaces them is the register reaching the founding
 			// threshold rather than a date, and `end_founding_period` -- not a clock -- is
-			// what removes them. That lasts until an election has seated a successor. This
-			// check used to allow no exception at all, which every founded chain contradicted
-			// from its first block.
+			// what removes them. That lasts until an election has seated a successor. The
+			// founding Speaker is the founding house's, has no term for the same reason, and
+			// leaves with that house when the first elected one is counted. This check used
+			// to allow no exception at all, which every founded chain contradicted from its
+			// first block.
 			let founding_president = !FoundingPeriodEnded::<T>::get()
 				|| FirstElectionOwed::<T>::contains_key(ElectionType::Presidential);
+			let founding_speaker = !FoundingPeriodEnded::<T>::get()
+				|| FirstElectionOwed::<T>::contains_key(ElectionType::Parliamentary);
 			for (election_type, tiki) in [
 				(ElectionType::Presidential, Tiki::Serok),
 				(ElectionType::SpeakerElection, Tiki::SerokiMeclise),
 			] {
 				if pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki).is_some() {
-					let founding =
-						election_type == ElectionType::Presidential && founding_president;
+					let founding = match election_type {
+						ElectionType::Presidential => founding_president,
+						_ => founding_speaker,
+					};
 					ensure!(
 						founding || TermEnds::<T>::contains_key(election_type),
 						"an elected office is held under no mandate"
@@ -1996,8 +2148,17 @@ pub mod pezpallet {
 						// No term recorded means the office has never been filled by a vote. The
 						// founding government is seated by genesis without one -- genesis does not
 						// write `TermEnds` -- so this also covers a founding office: its first
-						// election is opened by hand, not by this scheduler.
-						None => false,
+						// election is opened by `end_founding_period`, not by this scheduler.
+						//
+						// Except the court. Its elected half is the house's to cast, so its first
+						// election belongs to the first elected house, not to the founding period's
+						// end: it is due as soon as such a house sits. That replaces a founding
+						// half seated by genesis, and fills an empty one.
+						None => {
+							election_type == ElectionType::ConstitutionalCourt
+								&& TermEnds::<T>::contains_key(ElectionType::Parliamentary)
+								&& !Self::the_founding_house_sits()
+						},
 					}
 				};
 
@@ -3500,7 +3661,7 @@ pub mod pezpallet {
 			T::ConfirmationOrigin::ensure_origin(origin)?;
 
 			let who = PendingPrimeMinister::<T>::take().ok_or(Error::<T>::NoNomineeStanding)?;
-			Self::seat_unique_tiki(&who, Tiki::SerokWeziran)?;
+			Self::appoint_to_unique_office(&who, Tiki::SerokWeziran)?;
 			Self::deposit_event(Event::PrimeMinisterAppointed { who });
 			Ok(())
 		}
@@ -3546,7 +3707,7 @@ pub mod pezpallet {
 			ensure!(Self::is_cabinet_tiki(&tiki), Error::<T>::NotACabinetPost);
 
 			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
-				Self::seat_unique_tiki(&who, tiki)?;
+				Self::appoint_to_unique_office(&who, tiki)?;
 			} else {
 				pezpallet_tiki::Pezpallet::<T>::internal_grant_role(&who, tiki)?;
 			}
@@ -4054,18 +4215,9 @@ pub mod pezpallet {
 				);
 			}
 
-			// Only where the office genuinely has one seat. A state has many judges, many
-			// notaries and many teachers; treating every appointed post as single-holder
-			// meant the second one could never be appointed. `tiki` is the register and it
-			// already says which offices are unique -- the Treasurer and the Ambassador among
-			// these, not the bench.
-			let tiki = Self::tiki_for_role(&role);
-			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
-				ensure!(
-					pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki).is_none(),
-					Error::<T>::RoleAlreadyFilled
-				);
-			}
+			// A filled office is not refused. Nominating a successor is how an appointee is
+			// replaced: when the appointment completes, the office moves and the one it is
+			// taken from retires (`seat_appointed_official`).
 
 			// Check if this specific nominee already has a pending nomination for this role
 			ensure!(
@@ -4169,17 +4321,7 @@ pub mod pezpallet {
 				);
 			}
 
-			// Re-validate that the role is still unfilled. Two competing
-			// AppointmentProcess entries (different nominees, same role) can both
-			// reach WaitingPresidentialApproval; without this check, approving a
-			// second stale process would silently overwrite an already-appointed
-			// official with no removal event and no error.
 			let tiki = Self::tiki_for_role(&process.position);
-			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
-				if let Some(current) = pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki) {
-					ensure!(current == process.nominee, Error::<T>::RoleAlreadyFilled);
-				}
-			}
 
 			// Get nomination
 			let mut nomination = PendingNominations::<T>::get(process.position, &process.nominee)
@@ -4206,7 +4348,7 @@ pub mod pezpallet {
 			// this pallet's own left an appointed official holding no tiki at all: every
 			// authority check in the state asks the register, and the register had never
 			// heard of them.
-			pezpallet_tiki::Pezpallet::<T>::internal_grant_role(&process.nominee, tiki)?;
+			Self::seat_appointed_official(&process.nominee, tiki)?;
 
 			Self::deposit_event(Event::AppointmentApproved {
 				process_id,
@@ -4240,11 +4382,6 @@ pub mod pezpallet {
 			);
 
 			let tiki = Self::tiki_for_role(&process.position);
-			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
-				if let Some(current) = pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki) {
-					ensure!(current == process.nominee, Error::<T>::RoleAlreadyFilled);
-				}
-			}
 
 			let mut nomination = PendingNominations::<T>::get(process.position, &process.nominee)
 				.ok_or(Error::<T>::NominationNotFound)?;
@@ -4258,7 +4395,7 @@ pub mod pezpallet {
 			PendingNominations::<T>::insert(process.position, &process.nominee, nomination);
 			AppointmentProcesses::<T>::insert(process_id, process.clone());
 			Self::count_an_appointed_rewsenbir(&process.position)?;
-			pezpallet_tiki::Pezpallet::<T>::internal_grant_role(&process.nominee, tiki)?;
+			Self::seat_appointed_official(&process.nominee, tiki)?;
 
 			Self::deposit_event(Event::AppointmentConfirmedByParliament {
 				process_id,
@@ -5643,6 +5780,45 @@ pub mod pezpallet {
 				OfficeLastActive::<T>::insert(tiki, (to.clone(), now));
 			}
 			Ok(())
+		}
+
+		/// Appoint `to` to a single-holder office, retiring whoever the appointment replaces.
+		///
+		/// An appointee leaves when a successor is appointed, and leaves retired: the office
+		/// moves and the one it was taken from is given `Xanenişîn`. Only an appointment does
+		/// this. A dismissal empties the office without a successor and records nothing, and an
+		/// elected officeholder is replaced through `seat_elected_tiki`, where a term ends.
+		pub fn appoint_to_unique_office(to: &T::AccountId, tiki: Tiki) -> DispatchResult {
+			// Read before the seat moves: afterwards the register no longer says who held it.
+			// The raw map on purpose, as in `seat_unique_tiki`: it is that holder the seat is
+			// taken from, so it is that holder who retires.
+			let replaced = pezpallet_tiki::TikiHolder::<T>::get(tiki).filter(|held| held != to);
+			let replaced_an_appointee = replaced.as_ref().is_some_and(|held| {
+				pezpallet_tiki::RoleAssignmentTypeOf::<T>::get(held, tiki)
+					!= Some(pezpallet_tiki::RoleAssignmentType::Elected)
+			});
+
+			Self::seat_unique_tiki(to, tiki)?;
+
+			if let Some(held) = replaced.filter(|_| replaced_an_appointee) {
+				pezpallet_tiki::Pezpallet::<T>::retire(&held, tiki)?;
+			}
+			Ok(())
+		}
+
+		/// Seat a civil-service appointee, by the rule that fits the office.
+		///
+		/// A single-holder office -- the Treasurer, the Ambassador -- is taken from whoever
+		/// holds it, and they retire. This used to refuse instead (`RoleAlreadyFilled`), so
+		/// that a second process for the same post could not overwrite the first appointee
+		/// without trace. A successor is now how an appointee leaves, and the trace is the
+		/// retirement and its event. An office with many holders gains one more.
+		fn seat_appointed_official(to: &T::AccountId, tiki: Tiki) -> DispatchResult {
+			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
+				Self::appoint_to_unique_office(to, tiki)
+			} else {
+				pezpallet_tiki::Pezpallet::<T>::internal_grant_role(to, tiki)
+			}
 		}
 
 		/// The offices that can be declared empty for silence, and the election that refills
