@@ -144,7 +144,16 @@
 # emergency_suspend) whose weights are hand-written ceilings, and every call through
 # `managed_active` now also reads `Suspensions` for the name and each ancestor, which the
 # 10-29 measurement did not include.
+# Previous request (measured, files in the tree with #135):
+#   - runtime: people-zagros people-pezkuwichain
+#     pallet: pezpallet_navnisan
+#
+# 2026-11-11: a replaced appointee now retires. `confirm_prime_minister`, `appoint_minister`,
+# `approve_appointment` and `confirm_appointment` no longer refuse a filled office: they vacate
+# it and record the outgoing holder's Xanenişîn, which their last measurement never did, and
+# `nominate_official` dropped the filled-office read. The whole pallet is asked for so no call
+# keeps a figure from an older code.
 runs:
   - runtime: people-zagros people-pezkuwichain
-    pallet: pezpallet_navnisan
-    why: four new calls on hand-written ceilings; the manager's calls now read a suspension per ancestor
+    pallet: pezpallet_welati
+    why: appointment calls now vacate a filled office and retire its holder
