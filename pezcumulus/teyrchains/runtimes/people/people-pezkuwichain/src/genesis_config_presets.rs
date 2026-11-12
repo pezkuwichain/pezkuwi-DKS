@@ -70,6 +70,9 @@ fn people_pezkuwichain_genesis(
 	// the register is the court's to write, so a chain launched with no court cannot revoke a
 	// citizenship until an election seats one.
 	founding_government: Vec<(AccountId, Tiki)>,
+	// The house, its Speaker and the court, seated in the first block beside the founding
+	// government (welati's genesis). Empty leaves them to `seat_founding_parliament`.
+	founding_bodies: WelatiConfig,
 ) -> serde_json::Value {
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
@@ -148,6 +151,7 @@ fn people_pezkuwichain_genesis(
 		// Creates Collection 0 in pezpallet_nfts and mints NFT #0 for the founder
 		// This is required before any citizenship NFTs can be minted
 		tiki: TikiConfig { founding_citizen, founding_government },
+		welati: founding_bodies,
 
 		// ====================================================================
 		// Navnisan - the `.kurd` register: gov.kurd, the zone roots, locked labels, prices
@@ -230,12 +234,12 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				// without it. The Serok named above signs `seat_founding_parliament`, and
 				// nothing else on this chain can.
 				//
-				// The bench itself stays empty, and that is still a decision rather than an
-				// omission: two hundred and one members and eleven judges are people, not
-				// keys, and they are seated by extrinsic once the chain is running. Until
-				// that call lands the register cannot be corrected -- the cost of not
-				// pretending an unelected court exists.
+				// The whole interim state starts in this block: the cabinet beside the Serok
+				// here, and the house, its Speaker and the court in the argument below. Every
+				// one of them is a person, so both lists are filled from the wallets they give
+				// before launch, and are empty until then.
 				vec![(serok_account, Tiki::Serok)],
+				WelatiConfig::default(),
 			)
 		},
 
@@ -285,6 +289,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			// said that was the founding hand and none of them had been checked against the
 			// filter.
 			vec![(Sr25519Keyring::Alice.to_account_id(), Tiki::Serok)],
+			Default::default(),
 		),
 
 		// ====================================================================
@@ -306,6 +311,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			// Alice gets NFT #0 for dev
 			Some(Sr25519Keyring::Alice.to_account_id()),
 			vec![],
+			Default::default(),
 		),
 
 		_ => return None,

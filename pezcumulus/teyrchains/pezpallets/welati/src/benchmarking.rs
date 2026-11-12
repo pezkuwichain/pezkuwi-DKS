@@ -200,9 +200,7 @@ mod benchmarks {
 		// Set nominator as Serok to pass authorization check
 		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, nominator.clone());
 
-		// Ensure the role is not already filled (clean state for benchmark)
-		// nobody holds the bench yet
-		// This is important because we added RoleAlreadyFilled check in lib.rs
+		// Nobody holds the bench yet.
 
 		#[extrinsic_call]
 		nominate_official(
@@ -228,14 +226,21 @@ mod benchmarks {
 		// Set nominator as Serok to pass authorization check for nomination
 		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, nominator.clone());
 
-		// Use a different role (Dozger) to avoid conflicts with nominate_official benchmark
+		// The worst case: a single-holder office with somebody in it, so the approval takes
+		// the office from them, retires them and seats the nominee.
+		let incumbent: T::AccountId = account("incumbent", 4, 0);
+		seat::<T>(&incumbent, Tiki::Xezinedar);
 		Pezpallet::<T>::nominate_official(
 			RawOrigin::Signed(nominator).into(),
 			nominee.clone(),
-			OfficialRole::Dozger,
+			OfficialRole::Xezinedar,
 			justification,
 		)
 		.unwrap();
+		// The Treasurer waits on the house by default; this measures the President's door.
+		AppointmentProcesses::<T>::mutate(0, |p| {
+			p.as_mut().unwrap().status = AppointmentStatus::WaitingPresidentialApproval
+		});
 
 		// Set approver as Serok to pass authorization check for approval
 		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, approver.clone());
@@ -246,11 +251,10 @@ mod benchmarks {
 		#[extrinsic_call]
 		approve_appointment(RawOrigin::Signed(approver), 0);
 
-		// Verify appointment ID incremented
 		assert_eq!(NextAppointmentId::<T>::get(), 1);
 		// The appointment has to reach the register, not just this pallet's own map.
-		// This tests the new storage write we added in lib.rs approve_appointment()
-		assert!(pezpallet_tiki::UserTikis::<T>::get(&nominee).contains(&Tiki::Dozger));
+		assert_eq!(pezpallet_tiki::TikiHolder::<T>::get(Tiki::Xezinedar), Some(nominee));
+		assert!(pezpallet_tiki::UserTikis::<T>::get(&incumbent).contains(&Tiki::Xanenişîn));
 	}
 
 	// ----------------------------------------------------------------
@@ -539,10 +543,13 @@ mod benchmarks {
 		let nominator: T::AccountId = account("nominator", 2, 0);
 		let nominee: T::AccountId = account("nominee", 3, 0);
 		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, nominator.clone());
+		// The worst case, as for the President's door: an occupied single-holder office.
+		let incumbent: T::AccountId = account("incumbent", 4, 0);
+		seat::<T>(&incumbent, Tiki::Xezinedar);
 		Pezpallet::<T>::nominate_official(
 			RawOrigin::Signed(nominator).into(),
 			nominee.clone(),
-			OfficialRole::Dozger,
+			OfficialRole::Xezinedar,
 			b"Test nomination".to_vec().try_into().unwrap(),
 		)
 		.unwrap();
@@ -557,7 +564,8 @@ mod benchmarks {
 		#[extrinsic_call]
 		confirm_appointment(origin as T::RuntimeOrigin, 0);
 
-		assert!(pezpallet_tiki::UserTikis::<T>::get(&nominee).contains(&Tiki::Dozger));
+		assert_eq!(pezpallet_tiki::TikiHolder::<T>::get(Tiki::Xezinedar), Some(nominee));
+		assert!(pezpallet_tiki::UserTikis::<T>::get(&incumbent).contains(&Tiki::Xanenişîn));
 		Ok(())
 	}
 
@@ -1198,8 +1206,8 @@ mod benchmarks {
 	fn confirm_prime_minister() -> Result<(), BenchmarkError> {
 		let origin = T::ConfirmationOrigin::try_successful_origin()
 			.map_err(|_| BenchmarkError::Weightless)?;
-		// An incumbent, so seating the nominee unseats somebody first: two register writes,
-		// not one.
+		// An incumbent, so seating the nominee unseats and retires somebody first: three
+		// register writes, not one.
 		let incumbent: T::AccountId = account("incumbent", 0, 0);
 		seat::<T>(&incumbent, Tiki::SerokWeziran);
 		let nominee: T::AccountId = account("nominee", 0, 0);
@@ -1210,6 +1218,7 @@ mod benchmarks {
 		_(origin as T::RuntimeOrigin);
 
 		assert_eq!(pezpallet_tiki::TikiHolder::<T>::get(Tiki::SerokWeziran), Some(nominee));
+		assert!(pezpallet_tiki::UserTikis::<T>::get(&incumbent).contains(&Tiki::Xanenişîn));
 		Ok(())
 	}
 
@@ -1254,6 +1263,7 @@ mod benchmarks {
 		appoint_minister(RawOrigin::Signed(prime_minister), minister.clone(), Tiki::WezireDarayiye);
 
 		assert_eq!(pezpallet_tiki::TikiHolder::<T>::get(Tiki::WezireDarayiye), Some(minister));
+		assert!(pezpallet_tiki::UserTikis::<T>::get(&incumbent).contains(&Tiki::Xanenişîn));
 	}
 
 	#[benchmark]

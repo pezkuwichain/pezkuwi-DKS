@@ -77,6 +77,8 @@ $TEYRCHAIN_BIN build-spec \
     --disable-default-bootnode \
     2>/dev/null > "$OUTPUT_DIR/people-plain.json"
 echo -e "${GREEN}  -> people-plain.json created${NC}"
+# The preset builds a valid spec with nobody but the Serok seated; this is what refuses it.
+python3 "$SCRIPT_DIR/check-founding-cadre.py" "$OUTPUT_DIR/people-plain.json"
 
 # =============================================================================
 # STEP 4: Export genesis data and add to relay spec

@@ -136,9 +136,11 @@ reads the call, not the caller.
 The reason is that the register is the electorate. A body that can add or remove citizens does
 not need to win an election, and the relay's own governance weighs tokens where this chain
 counts heads — so a token majority upstairs must not be able to decide who is a person
-downstairs. What remains for the founding period is narrower and named: an office the People
-chain's genesis seats, holding `Tiki::Serok`, which can seat the first parliament once and
-appoint the first court. Its authority ends with the founding period, and one thing ends that:
+downstairs. What remains for the founding period is narrower and named: the interim state the
+People chain's genesis seats in its first block, each member from a wallet named before launch —
+the President (`Tiki::Serok`), the cabinet, the house and its Speaker, and the court. Where
+genesis leaves the house empty, that President can seat it once. Its authority ends with the
+founding period, and one thing ends that:
 the register reaching a hundred thousand citizens. That day the elections that replace the
 founding President and house open on their own. Until then they sit, however long it takes, and
 neither a date nor any setting the founding government controls brings that day forward.
@@ -345,14 +347,14 @@ percent turnout.
 legislature against the presidency permanently, so that no single election ever renews the
 whole state at once.
 
-**It is seated rather than elected, and by a named office rather than by root.** Standing for a
-seat needs a trust score, trust needs stake and history, and on the first day nobody has either
-— so the first house cannot be elected into existence. It is seated once, by the holder of
-`Tiki::Serok`, whom the chain's genesis names. That is not a convenience: the register is closed
-to messages from other chains, so no external root can reach it, and the chain's own root track
-needs the very electorate the register has yet to record. The founding office is the only hand
-that exists, and it can seat the house exactly once, during the founding period only. The seats
-it fills carry no term: the founding house sits until the register reaches a hundred thousand
+**It is seated rather than elected, and by genesis rather than by root.** Standing for a seat
+needs a trust score, trust needs stake and history, and on the first day nobody has either — so
+the first house cannot be elected into existence. The chain's genesis seats it in the first
+block, with its roll and its collective, beside the founding President and cabinet. That is not
+a convenience: the register is closed to messages from other chains, so no external root can
+reach it, and the chain's own root track needs the very electorate the register has yet to
+record. If genesis names no house, the holder of `Tiki::Serok` can seat one exactly once, during
+the founding period only. Either way the seats carry no term: the founding house sits until the register reaches a hundred thousand
 citizens, and the first real election opens that day on its own. A deadline would have forced
 that election on a register of a few thousand, two hundred and one representatives chosen by
 almost nobody.
@@ -362,6 +364,11 @@ almost nobody.
 Elected, but only from among sitting members of parliament, and requiring a trust score of
 at least 200. The Speaker holds no term of their own — the office is vacated whenever a new
 house is seated, because a speaker without a house is not a speaker.
+
+The founding house cannot hold that election, so genesis may seat a founding Speaker from among
+its members. Like the founding President, the founding Speaker needs no term, and only for as
+long as the founding house sits: the chair is vacated with that house when the first elected one
+is counted, and the elected house then fills it.
 
 **An office that falls empty does not wait for the calendar.** A vacancy opens its election at
 once rather than at the end of a term nobody is serving, and that holds for the bodies as well
@@ -395,6 +402,12 @@ auditor, scholar, or cultural custodian. A president may choose only from people
 register already recognises as qualified. That is a record, not an independent check: most of
 these tikis are themselves granted by the executive, scholar included, so the requirement
 names the competence a seat needs rather than putting it beyond the President's reach.
+
+**The founding court is interim on the house's side only.** Genesis may seat both halves. The
+elected half it seats sits until the first elected house holds the court's election, which opens
+on its own as soon as such a house sits; that election replaces the whole half, as every court
+election does. The President's half is seated as any appointed seat is, qualification and nine
+years included.
 
 **There is no call to dismiss a member of the court.** The absence is the point: a court
 that can be removed by the powers it rules on is not a court, and nine years is longer than
@@ -463,6 +476,14 @@ days.
 cyber-security specialist, inspector, and ambassador require parliamentary confirmation. And
 the list of which five is itself amendable **only by the Parliament**. The executive cannot
 shorten the list of offices it does not control.
+
+**An appointee leaves when a successor is appointed, and leaves retired.** A single-holder
+office — the Prime Minister, a named ministry, the treasurer, the ambassador — moves to the new
+appointee, and the holder it is taken from is given **Xanenişîn**, the record of retirement. It
+grants nothing: no vote, no origin and no qualification reads it, and no admin can grant or
+strike it. It is not given on dismissal, which is not a retirement, nor when an election ends a
+seat, which is a term ending. It carries no trust standing until governance decides it should,
+because standing divides every reward and a figure there would be a pension.
 
 ---
 
@@ -1055,6 +1076,7 @@ a solicitation, or investment advice.
 | **Wezîr** | Minister |
 | **Wezîrê Darayiyê** | Minister of Finance |
 | **Xezinedar** | Treasurer |
+| **Xanenişîn** | Retired: the record given to an appointee whose office passed to a successor |
 | **perwerde** | Education |
 | **qeyd** | The register, and the rules governing it |
 | **teyrchain** | A system chain secured by the relay |

@@ -1593,3 +1593,41 @@ fn a_president_cannot_enlarge_his_own_share() {
 		assert_eq!(TikiPallet::get_tiki_score(&president), standing);
 	});
 }
+
+// === Retirement and the founding government ===
+
+#[test]
+fn retirement_is_a_record_the_system_writes_once() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(TikiPallet::mint_citizen_nft_for_user(&2));
+
+		assert_ok!(TikiPallet::retire(&2, TikiEnum::Xezinedar));
+		assert_ok!(TikiPallet::retire(&2, TikiEnum::Balyoz));
+
+		let held = TikiPallet::user_tikis(2);
+		assert_eq!(held.iter().filter(|t| **t == TikiEnum::Xanenişîn).count(), 1);
+		assert_eq!(
+			crate::RoleAssignmentTypeOf::<Test>::get(2, TikiEnum::Xanenişîn),
+			Some(RoleAssignmentType::Automatic)
+		);
+		// Not grantable by any door but the system's.
+		assert!(!TikiPallet::can_grant_role_type(
+			&TikiEnum::Xanenişîn,
+			&RoleAssignmentType::Appointed
+		));
+		System::assert_has_event(Event::Retired { who: 2, office: TikiEnum::Balyoz }.into());
+	});
+}
+
+#[test]
+#[should_panic(expected = "seat the house, its Speaker and the court through welati")]
+fn the_founding_government_cannot_seat_the_house_or_the_court() {
+	use pezsp_runtime::BuildStorage;
+	let mut t = pezframe_system::GenesisConfig::<Test>::default().build_storage().unwrap();
+	crate::GenesisConfig::<Test> {
+		founding_citizen: Some(1),
+		founding_government: vec![(2, TikiEnum::Parlementer)],
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
+}
