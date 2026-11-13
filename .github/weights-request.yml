@@ -169,7 +169,14 @@
 # Previous request (People half measured by run 43346043968):
 #   - runtime: people-zagros people-pezkuwichain
 #     pallet: pezframe_system_extensions
+# Run 43360308296 measured relay referenda and accumulate_and_forward. paras_inherent's
+# code-upgrade case failed with InherentDataFilteredDuringExecution: it measures at
+# max_code_size, which the presets had set to the 5 MiB ceiling -- the size of the relay block
+# itself, so the candidate could never be included. Genesis now starts at 3 MiB.
+# Previous request (referenda and accumulate_and_forward measured by run 43360308296):
+#   - runtime: pezkuwichain zagros
+#     pallet: pezkuwi_runtime_teyrchains::paras_inherent pezpallet_referenda pezpallet_accumulate_and_forward
 runs:
   - runtime: pezkuwichain zagros
-    pallet: pezkuwi_runtime_teyrchains::paras_inherent pezpallet_referenda pezpallet_accumulate_and_forward
-    why: relay weights still from upstream hardware -- paras_inherent and referenda failed on 2026-10-02, accumulate_and_forward was never listed
+    pallet: pezkuwi_runtime_teyrchains::paras_inherent
+    why: relay paras_inherent still from upstream hardware (2025-02); its code-upgrade case now measures at the 3 MiB genesis max_code_size
