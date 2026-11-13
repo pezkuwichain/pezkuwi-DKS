@@ -163,10 +163,13 @@
 # the reference host has produced: relay `paras_inherent` and `referenda` failed on 2026-10-02
 # and kept upstream's figures; relay `accumulate_and_forward` and the People transaction
 # extensions were never in their runtime's benchmark list, so no pass could reach them.
+# The People half of that request was measured by run 43346043968. The relay half matched
+# nothing: a pass selects pallets by the name the runtime lists, `pezkuwi_runtime_teyrchains::
+# paras_inherent`, not by the weights file name, and one unknown name drops the whole entry.
+# Previous request (People half measured by run 43346043968):
+#   - runtime: people-zagros people-pezkuwichain
+#     pallet: pezframe_system_extensions
 runs:
   - runtime: pezkuwichain zagros
-    pallet: pezkuwi_runtime_teyrchains_paras_inherent pezpallet_referenda pezpallet_accumulate_and_forward
+    pallet: pezkuwi_runtime_teyrchains::paras_inherent pezpallet_referenda pezpallet_accumulate_and_forward
     why: relay weights still from upstream hardware -- paras_inherent and referenda failed on 2026-10-02, accumulate_and_forward was never listed
-  - runtime: people-zagros people-pezkuwichain
-    pallet: pezframe_system_extensions
-    why: People transaction extensions were never benchmarked; the wired file is upstream's
