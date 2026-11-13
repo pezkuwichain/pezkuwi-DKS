@@ -153,7 +153,20 @@
 # it and record the outgoing holder's Xanenişîn, which their last measurement never did, and
 # `nominate_official` dropped the filled-office read. The whole pallet is asked for so no call
 # keeps a figure from an older code.
+# Previous request (measured by run 43006091031, files in the tree with #138):
+#   - runtime: people-zagros people-pezkuwichain
+#     pallet: pezpallet_welati
+#
+# 2026-11-13: what the launch runtimes still charge from somebody else's hardware. The relay
+# wired Parity's 2025 balances and referenda files while its own measurements sat unwired
+# beside them, two to three times dearer -- those are wired now. Left are the files nothing on
+# the reference host has produced: relay `paras_inherent` and `referenda` failed on 2026-10-02
+# and kept upstream's figures; relay `accumulate_and_forward` and the People transaction
+# extensions were never in their runtime's benchmark list, so no pass could reach them.
 runs:
+  - runtime: pezkuwichain zagros
+    pallet: pezkuwi_runtime_teyrchains_paras_inherent pezpallet_referenda pezpallet_accumulate_and_forward
+    why: relay weights still from upstream hardware -- paras_inherent and referenda failed on 2026-10-02, accumulate_and_forward was never listed
   - runtime: people-zagros people-pezkuwichain
-    pallet: pezpallet_welati
-    why: appointment calls now vacate a filled office and retire its holder
+    pallet: pezframe_system_extensions
+    why: People transaction extensions were never benchmarked; the wired file is upstream's
