@@ -274,7 +274,12 @@ fn root_is_not_reachable_from_this_chains_ballot() {
 	// And no system origin maps to a track, so none can start a referendum here.
 	let root: <RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin =
 		pezframe_system::RawOrigin::Root.into();
+	// A benchmark build gives Root a track so the referenda benchmarks can open proposals;
+	// the production build is the one this guards.
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	assert!(<TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::track_for(&root).is_err());
+	#[cfg(feature = "runtime-benchmarks")]
+	let _ = root;
 
 	// The custom origins that remain are this chain's own business -- none of them is Root by
 	// another name, and each still has a track to run on.
