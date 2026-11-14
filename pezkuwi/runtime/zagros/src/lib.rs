@@ -166,7 +166,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("zagros"),
 	authoring_version: 0,
-	spec_version: 1_020_015,
+	spec_version: 1_020_016,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 26,
@@ -379,7 +379,7 @@ impl pezpallet_balances::Config for Runtime {
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
-	type WeightInfo = weights::pezpallet_balances_balances::WeightInfo<Runtime>;
+	type WeightInfo = weights::pezpallet_balances::WeightInfo<Runtime>;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeFreezeReason = RuntimeFreezeReason;
@@ -1785,6 +1785,7 @@ mod benches {
 		[pezkuwi_runtime_teyrchains::paras, Paras]
 		[pezkuwi_runtime_teyrchains::on_demand, OnDemandAssignmentProvider]
 		// Bizinikiwi
+		[pezpallet_accumulate_and_forward, AccumulateAndForward]
 		[pezpallet_balances, Balances]
 		[pezpallet_beefy_mmr, MmrLeaf]
 		[pezframe_benchmarking::baseline, Baseline::<Runtime>]

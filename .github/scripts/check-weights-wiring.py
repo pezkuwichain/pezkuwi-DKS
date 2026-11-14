@@ -64,11 +64,7 @@ NOT_A_PALLET = {"mod", "block_weights", "extrinsic_weights", "paritydb_weights",
 # `pezpallet_welati` is deliberately absent: it was in exactly this state and was wired.
 BACKLOG_2026_08_31 = {
     ("pezkuwi/runtime/pezkuwichain/src/weights", "pezframe_benchmarking_baseline"),
-    ("pezkuwi/runtime/pezkuwichain/src/weights", "pezpallet_balances"),
-    ("pezkuwi/runtime/pezkuwichain/src/weights", "pezpallet_referenda"),
     ("pezkuwi/runtime/zagros/src/weights", "pezframe_benchmarking_baseline"),
-    ("pezkuwi/runtime/zagros/src/weights", "pezpallet_balances"),
-    ("pezkuwi/runtime/zagros/src/weights", "pezpallet_referenda"),
     ("pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights", "pezpallet_staking_async_rc_client"),
     ("pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights", "pezpallet_staking_async_rc_client"),
     ("pezcumulus/teyrchains/runtimes/collectives/collectives-zagros/src/weights", "pezpallet_ranked_collective_secretary_collective"),
