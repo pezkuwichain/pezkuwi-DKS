@@ -24,8 +24,15 @@ pub mod constants {
 	parameter_types! {
 		/// By default, Bizinikiwi uses `RocksDB`, so this will be the weight used throughout
 		/// the runtime.
+		///
+		/// Read: measured with `benchmark storage --database rocksdb --state-version 1` on the
+		/// weight reference machine against a warp-synced Zagros People state (2026-11-15);
+		/// the median of twelve runs was ~28.3 us, rounded up to 30 us. That state is small, and
+		/// a read costs more as the trie deepens, so this value may be raised but never lowered.
+		/// Write: block import commits a block's writes together; the batched measurement was
+		/// ~37 us, below the 100 us kept here.
 		pub const RocksDbWeight: RuntimeDbWeight = RuntimeDbWeight {
-			read: 25_000 * constants::WEIGHT_REF_TIME_PER_NANOS,
+			read: 30_000 * constants::WEIGHT_REF_TIME_PER_NANOS,
 			write: 100_000 * constants::WEIGHT_REF_TIME_PER_NANOS,
 		};
 	}
