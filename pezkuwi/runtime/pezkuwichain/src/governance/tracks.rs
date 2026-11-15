@@ -179,9 +179,19 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 		TRACKS_DATA.iter().map(Cow::Borrowed)
 	}
 	fn track_for(id: &Self::RuntimeOrigin) -> Result<Self::Id, ()> {
-		if pezframe_system::RawOrigin::try_from(id.clone()).is_ok() {
+		if let Ok(system_origin) = pezframe_system::RawOrigin::try_from(id.clone()) {
+			// The referenda benchmarks open every proposal with Root, which has no track here,
+			// so they could not run and the pallet was left on reference weights. In a
+			// benchmark build only, Root takes the track with the most deciding slots, so the
+			// queue-handling paths are measured at their longest. A production build never
+			// sees this arm.
+			#[cfg(feature = "runtime-benchmarks")]
+			if matches!(system_origin, pezframe_system::RawOrigin::Root) {
+				return Ok(20);
+			}
 			// No system origin has a track here any more, Root included. Root arrives from the
 			// People chain's referendum, not from a ballot of this chain's holders.
+			let _ = system_origin;
 			Err(())
 		} else if let Ok(custom_origin) = origins::Origin::try_from(id.clone()) {
 			match custom_origin {

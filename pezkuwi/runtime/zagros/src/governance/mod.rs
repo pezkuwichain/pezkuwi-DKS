@@ -114,7 +114,7 @@ impl pezpallet_whitelist::Config for Runtime {
 }
 
 impl pezpallet_referenda::Config for Runtime {
-	type WeightInfo = weights::pezpallet_referenda_referenda::WeightInfo<Self>;
+	type WeightInfo = weights::pezpallet_referenda::WeightInfo<Self>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type Scheduler = Scheduler;

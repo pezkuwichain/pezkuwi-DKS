@@ -379,7 +379,7 @@ impl pezpallet_balances::Config for Runtime {
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
-	type WeightInfo = weights::pezpallet_balances_balances::WeightInfo<Runtime>;
+	type WeightInfo = weights::pezpallet_balances::WeightInfo<Runtime>;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeFreezeReason = RuntimeFreezeReason;
@@ -1772,6 +1772,7 @@ mod benches {
 		[pezkuwi_runtime_teyrchains::paras, Paras]
 		[pezkuwi_runtime_teyrchains::on_demand, OnDemandAssignmentProvider]
 		// Bizinikiwi
+		[pezpallet_accumulate_and_forward, AccumulateAndForward]
 		[pezpallet_balances, Balances]
 		[pezpallet_beefy_mmr, MmrLeaf]
 		[pezframe_benchmarking::baseline, Baseline::<Runtime>]

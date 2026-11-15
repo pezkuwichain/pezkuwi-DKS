@@ -157,17 +157,23 @@ fn pezkuwichain_session_keys(
 	SessionKeys { babe, grandpa, para_validator, para_assignment, authority_discovery, beefy }
 }
 
+/// The code size the host configuration starts with -- upstream's long-standing 3 MiB, which
+/// leaves 2 MiB of the relay block for the rest of the inherent. Raising it later by governance
+/// also needs `enter_backed_candidate_code_upgrade` measured again: it is benchmarked at this size.
+const GENESIS_MAX_CODE_SIZE: u32 = 3 * 1024 * 1024;
+
 fn default_teyrchains_host_configuration(
 ) -> pezkuwi_runtime_teyrchains::configuration::HostConfiguration<pezkuwi_primitives::BlockNumber> {
-	use pezkuwi_primitives::{
-		node_features::FeatureIndex, AsyncBackingParams, MAX_CODE_SIZE, MAX_POV_SIZE,
-	};
+	use pezkuwi_primitives::{node_features::FeatureIndex, AsyncBackingParams, MAX_POV_SIZE};
 
 	pezkuwi_runtime_teyrchains::configuration::HostConfiguration {
 		validation_upgrade_cooldown: 2u32,
 		validation_upgrade_delay: 2,
 		code_retention_period: 1200,
-		max_code_size: MAX_CODE_SIZE,
+		// Below the 5 MiB `MAX_CODE_SIZE` ceiling on purpose: a candidate carrying a code upgrade
+		// rides in the relay block, which is itself 5 MiB, so code at the ceiling can never be
+		// included and the teyrchain stalls behind it. See the test below.
+		max_code_size: GENESIS_MAX_CODE_SIZE,
 		max_pov_size: MAX_POV_SIZE,
 		max_head_data_size: 32 * 1024,
 		max_upward_queue_count: 8,
@@ -216,6 +222,29 @@ fn default_teyrchains_host_configuration(
 		},
 		..Default::default()
 	}
+}
+
+/// A code upgrade at the configured maximum fits in a relay block, with room left over.
+///
+/// The paras inherent is mandatory and its size is bounded by the block length for that class;
+/// a backed candidate is filtered out when it does not fit. Stable2606 raised `MAX_CODE_SIZE`
+/// to 5 MiB -- the block length itself -- so a configuration at that ceiling admits upgrades that
+/// can never be included: the teyrchain accepts its own `set_code`, the relay drops the
+/// candidate every block, and the chain stops. `panic_if_not_consistent` cannot see this; it
+/// does not know the block length.
+#[test]
+fn a_code_upgrade_at_the_maximum_fits_in_a_relay_block() {
+	use pezframe_support::dispatch::DispatchClass;
+	let config = default_teyrchains_host_configuration();
+	let block = *crate::BlockLength::get().max.get(DispatchClass::Mandatory);
+	// The rest of the inherent -- bitfields, the other cores' candidates, disputes -- needs room.
+	let rest_of_inherent = 1024 * 1024;
+	assert!(
+		config.max_code_size + rest_of_inherent <= block,
+		"max_code_size {} leaves less than 1 MiB of a {} byte relay block",
+		config.max_code_size,
+		block,
+	);
 }
 
 #[test]

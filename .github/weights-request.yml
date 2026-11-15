@@ -153,7 +153,30 @@
 # it and record the outgoing holder's Xanenişîn, which their last measurement never did, and
 # `nominate_official` dropped the filled-office read. The whole pallet is asked for so no call
 # keeps a figure from an older code.
+# Previous request (measured by run 43006091031, files in the tree with #138):
+#   - runtime: people-zagros people-pezkuwichain
+#     pallet: pezpallet_welati
+#
+# 2026-11-13: what the launch runtimes still charge from somebody else's hardware. The relay
+# wired Parity's 2025 balances and referenda files while its own measurements sat unwired
+# beside them, two to three times dearer -- those are wired now. Left are the files nothing on
+# the reference host has produced: relay `paras_inherent` and `referenda` failed on 2026-10-02
+# and kept upstream's figures; relay `accumulate_and_forward` and the People transaction
+# extensions were never in their runtime's benchmark list, so no pass could reach them.
+# The People half of that request was measured by run 43346043968. The relay half matched
+# nothing: a pass selects pallets by the name the runtime lists, `pezkuwi_runtime_teyrchains::
+# paras_inherent`, not by the weights file name, and one unknown name drops the whole entry.
+# Previous request (People half measured by run 43346043968):
+#   - runtime: people-zagros people-pezkuwichain
+#     pallet: pezframe_system_extensions
+# Run 43360308296 measured relay referenda and accumulate_and_forward. paras_inherent's
+# code-upgrade case failed with InherentDataFilteredDuringExecution: it measures at
+# max_code_size, which the presets had set to the 5 MiB ceiling -- the size of the relay block
+# itself, so the candidate could never be included. Genesis now starts at 3 MiB.
+# Previous request (referenda and accumulate_and_forward measured by run 43360308296):
+#   - runtime: pezkuwichain zagros
+#     pallet: pezkuwi_runtime_teyrchains::paras_inherent pezpallet_referenda pezpallet_accumulate_and_forward
 runs:
-  - runtime: people-zagros people-pezkuwichain
-    pallet: pezpallet_welati
-    why: appointment calls now vacate a filled office and retire its holder
+  - runtime: pezkuwichain zagros
+    pallet: pezkuwi_runtime_teyrchains::paras_inherent
+    why: relay paras_inherent still from upstream hardware (2025-02); its code-upgrade case now measures at the 3 MiB genesis max_code_size
