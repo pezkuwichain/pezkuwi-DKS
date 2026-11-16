@@ -176,7 +176,27 @@
 # Previous request (referenda and accumulate_and_forward measured by run 43360308296):
 #   - runtime: pezkuwichain zagros
 #     pallet: pezkuwi_runtime_teyrchains::paras_inherent pezpallet_referenda pezpallet_accumulate_and_forward
+# 2026-11-16: the remaining launch-runtime weights no reference-host pass has produced. Counted
+# file by file against the HOSTNAME each one carries: relay `pezpallet_session` is Parity's
+# from 2022 on both twins -- the relay had no session benchmark, because the staking-bound one
+# cannot run without a staking pallet; the collator-style one now in its list needs only
+# `pezpallet_session`. Coretime's transaction extensions and transaction payment came from
+# Parity's `gleipnir` and were never in coretime's benchmark list; Asset Hub's
+# `pezpallet_parameters` carries no host at all and was not listed either. Collectives' two XCM
+# files were measured in somebody's container. All of them are listed now.
+# Previous request (measured, files in the tree with #140):
+#   - runtime: pezkuwichain zagros
+#     pallet: pezkuwi_runtime_teyrchains::paras_inherent
 runs:
   - runtime: pezkuwichain zagros
-    pallet: pezkuwi_runtime_teyrchains::paras_inherent
-    why: relay paras_inherent still from upstream hardware (2025-02); its code-upgrade case now measures at the 3 MiB genesis max_code_size
+    pallet: pezpallet_session
+    why: relay session weights are upstream's 2022 figures; the relay now lists a session benchmark that needs no staking pallet
+  - runtime: coretime-pezkuwichain coretime-zagros
+    pallet: pezframe_system_extensions pezpallet_transaction_payment
+    why: coretime charges every transaction by Parity's gleipnir; both were missing from the benchmark list
+  - runtime: asset-hub-pezkuwichain asset-hub-zagros
+    pallet: pezpallet_parameters
+    why: never measured, no host in the file; now in the benchmark list
+  - runtime: collectives-zagros
+    pallet: pezpallet_xcm_benchmarks::fungible pezpallet_xcm_benchmarks::generic
+    why: both XCM files were measured in a foreign container

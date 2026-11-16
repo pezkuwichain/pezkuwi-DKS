@@ -2084,6 +2084,7 @@ mod benches {
 		[pezpallet_multisig, Multisig]
 		[pezpallet_nft_fractionalization, NftFractionalization]
 		[pezpallet_nfts, Nfts]
+		[pezpallet_parameters, Parameters]
 		[pezpallet_proxy, Proxy]
 		[pezpallet_session, SessionBench::<Runtime>]
 		[pezpallet_uniques, Uniques]

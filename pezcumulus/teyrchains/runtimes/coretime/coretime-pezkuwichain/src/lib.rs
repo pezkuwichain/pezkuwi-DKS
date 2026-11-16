@@ -656,6 +656,7 @@ construct_runtime!(
 mod benches {
 	pezframe_benchmarking::define_benchmarks!(
 		[pezframe_system, SystemBench::<Runtime>]
+		[pezframe_system_extensions, SystemExtensionsBench::<Runtime>]
 		[pezcumulus_pezpallet_teyrchain_system, TeyrchainSystem]
 		[pezpallet_timestamp, Timestamp]
 		[pezpallet_balances, Balances]
@@ -668,12 +669,18 @@ mod benches {
 		[pezpallet_multisig, Multisig]
 		[pezpallet_proxy, Proxy]
 		[pezpallet_utility, Utility]
+		[pezpallet_transaction_payment, TransactionPayment]
 		// NOTE: Make sure you point to the individual modules below.
 		[pezpallet_xcm_benchmarks::fungible, XcmBalances]
 		[pezpallet_xcm_benchmarks::generic, XcmGeneric]
 		[pezcumulus_pezpallet_weight_reclaim, WeightReclaim]
 	);
 }
+
+// The transaction-payment benchmark needs this marker; implementing it inside the
+// `dispatch_benchmark` body would be a non-local definition.
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
 
 impl_runtime_apis! {
 	impl pezsp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
@@ -918,6 +925,7 @@ impl_runtime_apis! {
 			use pezframe_benchmarking::BenchmarkList;
 			use pezframe_support::traits::StorageInfoTrait;
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
+			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
 
@@ -942,6 +950,7 @@ impl_runtime_apis! {
 			use pezsp_storage::TrackedStorageKey;
 
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
+			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			impl pezframe_system_benchmarking::Config for Runtime {
 				fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
 					TeyrchainSystem::initialize_for_set_code_benchmark(code.len() as u32);
