@@ -3155,9 +3155,7 @@ impl pezpallet_parameters::Config for Runtime {
 	// pace. The office check itself is on People, where the register lives, exactly as it is for
 	// the finance minister's `spend_budget`.
 	type AdminOrigin = pezframe_support::traits::AsEnsureOriginWithArg<EnsurePeople>;
-	// Upstream's reference weight rather than `()`. A zero-weight extrinsic is a free one, and
-	// a free call is a free block: measured numbers for this chain come with the next
-	// benchmarking pass.
+	// Measured on the reference machine, through `EnsurePeople`'s People origin.
 	type WeightInfo = weights::pezpallet_parameters::WeightInfo<Runtime>;
 }
 
