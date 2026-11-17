@@ -40,5 +40,5 @@ pub mod rocksdb_weights;
 pub mod xcm;
 
 pub use block_weights::BlockExecutionWeight;
-pub use extrinsic_weights::constants::ExtrinsicBaseWeight;
+pub use extrinsic_weights::ExtrinsicBaseWeight;
 pub use rocksdb_weights::constants::RocksDbWeight;

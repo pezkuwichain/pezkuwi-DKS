@@ -96,6 +96,7 @@ pezpallet-xcm = { workspace = true }
 pezpallet-xcm-benchmarks = { optional = true, workspace = true }
 
 hex-literal = { workspace = true, default-features = true }
+pezcumulus-pezpallet-session-benchmarking = { optional = true, workspace = true }
 pezframe-benchmarking = { optional = true, workspace = true }
 pezframe-metadata-hash-extension = { workspace = true }
 pezframe-system-benchmarking = { optional = true, workspace = true }
@@ -103,7 +104,6 @@ pezframe-try-runtime = { optional = true, workspace = true }
 pezpallet-election-provider-support-benchmarking = { optional = true, workspace = true }
 pezpallet-nomination-pools-benchmarking = { optional = true, workspace = true }
 pezpallet-offences-benchmarking = { optional = true, workspace = true }
-pezpallet-session-benchmarking = { optional = true, workspace = true }
 
 pezkuwi-primitives = { workspace = true }
 pezkuwi-runtime-common = { workspace = true }
@@ -135,6 +135,7 @@ std = [
 	"codec/std",
 	"log/std",
 	"pez-binary-merkle-tree/std",
+	"pezcumulus-pezpallet-session-benchmarking?/std",
 	"pezframe-benchmarking?/std",
 	"pezframe-election-provider-support/std",
 	"pezframe-executive/std",
@@ -176,7 +177,6 @@ std = [
 	"pezpallet-referenda/std",
 	"pezpallet-root-testing/std",
 	"pezpallet-scheduler/std",
-	"pezpallet-session-benchmarking?/std",
 	"pezpallet-session/std",
 	"pezpallet-staking-async-ah-client/std",
 	"pezpallet-staking-async-rc-client/std",
@@ -226,6 +226,7 @@ std = [
 runtime-benchmarks = [
 	"bizinikiwi-wasm-builder?/runtime-benchmarks",
 	"pez-binary-merkle-tree/runtime-benchmarks",
+	"pezcumulus-pezpallet-session-benchmarking/runtime-benchmarks",
 	"pezframe-benchmarking/runtime-benchmarks",
 	"pezframe-election-provider-support/runtime-benchmarks",
 	"pezframe-executive/runtime-benchmarks",
@@ -267,7 +268,6 @@ runtime-benchmarks = [
 	"pezpallet-referenda/runtime-benchmarks",
 	"pezpallet-root-testing/runtime-benchmarks",
 	"pezpallet-scheduler/runtime-benchmarks",
-	"pezpallet-session-benchmarking/runtime-benchmarks",
 	"pezpallet-session/runtime-benchmarks",
 	"pezpallet-staking-async-ah-client/runtime-benchmarks",
 	"pezpallet-staking-async-rc-client/runtime-benchmarks",
@@ -308,6 +308,7 @@ runtime-benchmarks = [
 	"xcm/runtime-benchmarks",
 ]
 try-runtime = [
+	"pezcumulus-pezpallet-session-benchmarking?/try-runtime",
 	"pezframe-benchmarking?/try-runtime",
 	"pezframe-election-provider-support/try-runtime",
 	"pezframe-executive/try-runtime",
@@ -349,7 +350,6 @@ try-runtime = [
 	"pezpallet-referenda/try-runtime",
 	"pezpallet-root-testing/try-runtime",
 	"pezpallet-scheduler/try-runtime",
-	"pezpallet-session-benchmarking?/try-runtime",
 	"pezpallet-session/try-runtime",
 	"pezpallet-staking-async-ah-client/try-runtime",
 	"pezpallet-staking-async-rc-client/try-runtime",

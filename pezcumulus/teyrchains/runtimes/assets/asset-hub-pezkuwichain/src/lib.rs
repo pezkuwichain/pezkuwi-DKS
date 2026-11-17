@@ -2084,6 +2084,7 @@ mod benches {
 		[pezpallet_multisig, Multisig]
 		[pezpallet_nft_fractionalization, NftFractionalization]
 		[pezpallet_nfts, Nfts]
+		[pezpallet_parameters, Parameters]
 		[pezpallet_proxy, Proxy]
 		[pezpallet_session, SessionBench::<Runtime>]
 		[pezpallet_uniques, Uniques]
@@ -3142,12 +3143,28 @@ impl pezpallet_parameters::Config for Runtime {
 	// here is the ceiling and only a runtime upgrade moves it, `MaxEmissionStep` on People is the
 	// pace. The office check itself is on People, where the register lives, exactly as it is for
 	// the finance minister's `spend_budget`.
-	type AdminOrigin =
-		pezframe_support::traits::AsEnsureOriginWithArg<EnsureXcm<Equals<PeopleLocation>>>;
-	// Upstream's reference weight rather than `()`. A zero-weight extrinsic is a free one, and
-	// a free call is a free block: measured numbers for this chain come with the next
-	// benchmarking pass.
+	type AdminOrigin = pezframe_support::traits::AsEnsureOriginWithArg<EnsurePeople>;
+	// Measured on the reference machine, through `EnsurePeople`'s People origin.
 	type WeightInfo = weights::pezpallet_parameters::WeightInfo<Runtime>;
+}
+
+/// People, speaking over XCM -- `EnsureXcm<Equals<PeopleLocation>>` exactly, except for the
+/// origin it hands a benchmark. The generic one answers `Here`, which this filter refuses, so
+/// `pezpallet_parameters::set_parameter` could never be measured on this chain.
+pub struct EnsurePeople;
+impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for EnsurePeople {
+	type Success = xcm::latest::Location;
+
+	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		<EnsureXcm<Equals<PeopleLocation>> as pezframe_support::traits::EnsureOrigin<
+			RuntimeOrigin,
+		>>::try_origin(o)
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+		Ok(pezpallet_xcm::Origin::Xcm(PeopleLocation::get()).into())
+	}
 }
 
 pezcumulus_pezpallet_teyrchain_system::register_validate_block! {

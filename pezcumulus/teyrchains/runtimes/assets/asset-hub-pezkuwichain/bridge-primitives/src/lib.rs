@@ -53,7 +53,11 @@ pub enum Call {
 
 pezframe_support::parameter_types! {
 	/// Some sane weight to execute `xcm::Transact(pezpallet-xcm-bridge-hub-router::Call::report_bridge_status)`.
-	pub const XcmBridgeHubRouterTransactCallMaxWeight: pezframe_support::weights::Weight = pezframe_support::weights::Weight::from_parts(200_000_000, 6144);
+	///
+	/// Must stay above both hubs' measured `report_bridge_status` weight (a test on each hub
+	/// checks it). At a 30 us storage read that weight is ~196-200 us, so 200 us no longer
+	/// covered it; 250 us leaves room for the next measurement.
+	pub const XcmBridgeHubRouterTransactCallMaxWeight: pezframe_support::weights::Weight = pezframe_support::weights::Weight::from_parts(250_000_000, 6144);
 	/// Should match the `AssetDeposit` of the `ForeignAssets` pezpallet on Asset Hub.
 	pub const CreateForeignAssetDeposit: u128 = UNITS / 10;
 }

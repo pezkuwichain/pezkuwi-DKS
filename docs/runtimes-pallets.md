@@ -88,7 +88,7 @@ Pallets present on one twin only. Each must be recorded with its reason in
 
 ## asset-hub-zagros
 
-`pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/lib.rs` · spec `asset-hub-zagros` 1_020_022 · 62 pallets
+`pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/lib.rs` · spec `asset-hub-zagros` 1_020_023 · 62 pallets
 
 | index | pallet | crate |
 |---:|---|---|
@@ -195,7 +195,7 @@ Pallets present on one twin only. Each must be recorded with its reason in
 
 ## bridge-hub-zagros
 
-`pezcumulus/teyrchains/runtimes/bridge-hubs/bridge-hub-zagros/src/lib.rs` · spec `bridge-hub-zagros` 1_020_003 · 30 pallets
+`pezcumulus/teyrchains/runtimes/bridge-hubs/bridge-hub-zagros/src/lib.rs` · spec `bridge-hub-zagros` 1_020_004 · 30 pallets
 
 | index | pallet | crate |
 |---:|---|---|
@@ -232,7 +232,7 @@ Pallets present on one twin only. Each must be recorded with its reason in
 
 ## collectives-zagros
 
-`pezcumulus/teyrchains/runtimes/collectives/collectives-zagros/src/lib.rs` · spec `collectives-zagros` 1_020_002 · 33 pallets
+`pezcumulus/teyrchains/runtimes/collectives/collectives-zagros/src/lib.rs` · spec `collectives-zagros` 1_020_003 · 33 pallets
 
 | index | pallet | crate |
 |---:|---|---|
@@ -300,7 +300,7 @@ Pallets present on one twin only. Each must be recorded with its reason in
 
 ## coretime-zagros
 
-`pezcumulus/teyrchains/runtimes/coretime/coretime-zagros/src/lib.rs` · spec `coretime-zagros` 1_020_002 · 21 pallets
+`pezcumulus/teyrchains/runtimes/coretime/coretime-zagros/src/lib.rs` · spec `coretime-zagros` 1_020_003 · 21 pallets
 
 | index | pallet | crate |
 |---:|---|---|
@@ -430,7 +430,7 @@ Pallets present on one twin only. Each must be recorded with its reason in
 
 ## people-zagros
 
-`pezcumulus/teyrchains/runtimes/people/people-zagros/src/lib.rs` · spec `people-zagros` 1_020_027 · 48 pallets
+`pezcumulus/teyrchains/runtimes/people/people-zagros/src/lib.rs` · spec `people-zagros` 1_020_028 · 48 pallets
 
 | index | pallet | crate |
 |---:|---|---|
@@ -549,7 +549,7 @@ Pallets present on one twin only. Each must be recorded with its reason in
 
 ## zagros
 
-`pezkuwi/runtime/zagros/src/lib.rs` · spec `zagros` 1_020_016 · 57 pallets
+`pezkuwi/runtime/zagros/src/lib.rs` · spec `zagros` 1_020_017 · 57 pallets
 
 | index | pallet | crate |
 |---:|---|---|

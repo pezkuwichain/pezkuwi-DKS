@@ -166,7 +166,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("zagros"),
 	authoring_version: 0,
-	spec_version: 1_020_016,
+	spec_version: 1_020_017,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 26,
@@ -1800,6 +1800,7 @@ mod benches {
 		[pezpallet_proxy, Proxy]
 		[pezpallet_referenda, Referenda]
 		[pezpallet_scheduler, Scheduler]
+		[pezpallet_session, SessionBench::<Runtime>]
 		[pezpallet_sudo, Sudo]
 		[pezframe_system, SystemBench::<Runtime>]
 		[pezframe_system_extensions, SystemExtensionsBench::<Runtime>]
@@ -2407,6 +2408,7 @@ pezsp_api::impl_runtime_apis! {
 
 
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
+			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use pezframe_benchmarking::baseline::Pezpallet as Baseline;
 
@@ -2429,6 +2431,7 @@ pezsp_api::impl_runtime_apis! {
 			use pezframe_support::traits::WhitelistedStorageKeys;
 			use pezframe_benchmarking::{BenchmarkBatch, BenchmarkError};
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
+			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use pezframe_benchmarking::baseline::Pezpallet as Baseline;
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
@@ -2449,6 +2452,14 @@ pezsp_api::impl_runtime_apis! {
 
 			impl pezframe_system_benchmarking::Config for Runtime {}
 			impl pezframe_benchmarking::baseline::Config for Runtime {}
+			// The relay has no staking pallet, so the staking-bound session benchmark cannot
+			// run here; this one measures `set_keys`/`purge_keys` on `pezpallet_session` alone.
+			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 			impl pezpallet_xcm::benchmarking::Config for Runtime {
 				type DeliveryHelper = (
 					pezkuwi_runtime_common::xcm_sender::ToTeyrchainDeliveryHelper<
