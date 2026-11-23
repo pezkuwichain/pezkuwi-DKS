@@ -1376,6 +1376,15 @@ pub mod pezpallet {
 			role: OfficialRole,
 		},
 
+		/// The President said yes to a name for an office that carries standing; it now waits
+		/// on the house.
+		AppointmentSentToParliament {
+			process_id: u32,
+			approver: T::AccountId,
+			nominee: T::AccountId,
+			role: OfficialRole,
+		},
+
 		/// Appointment approved
 		AppointmentApproved {
 			process_id: u32,
@@ -1749,6 +1758,8 @@ pub mod pezpallet {
 		AppointedRewsenbirLimitReached,
 		/// The approver nominated this appointee; an appointment has two parties.
 		CannotApproveOwnNomination,
+		/// An office that carries standing always needs the house's confirmation.
+		ConfirmationCannotBeWaived,
 		/// The founding period is over; a house now comes only from an election.
 		FoundingPeriodOver,
 		/// A ballot names more candidates than it may.
@@ -4268,7 +4279,14 @@ pub mod pezpallet {
 				// draws between principal and inferior officers. `confirmation_is_required`
 				// asks the legislature's list first and the founding one only where the
 				// legislature has not spoken.
-				status: if Self::confirmation_is_required(&role) {
+				//
+				// An office that adds to its holder's standing needs both parties, the
+				// President and the house (Serok, 2026-10-21). When a minister names, the
+				// President has not yet said yes, so it goes to him first and he sends it on
+				// (`approve_appointment`); when he names it himself, that is his yes.
+				status: if !Self::confirmation_is_required(&role) {
+					AppointmentStatus::WaitingPresidentialApproval
+				} else if is_serok || !Self::counts_toward_standing(&role) {
 					AppointmentStatus::WaitingParliamentaryApproval
 				} else {
 					AppointmentStatus::WaitingPresidentialApproval
@@ -4327,8 +4345,27 @@ pub mod pezpallet {
 			let mut nomination = PendingNominations::<T>::get(process.position, &process.nominee)
 				.ok_or(Error::<T>::NominationNotFound)?;
 
-			// Update nomination
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
+
+			// An office that carries standing is the President's yes and then the house's.
+			// His yes sends it on; it seats nobody. Decided by the office, which the
+			// legislature cannot move, so an appointment in flight keeps the rule it began
+			// under.
+			if Self::counts_toward_standing(&process.position) {
+				nomination.approver = Some(approver.clone());
+				process.status = AppointmentStatus::WaitingParliamentaryApproval;
+				PendingNominations::<T>::insert(process.position, &process.nominee, nomination);
+				AppointmentProcesses::<T>::insert(process_id, process.clone());
+				Self::deposit_event(Event::AppointmentSentToParliament {
+					process_id,
+					approver,
+					nominee: process.nominee,
+					role: process.position,
+				});
+				return Ok(());
+			}
+
+			// Update nomination
 			nomination.approved = true;
 			nomination.approver = Some(approver.clone());
 			nomination.approved_at = Some(current_block);
@@ -4425,6 +4462,14 @@ pub mod pezpallet {
 			required: bool,
 		) -> DispatchResult {
 			T::ConfirmationOrigin::ensure_origin(origin)?;
+
+			// An office that carries standing always needs the house: the President alone
+			// filling an ally's share is the thing the requirement exists to stop, and a
+			// majority of the day should not be able to switch it off for one office.
+			ensure!(
+				required || !Self::counts_toward_standing(&role),
+				Error::<T>::ConfirmationCannotBeWaived
+			);
 
 			if required == role.requires_parliament_approval() {
 				// Back to the founding rule: drop the entry rather than store a copy of it, so
@@ -6309,7 +6354,14 @@ impl<T: Config> Pezpallet<T> {
 	///
 	/// The legislature's answer where it has given one, the founding rule otherwise.
 	pub fn confirmation_is_required(role: &OfficialRole) -> bool {
-		ConfirmationRequired::<T>::get(role).unwrap_or_else(|| role.requires_parliament_approval())
+		Self::counts_toward_standing(role)
+			|| ConfirmationRequired::<T>::get(role)
+				.unwrap_or_else(|| role.requires_parliament_approval())
+	}
+
+	/// Whether the office adds to its holder's standing -- the tiki register's own answer.
+	pub fn counts_toward_standing(role: &OfficialRole) -> bool {
+		pezpallet_tiki::Pezpallet::<T>::counts_toward_standing(&Self::tiki_for_role(role))
 	}
 
 	/// Spend one place under `MaxAppointedRewsenbir`, at the moment the title is granted.
