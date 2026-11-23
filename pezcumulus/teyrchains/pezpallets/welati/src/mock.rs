@@ -380,6 +380,7 @@ impl pezpallet_tiki::Config for Test {
 	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type ImpeachmentOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type HonoraryCitizenshipOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type StandingConfirmationOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type WeightInfo = ();
 	type MaxTikisPerUser = MaxTikisPerUser;
 	type Tiki = pezpallet_tiki::Tiki;

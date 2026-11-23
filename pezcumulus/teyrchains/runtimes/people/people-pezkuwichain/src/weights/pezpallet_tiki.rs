@@ -98,6 +98,14 @@ impl<T: pezframe_system::Config> pezpallet_tiki::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(20))
 			.saturating_add(T::DbWeight::get().writes(6))
 	}
+	/// PROVISIONAL until the next weights run: `grant_tiki` plus the read and removal of
+	/// `Tiki::PendingTikis` (r:1 w:1), which is what this call adds to a grant.
+	fn confirm_tiki() -> Weight {
+		Weight::from_parts(257_638_000, 0)
+			.saturating_add(Weight::from_parts(0, 8718))
+			.saturating_add(T::DbWeight::get().reads(21))
+			.saturating_add(T::DbWeight::get().writes(7))
+	}
 	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:1 w:1)
 	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
 	/// Storage: `Tiki::UserTikis` (r:1 w:1)

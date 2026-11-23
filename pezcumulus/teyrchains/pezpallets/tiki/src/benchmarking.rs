@@ -11,7 +11,7 @@ use crate::Pezpallet as Tiki;
 use pezframe_benchmarking::v2::*;
 use pezframe_system::RawOrigin;
 // Import the required traits
-use pezframe_support::traits::{Currency, Get};
+use pezframe_support::traits::{Currency, EnsureOrigin, Get};
 use pezpallet_balances::Pezpallet as Balances;
 use pezsp_runtime::traits::StaticLookup;
 extern crate alloc;
@@ -110,6 +110,25 @@ mod benchmarks {
 
 		// For non-unique roles, check user has the role
 		assert!(Tiki::<T>::user_tikis(&dest).contains(&tiki));
+		Ok(())
+	}
+
+	#[benchmark]
+	fn confirm_tiki() -> Result<(), BenchmarkError> {
+		let dest: T::AccountId = whitelisted_caller();
+		let nominator: T::AccountId = account("nominator", 0, 0);
+		let tiki = crate::Tiki::Hiquqnas;
+		ensure_citizen_nft::<T>(dest.clone())?;
+		T::TrustScoreUpdater::prepare_worst_case(&dest);
+		crate::PendingTikis::<T>::insert(&dest, tiki, nominator);
+		let origin = T::StandingConfirmationOrigin::try_successful_origin()
+			.map_err(|_| BenchmarkError::Weightless)?;
+
+		#[extrinsic_call]
+		_(origin as T::RuntimeOrigin, T::Lookup::unlookup(dest.clone()), tiki, true);
+
+		assert!(Tiki::<T>::user_tikis(&dest).contains(&tiki));
+		assert!(crate::PendingTikis::<T>::get(&dest, tiki).is_none());
 		Ok(())
 	}
 

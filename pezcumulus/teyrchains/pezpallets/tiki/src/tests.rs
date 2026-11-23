@@ -1579,13 +1579,20 @@ fn a_president_cannot_enlarge_his_own_share() {
 			Error::<Test>::CannotGrantToSelf
 		);
 
-		// Someone else may still be given a qualification, and it still counts for them.
+		// Someone else may still be given a qualification, and it still counts for them --
+		// once the house has said yes to the name.
 		let other = 9u64;
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), other));
 		assert_ok!(TikiPallet::grant_tiki(
 			RuntimeOrigin::signed(president),
 			other,
 			TikiEnum::Dadger
+		));
+		assert_ok!(TikiPallet::confirm_tiki(
+			RuntimeOrigin::signed(crate::mock::MOCK_HOUSE),
+			other,
+			TikiEnum::Dadger,
+			true
 		));
 		assert!(TikiPallet::get_tiki_score(&other) > TikiPallet::get_tiki_score(&president));
 
@@ -1630,4 +1637,173 @@ fn the_founding_government_cannot_seat_the_house_or_the_court() {
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
+}
+
+// === Y12: standing takes two parties ===
+//
+// `AdminOrigin` is satisfied by the President alone. Through it one person could fill an
+// ally's standing -- a judge's hundred and fifty points, a Noter's attestation -- and standing
+// is the divisor of every reward. The decision (Serok, 2026-10-21): an appointment that
+// counts towards standing is named by the President and confirmed by the house.
+mod standing_takes_two_parties {
+	use super::*;
+	use crate::mock::{MOCK_HOUSE, MOCK_SEROK};
+
+	fn citizen(who: u64) {
+		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), who));
+	}
+
+	#[test]
+	fn the_president_alone_only_names() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			let before = TikiPallet::get_tiki_score(&9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Noter
+			));
+
+			assert!(!TikiPallet::has_tiki(&9, &TikiEnum::Noter));
+			assert_eq!(TikiPallet::get_tiki_score(&9), before);
+			assert_eq!(crate::PendingTikis::<Test>::get(9, TikiEnum::Noter), Some(MOCK_SEROK));
+			System::assert_last_event(
+				Event::TikiNominated { who: 9, tiki: TikiEnum::Noter, by: MOCK_SEROK }.into(),
+			);
+		});
+	}
+
+	#[test]
+	fn the_house_seats_the_name() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			let before = TikiPallet::get_tiki_score(&9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Noter
+			));
+			assert_ok!(TikiPallet::confirm_tiki(
+				RuntimeOrigin::signed(MOCK_HOUSE),
+				9,
+				TikiEnum::Noter,
+				true
+			));
+
+			assert!(TikiPallet::has_tiki(&9, &TikiEnum::Noter));
+			assert_eq!(
+				TikiPallet::get_tiki_score(&9),
+				before + TikiPallet::get_bonus_for_tiki(&TikiEnum::Noter)
+			);
+			assert_eq!(
+				crate::RoleAssignmentTypeOf::<Test>::get(9, TikiEnum::Noter),
+				Some(RoleAssignmentType::Appointed)
+			);
+			assert!(crate::PendingTikis::<Test>::get(9, TikiEnum::Noter).is_none());
+		});
+	}
+
+	#[test]
+	fn a_refusal_clears_the_name_and_grants_nothing() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Dadger
+			));
+			assert_ok!(TikiPallet::confirm_tiki(
+				RuntimeOrigin::signed(MOCK_HOUSE),
+				9,
+				TikiEnum::Dadger,
+				false
+			));
+			assert!(!TikiPallet::has_tiki(&9, &TikiEnum::Dadger));
+			assert!(crate::PendingTikis::<Test>::get(9, TikiEnum::Dadger).is_none());
+			assert_noop!(
+				TikiPallet::confirm_tiki(
+					RuntimeOrigin::signed(MOCK_HOUSE),
+					9,
+					TikiEnum::Dadger,
+					true
+				),
+				Error::<Test>::NotNominated
+			);
+		});
+	}
+
+	#[test]
+	fn the_president_cannot_confirm_his_own_name() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Noter
+			));
+			assert_noop!(
+				TikiPallet::confirm_tiki(
+					RuntimeOrigin::signed(MOCK_SEROK),
+					9,
+					TikiEnum::Noter,
+					true
+				),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+		});
+	}
+
+	#[test]
+	fn a_body_alone_cannot_grant_standing() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			// The council majority satisfies `AdminOrigin` without being a person.
+			assert_noop!(
+				TikiPallet::grant_tiki(RuntimeOrigin::none(), 9, TikiEnum::Noter),
+				Error::<Test>::NeedsANomination
+			);
+		});
+	}
+
+	#[test]
+	fn a_name_cannot_be_stacked_or_sent_to_a_holder() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Noter
+			));
+			assert_noop!(
+				TikiPallet::grant_tiki(RuntimeOrigin::signed(MOCK_SEROK), 9, TikiEnum::Noter),
+				Error::<Test>::AlreadyNominated
+			);
+			citizen(10);
+			assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 10, TikiEnum::Hiquqnas));
+			assert_noop!(
+				TikiPallet::grant_tiki(RuntimeOrigin::signed(MOCK_SEROK), 10, TikiEnum::Hiquqnas),
+				Error::<Test>::UserAlreadyHasRole
+			);
+		});
+	}
+
+	#[test]
+	fn root_still_grants_directly() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 9, TikiEnum::Noter));
+			assert!(TikiPallet::has_tiki(&9, &TikiEnum::Noter));
+		});
+	}
+
+	#[test]
+	fn what_counts_is_what_the_score_counts() {
+		// The qualifications the score adds need two parties; offices, which add nothing, and
+		// citizenship, which nobody appoints, are untouched.
+		assert!(TikiPallet::counts_toward_standing(&TikiEnum::Noter));
+		assert!(TikiPallet::counts_toward_standing(&TikiEnum::Dadger));
+		assert!(!TikiPallet::counts_toward_standing(&TikiEnum::Xezinedar));
+		assert!(!TikiPallet::counts_toward_standing(&TikiEnum::Serok));
+		assert!(!TikiPallet::counts_toward_standing(&TikiEnum::Xanenişîn));
+	}
 }

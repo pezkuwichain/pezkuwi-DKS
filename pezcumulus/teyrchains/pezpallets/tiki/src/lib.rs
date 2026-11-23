@@ -237,6 +237,16 @@ pub mod pezpallet {
 		/// fact that it would be visible on-chain to everyone.
 		type HonoraryCitizenshipOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
+		/// The body that confirms an appointment carrying standing.
+		///
+		/// A tiki that adds to someone's trust score enlarges their share of every reward and,
+		/// for a Noter, hands them an attestation the register relies on. `AdminOrigin` is
+		/// satisfied by the President alone, so through it one person could fill an ally's
+		/// standing. Such a grant now has two parties: the President names, this body answers
+		/// yes or no (`confirm_tiki`). The runtime binds it to the same body that confirms the
+		/// civil-service appointments in `welati`, so there is one confirming body, not two.
+		type StandingConfirmationOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
 		/// Who may strip an office from someone who was elected to it, or a title someone
 		/// earned.
 		///
@@ -497,6 +507,21 @@ pub mod pezpallet {
 		OptionQuery,
 	>;
 
+	/// Appointments that carry standing, named and waiting on `StandingConfirmationOrigin`.
+	///
+	/// Keyed by appointee and tiki; the value is who named them. One entry per pair, so a
+	/// name cannot be stacked, and the confirming body clears it either way it answers.
+	#[pezpallet::storage]
+	pub type PendingTikis<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
+		Tiki,
+		T::AccountId,
+		OptionQuery,
+	>;
+
 	/// When a role runs out, for the roles that have a term.
 	///
 	/// The value is written by whoever grants the role, because only they know the term: the
@@ -542,6 +567,13 @@ pub mod pezpallet {
 		SeatedByGovernance,
 		/// Nobody may be both parties to their own appointment.
 		CannotGrantToSelf,
+		/// A tiki that carries standing is named by a person and confirmed by a body; a body
+		/// may not grant it alone.
+		NeedsANomination,
+		/// This person is already named for this tiki and waiting on confirmation.
+		AlreadyNominated,
+		/// Nobody is waiting on confirmation for this tiki.
+		NotNominated,
 	}
 
 	#[pezpallet::event]
@@ -555,6 +587,10 @@ pub mod pezpallet {
 		TikiGranted { who: T::AccountId, tiki: Tiki },
 		/// Tiki (role) revoked
 		TikiRevoked { who: T::AccountId, tiki: Tiki },
+		/// Someone was named for a tiki that carries standing; it waits on confirmation.
+		TikiNominated { who: T::AccountId, tiki: Tiki, by: T::AccountId },
+		/// The confirming body answered a nomination.
+		TikiNominationDecided { who: T::AccountId, tiki: Tiki, approved: bool },
 		/// A successor was appointed to `office`, and the one they replaced retired from it.
 		Retired { who: T::AccountId, office: Tiki },
 		/// NFT transfer blocked
@@ -798,14 +834,15 @@ pub mod pezpallet {
 			// by the President alone, and by half the Council, so a signed caller is a person
 			// and the others are not -- and only a person can hand something to themselves.
 			let caller = ensure_signed(origin.clone()).ok();
+			let is_root = ensure_root(origin.clone()).is_ok();
 			T::AdminOrigin::ensure_origin(origin)?;
 			let dest_account = T::Lookup::lookup(dest)?;
 
 			// An appointment has two parties and nobody is both of them. The President
 			// satisfies this origin on his own, so without this line the office that grants
 			// offices could grant them to the man holding it.
-			if let Some(caller) = caller {
-				ensure!(caller != dest_account, Error::<T>::CannotGrantToSelf);
+			if let Some(caller) = &caller {
+				ensure!(*caller != dest_account, Error::<T>::CannotGrantToSelf);
 			}
 
 			ensure!(!Self::is_seated_by_governance(&tiki), Error::<T>::SeatedByGovernance);
@@ -816,8 +853,63 @@ pub mod pezpallet {
 				Error::<T>::InvalidRoleAssignmentMethod
 			);
 
+			// Standing is the divisor of every reward, and a Noter's attestation is what the
+			// register relies on. Filling either alone is filling an ally's share, so it takes
+			// two parties: a person names, the confirming body answers (`confirm_tiki`). A body
+			// satisfying `AdminOrigin` on its own -- the council majority -- names nobody and
+			// may not grant it either. Root grants directly: on this chain it is sudo while sudo
+			// lasts and then the referendum track, which counts every citizen.
+			if Self::counts_toward_standing(&tiki) && !is_root {
+				let nominator = caller.ok_or(Error::<T>::NeedsANomination)?;
+				ensure!(!Self::has_tiki(&dest_account, &tiki), Error::<T>::UserAlreadyHasRole);
+				ensure!(
+					!PendingTikis::<T>::contains_key(&dest_account, tiki),
+					Error::<T>::AlreadyNominated
+				);
+				PendingTikis::<T>::insert(&dest_account, tiki, nominator.clone());
+				Self::deposit_event(Event::TikiNominated {
+					who: dest_account,
+					tiki,
+					by: nominator,
+				});
+				return Ok(());
+			}
+
 			Self::internal_grant_role(&dest_account, tiki)?;
 			RoleAssignmentTypeOf::<T>::insert(&dest_account, tiki, RoleAssignmentType::Appointed);
+			Ok(())
+		}
+
+		/// Answer a nomination for a tiki that carries standing.
+		///
+		/// Takes the appointee and the tiki the President named, and a yes or no. The body
+		/// cannot name anyone itself -- it answers the name it was sent -- and either answer
+		/// clears the nomination, so a refused name has to be sent again to be reconsidered.
+		#[pezpallet::call_index(6)]
+		#[pezpallet::weight(<T as crate::pezpallet::Config>::WeightInfo::confirm_tiki())]
+		pub fn confirm_tiki(
+			origin: OriginFor<T>,
+			dest: <T::Lookup as StaticLookup>::Source,
+			tiki: Tiki,
+			approve: bool,
+		) -> DispatchResult {
+			T::StandingConfirmationOrigin::ensure_origin(origin)?;
+			let dest_account = T::Lookup::lookup(dest)?;
+
+			PendingTikis::<T>::take(&dest_account, tiki).ok_or(Error::<T>::NotNominated)?;
+			if approve {
+				Self::internal_grant_role(&dest_account, tiki)?;
+				RoleAssignmentTypeOf::<T>::insert(
+					&dest_account,
+					tiki,
+					RoleAssignmentType::Appointed,
+				);
+			}
+			Self::deposit_event(Event::TikiNominationDecided {
+				who: dest_account,
+				tiki,
+				approved: approve,
+			});
 			Ok(())
 		}
 
@@ -1230,6 +1322,15 @@ pub mod pezpallet {
 		/// has no business also enlarging its holder's share of the citizens' pot.
 		pub fn is_office(tiki: &Tiki) -> bool {
 			Self::is_unique_role(tiki) || matches!(tiki, Tiki::Parlementer | Tiki::EndameDiwane)
+		}
+
+		/// Whether holding `tiki` adds to its holder's standing.
+		///
+		/// The same two filters `get_tiki_score` applies: an office counts for nothing, and a
+		/// tiki priced at zero counts for nothing. Whatever passes both is what an appointment
+		/// can be used to enlarge, and so what needs two parties to grant.
+		pub fn counts_toward_standing(tiki: &Tiki) -> bool {
+			!Self::is_office(tiki) && Self::get_bonus_for_tiki(tiki) > 0
 		}
 
 		pub fn is_unique_role(tiki: &Tiki) -> bool {

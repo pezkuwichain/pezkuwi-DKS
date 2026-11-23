@@ -287,6 +287,7 @@ impl crate::Config for Test {
 	// here; what the tests check is that the paths are different, not who fills them.
 	type ImpeachmentOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type HonoraryCitizenshipOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type StandingConfirmationOrigin = TheHouse;
 	type WeightInfo = ();
 	type TikiCollectionId = TikiCollectionId;
 	type MaxTikisPerUser = MaxTikisPerUser;
@@ -348,6 +349,31 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for RootOrAPerson {
 		match o.clone().into() {
 			Ok(pezframe_system::RawOrigin::Root) => Ok(()),
 			Ok(pezframe_system::RawOrigin::Signed(who)) if who == MOCK_SEROK => Ok(()),
+			// Stands in for the council majority: a body that satisfies the origin without
+			// being a person, so the tests can tell "a body granted it" from "someone named".
+			Ok(pezframe_system::RawOrigin::None) => Ok(()),
+			_ => Err(o),
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+		Ok(pezframe_system::RawOrigin::Root.into())
+	}
+}
+
+/// The account this mock treats as the house resolving.
+pub const MOCK_HOUSE: AccountId = 100;
+
+/// What `StandingConfirmationOrigin` is in production -- the house resolving -- reduced to one account.
+pub struct TheHouse;
+impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for TheHouse {
+	type Success = ();
+
+	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		match o.clone().into() {
+			Ok(pezframe_system::RawOrigin::Root) => Ok(()),
+			Ok(pezframe_system::RawOrigin::Signed(who)) if who == MOCK_HOUSE => Ok(()),
 			_ => Err(o),
 		}
 	}
