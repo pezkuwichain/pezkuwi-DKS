@@ -299,9 +299,17 @@ fn asset_hub_pezkuwichain_genesis(
 			// refused at the door, refused relay keys -- for no reason of their own. Capping
 			// the set at the report's size makes "every bonded account is named" true rather
 			// than hoped. The relay set is twenty-seven and a committee at most sixty-four, so
-			// a thousand candidacies is not a limit anyone meets by accident. When it is met,
-			// `validate` refuses with `TooManyValidators`, and governance raises the bond or
-			// the cap (`set_staking_configs`), as staking itself prescribes.
+			// a thousand candidacies is not a limit anyone meets by accident.
+			//
+			// A cap can be filled on purpose: 1,024 bonds of 10,000 HEZ, about five percent of
+			// the supply, locked but not lost, would refuse every new candidacy. That trade is
+			// taken knowingly. Uncapped, the same money bought something worse and invisible --
+			// a report that silently dropped whichever members storage order put last. Capped,
+			// the refusal is visible (`TooManyValidators`) and has staking's own remedy: Root
+			// here -- reached by a People referendum through the relay -- calls
+			// `set_staking_configs` to raise `MinValidatorBond` and set `ChillThreshold`
+			// together, and `chill_other` then lets anyone remove every candidacy below the new
+			// bond. Squatting the set costs whatever the people decide a candidacy is worth.
 			max_validator_count: Some(pezkuwi_tnpos_primitives::invariant::MAX_BONDED_REPORT),
 			// Synthetic stakers, for the presets that ask for them. The multi-block election
 			// benchmarks assert that a snapshot page is FULL -- `TargetSnapshotPerBlock` is
