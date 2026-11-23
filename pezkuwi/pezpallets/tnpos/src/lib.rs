@@ -437,6 +437,8 @@ pub mod pezpallet {
 		StratumSwitched { who: T::AccountId, from: StratumId, to: StratumId },
 		/// A member left the pool.
 		Left { who: T::AccountId },
+		/// A member who no longer stood was removed from the pool by `by`.
+		Evicted { who: T::AccountId, stratum: StratumId, by: T::AccountId },
 		/// A seated committee was handed to the router for the relay.
 		///
 		/// Sent, not accepted. A successful `send` means the message left this chain; whether
@@ -526,6 +528,13 @@ pub mod pezpallet {
 		RelayKeysChangedTooRecently,
 		/// Only an account the Asset Hub has reported as bonded may register relay keys.
 		NotBondedForRelayKeys,
+		/// This stratum already holds its share of the pool.
+		StratumFull,
+		/// The committee is not drawn from this stratum.
+		StratumNotConfigured,
+		/// The member still stands, or the chain cannot be sure they do not, so nobody but
+		/// the member may remove them.
+		StillStanding,
 	}
 
 	#[pezpallet::genesis_config]
@@ -784,6 +793,7 @@ pub mod pezpallet {
 			let who = ensure_signed(origin)?;
 			let current = PoolMembers::<T>::get(&who).ok_or(Error::<T>::NotInPool)?;
 			ensure!(current != stratum, Error::<T>::AlreadyInPool);
+			Self::has_room_in(stratum)?;
 			Self::eligible_for(&who, stratum)?;
 
 			StratumSize::<T>::mutate(current, |n| *n = n.saturating_sub(1));
@@ -821,6 +831,24 @@ pub mod pezpallet {
 		#[pezpallet::weight(T::WeightInfo::leave())]
 		pub fn leave(origin: OriginFor<T>) -> DispatchResult {
 			Self::do_leave(ensure_signed(origin)?)
+		}
+
+		/// Remove a member who no longer stands, so the place goes to someone who does.
+		///
+		/// Anyone may call it, and it costs nothing when it succeeds: freeing a place is a
+		/// service to the pool, and the fee is what stops it being used to probe. It succeeds
+		/// only on a disqualification the chain is sure of -- see `evictable` for which, and
+		/// for the outages it deliberately refuses to act on. The member keeps any seat in the
+		/// current committee, as leaving does; they lose the place in the pool and may join
+		/// again once they stand.
+		#[pezpallet::call_index(12)]
+		#[pezpallet::weight(T::WeightInfo::evict())]
+		pub fn evict(origin: OriginFor<T>, who: T::AccountId) -> DispatchResultWithPostInfo {
+			let by = ensure_signed(origin)?;
+			let stratum = Self::evictable(&who)?;
+			Self::do_leave(who.clone())?;
+			Self::deposit_event(Event::Evicted { who, stratum, by });
+			Ok(Pays::No.into())
 		}
 
 		/// Seat a new committee now.

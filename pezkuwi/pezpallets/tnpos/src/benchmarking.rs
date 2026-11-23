@@ -39,6 +39,23 @@ mod benchmarks {
 		assert!(!PoolMembers::<T>::contains_key(&who));
 	}
 
+	/// The full path: a configured stratum, keys held, and the stratum's gate read to its answer.
+	/// The member is placed in the open lottery with no trust, so `stands_for` reads the score
+	/// and refuses -- the case where every check runs before the place is freed.
+	#[benchmark]
+	fn evict() {
+		let who = account::<T::AccountId>("member", 0, 0);
+		let by = account::<T::AccountId>("caller", 0, 0);
+		// Keys and a standing elsewhere; then the place itself, in a stratum it does not pass.
+		T::BenchmarkHelper::make_eligible(&who, StratumId::Meclis);
+		PoolMembers::<T>::insert(&who, StratumId::WelatiLottery);
+		StratumSize::<T>::mutate(StratumId::WelatiLottery, |n| *n = n.saturating_add(1));
+		assert!(Pezpallet::<T>::evictable(&who).is_ok());
+		#[extrinsic_call]
+		_(RawOrigin::Signed(by), who.clone());
+		assert!(!PoolMembers::<T>::contains_key(&who));
+	}
+
 	#[benchmark]
 	fn commit_seed() {
 		let who = account::<T::AccountId>("member", 0, 0);
