@@ -285,7 +285,7 @@ impl crate::Config for Test {
 	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	// On the real runtimes these are the court and the head of government. Root stands in
 	// here; what the tests check is that the paths are different, not who fills them.
-	type ImpeachmentOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type ImpeachmentOrigin = TheCourt;
 	type HonoraryCitizenshipOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type StandingConfirmationOrigin = TheHouse;
 	type WeightInfo = ();
@@ -349,6 +349,12 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for RootOrAPerson {
 		match o.clone().into() {
 			Ok(pezframe_system::RawOrigin::Root) => Ok(()),
 			Ok(pezframe_system::RawOrigin::Signed(who)) if who == MOCK_SEROK => Ok(()),
+			// The production origin's signed arm is whoever holds the presidency.
+			Ok(pezframe_system::RawOrigin::Signed(who))
+				if crate::Pezpallet::<Test>::current_holder(&TikiEnum::Serok) == Some(who) =>
+			{
+				Ok(())
+			},
 			// Stands in for the council majority: a body that satisfies the origin without
 			// being a person, so the tests can tell "a body granted it" from "someone named".
 			Ok(pezframe_system::RawOrigin::None) => Ok(()),
@@ -374,6 +380,28 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for TheHouse {
 		match o.clone().into() {
 			Ok(pezframe_system::RawOrigin::Root) => Ok(()),
 			Ok(pezframe_system::RawOrigin::Signed(who)) if who == MOCK_HOUSE => Ok(()),
+			_ => Err(o),
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+		Ok(pezframe_system::RawOrigin::Root.into())
+	}
+}
+
+/// The account this mock treats as the court resolving.
+pub const MOCK_COURT: AccountId = 101;
+
+/// What `ImpeachmentOrigin` is in production -- the court resolving -- reduced to one account.
+pub struct TheCourt;
+impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for TheCourt {
+	type Success = ();
+
+	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		match o.clone().into() {
+			Ok(pezframe_system::RawOrigin::Root) => Ok(()),
+			Ok(pezframe_system::RawOrigin::Signed(who)) if who == MOCK_COURT => Ok(()),
 			_ => Err(o),
 		}
 	}

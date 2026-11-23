@@ -522,6 +522,21 @@ pub mod pezpallet {
 		OptionQuery,
 	>;
 
+	/// Removals proposed for cause, waiting on the body that reviews them.
+	///
+	/// Keyed by holder and tiki; the value is who proposed it. The reason travels in the
+	/// `RemovalProposed` event, where anyone can read it, rather than in state.
+	#[pezpallet::storage]
+	pub type PendingRemovals<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
+		Tiki,
+		T::AccountId,
+		OptionQuery,
+	>;
+
 	/// When a role runs out, for the roles that have a term.
 	///
 	/// The value is written by whoever grants the role, because only they know the term: the
@@ -576,6 +591,17 @@ pub mod pezpallet {
 		NotNominated,
 		/// Whoever named this person no longer holds the presidency; the name lapsed with them.
 		NominatorLeftOffice,
+		/// This office is held for cause: its removal is proposed and then reviewed
+		/// (`propose_removal`), not done by one signature.
+		RemovalNeedsReview,
+		/// This office is not removed by review; `revoke_tiki` is its path.
+		NotRemovedByReview,
+		/// A removal of this person from this tiki is already waiting on review.
+		RemovalAlreadyProposed,
+		/// Nobody proposed removing this person from this tiki.
+		RemovalNotProposed,
+		/// Whoever proposed this removal no longer holds the presidency; it lapsed with them.
+		ProposerLeftOffice,
 	}
 
 	#[pezpallet::event]
@@ -593,6 +619,15 @@ pub mod pezpallet {
 		TikiNominated { who: T::AccountId, tiki: Tiki, by: T::AccountId },
 		/// The confirming body answered a nomination.
 		TikiNominationDecided { who: T::AccountId, tiki: Tiki, approved: bool },
+		/// The President proposed removing someone from an office held for cause.
+		RemovalProposed {
+			who: T::AccountId,
+			tiki: Tiki,
+			by: T::AccountId,
+			reason: BoundedVec<u8, ConstU32<256>>,
+		},
+		/// The reviewing body answered a proposed removal.
+		RemovalDecided { who: T::AccountId, tiki: Tiki, removed: bool },
 		/// A successor was appointed to `office`, and the one they replaced retired from it.
 		Retired { who: T::AccountId, office: Tiki },
 		/// NFT transfer blocked
@@ -926,6 +961,86 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// Propose removing someone from an office held for cause, and say why.
+		///
+		/// A career post is not the President's to take back on a whim -- a state that lets
+		/// its executive dismiss the tax collector or the teacher for their politics has a
+		/// civil service in name only. So the President proposes, with a reason anyone can
+		/// read, and the reviewing body decides before anything happens: the court for a
+		/// career post, the house for an oversight post. Reviewing first rather than after
+		/// means nobody is wrongly out of office while an appeal waits.
+		#[pezpallet::call_index(7)]
+		#[pezpallet::weight(<T as crate::pezpallet::Config>::WeightInfo::propose_removal())]
+		pub fn propose_removal(
+			origin: OriginFor<T>,
+			target: <T::Lookup as StaticLookup>::Source,
+			tiki: Tiki,
+			reason: BoundedVec<u8, ConstU32<256>>,
+		) -> DispatchResult {
+			let proposer = ensure_signed(origin.clone())?;
+			T::AdminOrigin::ensure_origin(origin)?;
+			let target_account = T::Lookup::lookup(target)?;
+
+			ensure!(Self::has_tiki(&target_account, &tiki), Error::<T>::RoleNotAssigned);
+			ensure!(
+				Self::removed_by_review(&target_account, &tiki),
+				Error::<T>::NotRemovedByReview
+			);
+			ensure!(
+				!PendingRemovals::<T>::contains_key(&target_account, tiki),
+				Error::<T>::RemovalAlreadyProposed
+			);
+
+			PendingRemovals::<T>::insert(&target_account, tiki, proposer.clone());
+			Self::deposit_event(Event::RemovalProposed {
+				who: target_account,
+				tiki,
+				by: proposer,
+				reason,
+			});
+			Ok(())
+		}
+
+		/// Answer a proposed removal: the court for a career post, the house for an oversight
+		/// post. Either answer clears it; a yes needs the proposer to still be President.
+		#[pezpallet::call_index(8)]
+		#[pezpallet::weight(<T as crate::pezpallet::Config>::WeightInfo::decide_removal())]
+		pub fn decide_removal(
+			origin: OriginFor<T>,
+			target: <T::Lookup as StaticLookup>::Source,
+			tiki: Tiki,
+			remove: bool,
+		) -> DispatchResult {
+			let target_account = T::Lookup::lookup(target)?;
+			match Self::removal_of(&tiki) {
+				Removal::WithTheHouse => {
+					T::StandingConfirmationOrigin::ensure_origin(origin)?;
+				},
+				_ => {
+					T::ImpeachmentOrigin::ensure_origin(origin)?;
+				},
+			}
+
+			let proposer = PendingRemovals::<T>::take(&target_account, tiki)
+				.ok_or(Error::<T>::RemovalNotProposed)?;
+			if remove {
+				ensure!(
+					Self::current_holder(&Tiki::Serok) == Some(proposer),
+					Error::<T>::ProposerLeftOffice
+				);
+				// Gone already, by another path, is not an error: the answer is still recorded.
+				if Self::has_tiki(&target_account, &tiki) {
+					Self::internal_revoke_role(&target_account, tiki)?;
+				}
+			}
+			Self::deposit_event(Event::RemovalDecided {
+				who: target_account,
+				tiki,
+				removed: remove,
+			});
+			Ok(())
+		}
+
 		/// Remove a Tiki from someone. Who may do it depends on how they got it.
 		///
 		/// The old version asked `AdminOrigin` for everything, and `AdminOrigin` is Root or
@@ -935,8 +1050,12 @@ pub mod pezpallet {
 		/// difference between a check and a coup.
 		///
 		/// - `Automatic` (Welati): nobody. Citizenship is removed by `identity-kyc`.
-		/// - `Appointed`: the admin origin. Cabinet posts have their own path in `welati`;
-		///   this is for the ordinary appointed offices and for correcting mistakes.
+		/// - `Appointed`: depends on the office, the way it does in a working state
+		///   (`removal_of`). An office of the President's confidence, he removes. An office
+		///   held during good behaviour -- the bench, the notary, the treasurer -- only the
+		///   court removes. A career post or an oversight post is removed for cause, which is
+		///   proposed and reviewed (`propose_removal`), never done here by one signature.
+		///   Root removes any of them: sudo while it lasts, then the referendum track.
 		/// - `Elected`: the court. The other way an elected office changes hands is the next
 		///   ballot, which does it directly rather than through this call.
 		/// - `Earned`: the court. A title someone earned is not an appointment to be
@@ -955,12 +1074,28 @@ pub mod pezpallet {
 			let assignment = RoleAssignmentTypeOf::<T>::get(&target_account, tiki)
 				.unwrap_or_else(|| Self::get_role_assignment_type(&tiki));
 
-			ensure!(!Self::is_seated_by_governance(&tiki), Error::<T>::SeatedByGovernance);
+			let removal = Self::removal_of(&tiki);
+			// The court may unseat an office it guards even where a nomination seated it --
+			// the treasurer is one. Every other governance-seated office keeps its own path.
+			let guarded_by_the_court =
+				assignment == RoleAssignmentType::Appointed && removal == Removal::ByTheCourt;
+			ensure!(
+				guarded_by_the_court || !Self::is_seated_by_governance(&tiki),
+				Error::<T>::SeatedByGovernance
+			);
 
 			match assignment {
 				RoleAssignmentType::Automatic => return Err(Error::<T>::RoleNotRevocable.into()),
-				RoleAssignmentType::Appointed => {
-					T::AdminOrigin::ensure_origin(origin)?;
+				RoleAssignmentType::Appointed => match removal {
+					Removal::AtWill => {
+						T::AdminOrigin::ensure_origin(origin)?;
+					},
+					Removal::ByTheCourt => {
+						T::ImpeachmentOrigin::ensure_origin(origin)?;
+					},
+					Removal::ForCause | Removal::WithTheHouse => {
+						ensure_root(origin).map_err(|_| Error::<T>::RemovalNeedsReview)?;
+					},
 				},
 				RoleAssignmentType::Elected | RoleAssignmentType::Earned => {
 					T::ImpeachmentOrigin::ensure_origin(origin)?;
@@ -1242,6 +1377,10 @@ pub mod pezpallet {
 			// Clear the recorded assignment-type provenance and the term for this pair.
 			RoleAssignmentTypeOf::<T>::remove(target_account, tiki);
 			TikiExpiry::<T>::remove(target_account, tiki);
+			// A removal proposed against this holding dies with it. Left behind, it would be
+			// waiting when the same person was appointed again, and a yes then would take an
+			// appointment nobody proposed removing.
+			PendingRemovals::<T>::remove(target_account, tiki);
 
 			// Update NFT metadata
 			Self::update_nft_metadata(target_account)?;
@@ -1342,6 +1481,42 @@ pub mod pezpallet {
 		/// The same two filters `get_tiki_score` applies: an office counts for nothing, and a
 		/// tiki priced at zero counts for nothing. Whatever passes both is what an appointment
 		/// can be used to enlarge, and so what needs two parties to grant.
+		/// How an appointed office is taken back -- the way a working state does it.
+		///
+		/// - `AtWill`: an office of the President's confidence. He removes it alone, as a
+		///   President removes his own ambassador or spokesman (*Myers v. United States*). The
+		///   prosecutor is here too, on the American model: prosecution is an executive power.
+		/// - `ByTheCourt`: held during good behaviour. The bench, the jurist, the notary whose
+		///   attestation the register relies on, the mediator, and the treasurer who creates
+		///   money. No executive hand reaches them; only the court removes.
+		/// - `WithTheHouse`: oversight. The President may propose removing an inspector, but
+		///   the body the inspector reports to decides -- the shape of the Inspector General
+		///   Act, which makes the President answer to the legislature first.
+		/// - `ForCause`: everything else is the career service. The President proposes with a
+		///   reason and the court reviews it before it takes effect, as a merit system does.
+		pub fn removal_of(tiki: &Tiki) -> Removal {
+			match tiki {
+				Tiki::Balyoz | Tiki::Berdevk | Tiki::Dozger => Removal::AtWill,
+				Tiki::Dadger
+				| Tiki::Hiquqnas
+				| Tiki::Noter
+				| Tiki::Navbeynkar
+				| Tiki::Xezinedar => Removal::ByTheCourt,
+				Tiki::Mufetîs | Tiki::KalîteKontrolker => Removal::WithTheHouse,
+				_ => Removal::ForCause,
+			}
+		}
+
+		/// Whether removing `who` from `tiki` goes through `propose_removal`.
+		fn removed_by_review(who: &T::AccountId, tiki: &Tiki) -> bool {
+			let appointed = RoleAssignmentTypeOf::<T>::get(who, tiki)
+				.unwrap_or_else(|| Self::get_role_assignment_type(tiki))
+				== RoleAssignmentType::Appointed;
+			appointed
+				&& !Self::is_seated_by_governance(tiki)
+				&& matches!(Self::removal_of(tiki), Removal::ForCause | Removal::WithTheHouse)
+		}
+
 		pub fn counts_toward_standing(tiki: &Tiki) -> bool {
 			!Self::is_office(tiki) && Self::get_bonus_for_tiki(tiki) > 0
 		}
@@ -1513,6 +1688,19 @@ pub trait TikiScoreProvider<AccountId> {
 	fn max_score() -> u32 {
 		MAX_TIKI_SCORE
 	}
+}
+
+/// How an appointed office is taken back; see `Pezpallet::removal_of`.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Removal {
+	/// The President removes it alone.
+	AtWill,
+	/// Only the court removes it.
+	ByTheCourt,
+	/// The President proposes; the house decides.
+	WithTheHouse,
+	/// The President proposes with a reason; the court reviews it first.
+	ForCause,
 }
 
 /// Trait used by other pallets to query Tiki ownership

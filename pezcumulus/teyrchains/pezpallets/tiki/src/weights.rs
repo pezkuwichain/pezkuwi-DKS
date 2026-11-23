@@ -58,6 +58,8 @@ pub trait WeightInfo {
 	fn grant_tiki() -> Weight;
 	fn confirm_tiki() -> Weight;
 	fn revoke_tiki() -> Weight;
+	fn propose_removal() -> Weight;
+	fn decide_removal() -> Weight;
 	fn grant_honorary_citizenship() -> Weight;
 	fn grant_earned_role() -> Weight;
 	fn grant_elected_role() -> Weight;
@@ -115,6 +117,20 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 		Weight::from_parts(49_738_000, 3812)
 			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// PROVISIONAL until the next weights run: `revoke_tiki` plus the read and write of
+	/// `Tiki::PendingRemovals` (r:1 w:1), an upper bound for both halves of a removal.
+	fn propose_removal() -> Weight {
+		Weight::from_parts(49_738_000, 6412)
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
+	/// PROVISIONAL until the next weights run: `revoke_tiki` plus the read and write of
+	/// `Tiki::PendingRemovals` (r:1 w:1), an upper bound for both halves of a removal.
+	fn decide_removal() -> Weight {
+		Weight::from_parts(49_738_000, 6412)
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	/// Storage: `Tiki::CitizenNft` (r:1 w:1)
 	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
@@ -249,6 +265,20 @@ impl WeightInfo for () {
 		Weight::from_parts(49_738_000, 3812)
 			.saturating_add(RocksDbWeight::get().reads(6_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// PROVISIONAL until the next weights run: `revoke_tiki` plus the read and write of
+	/// `Tiki::PendingRemovals` (r:1 w:1), an upper bound for both halves of a removal.
+	fn propose_removal() -> Weight {
+		Weight::from_parts(49_738_000, 6412)
+			.saturating_add(RocksDbWeight::get().reads(7_u64))
+			.saturating_add(RocksDbWeight::get().writes(4_u64))
+	}
+	/// PROVISIONAL until the next weights run: `revoke_tiki` plus the read and write of
+	/// `Tiki::PendingRemovals` (r:1 w:1), an upper bound for both halves of a removal.
+	fn decide_removal() -> Weight {
+		Weight::from_parts(49_738_000, 6412)
+			.saturating_add(RocksDbWeight::get().reads(7_u64))
+			.saturating_add(RocksDbWeight::get().writes(4_u64))
 	}
 	/// Storage: `Tiki::CitizenNft` (r:1 w:1)
 	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
