@@ -47,8 +47,8 @@ use pezkuwi_zombienet_sdk::{
 use std::str::FromStr;
 
 use super::state_rehearsal_offices::{
-	fund_seats, has_tiki, office_call_on_people, raw_account, root_call_on_people, storage_value,
-	tiki_holder,
+	fund_seats, has_tiki, office_call_on_people, parliament_decides, raw_account,
+	root_call_on_people, storage_value, tiki_holder,
 };
 
 // ---------------------------------------------------------------------------------------
@@ -360,14 +360,16 @@ async fn seat_education_minister(
 // The appointed Rewsenbîr
 // ---------------------------------------------------------------------------------------
 
-/// A Rewsenbîr is proposed by the education minister and approved by the President, and the
-/// two are never the same person.
+/// A Rewsenbîr is proposed by the education minister, approved by the President and confirmed
+/// by the house, and no one person is two of those.
 ///
 /// The title is the education system's to confer, and appointing one is the bootstrap for the
 /// years before it has graduated anybody. So the rule has two halves and both are walked here:
 /// only `WezireBelaw` may propose a name -- not any minister, and not the President -- and the
 /// President may not approve a name he proposed himself, which is the case where one person
-/// holds both offices.
+/// holds both offices. The title adds to its holder's standing, so since Y12 (Serok
+/// 2026-10-21) the President's yes sends it to the house rather than seating it, and a name he
+/// proposed himself goes to the house directly.
 ///
 /// The cap, `MaxAppointedRewsenbir`, is read and the count is checked to move by exactly one.
 /// Walking it to the cap would take a hundred appointments and prove only that a counter
@@ -375,6 +377,7 @@ async fn seat_education_minister(
 /// worth seeing, and the count moving is what shows it.
 pub(crate) async fn an_appointed_rewsenbir_takes_two_hands(
 	people: &OnlineClient<PezkuwiConfig>,
+	house: &[Keypair],
 	bench: &[Keypair],
 	cohort: &[Keypair],
 ) -> Result<(), anyhow::Error> {
@@ -451,19 +454,18 @@ pub(crate) async fn an_appointed_rewsenbir_takes_two_hands(
 			.await?
 			.map(|v| format!("{v}"))
 			.unwrap_or_default();
-	if !pending.contains("WaitingPresidentialApproval") {
+	if !pending.contains("WaitingParliamentaryApproval") {
 		return Err(anyhow!(
-			"a Rewsenbîr nomination should wait on the President, and process {self_process} \
-			 reads: {pending}. If it waits on Parliament, `ConfirmationRequired` or \
-			 `requires_parliament_approval` has moved the title -- the self-approval rule then \
-			 guards nothing"
+			"a Rewsenbîr the President names himself should wait on the house, and process \
+			 {self_process} reads: {pending}. If it waits on him, his own signature is the \
+			 second party -- the title carries standing and needs the house (Y12)"
 		));
 	}
 	expect_refusal(
 		people,
 		&dynamic::tx("Welati", "approve_appointment", vec![Value::u128(self_process)]),
 		serok,
-		"CannotApproveOwnNomination",
+		"AppointmentAlreadyProcessed",
 		"the President approving a Rewsenbîr he nominated himself",
 	)
 	.await?;
@@ -499,6 +501,26 @@ pub(crate) async fn an_appointed_rewsenbir_takes_two_hands(
 		&dynamic::tx("Welati", "approve_appointment", vec![Value::u128(process)]),
 		serok,
 		"the President could not approve the education minister's Rewsenbîr",
+	)
+	.await?;
+	if has_tiki(people, appointee, "Rewsenbîr").await? {
+		return Err(anyhow!(
+			"the President's approval seated a Rewsenbîr on its own -- the title carries \
+			 standing and must wait on the house (Y12)"
+		));
+	}
+	log::info!("the house confirming the education minister's Rewsenbîr");
+	parliament_decides(
+		people,
+		house,
+		"Welati",
+		"confirm_appointment",
+		vec![Value::u128(process)],
+		|| {
+			let people = people;
+			let who = appointee.clone();
+			async move { has_tiki(people, &who, "Rewsenbîr").await }
+		},
 	)
 	.await?;
 
