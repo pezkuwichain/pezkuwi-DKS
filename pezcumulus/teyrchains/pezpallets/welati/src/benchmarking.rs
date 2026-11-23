@@ -1284,8 +1284,9 @@ mod benchmarks {
 	fn set_confirmation_requirement() -> Result<(), BenchmarkError> {
 		let origin = T::ConfirmationOrigin::try_successful_origin()
 			.map_err(|_| BenchmarkError::Weightless)?;
-		// Away from the founding rule, so the entry is written rather than cleared.
-		let role = OfficialRole::Dadger;
+		// Away from the founding rule, so the entry is written rather than cleared. The
+		// Treasurer, because an office that adds to standing cannot be moved off the list.
+		let role = OfficialRole::Xezinedar;
 		let required = !role.requires_parliament_approval();
 
 		#[extrinsic_call]
