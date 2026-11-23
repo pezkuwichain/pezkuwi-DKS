@@ -496,8 +496,26 @@ there is only a nomination until the Parliament confirms it; a council majority,
 nobody, cannot grant one at all. Only Root grants it directly — sudo while sudo lasts, then the
 referendum track, where every citizen counts once.
 
+**Removal follows the office, the way it does in a working state.** Four kinds:
+
+- **Of the President's confidence** — the ambassador, the spokesperson, and the prosecutor, on
+  the American model where prosecution is an executive power. The President removes them alone.
+- **Held during good behaviour** — the judge, the jurist, the notary whose attestation the
+  register relies on, the mediator, and the treasurer who creates money. No executive hand
+  reaches them: only the Dîwan removes them, and the treasurer's seat cannot be emptied by
+  appointing a successor, which would be a removal by another name.
+- **Oversight** — the inspector and the quality controller. The President may propose a
+  removal, with a reason; the Parliament decides.
+- **The career service** — every other post, from tax collector to teacher. The President
+  proposes a removal with a reason anyone can read, and the Dîwan reviews it before it takes
+  effect. In most states the agency dismisses and the official appeals afterwards; reviewing
+  first comes to the same thing without anyone wrongly out of office while an appeal waits.
+
+A proposal lapses if its author leaves the presidency, and dies with the holding it was aimed
+at, so it cannot be kept for a later appointment. Root still removes any of them.
+
 **An appointee leaves when a successor is appointed, and leaves retired.** A single-holder
-office — the Prime Minister, a named ministry, the treasurer, the ambassador — moves to the new
+office — the Prime Minister, a named ministry, the ambassador — moves to the new
 appointee, and the holder it is taken from is given **Xanenişîn**, the record of retirement. It
 grants nothing: no vote, no origin and no qualification reads it, and no admin can grant or
 strike it. It is not given on dismissal, which is not a retirement, nor when an election ends a
