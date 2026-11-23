@@ -120,6 +120,8 @@ mod benchmarks {
 		let tiki = crate::Tiki::Hiquqnas;
 		ensure_citizen_nft::<T>(dest.clone())?;
 		T::TrustScoreUpdater::prepare_worst_case(&dest);
+		// The name has to be the sitting President's for the yes to count.
+		crate::TikiHolder::<T>::insert(crate::Tiki::Serok, nominator.clone());
 		crate::PendingTikis::<T>::insert(&dest, tiki, nominator);
 		let origin = T::StandingConfirmationOrigin::try_successful_origin()
 			.map_err(|_| BenchmarkError::Weightless)?;

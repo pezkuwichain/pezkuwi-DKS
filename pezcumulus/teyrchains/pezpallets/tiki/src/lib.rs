@@ -574,6 +574,8 @@ pub mod pezpallet {
 		AlreadyNominated,
 		/// Nobody is waiting on confirmation for this tiki.
 		NotNominated,
+		/// Whoever named this person no longer holds the presidency; the name lapsed with them.
+		NominatorLeftOffice,
 	}
 
 	#[pezpallet::event]
@@ -885,6 +887,7 @@ pub mod pezpallet {
 		/// Takes the appointee and the tiki the President named, and a yes or no. The body
 		/// cannot name anyone itself -- it answers the name it was sent -- and either answer
 		/// clears the nomination, so a refused name has to be sent again to be reconsidered.
+		/// A yes needs the one who named them to still be President.
 		#[pezpallet::call_index(6)]
 		#[pezpallet::weight(<T as crate::pezpallet::Config>::WeightInfo::confirm_tiki())]
 		pub fn confirm_tiki(
@@ -896,8 +899,18 @@ pub mod pezpallet {
 			T::StandingConfirmationOrigin::ensure_origin(origin)?;
 			let dest_account = T::Lookup::lookup(dest)?;
 
-			PendingTikis::<T>::take(&dest_account, tiki).ok_or(Error::<T>::NotNominated)?;
+			let nominator =
+				PendingTikis::<T>::take(&dest_account, tiki).ok_or(Error::<T>::NotNominated)?;
 			if approve {
+				// A name is the President's, and it lapses with his term. Without this a
+				// departing President could leave names behind for a later majority to seat,
+				// and the second party would be confirming someone nobody in office proposed.
+				// Signed `AdminOrigin` on the People chain is exactly the sitting Serok.
+				// Refusing leaves the entry in place; answering no still clears it.
+				ensure!(
+					Self::current_holder(&Tiki::Serok) == Some(nominator),
+					Error::<T>::NominatorLeftOffice
+				);
 				Self::internal_grant_role(&dest_account, tiki)?;
 				RoleAssignmentTypeOf::<T>::insert(
 					&dest_account,

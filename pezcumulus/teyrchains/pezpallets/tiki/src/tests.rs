@@ -1653,6 +1653,12 @@ mod standing_takes_two_parties {
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), who));
 	}
 
+	/// The mock's admin account, holding the presidency the way the People chain's does.
+	fn seat_president() {
+		citizen(MOCK_SEROK);
+		assert_ok!(TikiPallet::internal_grant_role(&MOCK_SEROK, TikiEnum::Serok));
+	}
+
 	#[test]
 	fn the_president_alone_only_names() {
 		new_test_ext().execute_with(|| {
@@ -1676,6 +1682,7 @@ mod standing_takes_two_parties {
 	#[test]
 	fn the_house_seats_the_name() {
 		new_test_ext().execute_with(|| {
+			seat_president();
 			citizen(9);
 			let before = TikiPallet::get_tiki_score(&9);
 			assert_ok!(TikiPallet::grant_tiki(
@@ -1793,6 +1800,39 @@ mod standing_takes_two_parties {
 			citizen(9);
 			assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 9, TikiEnum::Noter));
 			assert!(TikiPallet::has_tiki(&9, &TikiEnum::Noter));
+		});
+	}
+
+	#[test]
+	fn a_name_lapses_with_the_president_who_gave_it() {
+		new_test_ext().execute_with(|| {
+			seat_president();
+			citizen(9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Noter
+			));
+			// The presidency changes hands before the house answers.
+			assert_ok!(TikiPallet::internal_revoke_role(&MOCK_SEROK, TikiEnum::Serok));
+			assert_noop!(
+				TikiPallet::confirm_tiki(
+					RuntimeOrigin::signed(MOCK_HOUSE),
+					9,
+					TikiEnum::Noter,
+					true
+				),
+				Error::<Test>::NominatorLeftOffice
+			);
+			// The house can still clear it.
+			assert_ok!(TikiPallet::confirm_tiki(
+				RuntimeOrigin::signed(MOCK_HOUSE),
+				9,
+				TikiEnum::Noter,
+				false
+			));
+			assert!(crate::PendingTikis::<Test>::get(9, TikiEnum::Noter).is_none());
+			assert!(!TikiPallet::has_tiki(&9, &TikiEnum::Noter));
 		});
 	}
 
