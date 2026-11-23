@@ -324,9 +324,10 @@ a community badge, and the code refuses it.
 One earned title has a second, narrower door. *Rewsenbîr* (scholar) is earned through five
 completed courses and published points, and that path needs graduated teachers to ratify
 courses — which a new state does not have. Until it does, a Rewsenbîr may also be appointed:
-the Minister of Education nominates, the President approves, the President may not approve a
-name he nominated himself, and no more than a hundred are ever appointed this way over the
-life of the chain. The appointed title carries the same standing as the earned one.
+the Minister of Education nominates, the President approves, the Parliament confirms, and no
+more than a hundred are ever appointed this way over the life of the chain. A name the
+President nominates himself goes straight to the Parliament, so his own signature is never
+the second one. The appointed title carries the same standing as the earned one.
 
 ### 5.1 Serok — the President
 
@@ -480,10 +481,20 @@ collector, ambassador and teacher. Any minister or the President may nominate; n
 nominate themselves; every nomination needs a trust score of at least 75 and lapses in seven
 days.
 
-**Five of the twenty-four cannot be seated by the President alone** — judge, treasurer,
-cyber-security specialist, inspector, and ambassador require parliamentary confirmation. And
-the list of which five is itself amendable **only by the Parliament**. The executive cannot
+**None of the twenty-four can be seated by the President alone.** Twenty-two of them add to
+their holder's trust score — every one but the treasurer and the ambassador, which are offices
+and count for nothing — and standing divides every reward, while a notary's attestation is
+what the register relies on. One person filling an ally's share is what the rule exists to
+stop, so for those twenty-two it is fixed: the President says yes, either to a minister's name
+or by nominating himself, and the Parliament confirms. The Parliament cannot waive it, office
+by office or otherwise. The treasurer and the ambassador need the Parliament's confirmation at
+founding, and for them the list is amendable **only by the Parliament**; the executive cannot
 shorten the list of offices it does not control.
+
+The register's own grant follows the same line. A professional tiki the President grants
+there is only a nomination until the Parliament confirms it; a council majority, which names
+nobody, cannot grant one at all. Only Root grants it directly — sudo while sudo lasts, then the
+referendum track, where every citizen counts once.
 
 **An appointee leaves when a successor is appointed, and leaves retired.** A single-holder
 office — the Prime Minister, a named ministry, the treasurer, the ambassador — moves to the new
