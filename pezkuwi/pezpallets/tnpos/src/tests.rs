@@ -270,8 +270,14 @@ mod pool_bounds {
 	#[test]
 	fn the_cheap_strata_cannot_crowd_out_the_house() {
 		new_test_ext().execute_with(|| {
-			let next = fill(StratumId::WelatiLottery, 1_000);
-			fill(StratumId::Perwerde, next);
+			// The attack itself: try to take every place in the pool through the open lottery.
+			for i in 0..MaxPoolSize::get() as AccountId {
+				let who = 10_000 + i;
+				ensure_has_keys(who);
+				set_trust(who, 1_000);
+				let _ = Tnpos::join(RuntimeOrigin::signed(who), StratumId::WelatiLottery);
+			}
+			assert_eq!(StratumSize::<Test>::get(StratumId::WelatiLottery), Tnpos::stratum_cap());
 			let mp: AccountId = 77;
 			seat_in_meclis(mp);
 			ensure_has_keys(mp);
