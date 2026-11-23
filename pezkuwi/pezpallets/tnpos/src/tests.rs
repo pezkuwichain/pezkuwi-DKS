@@ -221,18 +221,225 @@ fn a_stratum_whose_live_candidates_fall_below_the_floor_stands_down() {
 #[test]
 fn the_pool_is_bounded() {
 	new_test_ext().execute_with(|| {
-		for i in 0..MaxPoolSize::get() {
-			let who = 1_000 + i as u64;
+		// Every stratum filled to its share leaves the pool at or under its bound.
+		let share = Tnpos::stratum_cap();
+		let mut who: AccountId = 1_000;
+		for _ in 0..share {
 			ensure_has_keys(who);
 			set_perwerde(who, 500);
 			assert_ok!(Tnpos::join(RuntimeOrigin::signed(who), StratumId::Perwerde));
+			who += 1;
 		}
+		assert!(share * Strata::<Test>::get().len() as u32 <= MaxPoolSize::get());
+		ensure_has_keys(9_999);
 		set_perwerde(9_999, 500);
 		assert_noop!(
 			Tnpos::join(RuntimeOrigin::signed(9_999), StratumId::Perwerde),
-			Error::<Test>::PoolFull
+			Error::<Test>::StratumFull
 		);
 	});
+}
+
+/// The pool's bound is shared, so without a share per stratum the cheapest strata could take
+/// every place and the house and the court -- 201 and 11 people -- would find no room at all.
+mod pool_bounds {
+	use super::*;
+
+	fn fill(stratum: StratumId, from: AccountId) -> AccountId {
+		let mut who = from;
+		for _ in 0..Tnpos::stratum_cap() {
+			ensure_has_keys(who);
+			set_trust(who, 1_000);
+			set_perwerde(who, 1_000);
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(who), stratum));
+			who += 1;
+		}
+		who
+	}
+
+	#[test]
+	fn the_share_is_the_bound_divided_by_the_strata() {
+		new_test_ext().execute_with(|| {
+			assert_eq!(Tnpos::stratum_cap(), MaxPoolSize::get() / 9);
+		});
+		new_test_ext_with_strata(5).execute_with(|| {
+			assert_eq!(Tnpos::stratum_cap(), MaxPoolSize::get() / 5);
+		});
+	}
+
+	#[test]
+	fn the_cheap_strata_cannot_crowd_out_the_house() {
+		new_test_ext().execute_with(|| {
+			// The attack itself: try to take every place in the pool through the open lottery.
+			for i in 0..MaxPoolSize::get() as AccountId {
+				let who = 10_000 + i;
+				ensure_has_keys(who);
+				set_trust(who, 1_000);
+				let _ = Tnpos::join(RuntimeOrigin::signed(who), StratumId::WelatiLottery);
+			}
+			assert_eq!(StratumSize::<Test>::get(StratumId::WelatiLottery), Tnpos::stratum_cap());
+			let mp: AccountId = 77;
+			seat_in_meclis(mp);
+			ensure_has_keys(mp);
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(mp), StratumId::Meclis));
+		});
+	}
+
+	#[test]
+	fn a_member_cannot_switch_into_a_full_stratum() {
+		new_test_ext().execute_with(|| {
+			fill(StratumId::WelatiLottery, 1_000);
+			let who: AccountId = 77;
+			ensure_has_keys(who);
+			set_trust(who, 1_000);
+			set_perwerde(who, 1_000);
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(who), StratumId::Perwerde));
+			assert_noop!(
+				Tnpos::switch_stratum(RuntimeOrigin::signed(who), StratumId::WelatiLottery),
+				Error::<Test>::StratumFull
+			);
+		});
+	}
+
+	#[test]
+	fn a_stratum_nobody_is_drawn_from_takes_nobody() {
+		// The first five strata: Stake, Meclis, Divan, Perwerde, Tiki.
+		new_test_ext_with_strata(5).execute_with(|| {
+			let who: AccountId = 77;
+			ensure_has_keys(who);
+			set_trust(who, 1_000);
+			assert_noop!(
+				Tnpos::join(RuntimeOrigin::signed(who), StratumId::WelatiLottery),
+				Error::<Test>::StratumNotConfigured
+			);
+		});
+	}
+}
+
+/// A member who no longer stands keeps a place the draw skips; anyone may give it back, but only
+/// on an answer the chain is sure of.
+mod eviction {
+	use super::*;
+	use pezframe_support::dispatch::Pays;
+
+	const MP: AccountId = 77;
+	const BY: AccountId = 88;
+
+	fn seated_mp() {
+		seat_in_meclis(MP);
+		ensure_has_keys(MP);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(MP), StratumId::Meclis));
+	}
+
+	#[test]
+	fn a_member_whose_term_ended_can_be_evicted_by_anyone_for_free() {
+		new_test_ext().execute_with(|| {
+			seated_mp();
+			MECLIS.with(|m| m.borrow_mut().retain(|a| *a != MP));
+			let size = StratumSize::<Test>::get(StratumId::Meclis);
+			let post = Tnpos::evict(RuntimeOrigin::signed(BY), MP).expect("evictable");
+			assert_eq!(post.pays_fee, Pays::No);
+			assert!(!PoolMembers::<Test>::contains_key(MP));
+			assert_eq!(StratumSize::<Test>::get(StratumId::Meclis), size - 1);
+			System::assert_has_event(
+				Event::Evicted { who: MP, stratum: StratumId::Meclis, by: BY }.into(),
+			);
+		});
+	}
+
+	#[test]
+	fn a_member_who_still_stands_cannot_be_evicted() {
+		new_test_ext().execute_with(|| {
+			seated_mp();
+			assert_noop!(Tnpos::evict(RuntimeOrigin::signed(BY), MP), Error::<Test>::StillStanding);
+		});
+	}
+
+	#[test]
+	fn a_silent_oracle_is_not_a_reason_to_evict() {
+		new_test_ext().execute_with(|| {
+			let who: AccountId = 55;
+			ensure_has_keys(who);
+			set_perwerde(who, 500);
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(who), StratumId::Perwerde));
+			// The score goes stale: the chain can no longer see the standing, which is an
+			// outage and not a judgement.
+			System::set_block_number(System::block_number() + MaxScoreAge::get() + 1);
+			assert!(matches!(
+				Tnpos::stands_for(&who, StratumId::Perwerde),
+				Err(Error::<Test>::ScoreUnavailable)
+			));
+			assert_noop!(
+				Tnpos::evict(RuntimeOrigin::signed(BY), who),
+				Error::<Test>::StillStanding
+			);
+		});
+	}
+
+	#[test]
+	fn a_member_without_keys_can_be_evicted() {
+		new_test_ext().execute_with(|| {
+			seated_mp();
+			remove_keys(MP);
+			assert_ok!(Tnpos::evict(RuntimeOrigin::signed(BY), MP));
+			assert!(!PoolMembers::<Test>::contains_key(MP));
+		});
+	}
+
+	#[test]
+	fn a_member_of_a_stratum_no_longer_drawn_from_can_be_evicted() {
+		new_test_ext().execute_with(|| {
+			let who: AccountId = 55;
+			ensure_has_keys(who);
+			set_trust(who, 1_000);
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(who), StratumId::WelatiLottery));
+			let without: Vec<_> =
+				nine_strata().into_iter().filter(|c| c.id != StratumId::WelatiLottery).collect();
+			assert_ok!(Tnpos::set_strata(RuntimeOrigin::root(), without));
+			assert_ok!(Tnpos::evict(RuntimeOrigin::signed(BY), who));
+		});
+	}
+
+	#[test]
+	fn the_tenure_clock_is_not_a_reason_to_evict() {
+		new_test_ext().execute_with(|| {
+			let who: AccountId = 55;
+			// Joined in the chain's first period, on trust, just before it ends.
+			System::set_block_number(TenurePeriod::get() - 1);
+			ensure_has_keys(who);
+			set_trust(who, 1_000);
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(who), StratumId::Tenure));
+			// The period is over and this member has not served one yet: skipped by the draw,
+			// but still accruing the very spell eviction would reset.
+			System::set_block_number(TenurePeriod::get() + 1);
+			assert!(matches!(
+				Tnpos::stands_for(&who, StratumId::Tenure),
+				Err(Error::<Test>::NotEligible)
+			));
+			assert_noop!(
+				Tnpos::evict(RuntimeOrigin::signed(BY), who),
+				Error::<Test>::StillStanding
+			);
+		});
+	}
+
+	#[test]
+	fn an_evicted_member_may_join_again_once_they_stand() {
+		new_test_ext().execute_with(|| {
+			seated_mp();
+			MECLIS.with(|m| m.borrow_mut().retain(|a| *a != MP));
+			assert_ok!(Tnpos::evict(RuntimeOrigin::signed(BY), MP));
+			seat_in_meclis(MP);
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(MP), StratumId::Meclis));
+		});
+	}
+
+	#[test]
+	fn evicting_someone_outside_the_pool_fails() {
+		new_test_ext().execute_with(|| {
+			assert_noop!(Tnpos::evict(RuntimeOrigin::signed(BY), MP), Error::<Test>::NotInPool);
+		});
+	}
 }
 
 /// The open seat asks for something, and the something is "more than the cheapest possible act".

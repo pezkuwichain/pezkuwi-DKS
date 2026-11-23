@@ -359,11 +359,12 @@ where
 /// The proposal hash is computed rather than read back from the `Proposed` event: the collective
 /// hashes the encoded `RuntimeCall`, which is exactly what `encode_call_data` produces, and a
 /// hash derived from the same bytes the chain saw cannot disagree with it.
-async fn parliament_decides<F, Fut>(
+pub(crate) async fn parliament_decides<F, Fut>(
 	people: &OnlineClient<PezkuwiConfig>,
 	voters: &[Keypair],
 	pallet: &str,
 	call: &str,
+	fields: Vec<Value>,
 	settled: F,
 ) -> Result<(), anyhow::Error>
 where
@@ -373,7 +374,7 @@ where
 	if settled().await? {
 		return Ok(());
 	}
-	let encoded = encode_people_call(people, pallet, call, Vec::new())?;
+	let encoded = encode_people_call(people, pallet, call, fields.clone())?;
 	let hash = people.hasher().hash(&encoded);
 	let length_bound = encoded.len() as u64 + 8;
 
@@ -404,7 +405,7 @@ where
 			voters.len()
 		));
 	}
-	let proposal = Value::unnamed_variant(pallet, vec![Value::unnamed_variant(call, vec![])]);
+	let proposal = Value::unnamed_variant(pallet, vec![Value::unnamed_variant(call, fields)]);
 
 	let propose = dynamic::tx(
 		"Parliament",
@@ -848,32 +849,83 @@ pub(crate) async fn the_founding_offices_are_filled(
 	// -- so a court of five is a working court, not a broken one.
 	//
 	// A qualifying professional tiki first. The court check asks for one of fourteen, and on
-	// the day a chain starts nobody holds any, so the grant is part of the founding act. It
-	// is Root's here only because the President cannot yet be relied on to have granted
-	// himself nothing: `grant_tiki` takes `RootOrSerokOrCouncil`, and using Root keeps the
-	// qualification and the appointment in different hands.
+	// the day a chain starts nobody holds any, so the grant is part of the founding act. The
+	// President names and the house confirms, which keeps the qualification and the
+	// appointment in different hands.
 	//
 	// Then the appointment itself is *signed by the President*. That is the whole reason the
 	// presidency is granted above: Root could do this, and doing it that way would rehearse a
 	// path the state does not use once it has a head.
 	let court: Vec<&Keypair> = house.iter().skip(1).take(3).collect();
+	// A professional tiki counts towards standing, so the President's signature only names
+	// (Y12, Serok 2026-10-21): it lands in `Tiki::PendingTikis` and the house confirms. All
+	// three names go to the house in one motion, a `batch_all` of `confirm_tiki`, because a
+	// motion is a hundred and one signatures.
 	for (i, member) in court.iter().enumerate() {
-		let want = i + 1;
-		log::info!("qualifying and appointing court member {want}");
-		office_call_on_people(
-			people,
-			&serok,
+		if has_tiki(people, member, "Hiquqnas").await? {
+			continue;
+		}
+		log::info!("the President naming court member {} for a qualification", i + 1);
+		let name = dynamic::tx(
 			"Tiki",
 			"grant_tiki",
 			vec![multi_address(member), Value::unnamed_variant("Hiquqnas", vec![])],
-			|| {
-				let people = people;
-				let who = (*member).clone();
-				async move { has_tiki(people, &who, "Hiquqnas").await }
-			},
+		);
+		people
+			.tx()
+			.sign_and_submit_then_watch_default(&name, &serok)
+			.await?
+			.wait_for_finalized_success()
+			.await
+			.map_err(|e| anyhow!("the President could not name court member {}: {e}", i + 1))?;
+	}
+	let confirmations: Vec<Value> = court
+		.iter()
+		.map(|member| {
+			Value::unnamed_variant(
+				"Tiki",
+				vec![Value::unnamed_variant(
+					"confirm_tiki",
+					vec![
+						multi_address(member),
+						Value::unnamed_variant("Hiquqnas", vec![]),
+						Value::bool(true),
+					],
+				)],
+			)
+		})
+		.collect();
+	log::info!("Parliament confirming the court's qualifications");
+	parliament_decides(
+		people,
+		house,
+		"Utility",
+		"batch_all",
+		vec![Value::unnamed_composite(confirmations)],
+		|| {
+			let people = people;
+			let court: Vec<Keypair> = court.iter().map(|k| (*k).clone()).collect();
+			async move {
+				for member in &court {
+					if !has_tiki(people, member, "Hiquqnas").await? {
+						return Ok(false);
+					}
+				}
+				Ok(true)
+			}
+		},
+	)
+	.await
+	.map_err(|e| {
+		anyhow!(
+			"the house did not seat the court's qualifications: {e}. `NotNominated` inside the \
+			 batch means the President's names never landed in `Tiki::PendingTikis`"
 		)
-		.await?;
+	})?;
 
+	for (i, member) in court.iter().enumerate() {
+		let want = i + 1;
+		log::info!("appointing court member {want}");
 		let appoint = dynamic::tx(
 			"Welati",
 			"appoint_diwan_member",
@@ -937,7 +989,7 @@ pub(crate) async fn the_founding_offices_are_filled(
 	);
 
 	log::info!("Parliament confirming");
-	parliament_decides(people, house, "Welati", "confirm_prime_minister", || {
+	parliament_decides(people, house, "Welati", "confirm_prime_minister", Vec::new(), || {
 		let people = people;
 		async move { Ok(tiki_holder(people, "SerokWeziran").await?.is_some()) }
 	})

@@ -383,8 +383,17 @@ fn seat_the_two_bodies() {
 /// Which body it is belongs to the office rather than to the caller: this asks the same
 /// `requires_parliament_approval` the pallet branches on, so a test cannot drift from the
 /// pallet by hard-coding the wrong route.
+///
+/// An office that carries standing needs both parties: a name the President did not put
+/// forward goes to him first, and the house seats it.
 fn install(process_id: u32, role: OfficialRole) -> DispatchResult {
-	if role.requires_parliament_approval() {
+	if Welati::confirmation_is_required(&role) {
+		let waiting_on_president = crate::AppointmentProcesses::<Test>::get(process_id)
+			.map(|p| p.status == AppointmentStatus::WaitingPresidentialApproval)
+			.unwrap_or(false);
+		if waiting_on_president {
+			Welati::approve_appointment(RuntimeOrigin::signed(SEROK), process_id)?;
+		}
 		Welati::confirm_appointment(RuntimeOrigin::signed(MP), process_id)
 	} else {
 		Welati::approve_appointment(RuntimeOrigin::signed(SEROK), process_id)
@@ -415,18 +424,30 @@ fn approve_appointment_works() {
 	ExtBuilder::default().build().execute_with(|| {
 		seat_the_two_bodies();
 
-		// A Noter is a clerk of the executive rather than a check on it, so the office's own
-		// rule puts the whole appointment in the President's signature.
+		// The President's own track is what is left once the house lets an office go, and only
+		// an office that adds nothing to standing can be let go (Y12).
+		presidents_track_for_the_treasurer();
 		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
 		assert_ok!(Welati::nominate_official(
 			RuntimeOrigin::signed(SEROK),
 			2,
-			OfficialRole::Noter,
+			OfficialRole::Xezinedar,
 			justification,
 		));
 
 		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0,));
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::Xezinedar), Some(2));
 	});
+}
+
+/// Take the Treasurer off the house's list -- the one kind of office the legislature may still
+/// leave to the President, because it adds nothing to its holder's standing.
+fn presidents_track_for_the_treasurer() {
+	assert_ok!(Welati::set_confirmation_requirement(
+		RuntimeOrigin::signed(MP),
+		OfficialRole::Xezinedar,
+		false
+	));
 }
 
 /// Seat an education minister the way the register records any portfolio.
@@ -474,12 +495,14 @@ fn only_the_education_minister_nominates_a_rewsenbir() {
 
 		assert_ok!(nominate_rewsenbir(education, nominee));
 		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0));
+		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
 		assert!(pezpallet_tiki::Pezpallet::<Test>::has_tiki(&nominee, &Tiki::Rewsenbîr));
 		assert_eq!(crate::AppointedRewsenbirCount::<Test>::get(), 1);
 	});
 }
 
-/// A President who also held the education portfolio would be both parties to the title.
+/// A President who also held the education portfolio would be both parties to the title. The
+/// title carries standing, so his name goes to the house and his own signature seats nobody.
 #[test]
 fn the_president_cannot_approve_a_rewsenbir_he_nominated() {
 	ExtBuilder::default().build().execute_with(|| {
@@ -491,9 +514,11 @@ fn the_president_cannot_approve_a_rewsenbir_he_nominated() {
 		assert_ok!(nominate_rewsenbir(SEROK, nominee));
 		assert_noop!(
 			Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0),
-			Error::<Test>::CannotApproveOwnNomination
+			Error::<Test>::AppointmentAlreadyProcessed
 		);
 		assert!(!pezpallet_tiki::Pezpallet::<Test>::has_tiki(&nominee, &Tiki::Rewsenbîr));
+		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+		assert!(pezpallet_tiki::Pezpallet::<Test>::has_tiki(&nominee, &Tiki::Rewsenbîr));
 	});
 }
 
@@ -517,10 +542,14 @@ fn appointed_rewsenbir_stop_at_the_cap() {
 		for nominee in [31u64, 33, 34] {
 			assert_ok!(nominate_rewsenbir(education, nominee));
 		}
-		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0));
-		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 1));
+		// The President sends all three on; the cap binds where the title is granted.
+		for id in 0..3 {
+			assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), id));
+		}
+		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 1));
 		assert_noop!(
-			Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 2),
+			Welati::confirm_appointment(RuntimeOrigin::signed(MP), 2),
 			Error::<Test>::AppointedRewsenbirLimitReached
 		);
 		assert!(!pezpallet_tiki::Pezpallet::<Test>::has_tiki(&34, &Tiki::Rewsenbîr));
@@ -531,17 +560,17 @@ fn appointed_rewsenbir_stop_at_the_cap() {
 	});
 }
 
-/// If the legislature puts the title under its confirmation, the cap follows it there.
+/// The title carries standing, so the house confirms it, and the cap follows it there.
 #[test]
 fn the_cap_also_counts_a_rewsenbir_the_house_confirms() {
 	ExtBuilder::default().build().execute_with(|| {
 		seat_the_two_bodies();
 		let education = 32u64;
 		seat_education_minister(education);
-		crate::ConfirmationRequired::<Test>::insert(OfficialRole::Rewsenbîr, true);
 		make_citizen(31);
 
 		assert_ok!(nominate_rewsenbir(education, 31));
+		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0));
 		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
 		assert!(pezpallet_tiki::Pezpallet::<Test>::has_tiki(&31, &Tiki::Rewsenbîr));
 		assert_eq!(crate::AppointedRewsenbirCount::<Test>::get(), 1);
@@ -621,10 +650,11 @@ fn the_record_says_which_body_agreed_to_seat_them() {
 
 		// The President's own track names the person, because there the decision is one
 		// person's.
+		presidents_track_for_the_treasurer();
 		assert_ok!(Welati::nominate_official(
 			RuntimeOrigin::signed(SEROK),
 			2,
-			OfficialRole::Noter,
+			OfficialRole::Xezinedar,
 			reason(),
 		));
 		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0));
@@ -653,48 +683,49 @@ fn the_legislature_draws_the_line_and_the_president_cannot() {
 		seat_the_two_bodies();
 		let reason = || b"Qualified candidate".to_vec().try_into().unwrap();
 
-		// A Noter needs nobody's consent at founding.
-		assert!(!Welati::confirmation_is_required(&OfficialRole::Noter));
+		// The Treasurer needs the house at founding. It adds nothing to standing, so it is
+		// one of the offices the legislature may move (an office that does is fixed: Y12).
+		assert!(Welati::confirmation_is_required(&OfficialRole::Xezinedar));
 
 		// The executive cannot decide which of his own appointments need consent.
 		assert_noop!(
 			Welati::set_confirmation_requirement(
 				RuntimeOrigin::signed(SEROK),
-				OfficialRole::Noter,
-				true
+				OfficialRole::Xezinedar,
+				false
 			),
 			BadOrigin
 		);
 
-		// The House can, and the next nomination lands on the parliamentary track.
+		// The House can, and the next nomination lands on the President's track.
 		assert_ok!(Welati::set_confirmation_requirement(
 			RuntimeOrigin::signed(MP),
-			OfficialRole::Noter,
-			true
+			OfficialRole::Xezinedar,
+			false
 		));
-		assert!(Welati::confirmation_is_required(&OfficialRole::Noter));
+		assert!(!Welati::confirmation_is_required(&OfficialRole::Xezinedar));
 
 		assert_ok!(Welati::nominate_official(
 			RuntimeOrigin::signed(SEROK),
 			2,
-			OfficialRole::Noter,
+			OfficialRole::Xezinedar,
 			reason(),
 		));
 		assert_noop!(
-			Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0),
+			Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0),
 			Error::<Test>::AppointmentAlreadyProcessed
 		);
-		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0));
 
 		// Putting it back stores nothing: the map holds departures from the constitution, so
 		// an office restored to its founding rule leaves no entry behind.
 		assert_ok!(Welati::set_confirmation_requirement(
 			RuntimeOrigin::signed(MP),
-			OfficialRole::Noter,
-			false
+			OfficialRole::Xezinedar,
+			true
 		));
-		assert_eq!(crate::ConfirmationRequired::<Test>::get(OfficialRole::Noter), None);
-		assert!(!Welati::confirmation_is_required(&OfficialRole::Noter));
+		assert_eq!(crate::ConfirmationRequired::<Test>::get(OfficialRole::Xezinedar), None);
+		assert!(Welati::confirmation_is_required(&OfficialRole::Xezinedar));
 	});
 }
 
@@ -704,11 +735,11 @@ fn moving_the_line_does_not_move_a_nomination_already_in_flight() {
 		seat_the_two_bodies();
 		let reason = || b"Qualified candidate".to_vec().try_into().unwrap();
 
-		// A judge is nominated while judges need Parliament.
+		// A Treasurer is nominated while Treasurers need Parliament.
 		assert_ok!(Welati::nominate_official(
 			RuntimeOrigin::signed(SEROK),
 			2,
-			OfficialRole::Dadger,
+			OfficialRole::Xezinedar,
 			reason(),
 		));
 
@@ -717,7 +748,7 @@ fn moving_the_line_does_not_move_a_nomination_already_in_flight() {
 		// could be erased one nomination at a time, after the fact.
 		assert_ok!(Welati::set_confirmation_requirement(
 			RuntimeOrigin::signed(MP),
-			OfficialRole::Dadger,
+			OfficialRole::Xezinedar,
 			false
 		));
 		assert_noop!(
@@ -1513,14 +1544,28 @@ fn a_bench_takes_more_than_one_judge_and_a_single_seat_takes_one() {
 		assert!(pezpallet_tiki::UserTikis::<Test>::get(2).contains(&Tiki::Dadger));
 		assert!(pezpallet_tiki::UserTikis::<Test>::get(3).contains(&Tiki::Dadger));
 
-		// The Treasury has one seat, and `tiki` is where that is written down. Appointing a
-		// successor moves it, and the Treasurer it is taken from retires.
-		assert_ok!(appoint(4, OfficialRole::Xezinedar));
-		assert_ok!(appoint(5, OfficialRole::Xezinedar));
-		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::Xezinedar), Some(5));
+		// The embassy has one seat, and `tiki` is where that is written down. Appointing a
+		// successor moves it, and the ambassador it is taken from retires.
+		assert_ok!(appoint(4, OfficialRole::Balyoz));
+		assert_ok!(appoint(5, OfficialRole::Balyoz));
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::Balyoz), Some(5));
 		let held_by_4 = pezpallet_tiki::UserTikis::<Test>::get(4);
-		assert!(!held_by_4.contains(&Tiki::Xezinedar));
+		assert!(!held_by_4.contains(&Tiki::Balyoz));
 		assert!(held_by_4.contains(&Tiki::Xanenişîn));
+
+		// The treasurer is held during good behaviour: a successor would be a removal by
+		// another name, so only the court empties the seat.
+		assert_ok!(appoint(6, OfficialRole::Xezinedar));
+		assert_noop!(
+			Welati::nominate_official(
+				RuntimeOrigin::signed(SEROK),
+				7,
+				OfficialRole::Xezinedar,
+				reason()
+			),
+			Error::<Test>::OfficeHeldDuringGoodBehaviour
+		);
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::Xezinedar), Some(6));
 		// A judge added beside another replaces nobody, so nobody retires.
 		assert!(!pezpallet_tiki::UserTikis::<Test>::get(2).contains(&Tiki::Xanenişîn));
 	});
@@ -1572,13 +1617,14 @@ fn approve_appointment_fails_not_authorized() {
 fn approve_appointment_fails_already_processed() {
 	ExtBuilder::default().build().execute_with(|| {
 		seat_the_two_bodies();
+		presidents_track_for_the_treasurer();
 
 		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
 
 		assert_ok!(Welati::nominate_official(
 			RuntimeOrigin::signed(SEROK),
 			2,
-			OfficialRole::Noter,
+			OfficialRole::Xezinedar,
 			justification,
 		));
 
@@ -7138,6 +7184,121 @@ mod founding_bodies_at_genesis {
 				!pezpallet_tiki::UserTikis::<Test>::get(20).contains(&Tiki::Xanenişîn),
 				"a term that ends at an election is not a retirement"
 			);
+		});
+	}
+}
+
+// === Y12: an office that carries standing takes the President and the house ===
+//
+// Standing is the divisor of every reward, and a Noter's attestation is what the register
+// relies on. Decided (Serok, 2026-10-21): such an appointment is the President's yes and
+// the house's. Before this a Noter was the President's signature alone.
+mod standing_takes_the_house {
+	use super::*;
+
+	fn reason() -> BoundedVec<u8, pezframe_support::traits::ConstU32<1000>> {
+		b"Qualified candidate".to_vec().try_into().unwrap()
+	}
+
+	fn holds(who: u64, tiki: Tiki) -> bool {
+		pezpallet_tiki::UserTikis::<Test>::get(who).contains(&tiki)
+	}
+
+	#[test]
+	fn the_presidents_own_name_goes_straight_to_the_house() {
+		ExtBuilder::default().build().execute_with(|| {
+			seat_the_two_bodies();
+			make_citizen(2);
+			assert_ok!(Welati::nominate_official(
+				RuntimeOrigin::signed(SEROK),
+				2,
+				OfficialRole::Noter,
+				reason()
+			));
+			assert_eq!(
+				crate::AppointmentProcesses::<Test>::get(0).unwrap().status,
+				AppointmentStatus::WaitingParliamentaryApproval
+			);
+			// His signature again seats nobody.
+			assert_noop!(
+				Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0),
+				Error::<Test>::AppointmentAlreadyProcessed
+			);
+			assert!(!holds(2, Tiki::Noter));
+
+			assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+			assert!(holds(2, Tiki::Noter));
+		});
+	}
+
+	#[test]
+	fn a_ministers_name_goes_to_the_president_and_then_the_house() {
+		ExtBuilder::default().build().execute_with(|| {
+			seat_the_two_bodies();
+			let minister = 30u64;
+			make_citizen(minister);
+			assert_ok!(pezpallet_tiki::Pezpallet::<Test>::internal_grant_role(
+				&minister,
+				Tiki::WezireDad
+			));
+			make_citizen(2);
+			assert_ok!(Welati::nominate_official(
+				RuntimeOrigin::signed(minister),
+				2,
+				OfficialRole::Noter,
+				reason()
+			));
+			assert_eq!(
+				crate::AppointmentProcesses::<Test>::get(0).unwrap().status,
+				AppointmentStatus::WaitingPresidentialApproval
+			);
+			// The house cannot skip the President.
+			assert_noop!(
+				Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0),
+				Error::<Test>::AppointmentAlreadyProcessed
+			);
+
+			assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0));
+			assert!(!holds(2, Tiki::Noter));
+			assert_eq!(
+				crate::AppointmentProcesses::<Test>::get(0).unwrap().status,
+				AppointmentStatus::WaitingParliamentaryApproval
+			);
+			System::assert_last_event(
+				WelatiEvent::AppointmentSentToParliament {
+					process_id: 0,
+					approver: SEROK,
+					nominee: 2,
+					role: OfficialRole::Noter,
+				}
+				.into(),
+			);
+
+			assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+			assert!(holds(2, Tiki::Noter));
+		});
+	}
+
+	#[test]
+	fn the_house_cannot_waive_itself_for_an_office_that_carries_standing() {
+		ExtBuilder::default().build().execute_with(|| {
+			seat_the_two_bodies();
+			assert_noop!(
+				Welati::set_confirmation_requirement(
+					RuntimeOrigin::signed(MP),
+					OfficialRole::Noter,
+					false
+				),
+				Error::<Test>::ConfirmationCannotBeWaived
+			);
+			assert!(Welati::confirmation_is_required(&OfficialRole::Noter));
+			// An office that adds nothing to standing is still the legislature's to move.
+			assert_ok!(Welati::set_confirmation_requirement(
+				RuntimeOrigin::signed(MP),
+				OfficialRole::Xezinedar,
+				false
+			));
+			assert!(!Welati::confirmation_is_required(&OfficialRole::Xezinedar));
 		});
 	}
 }

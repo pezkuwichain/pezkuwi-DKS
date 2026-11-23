@@ -11,7 +11,7 @@ use crate::Pezpallet as Tiki;
 use pezframe_benchmarking::v2::*;
 use pezframe_system::RawOrigin;
 // Import the required traits
-use pezframe_support::traits::{Currency, Get};
+use pezframe_support::traits::{Currency, EnsureOrigin, Get};
 use pezpallet_balances::Pezpallet as Balances;
 use pezsp_runtime::traits::StaticLookup;
 extern crate alloc;
@@ -110,6 +110,69 @@ mod benchmarks {
 
 		// For non-unique roles, check user has the role
 		assert!(Tiki::<T>::user_tikis(&dest).contains(&tiki));
+		Ok(())
+	}
+
+	#[benchmark]
+	fn confirm_tiki() -> Result<(), BenchmarkError> {
+		let dest: T::AccountId = whitelisted_caller();
+		let nominator: T::AccountId = account("nominator", 0, 0);
+		let tiki = crate::Tiki::Hiquqnas;
+		ensure_citizen_nft::<T>(dest.clone())?;
+		T::TrustScoreUpdater::prepare_worst_case(&dest);
+		// The name has to be the sitting President's for the yes to count.
+		crate::TikiHolder::<T>::insert(crate::Tiki::Serok, nominator.clone());
+		crate::PendingTikis::<T>::insert(&dest, tiki, nominator);
+		let origin = T::StandingConfirmationOrigin::try_successful_origin()
+			.map_err(|_| BenchmarkError::Weightless)?;
+
+		#[extrinsic_call]
+		_(origin as T::RuntimeOrigin, T::Lookup::unlookup(dest.clone()), tiki, true);
+
+		assert!(Tiki::<T>::user_tikis(&dest).contains(&tiki));
+		assert!(crate::PendingTikis::<T>::get(&dest, tiki).is_none());
+		Ok(())
+	}
+
+	#[benchmark]
+	fn propose_removal() -> Result<(), BenchmarkError> {
+		let target: T::AccountId = whitelisted_caller();
+		let tiki = crate::Tiki::Bacgir;
+		ensure_citizen_nft::<T>(target.clone())?;
+		T::TrustScoreUpdater::prepare_worst_case(&target);
+		Tiki::<T>::internal_grant_role(&target, tiki)?;
+		// A removal is proposed by a person, the sitting President.
+		let president: T::AccountId = account("president", 0, 0);
+		crate::TikiHolder::<T>::insert(crate::Tiki::Serok, president.clone());
+		let origin: T::RuntimeOrigin = RawOrigin::Signed(president).into();
+		T::AdminOrigin::try_origin(origin.clone()).map_err(|_| BenchmarkError::Weightless)?;
+		let reason: pezframe_support::BoundedVec<u8, pezframe_support::traits::ConstU32<256>> =
+			alloc::vec![0u8; 256].try_into().unwrap();
+
+		#[extrinsic_call]
+		_(origin as T::RuntimeOrigin, T::Lookup::unlookup(target.clone()), tiki, reason);
+
+		assert!(crate::PendingRemovals::<T>::get(&target, tiki).is_some());
+		Ok(())
+	}
+
+	#[benchmark]
+	fn decide_removal() -> Result<(), BenchmarkError> {
+		let target: T::AccountId = whitelisted_caller();
+		let proposer: T::AccountId = account("proposer", 0, 0);
+		let tiki = crate::Tiki::Bacgir;
+		ensure_citizen_nft::<T>(target.clone())?;
+		T::TrustScoreUpdater::prepare_worst_case(&target);
+		Tiki::<T>::internal_grant_role(&target, tiki)?;
+		crate::TikiHolder::<T>::insert(crate::Tiki::Serok, proposer.clone());
+		crate::PendingRemovals::<T>::insert(&target, tiki, proposer);
+		let origin = T::ImpeachmentOrigin::try_successful_origin()
+			.map_err(|_| BenchmarkError::Weightless)?;
+
+		#[extrinsic_call]
+		_(origin as T::RuntimeOrigin, T::Lookup::unlookup(target.clone()), tiki, true);
+
+		assert!(!Tiki::<T>::user_tikis(&target).contains(&tiki));
 		Ok(())
 	}
 

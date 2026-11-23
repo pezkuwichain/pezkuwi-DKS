@@ -489,7 +489,8 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 
 	// First, because the education portfolio is moved twice here and must end with its own
 	// minister before the courses below are opened in that minister's name.
-	if let Err(e) = pallets::an_appointed_rewsenbir_takes_two_hands(&people, &bench, &cohort).await
+	if let Err(e) =
+		pallets::an_appointed_rewsenbir_takes_two_hands(&people, &house, &bench, &cohort).await
 	{
 		failures.push(format!("rewsenbir: {e}"));
 	}

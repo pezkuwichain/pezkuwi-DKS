@@ -229,15 +229,15 @@ mod benchmarks {
 		// The worst case: a single-holder office with somebody in it, so the approval takes
 		// the office from them, retires them and seats the nominee.
 		let incumbent: T::AccountId = account("incumbent", 4, 0);
-		seat::<T>(&incumbent, Tiki::Xezinedar);
+		seat::<T>(&incumbent, Tiki::Balyoz);
 		Pezpallet::<T>::nominate_official(
 			RawOrigin::Signed(nominator).into(),
 			nominee.clone(),
-			OfficialRole::Xezinedar,
+			OfficialRole::Balyoz,
 			justification,
 		)
 		.unwrap();
-		// The Treasurer waits on the house by default; this measures the President's door.
+		// The ambassador waits on the house by default; this measures the President's door.
 		AppointmentProcesses::<T>::mutate(0, |p| {
 			p.as_mut().unwrap().status = AppointmentStatus::WaitingPresidentialApproval
 		});
@@ -253,7 +253,7 @@ mod benchmarks {
 
 		assert_eq!(NextAppointmentId::<T>::get(), 1);
 		// The appointment has to reach the register, not just this pallet's own map.
-		assert_eq!(pezpallet_tiki::TikiHolder::<T>::get(Tiki::Xezinedar), Some(nominee));
+		assert_eq!(pezpallet_tiki::TikiHolder::<T>::get(Tiki::Balyoz), Some(nominee));
 		assert!(pezpallet_tiki::UserTikis::<T>::get(&incumbent).contains(&Tiki::Xanenişîn));
 	}
 
@@ -545,11 +545,11 @@ mod benchmarks {
 		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, nominator.clone());
 		// The worst case, as for the President's door: an occupied single-holder office.
 		let incumbent: T::AccountId = account("incumbent", 4, 0);
-		seat::<T>(&incumbent, Tiki::Xezinedar);
+		seat::<T>(&incumbent, Tiki::Balyoz);
 		Pezpallet::<T>::nominate_official(
 			RawOrigin::Signed(nominator).into(),
 			nominee.clone(),
-			OfficialRole::Xezinedar,
+			OfficialRole::Balyoz,
 			b"Test nomination".to_vec().try_into().unwrap(),
 		)
 		.unwrap();
@@ -564,7 +564,7 @@ mod benchmarks {
 		#[extrinsic_call]
 		confirm_appointment(origin as T::RuntimeOrigin, 0);
 
-		assert_eq!(pezpallet_tiki::TikiHolder::<T>::get(Tiki::Xezinedar), Some(nominee));
+		assert_eq!(pezpallet_tiki::TikiHolder::<T>::get(Tiki::Balyoz), Some(nominee));
 		assert!(pezpallet_tiki::UserTikis::<T>::get(&incumbent).contains(&Tiki::Xanenişîn));
 		Ok(())
 	}
@@ -1284,8 +1284,9 @@ mod benchmarks {
 	fn set_confirmation_requirement() -> Result<(), BenchmarkError> {
 		let origin = T::ConfirmationOrigin::try_successful_origin()
 			.map_err(|_| BenchmarkError::Weightless)?;
-		// Away from the founding rule, so the entry is written rather than cleared.
-		let role = OfficialRole::Dadger;
+		// Away from the founding rule, so the entry is written rather than cleared. The
+		// Treasurer, because an office that adds to standing cannot be moved off the list.
+		let role = OfficialRole::Xezinedar;
 		let required = !role.requires_parliament_approval();
 
 		#[extrinsic_call]

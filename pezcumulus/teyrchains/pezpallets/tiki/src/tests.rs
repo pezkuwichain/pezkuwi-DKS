@@ -1579,13 +1579,20 @@ fn a_president_cannot_enlarge_his_own_share() {
 			Error::<Test>::CannotGrantToSelf
 		);
 
-		// Someone else may still be given a qualification, and it still counts for them.
+		// Someone else may still be given a qualification, and it still counts for them --
+		// once the house has said yes to the name.
 		let other = 9u64;
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), other));
 		assert_ok!(TikiPallet::grant_tiki(
 			RuntimeOrigin::signed(president),
 			other,
 			TikiEnum::Dadger
+		));
+		assert_ok!(TikiPallet::confirm_tiki(
+			RuntimeOrigin::signed(crate::mock::MOCK_HOUSE),
+			other,
+			TikiEnum::Dadger,
+			true
 		));
 		assert!(TikiPallet::get_tiki_score(&other) > TikiPallet::get_tiki_score(&president));
 
@@ -1630,4 +1637,545 @@ fn the_founding_government_cannot_seat_the_house_or_the_court() {
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
+}
+
+// === Y12: standing takes two parties ===
+//
+// `AdminOrigin` is satisfied by the President alone. Through it one person could fill an
+// ally's standing -- a judge's hundred and fifty points, a Noter's attestation -- and standing
+// is the divisor of every reward. The decision (Serok, 2026-10-21): an appointment that
+// counts towards standing is named by the President and confirmed by the house.
+mod standing_takes_two_parties {
+	use super::*;
+	use crate::mock::{MOCK_HOUSE, MOCK_SEROK};
+
+	fn citizen(who: u64) {
+		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), who));
+	}
+
+	/// The mock's admin account, holding the presidency the way the People chain's does.
+	fn seat_president() {
+		citizen(MOCK_SEROK);
+		assert_ok!(TikiPallet::internal_grant_role(&MOCK_SEROK, TikiEnum::Serok));
+	}
+
+	#[test]
+	fn the_president_alone_only_names() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			let before = TikiPallet::get_tiki_score(&9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Noter
+			));
+
+			assert!(!TikiPallet::has_tiki(&9, &TikiEnum::Noter));
+			assert_eq!(TikiPallet::get_tiki_score(&9), before);
+			assert_eq!(crate::PendingTikis::<Test>::get(9, TikiEnum::Noter), Some(MOCK_SEROK));
+			System::assert_last_event(
+				Event::TikiNominated { who: 9, tiki: TikiEnum::Noter, by: MOCK_SEROK }.into(),
+			);
+		});
+	}
+
+	#[test]
+	fn the_house_seats_the_name() {
+		new_test_ext().execute_with(|| {
+			seat_president();
+			citizen(9);
+			let before = TikiPallet::get_tiki_score(&9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Noter
+			));
+			assert_ok!(TikiPallet::confirm_tiki(
+				RuntimeOrigin::signed(MOCK_HOUSE),
+				9,
+				TikiEnum::Noter,
+				true
+			));
+
+			assert!(TikiPallet::has_tiki(&9, &TikiEnum::Noter));
+			assert_eq!(
+				TikiPallet::get_tiki_score(&9),
+				before + TikiPallet::get_bonus_for_tiki(&TikiEnum::Noter)
+			);
+			assert_eq!(
+				crate::RoleAssignmentTypeOf::<Test>::get(9, TikiEnum::Noter),
+				Some(RoleAssignmentType::Appointed)
+			);
+			assert!(crate::PendingTikis::<Test>::get(9, TikiEnum::Noter).is_none());
+		});
+	}
+
+	#[test]
+	fn a_refusal_clears_the_name_and_grants_nothing() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Dadger
+			));
+			assert_ok!(TikiPallet::confirm_tiki(
+				RuntimeOrigin::signed(MOCK_HOUSE),
+				9,
+				TikiEnum::Dadger,
+				false
+			));
+			assert!(!TikiPallet::has_tiki(&9, &TikiEnum::Dadger));
+			assert!(crate::PendingTikis::<Test>::get(9, TikiEnum::Dadger).is_none());
+			assert_noop!(
+				TikiPallet::confirm_tiki(
+					RuntimeOrigin::signed(MOCK_HOUSE),
+					9,
+					TikiEnum::Dadger,
+					true
+				),
+				Error::<Test>::NotNominated
+			);
+		});
+	}
+
+	#[test]
+	fn the_president_cannot_confirm_his_own_name() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Noter
+			));
+			assert_noop!(
+				TikiPallet::confirm_tiki(
+					RuntimeOrigin::signed(MOCK_SEROK),
+					9,
+					TikiEnum::Noter,
+					true
+				),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+		});
+	}
+
+	#[test]
+	fn a_body_alone_cannot_grant_standing() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			// The council majority satisfies `AdminOrigin` without being a person.
+			assert_noop!(
+				TikiPallet::grant_tiki(RuntimeOrigin::none(), 9, TikiEnum::Noter),
+				Error::<Test>::NeedsANomination
+			);
+		});
+	}
+
+	#[test]
+	fn a_name_cannot_be_stacked_or_sent_to_a_holder() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Noter
+			));
+			assert_noop!(
+				TikiPallet::grant_tiki(RuntimeOrigin::signed(MOCK_SEROK), 9, TikiEnum::Noter),
+				Error::<Test>::AlreadyNominated
+			);
+			citizen(10);
+			assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 10, TikiEnum::Hiquqnas));
+			assert_noop!(
+				TikiPallet::grant_tiki(RuntimeOrigin::signed(MOCK_SEROK), 10, TikiEnum::Hiquqnas),
+				Error::<Test>::UserAlreadyHasRole
+			);
+		});
+	}
+
+	#[test]
+	fn root_still_grants_directly() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 9, TikiEnum::Noter));
+			assert!(TikiPallet::has_tiki(&9, &TikiEnum::Noter));
+		});
+	}
+
+	#[test]
+	fn a_name_lapses_with_the_president_who_gave_it() {
+		new_test_ext().execute_with(|| {
+			seat_president();
+			citizen(9);
+			assert_ok!(TikiPallet::grant_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Noter
+			));
+			// The presidency changes hands before the house answers.
+			assert_ok!(TikiPallet::internal_revoke_role(&MOCK_SEROK, TikiEnum::Serok));
+			assert_noop!(
+				TikiPallet::confirm_tiki(
+					RuntimeOrigin::signed(MOCK_HOUSE),
+					9,
+					TikiEnum::Noter,
+					true
+				),
+				Error::<Test>::NominatorLeftOffice
+			);
+			// The house can still clear it.
+			assert_ok!(TikiPallet::confirm_tiki(
+				RuntimeOrigin::signed(MOCK_HOUSE),
+				9,
+				TikiEnum::Noter,
+				false
+			));
+			assert!(crate::PendingTikis::<Test>::get(9, TikiEnum::Noter).is_none());
+			assert!(!TikiPallet::has_tiki(&9, &TikiEnum::Noter));
+		});
+	}
+
+	#[test]
+	fn what_counts_is_what_the_score_counts() {
+		// The qualifications the score adds need two parties; offices, which add nothing, and
+		// citizenship, which nobody appoints, are untouched.
+		assert!(TikiPallet::counts_toward_standing(&TikiEnum::Noter));
+		assert!(TikiPallet::counts_toward_standing(&TikiEnum::Dadger));
+		assert!(!TikiPallet::counts_toward_standing(&TikiEnum::Xezinedar));
+		assert!(!TikiPallet::counts_toward_standing(&TikiEnum::Serok));
+		assert!(!TikiPallet::counts_toward_standing(&TikiEnum::Xanenişîn));
+	}
+}
+
+// === Removal follows the office, the way a working state does it ===
+//
+// Serok, 2026-11-23: "a digital state still has a state's logic; it should work the way states
+// of this model work." An office of the President's confidence he removes alone; an office
+// held during good behaviour only the court removes; an oversight post the house decides; a
+// career post is proposed for cause and reviewed by the court before it takes effect. The
+// prosecutor is on the American model, removable at will.
+mod removal_follows_the_office {
+	use super::*;
+	use crate::mock::{MOCK_COURT, MOCK_HOUSE, MOCK_SEROK};
+	use crate::Removal;
+
+	fn citizen(who: u64) {
+		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), who));
+	}
+
+	fn seat_president() {
+		citizen(MOCK_SEROK);
+		assert_ok!(TikiPallet::internal_grant_role(&MOCK_SEROK, TikiEnum::Serok));
+	}
+
+	/// Appointed the ordinary way, so the register records it as an appointment.
+	fn appointed(who: u64, tiki: TikiEnum) {
+		citizen(who);
+		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), who, tiki));
+	}
+
+	fn why() -> pezframe_support::BoundedVec<u8, pezframe_support::traits::ConstU32<256>> {
+		b"absent for three months".to_vec().try_into().unwrap()
+	}
+
+	#[test]
+	fn the_table() {
+		assert_eq!(TikiPallet::removal_of(&TikiEnum::Dozger), Removal::AtWill);
+		assert_eq!(TikiPallet::removal_of(&TikiEnum::Berdevk), Removal::AtWill);
+		assert_eq!(TikiPallet::removal_of(&TikiEnum::Balyoz), Removal::AtWill);
+		for t in [
+			TikiEnum::Dadger,
+			TikiEnum::Hiquqnas,
+			TikiEnum::Noter,
+			TikiEnum::Navbeynkar,
+			TikiEnum::Xezinedar,
+		] {
+			assert_eq!(TikiPallet::removal_of(&t), Removal::ByTheCourt, "{t:?}");
+		}
+		assert_eq!(TikiPallet::removal_of(&TikiEnum::Mufetîs), Removal::WithTheHouse);
+		assert_eq!(TikiPallet::removal_of(&TikiEnum::KalîteKontrolker), Removal::WithTheHouse);
+		assert_eq!(TikiPallet::removal_of(&TikiEnum::Bacgir), Removal::ForCause);
+		assert_eq!(TikiPallet::removal_of(&TikiEnum::Mamoste), Removal::ForCause);
+	}
+
+	#[test]
+	fn the_president_removes_his_prosecutor_alone() {
+		new_test_ext().execute_with(|| {
+			appointed(9, TikiEnum::Dozger);
+			assert_ok!(TikiPallet::revoke_tiki(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Dozger
+			));
+			assert!(!TikiPallet::has_tiki(&9, &TikiEnum::Dozger));
+		});
+	}
+
+	#[test]
+	fn no_executive_hand_reaches_a_judge_or_a_notary() {
+		new_test_ext().execute_with(|| {
+			appointed(9, TikiEnum::Dadger);
+			appointed(10, TikiEnum::Noter);
+			assert_noop!(
+				TikiPallet::revoke_tiki(RuntimeOrigin::signed(MOCK_SEROK), 9, TikiEnum::Dadger),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert_noop!(
+				TikiPallet::propose_removal(
+					RuntimeOrigin::signed(MOCK_SEROK),
+					10,
+					TikiEnum::Noter,
+					why()
+				),
+				Error::<Test>::NotRemovedByReview
+			);
+			assert_ok!(TikiPallet::revoke_tiki(
+				RuntimeOrigin::signed(MOCK_COURT),
+				10,
+				TikiEnum::Noter
+			));
+			assert!(!TikiPallet::has_tiki(&10, &TikiEnum::Noter));
+		});
+	}
+
+	#[test]
+	fn the_court_removes_the_treasurer_though_a_nomination_seated_him() {
+		new_test_ext().execute_with(|| {
+			citizen(9);
+			assert_ok!(TikiPallet::internal_grant_role(&9, TikiEnum::Xezinedar));
+			crate::RoleAssignmentTypeOf::<Test>::insert(
+				9,
+				TikiEnum::Xezinedar,
+				RoleAssignmentType::Appointed,
+			);
+			assert_noop!(
+				TikiPallet::revoke_tiki(RuntimeOrigin::signed(MOCK_SEROK), 9, TikiEnum::Xezinedar),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert_ok!(TikiPallet::revoke_tiki(
+				RuntimeOrigin::signed(MOCK_COURT),
+				9,
+				TikiEnum::Xezinedar
+			));
+			assert_eq!(TikiPallet::current_holder(&TikiEnum::Xezinedar), None);
+		});
+	}
+
+	#[test]
+	fn a_career_post_is_not_taken_by_one_signature() {
+		new_test_ext().execute_with(|| {
+			appointed(9, TikiEnum::Bacgir);
+			assert_noop!(
+				TikiPallet::revoke_tiki(RuntimeOrigin::signed(MOCK_SEROK), 9, TikiEnum::Bacgir),
+				Error::<Test>::RemovalNeedsReview
+			);
+		});
+	}
+
+	#[test]
+	fn the_court_reviews_a_career_removal_before_it_happens() {
+		new_test_ext().execute_with(|| {
+			seat_president();
+			appointed(9, TikiEnum::Bacgir);
+			assert_ok!(TikiPallet::propose_removal(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Bacgir,
+				why()
+			));
+			// Proposed is not removed.
+			assert!(TikiPallet::has_tiki(&9, &TikiEnum::Bacgir));
+			System::assert_last_event(
+				Event::RemovalProposed {
+					who: 9,
+					tiki: TikiEnum::Bacgir,
+					by: MOCK_SEROK,
+					reason: why(),
+				}
+				.into(),
+			);
+			// The house is not the reviewing body for a career post.
+			assert_noop!(
+				TikiPallet::decide_removal(
+					RuntimeOrigin::signed(MOCK_HOUSE),
+					9,
+					TikiEnum::Bacgir,
+					true
+				),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert_ok!(TikiPallet::decide_removal(
+				RuntimeOrigin::signed(MOCK_COURT),
+				9,
+				TikiEnum::Bacgir,
+				true
+			));
+			assert!(!TikiPallet::has_tiki(&9, &TikiEnum::Bacgir));
+		});
+	}
+
+	#[test]
+	fn the_court_can_refuse_and_the_post_stays() {
+		new_test_ext().execute_with(|| {
+			seat_president();
+			appointed(9, TikiEnum::Qeydkar);
+			crate::RoleAssignmentTypeOf::<Test>::insert(
+				9,
+				TikiEnum::Qeydkar,
+				RoleAssignmentType::Appointed,
+			);
+			assert_ok!(TikiPallet::propose_removal(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Qeydkar,
+				why()
+			));
+			assert_ok!(TikiPallet::decide_removal(
+				RuntimeOrigin::signed(MOCK_COURT),
+				9,
+				TikiEnum::Qeydkar,
+				false
+			));
+			assert!(TikiPallet::has_tiki(&9, &TikiEnum::Qeydkar));
+			assert!(crate::PendingRemovals::<Test>::get(9, TikiEnum::Qeydkar).is_none());
+		});
+	}
+
+	#[test]
+	fn the_house_decides_an_inspectors_removal() {
+		new_test_ext().execute_with(|| {
+			seat_president();
+			appointed(9, TikiEnum::Mufetîs);
+			assert_noop!(
+				TikiPallet::revoke_tiki(RuntimeOrigin::signed(MOCK_SEROK), 9, TikiEnum::Mufetîs),
+				Error::<Test>::RemovalNeedsReview
+			);
+			assert_ok!(TikiPallet::propose_removal(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Mufetîs,
+				why()
+			));
+			assert_noop!(
+				TikiPallet::decide_removal(
+					RuntimeOrigin::signed(MOCK_COURT),
+					9,
+					TikiEnum::Mufetîs,
+					true
+				),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert_ok!(TikiPallet::decide_removal(
+				RuntimeOrigin::signed(MOCK_HOUSE),
+				9,
+				TikiEnum::Mufetîs,
+				true
+			));
+			assert!(!TikiPallet::has_tiki(&9, &TikiEnum::Mufetîs));
+		});
+	}
+
+	#[test]
+	fn a_proposal_lapses_with_the_president_who_made_it() {
+		new_test_ext().execute_with(|| {
+			seat_president();
+			appointed(9, TikiEnum::Bacgir);
+			assert_ok!(TikiPallet::propose_removal(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Bacgir,
+				why()
+			));
+			assert_ok!(TikiPallet::internal_revoke_role(&MOCK_SEROK, TikiEnum::Serok));
+			assert_noop!(
+				TikiPallet::decide_removal(
+					RuntimeOrigin::signed(MOCK_COURT),
+					9,
+					TikiEnum::Bacgir,
+					true
+				),
+				Error::<Test>::ProposerLeftOffice
+			);
+			assert!(TikiPallet::has_tiki(&9, &TikiEnum::Bacgir));
+		});
+	}
+
+	#[test]
+	fn a_removal_cannot_be_stacked_or_aimed_at_nothing() {
+		new_test_ext().execute_with(|| {
+			seat_president();
+			appointed(9, TikiEnum::Bacgir);
+			citizen(10);
+			assert_noop!(
+				TikiPallet::propose_removal(
+					RuntimeOrigin::signed(MOCK_SEROK),
+					10,
+					TikiEnum::Bacgir,
+					why()
+				),
+				Error::<Test>::RoleNotAssigned
+			);
+			assert_ok!(TikiPallet::propose_removal(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Bacgir,
+				why()
+			));
+			assert_noop!(
+				TikiPallet::propose_removal(
+					RuntimeOrigin::signed(MOCK_SEROK),
+					9,
+					TikiEnum::Bacgir,
+					why()
+				),
+				Error::<Test>::RemovalAlreadyProposed
+			);
+			assert_noop!(
+				TikiPallet::decide_removal(
+					RuntimeOrigin::signed(MOCK_COURT),
+					10,
+					TikiEnum::Bacgir,
+					true
+				),
+				Error::<Test>::RemovalNotProposed
+			);
+		});
+	}
+
+	#[test]
+	fn a_proposal_does_not_survive_into_a_later_appointment() {
+		new_test_ext().execute_with(|| {
+			seat_president();
+			appointed(9, TikiEnum::Bacgir);
+			assert_ok!(TikiPallet::propose_removal(
+				RuntimeOrigin::signed(MOCK_SEROK),
+				9,
+				TikiEnum::Bacgir,
+				why()
+			));
+			// Gone by another path, then appointed again.
+			assert_ok!(TikiPallet::revoke_tiki(RuntimeOrigin::root(), 9, TikiEnum::Bacgir));
+			assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 9, TikiEnum::Bacgir));
+			assert_noop!(
+				TikiPallet::decide_removal(
+					RuntimeOrigin::signed(MOCK_COURT),
+					9,
+					TikiEnum::Bacgir,
+					true
+				),
+				Error::<Test>::RemovalNotProposed
+			);
+			assert!(TikiPallet::has_tiki(&9, &TikiEnum::Bacgir));
+		});
+	}
+
+	#[test]
+	fn root_still_removes_anything() {
+		new_test_ext().execute_with(|| {
+			appointed(9, TikiEnum::Bacgir);
+			assert_ok!(TikiPallet::revoke_tiki(RuntimeOrigin::root(), 9, TikiEnum::Bacgir));
+			assert!(!TikiPallet::has_tiki(&9, &TikiEnum::Bacgir));
+		});
+	}
 }

@@ -681,6 +681,9 @@ impl pezpallet_tiki::Config for Runtime {
 	// while sudo exists; removing sudo means deleting the first arm here.
 	type HonoraryCitizenshipOrigin =
 		EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_tiki::ensure::EnsureSerokWeziran<Runtime>>;
+	// An appointment that carries standing is named by the President and answered by the
+	// house -- the same body that confirms the civil service in `welati`.
+	type StandingConfirmationOrigin = crate::RootOrParliament;
 	type WeightInfo = weights::pezpallet_tiki::WeightInfo<Runtime>;
 	type TikiCollectionId = TikiCollectionId;
 	type MaxTikisPerUser = MaxTikisPerUser;

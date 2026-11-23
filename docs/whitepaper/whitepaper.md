@@ -106,7 +106,8 @@ the escrow on the receiving side covers, so a chain can never mint back more tha
 that mechanism: **wHEZ** (asset 2) is HEZ wrapped one-for-one so that it can be traded by
 pallets that handle assets rather than the native balance, and **wUSDT** (asset 1000) is the
 custodial bridge's representation of USDT. Neither is a second HEZ, and neither is minted by
-a teleport.
+a teleport. wHEZ is owned by the wrapper's keyless account, so no key holds its issuer or admin
+role and none can mint it without HEZ behind it.
 
 ### 2.1 The one door into the relay's root
 
@@ -217,12 +218,14 @@ Five tracks exist, each dispatching a different authority:
 | `qeyd_rules` | **90 days** | 7 days | The rules governing the register itself |
 
 **Voting costs nothing.** Answering a referendum, casting a ballot and endorsing a candidacy
-are free the first time each citizen does them — the fee is skipped in the runtime rather than
-refunded — because a franchise that costs money is not one this document can claim. A repeat is
-paid for, which is what stops a free call being a free call twice.
+are free exactly when the chain will accept them — the fee is skipped in the runtime rather than
+refunded — because a franchise that costs money is not one this document can claim. The same
+check decides both the exemption and the call, so a repeat, an ineligible voter or a closed poll
+pays, which is what stops a free call being a free way to fill a block.
 
 The last one is the notable entry. The parameters that decide who may vouch for a new
-citizen, how many people one citizen may vouch for, and what suspends that right, are held
+citizen, how much a vouch is worth to the voucher's standing, and what suspends the right to
+vouch, are held
 in a parameter store whose only administrator is a referendum on the ninety-day track. Not
 root. Not the court. Not the president. Changing the rules of admission takes three months
 of deliberation by the people already admitted, and there is no faster path.
@@ -260,31 +263,36 @@ Citizenship is a non-transferable NFT in collection zero. Holding it is what mak
 a *welatî*, and every office, every vote, and every trust score is downstream of it.
 
 Admission has three steps and no gatekeeper — nobody sits between an applicant and the
-register whose approval must be sought, and no office can admit at will:
+register whose approval must be sought:
 
 1. **Apply.** The applicant reserves a one-HEZ deposit and registers an identity hash. The
    hash is globally unique and is claimed at application time, so two applications cannot
    describe the same person.
-2. **Vouch.** An existing citizen approves the referral. A citizen begins with five vouching
-   places and earns one more for every three that settle, to a ceiling of fifty. Vouching is
-   not free of consequence: a voucher whose referrals are revoked three or more times, and
-   whose revoked share passes twenty percent, is suspended.
+2. **Vouch.** An existing citizen, past a short waiting period of their own, approves the
+   referral. There is no quota: a citizen may vouch for everyone they know, and the referral
+   score stops rising at fifty, so mass vouching buys no extra standing. Vouching is not free
+   of consequence: a voucher whose referrals are revoked three or more times, and whose revoked
+   share reaches twenty percent, is suspended until the court restores what it revoked.
 3. **Confirm.** The applicant confirms, the NFT is minted, and the roll increases by one.
 
-Two hands do touch the register, and both are named rather than implied. If nobody vouches
+Three hands do touch the register, and all three are named rather than implied. If nobody vouches
 within ninety days, the **founding account** may admit the applicant and becomes their
 referrer of record — the fallback exists so that having no connections is not a permanent
 bar, and admissions made this way are stored apart from ordinary vouches, so standing in for
 somebody is never counted as having chosen them. And the **court**, as the register
-authority, can revoke a citizenship or a vouch after the fact. Neither is an administrator
-of admission: one cannot refuse, the other cannot admit.
+authority, can revoke a citizenship or a vouch after the fact. The **Prime Minister** may
+confer honorary citizenship, without a vouch, on an account the register has no record of; it
+cannot be used on an account the court has revoked or one whose application is in progress, so
+it can neither undo the court nor overtake an applicant. None of the three administers
+admission: the founding account cannot refuse, the court cannot admit, and the Prime Minister
+admits only those the register has never judged.
 
 **What the identity hash does and does not prove.** Uniqueness of the hash stops the same
 document being registered twice. It does not stop one person registering twice with two
 documents, and this system claims no proof of personhood. The defence against a manufactured
 population is the vouching chain and its cost: a fabricated citizen needs an existing citizen
-to stand for them, vouching places are finite, and a voucher whose referrals are revoked
-loses the right to vouch at all. That is accountability rather than impossibility, and it is
+to stand for them, every vouch is traceable to whoever signed it, and a voucher whose
+referrals are revoked loses the right to vouch at all. That is accountability rather than impossibility, and it is
 priced accordingly — a hostile register-stuffer must either buy citizens who have something
 to lose or burn their own standing at three revocations. We state the bound rather than
 overclaim the mechanism: the register is as honest as the citizens who fill it, which is a
@@ -316,9 +324,10 @@ a community badge, and the code refuses it.
 One earned title has a second, narrower door. *Rewsenbîr* (scholar) is earned through five
 completed courses and published points, and that path needs graduated teachers to ratify
 courses — which a new state does not have. Until it does, a Rewsenbîr may also be appointed:
-the Minister of Education nominates, the President approves, the President may not approve a
-name he nominated himself, and no more than a hundred are ever appointed this way over the
-life of the chain. The appointed title carries the same standing as the earned one.
+the Minister of Education nominates, the President approves, the Parliament confirms, and no
+more than a hundred are ever appointed this way over the life of the chain. A name the
+President nominates himself goes straight to the Parliament, so his own signature is never
+the second one. The appointed title carries the same standing as the earned one.
 
 ### 5.1 Serok — the President
 
@@ -330,8 +339,8 @@ young roll, each endorser needing standing that comes mostly from education nobo
 earned yet; the first election would have been winnable only from inside whatever circle could
 hand out the rest. The threshold now scales with the register up to the figure named here and
 never past it, with a floor so that a candidacy in a small country still costs somebody else's
-reputation. Nobody may serve more than two
-consecutive terms.
+reputation. Each endorser counts once, and a candidate may not endorse themselves. Nobody may
+serve more than two consecutive terms.
 
 The election requires fifty percent turnout — waived only after one failed attempt, so that
 a boycott delays rather than vetoes. A candidate wins outright with more than half the valid
@@ -472,13 +481,41 @@ collector, ambassador and teacher. Any minister or the President may nominate; n
 nominate themselves; every nomination needs a trust score of at least 75 and lapses in seven
 days.
 
-**Five of the twenty-four cannot be seated by the President alone** — judge, treasurer,
-cyber-security specialist, inspector, and ambassador require parliamentary confirmation. And
-the list of which five is itself amendable **only by the Parliament**. The executive cannot
+**None of the twenty-four can be seated by the President alone.** Twenty-two of them add to
+their holder's trust score — every one but the treasurer and the ambassador, which are offices
+and count for nothing — and standing divides every reward, while a notary's attestation is
+what the register relies on. One person filling an ally's share is what the rule exists to
+stop, so for those twenty-two it is fixed: the President says yes, either to a minister's name
+or by nominating himself, and the Parliament confirms. The Parliament cannot waive it, office
+by office or otherwise. The treasurer and the ambassador need the Parliament's confirmation at
+founding, and for them the list is amendable **only by the Parliament**; the executive cannot
 shorten the list of offices it does not control.
 
+The register's own grant follows the same line. A professional tiki the President grants
+there is only a nomination until the Parliament confirms it; a council majority, which names
+nobody, cannot grant one at all. Only Root grants it directly — sudo while sudo lasts, then the
+referendum track, where every citizen counts once.
+
+**Removal follows the office, the way it does in a working state.** Four kinds:
+
+- **Of the President's confidence** — the ambassador, the spokesperson, and the prosecutor, on
+  the American model where prosecution is an executive power. The President removes them alone.
+- **Held during good behaviour** — the judge, the jurist, the notary whose attestation the
+  register relies on, the mediator, and the treasurer who creates money. No executive hand
+  reaches them: only the Dîwan removes them, and the treasurer's seat cannot be emptied by
+  appointing a successor, which would be a removal by another name.
+- **Oversight** — the inspector and the quality controller. The President may propose a
+  removal, with a reason; the Parliament decides.
+- **The career service** — every other post, from tax collector to teacher. The President
+  proposes a removal with a reason anyone can read, and the Dîwan reviews it before it takes
+  effect. In most states the agency dismisses and the official appeals afterwards; reviewing
+  first comes to the same thing without anyone wrongly out of office while an appeal waits.
+
+A proposal lapses if its author leaves the presidency, and dies with the holding it was aimed
+at, so it cannot be kept for a later appointment. Root still removes any of them.
+
 **An appointee leaves when a successor is appointed, and leaves retired.** A single-holder
-office — the Prime Minister, a named ministry, the treasurer, the ambassador — moves to the new
+office — the Prime Minister, a named ministry, the ambassador — moves to the new
 appointee, and the holder it is taken from is given **Xanenişîn**, the record of retirement. It
 grants nothing: no vote, no origin and no qualification reads it, and no admin can grant or
 strike it. It is not given on dismissal, which is not a retirement, nor when an election ends a
@@ -504,8 +541,8 @@ It is composed of four measured parts, each normalised against its own maximum a
 
 The weights sum to one hundred, and the runtime asserts it. Each part is divided by what is
 *attainable*, not by a number written beside it: the education maximum is every rewarded
-course taken at full value, and the referral maximum is the score a citizen reaches at the
-vouching ceiling the register's rules currently set. A weight that says twenty-five is
+course taken at full value, and the referral maximum is the score ceiling the register's rules
+currently set. A weight that says twenty-five is
 therefore twenty-five, and stays twenty-five if a ninety-day referendum moves the ceiling —
 a component cannot quietly stop being able to reach its own top.
 
@@ -619,6 +656,21 @@ nobody already inside. The score decides whether you
 are in the pool; a uniform random draw decides whether you sit. The wealthiest citizen and
 the barely-qualified citizen have the same chance in the same stratum.
 
+Two things stand in front of every gate. A candidacy needs a validator's bond on the Asset Hub
+— ten thousand HEZ, reported to the People chain each era and read again at every draw, so a
+member whose bond lapses stops being drawn — and relay session keys, which only a bonded
+candidate may register and which may change at most once an era. The Asset Hub caps its
+validator set at the size of one bond report, so every bonded account is named in it.
+
+The pool is bounded, because seating reads the whole of it in one block, and **each stratum
+holds an equal share of that bound**. Without the share, the strata cheapest to enter could
+fill the pool and leave the house and the court, two hundred and one and eleven people, with no
+room — and since their seats are never handed to anyone else, filling the pool would switch
+them off. A member who no longer stands keeps no claim on a place: anyone may remove them, at
+no charge, on an answer the chain holds itself — a stratum no longer drawn from, missing keys,
+or a gate that says no. Nobody can be removed because a notary's report is late, because a
+report from another chain left them out, or while they are still serving out the tenure period.
+
 The draw is seeded by commit–reveal across the era: commitments in the first half, reveals in
 the second, each era's seed derived from the previous one and the revealed preimage. No
 single participant chooses the seed, and the seed for an era does not exist until that era
@@ -653,7 +705,8 @@ being easier to disrupt.
 ### 7.5 Misconduct costs standing, and separately costs money
 
 TNPoS itself touches no funds. Its sanction is exclusion: unavailability bans a validator for
-twenty-four eras, equivocation for three hundred and sixty. A ban may only ever be extended,
+twenty-four eras, equivocation for three hundred and sixty. Withholding a committed seed reveal
+counts as unavailability, so the last revealer cannot steer the draw for free. A ban may only ever be extended,
 never shortened, and removal from the committee is immediate.
 
 Economic slashing is the Asset Hub's business, and **nothing is burned**. Slashed HEZ is
@@ -1004,9 +1057,9 @@ extrinsic and the blocks keep it. A zero-knowledge membership proof would close 
 sits on the roadmap rather than in this list — it is a project, not a gap in what was built.
 
 **And one thing that is not a gap.** There is no proof of personhood, and that is a decision
-rather than an omission. A fabricated citizen needs a real one to stand for them, vouching
-places are finite, and a voucher whose referrals are revoked three times loses the right to
-vouch again. That makes a manufactured population expensive and traceable to whoever signed
+rather than an omission. A fabricated citizen needs a real one to stand for them, every vouch
+is traceable to its signer, and a voucher whose referrals are revoked three times, at a fifth
+or more of their vouches, loses the right to vouch until the court restores them. That makes a manufactured population expensive and traceable to whoever signed
 for it. It does not make one impossible, and nothing here says it does.
 
 ---

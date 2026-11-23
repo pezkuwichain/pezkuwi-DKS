@@ -293,6 +293,25 @@ fn asset_hub_pezkuwichain_genesis(
 			validator_count: (genesis_validators.len() as u32).max(STAKE_STRATUM_SEATS),
 			// Spec K4: 10,000 HEZ bonded to validate, the condition for being paid.
 			min_validator_bond: MIN_VALIDATOR_BOND,
+			// No more validators than one bond report can name. People learns who is bonded
+			// here only from that report, which holds `MAX_BONDED_REPORT` accounts; with more
+			// validators than that, which ones it named was decided by storage order, and a
+			// bonded member of People's pool could be left out -- skipped at every draw,
+			// refused at the door, refused relay keys -- for no reason of their own. Capping
+			// the set at the report's size makes "every bonded account is named" true rather
+			// than hoped. The relay set is twenty-seven and a committee at most sixty-four, so
+			// a thousand candidacies is not a limit anyone meets by accident.
+			//
+			// A cap can be filled on purpose: 1,024 bonds of 10,000 HEZ, about five percent of
+			// the supply, locked but not lost, would refuse every new candidacy. That trade is
+			// taken knowingly. Uncapped, the same money bought something worse and invisible --
+			// a report that silently dropped whichever members storage order put last. Capped,
+			// the refusal is visible (`TooManyValidators`) and has staking's own remedy: Root
+			// here -- reached by a People referendum through the relay -- calls
+			// `set_staking_configs` to raise `MinValidatorBond` and set `ChillThreshold`
+			// together, and `chill_other` then lets anyone remove every candidacy below the new
+			// bond. Squatting the set costs whatever the people decide a candidacy is worth.
+			max_validator_count: Some(pezkuwi_tnpos_primitives::invariant::MAX_BONDED_REPORT),
 			// Synthetic stakers, for the presets that ask for them. The multi-block election
 			// benchmarks assert that a snapshot page is FULL -- `TargetSnapshotPerBlock` is
 			// `MaxValidatorSet`, i.e. 1000 -- and a genesis with no stakers makes that
@@ -846,6 +865,13 @@ fn every_preset_starts_the_era_clock() {
 				staking["minValidatorBond"].as_u64(),
 				Some(10_000 * UNITS as u64),
 				"preset {preset:?} lets a validator in below the 10,000 HEZ bond"
+			);
+			// People reads who is bonded here from one report of at most
+			// `MAX_BONDED_REPORT` names; more validators than that and the report picks.
+			assert_eq!(
+				staking["maxValidatorCount"].as_u64(),
+				Some(pezkuwi_tnpos_primitives::invariant::MAX_BONDED_REPORT as u64),
+				"preset {preset:?} allows more validators than People's bond report can name"
 			);
 		}
 	});

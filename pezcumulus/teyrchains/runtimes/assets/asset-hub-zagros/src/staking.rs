@@ -408,8 +408,11 @@ const TNPOS_NOTE_BONDED: u8 = 11;
 /// Every validator here, sorted, as `Tnpos::note_bonded` on People.
 ///
 /// `validate` needs `MinValidatorBond` bonded and a validator cannot unbond below it, so these
-/// are the accounts holding a validator's bond. Bounded at `MAX_BONDED_REPORT`, above People's
-/// pool bound, so every account the pool can hold can be named.
+/// are the accounts holding a validator's bond. Bounded at `MAX_BONDED_REPORT`, and the set is
+/// capped at the same number (`MaxValidatorsCount`, set at genesis) -- so the `take` never cuts
+/// anyone off. It used to say "above People's pool bound, so every account the pool can hold can
+/// be named", which was not the bound that mattered: the set had no cap, and past 1024
+/// validators the report named whichever came first in storage order, not the pool's members.
 pub fn bond_report_for_people(era: u32) -> Vec<u8> {
 	use codec::Encode;
 	let mut bonded: Vec<AccountId> = pezpallet_staking_async::Validators::<Runtime>::iter_keys()

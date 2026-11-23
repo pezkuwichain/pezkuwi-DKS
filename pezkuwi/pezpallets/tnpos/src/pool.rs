@@ -135,6 +135,70 @@ impl<T: Config> Pezpallet<T> {
 		Ok(())
 	}
 
+	/// Whether `stratum` is one the committee is drawn from.
+	pub(crate) fn is_configured(stratum: StratumId) -> bool {
+		Strata::<T>::get().iter().any(|c| c.id == stratum)
+	}
+
+	/// The most members one stratum may hold: the pool's bound, shared equally by the strata
+	/// the committee is drawn from.
+	///
+	/// The bound is one number for the whole pool because seating reads the whole pool in a
+	/// single mandatory block. Shared without a per-stratum share, it went to whoever came
+	/// first, and the cheapest strata to enter could take every place: the lottery and the
+	/// stake gate are open to anyone with a bond, while the house holds 201 and the court 11.
+	/// A pool full of the cheap strata left the constitutional ones empty with no way in, and
+	/// their seats are never handed to another stratum -- so the strata the design uses to
+	/// divide power could be switched off by filling the pool. An equal share keeps the total
+	/// where the weight bound needs it and lets no stratum crowd out another.
+	pub(crate) fn stratum_cap() -> u32 {
+		let strata = Strata::<T>::get().len() as u32;
+		T::MaxPoolSize::get() / strata.max(1)
+	}
+
+	/// Refuse a place in `stratum` if it is not drawn from or has no room left.
+	///
+	/// A stratum the committee is not drawn from would hold a place in the pool that no draw
+	/// ever reads, which is the same crowding out by another route.
+	pub(crate) fn has_room_in(stratum: StratumId) -> Result<(), Error<T>> {
+		ensure!(Self::is_configured(stratum), Error::<T>::StratumNotConfigured);
+		ensure!(StratumSize::<T>::get(stratum) < Self::stratum_cap(), Error::<T>::StratumFull);
+		Ok(())
+	}
+
+	/// Whether `who` may be removed from the pool by anyone, and from which stratum.
+	///
+	/// The draw already skips a member who no longer stands, but skipping is not leaving: the
+	/// place stays taken. A term ends, a court seat is vacated, a region is cancelled, keys
+	/// are withdrawn -- and each of these left a place in a bounded pool that an eligible
+	/// applicant could not have. Only the member could give it back.
+	///
+	/// So anyone may, but only on an answer the chain holds itself and is sure of:
+	/// - the member's stratum is no longer drawn from;
+	/// - the member has no session keys, so a seat would be silently dropped by session;
+	/// - the stratum's gate, read from this chain's own state, says no (`NotEligible`).
+	///
+	/// Never on `ScoreUnavailable`. That is the oracle being silent, not a judgement, and an
+	/// eviction on it would let one stalled notary empty the stake stratum. Never on absence
+	/// from the Asset Hub's bond report either: that list comes from another chain, and a
+	/// member must not lose their place because a report was late or short.
+	///
+	/// And never on the tenure clock. A member in the tenure stratum who has not yet served
+	/// the period is accruing it; removing them would reset the very clock they are waiting on.
+	pub(crate) fn evictable(who: &T::AccountId) -> Result<StratumId, Error<T>> {
+		let stratum = PoolMembers::<T>::get(who).ok_or(Error::<T>::NotInPool)?;
+		if !Self::is_configured(stratum) || !T::HasSessionKeys::has_keys(who) {
+			return Ok(stratum);
+		}
+		if stratum == StratumId::Tenure {
+			return Err(Error::<T>::StillStanding);
+		}
+		match Self::stands_for(who, stratum) {
+			Err(Error::<T>::NotEligible) => Ok(stratum),
+			_ => Err(Error::<T>::StillStanding),
+		}
+	}
+
 	pub(crate) fn do_join(who: T::AccountId, stratum: StratumId) -> DispatchResult {
 		if let Some(until) = Banned::<T>::get(&who) {
 			ensure!(CurrentEra::<T>::get() >= until, Error::<T>::Banned);
@@ -146,6 +210,7 @@ impl<T: Config> Pezpallet<T> {
 			.iter()
 			.fold(0u32, |a, &s| a.saturating_add(StratumSize::<T>::get(s)));
 		ensure!(size < T::MaxPoolSize::get(), Error::<T>::PoolFull);
+		Self::has_room_in(stratum)?;
 
 		// Session drops a keyless validator silently on rotation, so an account with no
 		// keys must never enter the pool in the first place: refusing here is the only

@@ -13,6 +13,7 @@ use pezframe_support::weights::{constants::RocksDbWeight, Weight};
 pub trait WeightInfo {
 	fn join() -> Weight;
 	fn leave() -> Weight;
+	fn evict() -> Weight;
 	fn set_strata() -> Weight;
 	fn report_offence() -> Weight;
 	fn commit_seed() -> Weight;
@@ -47,6 +48,13 @@ impl WeightInfo for () {
 	fn leave() -> Weight {
 		Weight::from_parts(42_391_000, 3_514)
 			.saturating_add(RocksDbWeight::get().reads(2))
+			.saturating_add(RocksDbWeight::get().writes(3))
+	}
+	/// PROVISIONAL until the weights run measures it: `switch_stratum`'s figure, an upper bound
+	/// (same gate, same writes, plus a bond check `evict` does not make).
+	fn evict() -> Weight {
+		Weight::from_parts(204_347_000, 34_255)
+			.saturating_add(RocksDbWeight::get().reads(9))
 			.saturating_add(RocksDbWeight::get().writes(3))
 	}
 	fn set_strata() -> Weight {

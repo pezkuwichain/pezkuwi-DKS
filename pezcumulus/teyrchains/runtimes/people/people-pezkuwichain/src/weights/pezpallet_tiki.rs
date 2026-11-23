@@ -98,6 +98,14 @@ impl<T: pezframe_system::Config> pezpallet_tiki::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(20))
 			.saturating_add(T::DbWeight::get().writes(6))
 	}
+	/// PROVISIONAL until the next weights run: `grant_tiki` plus the read and removal of
+	/// `Tiki::PendingTikis` (r:1 w:1), which is what this call adds to a grant.
+	fn confirm_tiki() -> Weight {
+		Weight::from_parts(257_638_000, 0)
+			.saturating_add(Weight::from_parts(0, 8718))
+			.saturating_add(T::DbWeight::get().reads(21))
+			.saturating_add(T::DbWeight::get().writes(7))
+	}
 	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:1 w:1)
 	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
 	/// Storage: `Tiki::UserTikis` (r:1 w:1)
@@ -145,6 +153,22 @@ impl<T: pezframe_system::Config> pezpallet_tiki::WeightInfo for WeightInfo<T> {
 			.saturating_add(Weight::from_parts(0, 6118))
 			.saturating_add(T::DbWeight::get().reads(20))
 			.saturating_add(T::DbWeight::get().writes(7))
+	}
+	/// PROVISIONAL until the next weights run: `revoke_tiki` plus the read and write of
+	/// `Tiki::PendingRemovals` (r:1 w:1), an upper bound for both halves of a removal.
+	fn propose_removal() -> Weight {
+		Weight::from_parts(281_049_000, 0)
+			.saturating_add(Weight::from_parts(0, 8718))
+			.saturating_add(T::DbWeight::get().reads(21))
+			.saturating_add(T::DbWeight::get().writes(8))
+	}
+	/// PROVISIONAL until the next weights run: `revoke_tiki` plus the read and write of
+	/// `Tiki::PendingRemovals` (r:1 w:1), an upper bound for both halves of a removal.
+	fn decide_removal() -> Weight {
+		Weight::from_parts(281_049_000, 0)
+			.saturating_add(Weight::from_parts(0, 8718))
+			.saturating_add(T::DbWeight::get().reads(21))
+			.saturating_add(T::DbWeight::get().writes(8))
 	}
 	/// Storage: `Tiki::CitizenNft` (r:1 w:1)
 	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)

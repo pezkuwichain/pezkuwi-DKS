@@ -322,6 +322,15 @@ impl<T: pezframe_system::Config> pezpallet_tnpos::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(5))
 	}
+	/// PROVISIONAL until the weights run measures `evict`: the `switch_stratum` figure, which
+	/// runs the same gate (`stands_for`) plus a bond check and the same three writes, so it
+	/// bounds `evict` from above. Replaced by the generated figure in the same change.
+	fn evict() -> Weight {
+		Weight::from_parts(195_746_000, 0)
+			.saturating_add(Weight::from_parts(0, 34255))
+			.saturating_add(T::DbWeight::get().reads(9))
+			.saturating_add(T::DbWeight::get().writes(3))
+	}
 	/// Storage: `Tnpos::PoolMembers` (r:1 w:1)
 	/// Proof: `Tnpos::PoolMembers` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	/// Storage: `Tnpos::BondedOnAssetHub` (r:1 w:0)
