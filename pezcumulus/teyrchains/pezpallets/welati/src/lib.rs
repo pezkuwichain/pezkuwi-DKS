@@ -1760,6 +1760,8 @@ pub mod pezpallet {
 		CannotApproveOwnNomination,
 		/// An office that carries standing always needs the house's confirmation.
 		ConfirmationCannotBeWaived,
+		/// The office is held during good behaviour; only the court empties it.
+		OfficeHeldDuringGoodBehaviour,
 		/// The founding period is over; a house now comes only from an election.
 		FoundingPeriodOver,
 		/// A ballot names more candidates than it may.
@@ -4228,7 +4230,13 @@ pub mod pezpallet {
 
 			// A filled office is not refused. Nominating a successor is how an appointee is
 			// replaced: when the appointment completes, the office moves and the one it is
-			// taken from retires (`seat_appointed_official`).
+			// taken from retires (`seat_appointed_official`) -- except an office held during
+			// good behaviour, which only the court empties. A successor there would be a
+			// removal by another name.
+			ensure!(
+				!Self::held_during_good_behaviour(&Self::tiki_for_role(&role)),
+				Error::<T>::OfficeHeldDuringGoodBehaviour
+			);
 
 			// Check if this specific nominee already has a pending nomination for this role
 			ensure!(
@@ -5859,6 +5867,13 @@ pub mod pezpallet {
 		/// without trace. A successor is now how an appointee leaves, and the trace is the
 		/// retirement and its event. An office with many holders gains one more.
 		fn seat_appointed_official(to: &T::AccountId, tiki: Tiki) -> DispatchResult {
+			// Checked again here for a nomination made while the office was empty and
+			// completed after someone else was seated in it.
+			ensure!(
+				!Self::held_during_good_behaviour(&tiki)
+					|| pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki).as_ref() == Some(to),
+				Error::<T>::OfficeHeldDuringGoodBehaviour
+			);
 			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
 				Self::appoint_to_unique_office(to, tiki)
 			} else {
@@ -6357,6 +6372,14 @@ impl<T: Config> Pezpallet<T> {
 		Self::counts_toward_standing(role)
 			|| ConfirmationRequired::<T>::get(role)
 				.unwrap_or_else(|| role.requires_parliament_approval())
+	}
+
+	/// A single-holder office that only the court removes, and somebody is in it.
+	pub fn held_during_good_behaviour(tiki: &Tiki) -> bool {
+		pezpallet_tiki::Pezpallet::<T>::is_unique_role(tiki)
+			&& pezpallet_tiki::Pezpallet::<T>::removal_of(tiki)
+				== pezpallet_tiki::Removal::ByTheCourt
+			&& pezpallet_tiki::Pezpallet::<T>::current_holder(tiki).is_some()
 	}
 
 	/// Whether the office adds to its holder's standing -- the tiki register's own answer.

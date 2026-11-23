@@ -1544,14 +1544,28 @@ fn a_bench_takes_more_than_one_judge_and_a_single_seat_takes_one() {
 		assert!(pezpallet_tiki::UserTikis::<Test>::get(2).contains(&Tiki::Dadger));
 		assert!(pezpallet_tiki::UserTikis::<Test>::get(3).contains(&Tiki::Dadger));
 
-		// The Treasury has one seat, and `tiki` is where that is written down. Appointing a
-		// successor moves it, and the Treasurer it is taken from retires.
-		assert_ok!(appoint(4, OfficialRole::Xezinedar));
-		assert_ok!(appoint(5, OfficialRole::Xezinedar));
-		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::Xezinedar), Some(5));
+		// The embassy has one seat, and `tiki` is where that is written down. Appointing a
+		// successor moves it, and the ambassador it is taken from retires.
+		assert_ok!(appoint(4, OfficialRole::Balyoz));
+		assert_ok!(appoint(5, OfficialRole::Balyoz));
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::Balyoz), Some(5));
 		let held_by_4 = pezpallet_tiki::UserTikis::<Test>::get(4);
-		assert!(!held_by_4.contains(&Tiki::Xezinedar));
+		assert!(!held_by_4.contains(&Tiki::Balyoz));
 		assert!(held_by_4.contains(&Tiki::Xanenişîn));
+
+		// The treasurer is held during good behaviour: a successor would be a removal by
+		// another name, so only the court empties the seat.
+		assert_ok!(appoint(6, OfficialRole::Xezinedar));
+		assert_noop!(
+			Welati::nominate_official(
+				RuntimeOrigin::signed(SEROK),
+				7,
+				OfficialRole::Xezinedar,
+				reason()
+			),
+			Error::<Test>::OfficeHeldDuringGoodBehaviour
+		);
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::Xezinedar), Some(6));
 		// A judge added beside another replaces nobody, so nobody retires.
 		assert!(!pezpallet_tiki::UserTikis::<Test>::get(2).contains(&Tiki::Xanenişîn));
 	});
