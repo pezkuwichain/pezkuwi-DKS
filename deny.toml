@@ -41,6 +41,16 @@ ignore = [
 	# so is proc-macro-error2: the vendored subxt macro reports errors through syn::Error,
 	# aquamarine gave way to simple-mermaid, and cmd_lib 2.0.1 dropped it upstream.
 	#
+	# chrono (RUSTSEC-2026-0543, 2026-11-23): declared by host-side crates only (pezsc-cli,
+	# -telemetry, -tracing, the benchmarking CLI, pez-generate-bags, txtesttool, usdt-bridge),
+	# and no runtime blob carries it. The advisory names no flaw and has no fixed release; the
+	# replacement it suggests (jiff or time) is a migration across those crates, not a patch.
+	# Drop this entry with that migration. humantime (RUSTSEC-2026-0542, same day, behind
+	# pezpallet-revive's std-only `humantime-serde`) is not declared by us, so cargo-deny's
+	# workspace scope does not report it; OSV does, and it sits in osv-baseline.json for the
+	# same reason.
+	"RUSTSEC-2026-0543",
+	#
 	# parity-wasm (RUSTSEC-2022-0061): nothing exempted. The executor's blob handling and PVF
 	# stack-height metering, sp-version's embedding and wasm-builder's check now use wasmparser
 	# and wasm-encoder; it and wasm-instrument are out of Cargo.lock.
