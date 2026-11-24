@@ -287,6 +287,16 @@ it can neither undo the court nor overtake an applicant. None of the three admin
 admission: the founding account cannot refuse, the court cannot admit, and the Prime Minister
 admits only those the register has never judged.
 
+**An application nobody finishes expires.** Four fallback periods after it was made — 360
+days at launch — anyone may remove an application still waiting for a vouch or for the
+applicant's own confirmation. The deposit goes back to the applicant, the identity hash is
+freed, and they may apply again the next day; nothing is decided about them. It exists because
+the trust sweep walks every record in the register each period, citizen or not, and at forty
+million an abandoned application is a cost paid for ever. It does not stop somebody filling the
+register with applications — they can reapply — and it is not meant to: the one-HEZ deposit,
+locked for as long as each application lives, is what prices that. A revoked citizenship is not
+an application and does not expire, because the court's restoration needs it.
+
 **What the identity hash does and does not prove.** Uniqueness of the hash stops the same
 document being registered twice. It does not stop one person registering twice with two
 documents, and this system claims no proof of personhood. The defence against a manufactured
@@ -367,6 +377,14 @@ the founding period only. Either way the seats carry no term: the founding house
 citizens, and the first real election opens that day on its own. A deadline would have forced
 that election on a register of a few thousand, two hundred and one representatives chosen by
 almost nobody.
+
+**A member may have ten proposals open at once.** Opening a proposal is free for whoever may
+open one, so free and unbounded would let one member write permanent records for as long as
+they cared to sign. A proposal counts until it is finalized, which anyone may do once it has
+passed or its vote has closed. Once finalized, anyone may clear its votes and then the proposal
+itself, in bounded calls; the outcome stays in the chain's events and, for a budget, in the
+approved figure. A proposal a presale release still depends on is kept until the release is paid
+or cancelled.
 
 ### 5.3 Serokê Meclisê — the Speaker
 
