@@ -290,7 +290,9 @@ admits only those the register has never judged.
 **An application nobody finishes expires.** Four fallback periods after it was made — 360
 days at launch — anyone may remove an application still waiting for a vouch or for the
 applicant's own confirmation. The deposit goes back to the applicant, the identity hash is
-freed, and they may apply again the next day; nothing is decided about them. It exists because
+freed, and they may apply again the next day; nothing is decided about them. A vouched
+application also stays ninety days past the vouch, so a late vouch is never expired before the
+applicant can confirm. It exists because
 the trust sweep walks every record in the register each period, citizen or not, and at forty
 million an abandoned application is a cost paid for ever. It does not stop somebody filling the
 register with applications — they can reapply — and it is not meant to: the one-HEZ deposit,
