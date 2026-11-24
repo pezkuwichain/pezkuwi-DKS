@@ -2920,11 +2920,14 @@ mod proposals {
 
 	#[test]
 	fn a_finalized_proposal_and_its_votes_can_be_cleared() {
-		ExtBuilder::default().build().execute_with(|| {
+		let mut ext = ExtBuilder::default().build();
+		let mut id = 0;
+		let mut votes = 0;
+		ext.execute_with(|| {
 			add_parliament_member(1);
-			let id = open_proposal(None);
+			id = open_proposal(None);
 			carry(id);
-			let votes = crate::CollectiveVotes::<Test>::iter_prefix(id).count() as u32;
+			votes = crate::CollectiveVotes::<Test>::iter_prefix(id).count() as u32;
 			assert!(votes > 1, "the clearing has to be able to take more than one call");
 
 			// Not while it is open.
@@ -2933,10 +2936,18 @@ mod proposals {
 				Error::<Test>::ProposalNotFinished
 			);
 			assert_ok!(Welati::finalize_proposal(RuntimeOrigin::signed(99), id));
-
+		});
+		// Into the backend, where a chain's records are: an overlay `clear_prefix` removes
+		// everything regardless of the limit (see `a_finished_elections_records_go_in_bounded_steps`).
+		ext.commit_all().expect("the votes commit");
+		ext.execute_with(|| {
 			// One vote at a time: the proposal stays as long as any of its votes do.
 			assert_ok!(Welati::clear_proposal_records(RuntimeOrigin::signed(99), id, 1));
 			assert!(Welati::active_proposals(id).is_some());
+			assert_eq!(crate::CollectiveVotes::<Test>::iter_prefix(id).count() as u32, votes - 1);
+		});
+		ext.commit_all().expect("the first clearing commits");
+		ext.execute_with(|| {
 			assert_ok!(Welati::clear_proposal_records(RuntimeOrigin::signed(99), id, 1_000));
 
 			assert!(Welati::active_proposals(id).is_none());
