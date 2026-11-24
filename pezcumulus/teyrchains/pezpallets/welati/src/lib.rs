@@ -200,6 +200,15 @@ use xcm::latest::prelude::*;
 /// be cleared in a few hundred calls, small enough that one of them fits a block with room left.
 pub const MAX_CLEARED_PER_CALL: u32 = 1_000;
 
+/// The most proposals one member may have open at once.
+///
+/// Opening a proposal is free for whoever may open one, and every proposal stays in storage
+/// with up to a vote per member until somebody clears it. Free and unbounded meant one member
+/// could write as many permanent kilobyte records as they could sign. Ten is more than any
+/// member needs in flight -- a proposal closes within one election period whether or not it
+/// passes -- and two hundred and one members times ten is a bound the state can carry.
+pub const MAX_OPEN_PROPOSALS_PER_PROPOSER: u32 = 10;
+
 const ACTIVATE_DISTRIBUTION_CALL_INDEX: u8 = 0;
 
 /// `pezpallet-pez-treasury::spend_from_government_pot`, by call index.
@@ -1147,6 +1156,20 @@ pub mod pezpallet {
 		OptionQuery,
 	>;
 
+	/// How many proposals each member has open, against `MAX_OPEN_PROPOSALS_PER_PROPOSER`.
+	/// Counted up when a proposal opens and down when it is finalized.
+	#[pezpallet::storage]
+	pub type OpenProposalsOf<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
+
+	/// The presale release each proposal decides, keyed by the proposal.
+	///
+	/// A release reads its proposal's status when it is paid or cancelled, so the proposal's
+	/// record has to outlive the release. This is what `clear_proposal_records` asks before it
+	/// removes one; without it the only way to tell would be walking every release.
+	#[pezpallet::storage]
+	pub type PresaleOfVote<T: Config> = StorageMap<_, Blake2_128Concat, u32, u32, OptionQuery>;
+
 	/// Storage holding governance metrics
 	#[pezpallet::storage]
 	pub type GovernanceStats<T: Config> = StorageValue<_, GovernanceMetrics<T>, OptionQuery>;
@@ -1567,6 +1590,10 @@ pub mod pezpallet {
 
 		/// Ballots, endorsements and candidacies of a finished election were discarded.
 		ElectionRecordsCleared { election_id: u32, removed: u32 },
+
+		/// Votes of a finished proposal were discarded; `complete` when the proposal's own
+		/// record went with them.
+		ProposalRecordsCleared { proposal_id: u32, removed: u32, complete: bool },
 	}
 
 	#[pezpallet::error]
@@ -1774,6 +1801,12 @@ pub mod pezpallet {
 		CannotEndorseSelf,
 		/// An election's records can be discarded only once it has finished.
 		ElectionNotFinished,
+		/// This member already has `MAX_OPEN_PROPOSALS_PER_PROPOSER` proposals open.
+		TooManyOpenProposals,
+		/// A proposal's records can be discarded only once it has been finalized.
+		ProposalNotFinished,
+		/// A presale release still reads this proposal; it is paid or cancelled first.
+		ProposalHeldByPresale,
 	}
 
 	/// The founding bodies, seated in the first block.
@@ -2413,6 +2446,9 @@ pub mod pezpallet {
 			let status = proposal.status;
 			let (aye, nay, abstain) =
 				(proposal.aye_votes, proposal.nay_votes, proposal.abstain_votes);
+			OpenProposalsOf::<T>::mutate_exists(&proposal.proposer, |n| {
+				*n = n.and_then(|n| n.checked_sub(1)).filter(|n| *n > 0);
+			});
 			ActiveProposals::<T>::insert(proposal_id, proposal);
 
 			Self::deposit_event(Event::ProposalFinalized {
@@ -2748,7 +2784,7 @@ pub mod pezpallet {
 				CollectiveDecisionType::ParliamentSimpleMajority,
 				ProposalPriority::High,
 				None,
-			);
+			)?;
 
 			let id = NextPresaleId::<T>::mutate(|n| {
 				let id = *n;
@@ -2768,6 +2804,7 @@ pub mod pezpallet {
 					payable_from,
 				},
 			);
+			PresaleOfVote::<T>::insert(vote_id, id);
 			Self::deposit_event(Event::PresaleProposed { id, vote_id, beneficiary, amount });
 			Ok(())
 		}
@@ -2798,6 +2835,7 @@ pub mod pezpallet {
 			// release cannot be paid twice. Removing it afterwards would leave a window in
 			// which the money is gone and the record still says it is owed.
 			PresaleProposals::<T>::remove(id);
+			PresaleOfVote::<T>::remove(p.vote_id);
 			let sent_total = PresaleSentTotal::<T>::mutate(|r| {
 				*r = r.saturating_add(p.amount);
 				*r
@@ -2835,6 +2873,7 @@ pub mod pezpallet {
 				.unwrap_or(false);
 			ensure!(refused || who == p.proposer, Error::<T>::NotTheFinanceMinisterForPresale);
 			PresaleProposals::<T>::remove(id);
+			PresaleOfVote::<T>::remove(p.vote_id);
 			Self::deposit_event(Event::PresaleCancelled { id });
 			Ok(())
 		}
@@ -3489,6 +3528,54 @@ pub mod pezpallet {
 			}
 
 			Self::deposit_event(Event::ElectionRecordsCleared { election_id, removed });
+			Ok(())
+		}
+
+		/// Discard the votes of a finalized proposal, and then the proposal itself.
+		///
+		/// Permissionless and bounded, like `clear_election_records`: at most
+		/// `MAX_CLEARED_PER_CALL` votes per call, charged for what is asked. Once a proposal is
+		/// finalized its outcome is in the `ProposalFinalized` event and, for a budget, in
+		/// `ApprovedBudget`; nothing on chain reads its votes again. The proposal's own record
+		/// goes in the call that removes its last vote, so a proposal is never left without
+		/// the record its remaining votes belong to.
+		///
+		/// Refused while a presale release still reads the proposal: `execute_presale` and
+		/// `cancel_presale` decide by its status, so it stays until the release is settled.
+		#[pezpallet::call_index(76)]
+		#[pezpallet::weight(
+			Pezpallet::<T>::clearing_weight((*limit).min(MAX_CLEARED_PER_CALL))
+				.saturating_add(T::DbWeight::get().writes(1))
+		)]
+		pub fn clear_proposal_records(
+			origin: OriginFor<T>,
+			#[pezpallet::compact] proposal_id: u32,
+			limit: u32,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			let proposal =
+				ActiveProposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotFound)?;
+			ensure!(proposal.status != ProposalStatus::Active, Error::<T>::ProposalNotFinished);
+			ensure!(
+				!PresaleOfVote::<T>::contains_key(proposal_id),
+				Error::<T>::ProposalHeldByPresale
+			);
+
+			let r = CollectiveVotes::<T>::clear_prefix(
+				proposal_id,
+				limit.min(MAX_CLEARED_PER_CALL),
+				None,
+			);
+			let complete = r.maybe_cursor.is_none();
+			if complete {
+				ActiveProposals::<T>::remove(proposal_id);
+			}
+
+			Self::deposit_event(Event::ProposalRecordsCleared {
+				proposal_id,
+				removed: r.unique,
+				complete,
+			});
 			Ok(())
 		}
 
@@ -4525,7 +4612,7 @@ pub mod pezpallet {
 				decision_type,
 				priority,
 				budget_amount,
-			);
+			)?;
 			Ok(())
 		}
 
@@ -5406,7 +5493,8 @@ pub mod pezpallet {
 		/// and rewriting it to name a different account would falsify the record the ballot
 		/// exists to keep. Endorsements, backings and referendum votes stay where they were
 		/// cast. A candidacy in flight is not moved either -- it is re-made, and it costs one
-		/// call rather than a scan of every election ever held.
+		/// call rather than a scan of every election ever held. `OpenProposalsOf` stays too:
+		/// `finalize_proposal` counts down the proposer of record, which is the old account.
 		pub fn rebind_account(from: &T::AccountId, to: &T::AccountId) -> DispatchResult {
 			DiwanMembers::<T>::mutate(|bench| {
 				for member in bench.iter_mut() {
@@ -6235,7 +6323,13 @@ pub mod pezpallet {
 			decision_type: CollectiveDecisionType,
 			priority: ProposalPriority,
 			budget_amount: Option<u128>,
-		) -> u32 {
+		) -> Result<u32, DispatchError> {
+			OpenProposalsOf::<T>::try_mutate(&proposer, |n| -> DispatchResult {
+				ensure!(*n < MAX_OPEN_PROPOSALS_PER_PROPOSER, Error::<T>::TooManyOpenProposals);
+				*n = n.saturating_add(1);
+				Ok(())
+			})?;
+
 			let proposal_id = NextProposalId::<T>::get();
 			NextProposalId::<T>::put(proposal_id.saturating_add(1));
 
@@ -6272,7 +6366,7 @@ pub mod pezpallet {
 				voting_deadline: expires_at,
 			});
 
-			proposal_id
+			Ok(proposal_id)
 		}
 
 		fn get_voting_threshold(decision_type: &CollectiveDecisionType) -> u32 {

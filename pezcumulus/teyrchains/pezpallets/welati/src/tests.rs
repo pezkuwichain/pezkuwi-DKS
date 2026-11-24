@@ -2874,6 +2874,83 @@ mod proposals {
 			assert_eq!(ApprovedBudget::<Test>::get(), 0);
 		});
 	}
+
+	fn submit(by: u64) -> DispatchResult {
+		Welati::submit_proposal(
+			RuntimeOrigin::signed(by),
+			b"Budget".to_vec().try_into().unwrap(),
+			b"A budget for the year".to_vec().try_into().unwrap(),
+			CollectiveDecisionType::ParliamentSimpleMajority,
+			ProposalPriority::Normal,
+			None,
+		)
+	}
+
+	#[test]
+	fn a_member_may_have_only_so_many_proposals_open() {
+		// Opening a proposal is free; without a cap one member could write records for ever.
+		ExtBuilder::default().build().execute_with(|| {
+			add_parliament_member(1);
+			add_parliament_member(2);
+			for _ in 0..crate::MAX_OPEN_PROPOSALS_PER_PROPOSER {
+				assert_ok!(submit(1));
+			}
+			assert_noop!(submit(1), Error::<Test>::TooManyOpenProposals);
+			// The cap is per member, not for the house.
+			assert_ok!(submit(2));
+		});
+	}
+
+	#[test]
+	fn finalizing_a_proposal_frees_its_place_under_the_cap() {
+		ExtBuilder::default().build().execute_with(|| {
+			add_parliament_member(1);
+			let first = Welati::next_proposal_id();
+			for _ in 0..crate::MAX_OPEN_PROPOSALS_PER_PROPOSER {
+				assert_ok!(submit(1));
+			}
+			let expires = Welati::active_proposals(first).unwrap().expires_at;
+			run_to_block(expires + 1);
+			assert_ok!(Welati::finalize_proposal(RuntimeOrigin::signed(99), first));
+
+			assert_ok!(submit(1));
+			assert_noop!(submit(1), Error::<Test>::TooManyOpenProposals);
+		});
+	}
+
+	#[test]
+	fn a_finalized_proposal_and_its_votes_can_be_cleared() {
+		ExtBuilder::default().build().execute_with(|| {
+			add_parliament_member(1);
+			let id = open_proposal(None);
+			carry(id);
+			let votes = crate::CollectiveVotes::<Test>::iter_prefix(id).count() as u32;
+			assert!(votes > 1, "the clearing has to be able to take more than one call");
+
+			// Not while it is open.
+			assert_noop!(
+				Welati::clear_proposal_records(RuntimeOrigin::signed(99), id, 1_000),
+				Error::<Test>::ProposalNotFinished
+			);
+			assert_ok!(Welati::finalize_proposal(RuntimeOrigin::signed(99), id));
+
+			// One vote at a time: the proposal stays as long as any of its votes do.
+			assert_ok!(Welati::clear_proposal_records(RuntimeOrigin::signed(99), id, 1));
+			assert!(Welati::active_proposals(id).is_some());
+			assert_ok!(Welati::clear_proposal_records(RuntimeOrigin::signed(99), id, 1_000));
+
+			assert!(Welati::active_proposals(id).is_none());
+			assert_eq!(crate::CollectiveVotes::<Test>::iter_prefix(id).count(), 0);
+			System::assert_last_event(
+				WelatiEvent::ProposalRecordsCleared {
+					proposal_id: id,
+					removed: votes - 1,
+					complete: true,
+				}
+				.into(),
+			);
+		});
+	}
 }
 
 // ===== THE ELECTORAL CLOCK =====
@@ -7301,4 +7378,31 @@ mod standing_takes_the_house {
 			assert!(!Welati::confirmation_is_required(&OfficialRole::Xezinedar));
 		});
 	}
+}
+
+/// A release reads its proposal's status, so the proposal outlives the release.
+#[test]
+fn a_proposal_a_presale_still_reads_cannot_be_cleared() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Locked { months: 6 },
+			BUYER,
+			1_000,
+			b"terms".to_vec()
+		));
+		let vote_id = PresaleProposals::<Test>::get(0).unwrap().vote_id;
+		carry_the_vote(vote_id);
+
+		assert_noop!(
+			Welati::clear_proposal_records(RuntimeOrigin::signed(OUTSIDER), vote_id, 1_000),
+			Error::<Test>::ProposalHeldByPresale
+		);
+
+		// Once the release is settled the proposal is an ordinary finished one.
+		assert_ok!(Welati::cancel_presale(RuntimeOrigin::signed(MINISTER), 0));
+		assert_ok!(Welati::clear_proposal_records(RuntimeOrigin::signed(OUTSIDER), vote_id, 1_000));
+		assert!(Welati::active_proposals(vote_id).is_none());
+	});
 }
