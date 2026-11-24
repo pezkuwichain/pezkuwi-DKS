@@ -43,7 +43,8 @@ mod benchmarks {
 	/// The member is given a seat in the house and placed in the court's stratum, which it does
 	/// not hold, so `stands_for` reads the register and refuses -- the case where every check
 	/// runs before the place is freed. (Not the lottery: the helper's standing passes its trust
-	/// floor, and the benchmark would measure a refusal to evict.)
+	/// floor, and the benchmark would measure a refusal to evict.) The house's gate reads more
+	/// than the court's, so the call charges the larger of this and `switch_stratum`.
 	#[benchmark]
 	fn evict() {
 		let who = account::<T::AccountId>("member", 0, 0);

@@ -176,5 +176,47 @@ mod benchmarks {
 		assert_eq!(KycStatuses::<T>::get(&applicant), KycLevel::NotStarted);
 	}
 
+	/// Restoring re-mints the NFT and runs both restoration hooks, so it is measured on a
+	/// citizen someone vouched for -- the voucher's record is what the restoration undoes.
+	#[benchmark]
+	fn restore_citizenship() {
+		let citizen: T::AccountId = funded_account::<T>("citizen", 0);
+		setup_vouched_citizen::<T>(&citizen);
+		Pezpallet::<T>::revoke_citizenship(RawOrigin::Root.into(), citizen.clone())
+			.expect("a vouched citizen can be revoked; qed");
+
+		#[extrinsic_call]
+		restore_citizenship(RawOrigin::Root, citizen.clone());
+
+		assert_eq!(KycStatuses::<T>::get(&citizen), KycLevel::Approved);
+	}
+
+	/// The heavier of the two states that expire: a referrer-approved application the founder
+	/// stood in for, so `ApprovedByFallback` is written and has to be cleared.
+	#[benchmark]
+	fn expire_application() {
+		let referrer: T::AccountId = funded_account::<T>("referrer", 0);
+		setup_citizen::<T>(&referrer);
+		let applicant: T::AccountId = funded_account::<T>("applicant", 1);
+		setup_referrer_approved::<T>(&applicant, &referrer);
+		ApprovedByFallback::<T>::insert(&applicant, ());
+		IdentityHashToAccount::<T>::insert(H256::repeat_byte(0x01), &applicant);
+
+		let lifetime = T::ReferralFallbackPeriod::get()
+			.saturating_mul(APPLICATION_LIFETIME_IN_FALLBACK_PERIODS.into());
+		pezframe_system::Pezpallet::<T>::set_block_number(
+			pezframe_system::Pezpallet::<T>::block_number()
+				.saturating_add(lifetime)
+				.saturating_add(1u32.into()),
+		);
+		let caller: T::AccountId = funded_account::<T>("caller", 2);
+
+		#[extrinsic_call]
+		expire_application(RawOrigin::Signed(caller), applicant.clone());
+
+		assert_eq!(KycStatuses::<T>::get(&applicant), KycLevel::NotStarted);
+		assert!(!ApprovedByFallback::<T>::contains_key(&applicant));
+	}
+
 	impl_benchmark_test_suite!(Pezpallet, crate::mock::new_test_ext(), crate::mock::Test);
 }

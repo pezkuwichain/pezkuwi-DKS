@@ -187,16 +187,25 @@
 # Previous request (measured, files in the tree with #140):
 #   - runtime: pezkuwichain zagros
 #     pallet: pezkuwi_runtime_teyrchains::paras_inherent
+# Previous request (measured by run 43817939252, files in the tree with #142):
+#   - runtime: pezkuwichain zagros
+#     pallet: pezpallet_session
+#     why: relay session weights are upstream's 2022 figures; the relay now lists a session benchmark that needs no staking pallet
+#   - runtime: coretime-pezkuwichain coretime-zagros
+#     pallet: pezframe_system_extensions pezpallet_transaction_payment
+#     why: coretime charges every transaction by Parity's gleipnir; both were missing from the benchmark list
+#   - runtime: asset-hub-pezkuwichain asset-hub-zagros
+#     pallet: pezpallet_parameters
+#     why: never measured, no host in the file; now in the benchmark list
+#   - runtime: collectives-zagros
+#     pallet: pezpallet_xcm_benchmarks::fungible pezpallet_xcm_benchmarks::generic
+#     why: both XCM files were measured in a foreign container
+# 2026-11-24: People's calls still charged by hand. #144 added tnpos `evict` and tiki
+# `confirm_tiki`, `propose_removal` and `decide_removal` with PROVISIONAL figures composed from
+# neighbouring calls; this branch adds identity-kyc `expire_application` and gives
+# `restore_citizenship` a benchmark of its own (it was charged as `revoke_citizenship`), and
+# welati's `submit_proposal` and `finalize_proposal` now keep a per-member count. Both twins.
 runs:
-  - runtime: pezkuwichain zagros
-    pallet: pezpallet_session
-    why: relay session weights are upstream's 2022 figures; the relay now lists a session benchmark that needs no staking pallet
-  - runtime: coretime-pezkuwichain coretime-zagros
-    pallet: pezframe_system_extensions pezpallet_transaction_payment
-    why: coretime charges every transaction by Parity's gleipnir; both were missing from the benchmark list
-  - runtime: asset-hub-pezkuwichain asset-hub-zagros
-    pallet: pezpallet_parameters
-    why: never measured, no host in the file; now in the benchmark list
-  - runtime: collectives-zagros
-    pallet: pezpallet_xcm_benchmarks::fungible pezpallet_xcm_benchmarks::generic
-    why: both XCM files were measured in a foreign container
+  - runtime: people-pezkuwichain people-zagros
+    pallet: pezpallet_tnpos pezpallet_tiki pezpallet_identity_kyc pezpallet_welati
+    why: PROVISIONAL weights from #144 and this branch, and two welati calls that now write one more record

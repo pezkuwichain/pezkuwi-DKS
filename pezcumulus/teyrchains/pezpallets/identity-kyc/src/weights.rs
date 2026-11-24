@@ -61,6 +61,8 @@ pub trait WeightInfo {
 	fn revoke_citizenship() -> Weight;
 	fn renounce_citizenship() -> Weight;
 	fn cancel_application() -> Weight;
+	fn restore_citizenship() -> Weight;
+	fn expire_application() -> Weight;
 }
 
 /// Weights for `pezpallet_identity_kyc` using the Bizinikiwi node and recommended hardware.
@@ -152,6 +154,98 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
+	/// Storage: `Diwan::Members` (r:1 w:0)
+	/// Proof: `Diwan::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:2 w:1)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::CitizenCount` (r:1 w:1)
+	/// Proof: `IdentityKyc::CitizenCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::CitizenNft` (r:1 w:1)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::NextItemId` (r:1 w:1)
+	/// Proof: `Tiki::NextItemId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Item` (r:1 w:1)
+	/// Proof: `Nfts::Item` (`max_values`: None, `max_size`: Some(861), added: 3336, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Collection` (r:1 w:1)
+	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemConfigOf` (r:1 w:1)
+	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Attribute` (r:1 w:1)
+	/// Proof: `Nfts::Attribute` (`max_values`: None, `max_size`: Some(479), added: 2954, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:2 w:1)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:2 w:0)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemMetadataOf` (r:1 w:1)
+	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
+	/// Storage: `Referral::Referrals` (r:1 w:0)
+	/// Proof: `Referral::Referrals` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::ApprovedByFallback` (r:1 w:0)
+	/// Proof: `IdentityKyc::ApprovedByFallback` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::SupersededBy` (r:1 w:0)
+	/// Proof: `IdentityKyc::SupersededBy` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Parameters::Parameters` (r:2 w:0)
+	/// Proof: `Parameters::Parameters` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
+	/// Storage: `Referral::ReferrerStatsStorage` (r:1 w:1)
+	/// Proof: `Referral::ReferrerStatsStorage` (`max_values`: None, `max_size`: Some(60), added: 2535, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
+	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:1 w:1)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `StakingScore::CachedStakingDetails` (r:2 w:0)
+	/// Proof: `StakingScore::CachedStakingDetails` (`max_values`: None, `max_size`: Some(89), added: 2564, mode: `MaxEncodedLen`)
+	/// Storage: `StakingScore::StakingStartBlock` (r:1 w:0)
+	/// Proof: `StakingScore::StakingStartBlock` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `StakingScore::ReportedByChain` (r:1 w:0)
+	/// Proof: `StakingScore::ReportedByChain` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `StakingScore::LastConfirmed` (r:1 w:0)
+	/// Proof: `StakingScore::LastConfirmed` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `StakingScore::StakeFirstSeen` (r:1 w:0)
+	/// Proof: `StakingScore::StakeFirstSeen` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Perwerde::PerwerdeScores` (r:1 w:0)
+	/// Proof: `Perwerde::PerwerdeScores` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TotalActiveTrustScore` (r:1 w:1)
+	/// Proof: `Trust::TotalActiveTrustScore` (`max_values`: Some(1), `max_size`: Some(16), added: 511, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:0 w:1)
+	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::PendingRecompute` (r:0 w:1)
+	/// Proof: `Trust::PendingRecompute` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Account` (r:0 w:1)
+	/// Proof: `Nfts::Account` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
+	fn restore_citizenship() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `2302`
+		//  Estimated: `6118`
+		// Minimum execution time: 278_138_000 picoseconds.
+		Weight::from_parts(438_524_000, 0)
+			.saturating_add(Weight::from_parts(0, 6118))
+			.saturating_add(T::DbWeight::get().reads(32))
+			.saturating_add(T::DbWeight::get().writes(16))
+	}
+	/// Storage: `IdentityKyc::KycStatuses` (r:1 w:1)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::Applications` (r:1 w:1)
+	/// Proof: `IdentityKyc::Applications` (`max_values`: None, `max_size`: Some(149), added: 2624, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::ReferralApprovedAt` (r:1 w:1)
+	/// Proof: `IdentityKyc::ReferralApprovedAt` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::IdentityHashToAccount` (r:0 w:1)
+	/// Proof: `IdentityKyc::IdentityHashToAccount` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::ApprovedByFallback` (r:0 w:1)
+	/// Proof: `IdentityKyc::ApprovedByFallback` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	fn expire_application() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `560`
+		//  Estimated: `3614`
+		// Minimum execution time: 61_401_000 picoseconds.
+		Weight::from_parts(95_823_000, 0)
+			.saturating_add(Weight::from_parts(0, 3614))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(6))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -241,5 +335,97 @@ impl WeightInfo for () {
 		Weight::from_parts(29_261_000, 3593)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Storage: `Diwan::Members` (r:1 w:0)
+	/// Proof: `Diwan::Members` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `IdentityKyc::KycStatuses` (r:2 w:1)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::CitizenCount` (r:1 w:1)
+	/// Proof: `IdentityKyc::CitizenCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::CitizenNft` (r:1 w:1)
+	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::NextItemId` (r:1 w:1)
+	/// Proof: `Tiki::NextItemId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Item` (r:1 w:1)
+	/// Proof: `Nfts::Item` (`max_values`: None, `max_size`: Some(861), added: 3336, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Collection` (r:1 w:1)
+	/// Proof: `Nfts::Collection` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::CollectionConfigOf` (r:1 w:0)
+	/// Proof: `Nfts::CollectionConfigOf` (`max_values`: None, `max_size`: Some(73), added: 2548, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemConfigOf` (r:1 w:1)
+	/// Proof: `Nfts::ItemConfigOf` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Attribute` (r:1 w:1)
+	/// Proof: `Nfts::Attribute` (`max_values`: None, `max_size`: Some(479), added: 2954, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::UserTikis` (r:2 w:1)
+	/// Proof: `Tiki::UserTikis` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::TikiExpiry` (r:2 w:0)
+	/// Proof: `Tiki::TikiExpiry` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::ItemMetadataOf` (r:1 w:1)
+	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
+	/// Storage: `Referral::Referrals` (r:1 w:0)
+	/// Proof: `Referral::Referrals` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::ApprovedByFallback` (r:1 w:0)
+	/// Proof: `IdentityKyc::ApprovedByFallback` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::SupersededBy` (r:1 w:0)
+	/// Proof: `IdentityKyc::SupersededBy` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Parameters::Parameters` (r:2 w:0)
+	/// Proof: `Parameters::Parameters` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
+	/// Storage: `Referral::ReferrerStatsStorage` (r:1 w:1)
+	/// Proof: `Referral::ReferrerStatsStorage` (`max_values`: None, `max_size`: Some(60), added: 2535, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::FrozenUntil` (r:1 w:0)
+	/// Proof: `Trust::FrozenUntil` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:1 w:1)
+	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
+	/// Storage: `StakingScore::CachedStakingDetails` (r:2 w:0)
+	/// Proof: `StakingScore::CachedStakingDetails` (`max_values`: None, `max_size`: Some(89), added: 2564, mode: `MaxEncodedLen`)
+	/// Storage: `StakingScore::StakingStartBlock` (r:1 w:0)
+	/// Proof: `StakingScore::StakingStartBlock` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `StakingScore::ReportedByChain` (r:1 w:0)
+	/// Proof: `StakingScore::ReportedByChain` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `StakingScore::LastConfirmed` (r:1 w:0)
+	/// Proof: `StakingScore::LastConfirmed` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
+	/// Storage: `StakingScore::StakeFirstSeen` (r:1 w:0)
+	/// Proof: `StakingScore::StakeFirstSeen` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Perwerde::PerwerdeScores` (r:1 w:0)
+	/// Proof: `Perwerde::PerwerdeScores` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TotalActiveTrustScore` (r:1 w:1)
+	/// Proof: `Trust::TotalActiveTrustScore` (`max_values`: Some(1), `max_size`: Some(16), added: 511, mode: `MaxEncodedLen`)
+	/// Storage: `Tiki::RoleAssignmentTypeOf` (r:0 w:1)
+	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::PendingRecompute` (r:0 w:1)
+	/// Proof: `Trust::PendingRecompute` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	/// Storage: `Nfts::Account` (r:0 w:1)
+	/// Proof: `Nfts::Account` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
+	fn restore_citizenship() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `2302`
+		//  Estimated: `6118`
+		// Minimum execution time: 278_138_000 picoseconds.
+		Weight::from_parts(438_524_000, 0)
+			.saturating_add(Weight::from_parts(0, 6118))
+			.saturating_add(RocksDbWeight::get().reads(32))
+			.saturating_add(RocksDbWeight::get().writes(16))
+	}
+	/// Storage: `IdentityKyc::KycStatuses` (r:1 w:1)
+	/// Proof: `IdentityKyc::KycStatuses` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::Applications` (r:1 w:1)
+	/// Proof: `IdentityKyc::Applications` (`max_values`: None, `max_size`: Some(149), added: 2624, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::ReferralApprovedAt` (r:1 w:1)
+	/// Proof: `IdentityKyc::ReferralApprovedAt` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::IdentityHashToAccount` (r:0 w:1)
+	/// Proof: `IdentityKyc::IdentityHashToAccount` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `IdentityKyc::ApprovedByFallback` (r:0 w:1)
+	/// Proof: `IdentityKyc::ApprovedByFallback` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
+	fn expire_application() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `560`
+		//  Estimated: `3614`
+		// Minimum execution time: 61_401_000 picoseconds.
+		Weight::from_parts(95_823_000, 0)
+			.saturating_add(Weight::from_parts(0, 3614))
+			.saturating_add(RocksDbWeight::get().reads(4))
+			.saturating_add(RocksDbWeight::get().writes(6))
 	}
 }
