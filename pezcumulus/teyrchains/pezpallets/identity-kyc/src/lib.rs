@@ -369,6 +369,15 @@ pub mod pezpallet {
 	pub type ApprovedByFallback<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, (), OptionQuery>;
 
+	/// When an application in progress was vouched for.
+	///
+	/// Read only by `expire_application`: a vouch given late in an application's life would
+	/// otherwise be expired out from under the applicant before they had time to confirm.
+	/// Removed when the application ends -- confirmed or expired.
+	#[pezpallet::storage]
+	pub type ReferralApprovedAt<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
 	/// Citizens the state named rather than citizens who applied.
 	///
 	/// Honorary citizenship is citizenship: the same status, the same rights, counted in the
@@ -701,6 +710,10 @@ pub mod pezpallet {
 
 			// Update status to ReferrerApproved
 			KycStatuses::<T>::insert(&applicant, KycLevel::ReferrerApproved);
+			ReferralApprovedAt::<T>::insert(
+				&applicant,
+				pezframe_system::Pezpallet::<T>::block_number(),
+			);
 
 			Self::deposit_event(Event::ReferralApproved { referrer: caller, applicant });
 			Ok(())
@@ -731,6 +744,7 @@ pub mod pezpallet {
 			// Get application
 			let application =
 				Applications::<T>::take(&applicant).ok_or(Error::<T>::ApplicationNotFound)?;
+			ReferralApprovedAt::<T>::remove(&applicant);
 
 			// Return deposit
 			let deposit = T::KycApplicationDeposit::get();
@@ -927,6 +941,10 @@ pub mod pezpallet {
 		/// one period, so a lifetime of one period would leave nothing to approve. Four give
 		/// the named referrer the whole year and the founder the last nine months of it.
 		///
+		/// A vouched application also stays for one fallback period after the vouch, whatever
+		/// its age: the applicant's last step is their own, and a vouch given on the last day
+		/// would otherwise be expired by anyone before they could take it.
+		///
 		/// It does not limit an attacker filling the map: they can apply again after expiry.
 		/// What bounds that is the deposit, locked for as long as each row exists. This
 		/// clears what was abandoned, which at forty million is the larger number.
@@ -946,11 +964,15 @@ pub mod pezpallet {
 			);
 			let application =
 				Applications::<T>::get(&who).ok_or(Error::<T>::ApplicationNotFound)?;
-			let lifetime = T::ReferralFallbackPeriod::get()
-				.saturating_mul(APPLICATION_LIFETIME_IN_FALLBACK_PERIODS.into());
+			let period = T::ReferralFallbackPeriod::get();
+			let mut ends = application.applied_at.saturating_add(
+				period.saturating_mul(APPLICATION_LIFETIME_IN_FALLBACK_PERIODS.into()),
+			);
+			if let Some(vouched) = ReferralApprovedAt::<T>::get(&who) {
+				ends = ends.max(vouched.saturating_add(period));
+			}
 			ensure!(
-				pezframe_system::Pezpallet::<T>::block_number()
-					> application.applied_at.saturating_add(lifetime),
+				pezframe_system::Pezpallet::<T>::block_number() > ends,
 				Error::<T>::ApplicationStillLive
 			);
 
@@ -959,6 +981,7 @@ pub mod pezpallet {
 			// Written only when the founder stood in; an application that never became a
 			// citizen leaves nothing for `referral` to read it for.
 			ApprovedByFallback::<T>::remove(&who);
+			ReferralApprovedAt::<T>::remove(&who);
 			KycStatuses::<T>::remove(&who);
 			T::Currency::unreserve(&who, T::KycApplicationDeposit::get());
 

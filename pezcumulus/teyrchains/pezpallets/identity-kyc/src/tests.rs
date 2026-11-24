@@ -1127,3 +1127,46 @@ fn citizens_and_revoked_records_do_not_expire() {
 		);
 	});
 }
+
+#[test]
+fn a_late_vouch_is_not_expired_out_from_under_the_applicant() {
+	// The applicant's last step is their own. A vouch given on the application's last day
+	// would otherwise be undone by anyone the next block, before they could confirm.
+	new_test_ext().execute_with(|| {
+		let start = System::block_number();
+		apply(777);
+		System::set_block_number(start + lifetime());
+		assert_ok!(IdentityKycPallet::approve_referral(
+			RuntimeOrigin::signed(CITIZEN_1),
+			APPLICANT
+		));
+
+		System::set_block_number(start + lifetime() + ReferralFallbackPeriod::get());
+		assert_noop!(
+			IdentityKycPallet::expire_application(RuntimeOrigin::signed(CITIZEN_2), APPLICANT),
+			Error::<Test>::ApplicationStillLive
+		);
+		assert_ok!(IdentityKycPallet::confirm_citizenship(RuntimeOrigin::signed(APPLICANT)));
+		assert!(!crate::ReferralApprovedAt::<Test>::contains_key(APPLICANT));
+	});
+}
+
+#[test]
+fn a_vouched_application_left_unconfirmed_still_expires() {
+	new_test_ext().execute_with(|| {
+		let start = System::block_number();
+		apply(777);
+		System::set_block_number(start + lifetime());
+		assert_ok!(IdentityKycPallet::approve_referral(
+			RuntimeOrigin::signed(CITIZEN_1),
+			APPLICANT
+		));
+
+		System::set_block_number(start + lifetime() + ReferralFallbackPeriod::get() + 1);
+		assert_ok!(IdentityKycPallet::expire_application(
+			RuntimeOrigin::signed(CITIZEN_2),
+			APPLICANT
+		));
+		assert!(!crate::ReferralApprovedAt::<Test>::contains_key(APPLICANT));
+	});
+}

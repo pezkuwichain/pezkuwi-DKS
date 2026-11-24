@@ -311,8 +311,9 @@ impl<T: pezframe_system::Config> pezpallet_identity_kyc::WeightInfo for WeightIn
 		<Self as pezpallet_identity_kyc::WeightInfo>::revoke_citizenship()
 	}
 	/// PROVISIONAL until the reference host measures it (`.github/weights-request.yml`):
-	/// `cancel_application`'s records plus `ApprovedByFallback`.
+	/// `cancel_application`'s records plus `ApprovedByFallback` and `ReferralApprovedAt`.
 	fn expire_application() -> Weight {
-		<Self as pezpallet_identity_kyc::WeightInfo>::cancel_application().saturating_add(T::DbWeight::get().writes(1))
+		<Self as pezpallet_identity_kyc::WeightInfo>::cancel_application()
+			.saturating_add(T::DbWeight::get().reads_writes(1, 2))
 	}
 }

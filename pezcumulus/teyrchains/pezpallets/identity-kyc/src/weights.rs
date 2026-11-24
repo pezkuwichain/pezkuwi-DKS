@@ -160,9 +160,9 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 		Self::revoke_citizenship()
 	}
 	/// PROVISIONAL until the reference host measures it: `cancel_application`'s records plus
-	/// `ApprovedByFallback`.
+	/// `ApprovedByFallback` and `ReferralApprovedAt`.
 	fn expire_application() -> Weight {
-		Self::cancel_application().saturating_add(T::DbWeight::get().writes(1_u64))
+		Self::cancel_application().saturating_add(T::DbWeight::get().reads_writes(1_u64, 2_u64))
 	}
 }
 
@@ -260,8 +260,8 @@ impl WeightInfo for () {
 		Self::revoke_citizenship()
 	}
 	/// PROVISIONAL until the reference host measures it: `cancel_application`'s records plus
-	/// `ApprovedByFallback`.
+	/// `ApprovedByFallback` and `ReferralApprovedAt`.
 	fn expire_application() -> Weight {
-		Self::cancel_application().saturating_add(RocksDbWeight::get().writes(1_u64))
+		Self::cancel_application().saturating_add(RocksDbWeight::get().reads_writes(1_u64, 2_u64))
 	}
 }
