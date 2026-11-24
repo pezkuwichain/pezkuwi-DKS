@@ -61,6 +61,8 @@ pub trait WeightInfo {
 	fn revoke_citizenship() -> Weight;
 	fn renounce_citizenship() -> Weight;
 	fn cancel_application() -> Weight;
+	fn restore_citizenship() -> Weight;
+	fn expire_application() -> Weight;
 }
 
 /// Weights for `pezpallet_identity_kyc` using the Bizinikiwi node and recommended hardware.
@@ -152,6 +154,16 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
+	/// PROVISIONAL until the reference host measures it: charged as `revoke_citizenship`,
+	/// which touches the same records in the opposite direction.
+	fn restore_citizenship() -> Weight {
+		Self::revoke_citizenship()
+	}
+	/// PROVISIONAL until the reference host measures it: `cancel_application`'s records plus
+	/// `ApprovedByFallback`.
+	fn expire_application() -> Weight {
+		Self::cancel_application().saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -241,5 +253,15 @@ impl WeightInfo for () {
 		Weight::from_parts(29_261_000, 3593)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// PROVISIONAL until the reference host measures it: charged as `revoke_citizenship`,
+	/// which touches the same records in the opposite direction.
+	fn restore_citizenship() -> Weight {
+		Self::revoke_citizenship()
+	}
+	/// PROVISIONAL until the reference host measures it: `cancel_application`'s records plus
+	/// `ApprovedByFallback`.
+	fn expire_application() -> Weight {
+		Self::cancel_application().saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }

@@ -1025,3 +1025,105 @@ mod announced {
 		});
 	}
 }
+
+// ============================================================================
+// Expiring an application nobody finished
+// ============================================================================
+
+fn lifetime() -> u64 {
+	ReferralFallbackPeriod::get() * crate::APPLICATION_LIFETIME_IN_FALLBACK_PERIODS as u64
+}
+
+fn apply(hash: u64) {
+	assert_ok!(IdentityKycPallet::apply_for_citizenship(
+		RuntimeOrigin::signed(APPLICANT),
+		H256::from_low_u64_be(hash),
+		Some(CITIZEN_1),
+		None,
+	));
+}
+
+#[test]
+fn an_abandoned_application_expires_and_its_deposit_goes_back() {
+	new_test_ext().execute_with(|| {
+		let start = System::block_number();
+		let initial_balance = Balances::free_balance(APPLICANT);
+		apply(777);
+
+		System::set_block_number(start + lifetime() + 1);
+		// Anyone may ask; the outcome does not depend on who.
+		assert_ok!(IdentityKycPallet::expire_application(
+			RuntimeOrigin::signed(CITIZEN_2),
+			APPLICANT
+		));
+
+		assert!(!crate::KycStatuses::<Test>::contains_key(APPLICANT));
+		assert!(IdentityKycPallet::applications(APPLICANT).is_none());
+		assert_eq!(Balances::reserved_balance(APPLICANT), 0);
+		assert_eq!(Balances::free_balance(APPLICANT), initial_balance);
+		System::assert_last_event(Event::ApplicationExpired { who: APPLICANT }.into());
+
+		// The identity hash is free again: the person can simply apply once more.
+		apply(777);
+	});
+}
+
+#[test]
+fn an_application_does_not_expire_before_its_lifetime() {
+	new_test_ext().execute_with(|| {
+		let start = System::block_number();
+		apply(777);
+
+		// The founder's fallback has opened, and the application is still live for it.
+		System::set_block_number(start + lifetime());
+		assert_noop!(
+			IdentityKycPallet::expire_application(RuntimeOrigin::signed(CITIZEN_2), APPLICANT),
+			Error::<Test>::ApplicationStillLive
+		);
+		assert_ok!(IdentityKycPallet::approve_referral(RuntimeOrigin::signed(FOUNDER), APPLICANT));
+	});
+}
+
+#[test]
+fn a_referrer_approved_application_expires_too_and_clears_the_fallback_mark() {
+	new_test_ext().execute_with(|| {
+		let start = System::block_number();
+		apply(777);
+		System::set_block_number(start + ReferralFallbackPeriod::get() + 1);
+		assert_ok!(IdentityKycPallet::approve_referral(RuntimeOrigin::signed(FOUNDER), APPLICANT));
+		assert!(crate::ApprovedByFallback::<Test>::contains_key(APPLICANT));
+
+		System::set_block_number(start + lifetime() + 1);
+		assert_ok!(IdentityKycPallet::expire_application(
+			RuntimeOrigin::signed(CITIZEN_2),
+			APPLICANT
+		));
+
+		assert!(!crate::KycStatuses::<Test>::contains_key(APPLICANT));
+		assert!(!crate::ApprovedByFallback::<Test>::contains_key(APPLICANT));
+		assert_eq!(Balances::reserved_balance(APPLICANT), 0);
+	});
+}
+
+#[test]
+fn citizens_and_revoked_records_do_not_expire() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(System::block_number() + lifetime() + 1);
+		// A citizen.
+		assert_noop!(
+			IdentityKycPallet::expire_application(RuntimeOrigin::signed(CITIZEN_2), CITIZEN_1),
+			Error::<Test>::CannotExpireInCurrentState
+		);
+		// No record at all.
+		assert_noop!(
+			IdentityKycPallet::expire_application(RuntimeOrigin::signed(CITIZEN_2), APPLICANT),
+			Error::<Test>::CannotExpireInCurrentState
+		);
+		// Revoked: `restore_citizenship` needs the record.
+		assert_ok!(IdentityKycPallet::revoke_citizenship(RuntimeOrigin::root(), CITIZEN_1));
+		assert_noop!(
+			IdentityKycPallet::expire_application(RuntimeOrigin::signed(CITIZEN_2), CITIZEN_1),
+			Error::<Test>::CannotExpireInCurrentState
+		);
+	});
+}

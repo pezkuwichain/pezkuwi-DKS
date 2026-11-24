@@ -304,4 +304,15 @@ impl<T: pezframe_system::Config> pezpallet_identity_kyc::WeightInfo for WeightIn
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
+	/// PROVISIONAL until the reference host measures it (`.github/weights-request.yml`):
+	/// charged as `revoke_citizenship`, which touches the same records in the opposite
+	/// direction.
+	fn restore_citizenship() -> Weight {
+		<Self as pezpallet_identity_kyc::WeightInfo>::revoke_citizenship()
+	}
+	/// PROVISIONAL until the reference host measures it (`.github/weights-request.yml`):
+	/// `cancel_application`'s records plus `ApprovedByFallback`.
+	fn expire_application() -> Weight {
+		<Self as pezpallet_identity_kyc::WeightInfo>::cancel_application().saturating_add(T::DbWeight::get().writes(1))
+	}
 }

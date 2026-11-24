@@ -456,6 +456,9 @@ pub mod pezpallet {
 		CitizenshipRenounced { who: T::AccountId },
 		/// Application was cancelled by the applicant
 		ApplicationCancelled { who: T::AccountId },
+		/// An application nobody finished outlived its lifetime and was removed; the deposit
+		/// went back to the applicant.
+		ApplicationExpired { who: T::AccountId },
 		/// Citizenship was given back after having been taken.
 		CitizenshipRestored { who: T::AccountId },
 		/// The state conferred citizenship on someone directly.
@@ -510,6 +513,10 @@ pub mod pezpallet {
 		CitizenshipRevokedByTheCourt,
 		/// This account has an application in progress; it finishes or is cancelled first.
 		ApplicationInProgress,
+		/// The application has not yet outlived its lifetime.
+		ApplicationStillLive,
+		/// Only an application in progress can expire.
+		CannotExpireInCurrentState,
 	}
 
 	// ============= EXTRINSICS =============
@@ -668,9 +675,9 @@ pub mod pezpallet {
 			// follows a referral follows the person who actually vouched, not the one who
 			// stayed silent.
 			//
-			// The original referrer is never locked out: they can still approve on the last
-			// day of the tenth year if they get round to it. What the fallback adds is that
-			// the applicant is no longer waiting on one person alone.
+			// The original referrer is not locked out by the fallback: they can approve for as
+			// long as the application lives (`APPLICATION_LIFETIME_IN_FALLBACK_PERIODS`). What
+			// the fallback adds is that the applicant is no longer waiting on one person alone.
 			let founder = T::DefaultReferrer::get();
 			let fallback_open = pezframe_system::Pezpallet::<T>::block_number()
 				> application.applied_at.saturating_add(T::ReferralFallbackPeriod::get());
@@ -811,7 +818,7 @@ pub mod pezpallet {
 		/// someone re-apply, find a referrer and wait would be a second penalty for a
 		/// revocation that has just been found unjustified.
 		#[pezpallet::call_index(6)]
-		#[pezpallet::weight(T::WeightInfo::revoke_citizenship())]
+		#[pezpallet::weight(T::WeightInfo::restore_citizenship())]
 		pub fn restore_citizenship(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
 			T::GovernanceOrigin::ensure_origin(origin)?;
 
@@ -899,8 +906,74 @@ pub mod pezpallet {
 			Self::deposit_event(Event::ApplicationCancelled { who: applicant });
 			Ok(())
 		}
+
+		/// Remove an application nobody finished, once it has outlived its lifetime.
+		///
+		/// An application is a row in `KycStatuses`, and the trust sweep walks every row of
+		/// that map each period, citizen or not. At forty million citizens the sweep fills
+		/// twenty-two of the twenty-three days it has, so every application started and left
+		/// -- by someone who changed their mind, lost the key, or never found a referrer --
+		/// is a cost the chain pays for ever and the margin cannot absorb. Cancelling is the
+		/// applicant's own call and only before approval; an abandoned application is by
+		/// definition one nobody is going to cancel.
+		///
+		/// Anyone may call it, because the facts it acts on are on chain and the outcome is the
+		/// same whoever asks. It decides nothing about the person: the deposit goes back to
+		/// the applicant, the identity hash is freed, and they may apply again tomorrow.
+		///
+		/// The lifetime is `APPLICATION_LIFETIME_IN_FALLBACK_PERIODS` fallback periods -- 360
+		/// days, about a year, at the launch value of ninety. Shorter would close the
+		/// founder's fallback almost as soon as it opens: the founder may approve only after
+		/// one period, so a lifetime of one period would leave nothing to approve. Four give
+		/// the named referrer the whole year and the founder the last nine months of it.
+		///
+		/// It does not limit an attacker filling the map: they can apply again after expiry.
+		/// What bounds that is the deposit, locked for as long as each row exists. This
+		/// clears what was abandoned, which at forty million is the larger number.
+		///
+		/// `Revoked` is not an application and does not expire: `restore_citizenship` needs it.
+		#[pezpallet::call_index(7)]
+		#[pezpallet::weight(T::WeightInfo::expire_application())]
+		pub fn expire_application(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
+			ensure_signed(origin)?;
+
+			ensure!(
+				matches!(
+					KycStatuses::<T>::get(&who),
+					KycLevel::PendingReferral | KycLevel::ReferrerApproved
+				),
+				Error::<T>::CannotExpireInCurrentState
+			);
+			let application =
+				Applications::<T>::get(&who).ok_or(Error::<T>::ApplicationNotFound)?;
+			let lifetime = T::ReferralFallbackPeriod::get()
+				.saturating_mul(APPLICATION_LIFETIME_IN_FALLBACK_PERIODS.into());
+			ensure!(
+				pezframe_system::Pezpallet::<T>::block_number()
+					> application.applied_at.saturating_add(lifetime),
+				Error::<T>::ApplicationStillLive
+			);
+
+			Applications::<T>::remove(&who);
+			IdentityHashToAccount::<T>::remove(application.identity_hash);
+			// Written only when the founder stood in; an application that never became a
+			// citizen leaves nothing for `referral` to read it for.
+			ApprovedByFallback::<T>::remove(&who);
+			KycStatuses::<T>::remove(&who);
+			T::Currency::unreserve(&who, T::KycApplicationDeposit::get());
+
+			Self::deposit_event(Event::ApplicationExpired { who });
+			Ok(())
+		}
 	}
 }
+
+/// How many fallback periods an application lives before anyone may expire it.
+///
+/// Expressed in fallback periods rather than as its own `Config` constant because the two are
+/// one decision: the lifetime has to leave the founder's fallback room to act, and tying it to
+/// that period keeps it doing so if the period is ever changed.
+pub const APPLICATION_LIFETIME_IN_FALLBACK_PERIODS: u32 = 4;
 
 // ============= TRAIT IMPLEMENTATIONS =============
 
