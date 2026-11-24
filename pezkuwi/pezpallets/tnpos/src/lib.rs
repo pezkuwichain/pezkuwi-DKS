@@ -841,8 +841,13 @@ pub mod pezpallet {
 		/// for the outages it deliberately refuses to act on. The member keeps any seat in the
 		/// current committee, as leaving does; they lose the place in the pool and may join
 		/// again once they stand.
+		///
+		/// Charged at the larger of `evict` and `switch_stratum`. The `evict` benchmark reads
+		/// the court's gate, a small proof. The house's gate reads `ParliamentMembers`, about
+		/// eight times the proof, and `switch_stratum` measures exactly that read. A free,
+		/// permissionless call must be charged for its heaviest path.
 		#[pezpallet::call_index(12)]
-		#[pezpallet::weight(T::WeightInfo::evict())]
+		#[pezpallet::weight(T::WeightInfo::evict().max(T::WeightInfo::switch_stratum()))]
 		pub fn evict(origin: OriginFor<T>, who: T::AccountId) -> DispatchResultWithPostInfo {
 			let by = ensure_signed(origin)?;
 			let stratum = Self::evictable(&who)?;

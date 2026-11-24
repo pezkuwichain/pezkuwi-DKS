@@ -944,3 +944,19 @@ mod the_stake_stratum {
 		});
 	}
 }
+
+/// `evict` is free and anyone may call it, so it must be charged for its heaviest path. Its
+/// benchmark reads the court's gate. The house's gate reads `ParliamentMembers`, which is the
+/// read `switch_stratum` measures, and the call must cover that read in both time and proof.
+#[test]
+fn evict_is_charged_for_the_house_gate() {
+	use pezframe_support::dispatch::GetDispatchInfo;
+	use pezpallet_tnpos::WeightInfo;
+	type W = <Runtime as pezpallet_tnpos::Config>::WeightInfo;
+
+	let charged = RuntimeCall::Tnpos(pezpallet_tnpos::Call::evict { who: AccountId::from(ALICE) })
+		.get_dispatch_info()
+		.call_weight;
+	assert!(charged.all_gte(W::switch_stratum()), "{charged:?} < {:?}", W::switch_stratum());
+	assert!(charged.all_gte(W::evict()));
+}
