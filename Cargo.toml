@@ -25,7 +25,6 @@ exclude = [
 	"vendor/alloy-signer-local",
 	"vendor/revm-precompile",
 	"vendor/ruint",
-	"vendor/sqlx-sqlite",
 	"vendor/wasmtime-internal-cache",
 ]
 
@@ -1560,7 +1559,7 @@ slotmap = { version = "1.0" }
 smallvec = { version = "1.11.0", default-features = false }
 soketto = { version = "0.8.0" }
 spinners = { version = "4.1.1" }
-sqlx = { version = "0.9.0" }
+sqlx = { version = "0.9.1" }
 ss58-registry = { package = "pezsp-ss58-registry", version = "1.52.0", default-features = false }
 ssz_rs = { version = "0.9.0", default-features = false }
 ssz_rs_derive = { version = "0.9.0", default-features = false }
@@ -1786,10 +1785,6 @@ alloy-signer-local = { path = "vendor/alloy-signer-local" }
 # only moves it to 0.14.3; `encode_all`, `decode_all` and `DEFAULT_COMPRESSION_LEVEL` are
 # unchanged. Drop it once wasmtime 36 releases on zstd 0.14 or the executor moves past 36.
 wasmtime-internal-cache = { path = "vendor/wasmtime-internal-cache" }
-# libsqlite3-sys before 0.39 bundles a SQLite with CVE-2026-119375 (RUSTSEC-2026-0459), and
-# sqlx-sqlite 0.9.0 (latest) caps it below 0.38. The vendored copy only raises that bound to
-# <0.40, as upstream did in launchbadge/sqlx#4502; drop the patch once a release carries it.
-sqlx-sqlite = { path = "vendor/sqlx-sqlite" }
 serde = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 serde_core = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 # arrayvec was vendored because 0.7.6 failed on wasm32v1-none (E0223 ambiguity from the

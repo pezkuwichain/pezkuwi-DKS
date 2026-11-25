@@ -252,7 +252,6 @@ jobs:
                       "vendor/alloy-signer-local" \
                       "vendor/revm-precompile" \
                       "vendor/ruint" \
-                      "vendor/sqlx-sqlite" \
                       "vendor/wasmtime-internal-cache"
       - name: Deny git dependencies
         run: python3 .github/scripts/deny-git-deps.py .
