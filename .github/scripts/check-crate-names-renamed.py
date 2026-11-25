@@ -104,9 +104,9 @@ def main():
 
     if hits:
         print()
-        print("Bir crate adı yeniden adlandırıldığında derleyici koddaki kullanımı yakalar,")
-        print("doc örneğindekini yakalamaz -- `cargo test --doc` ağır suitte koşar. Orada")
-        print("kalan eski ad, haftalar sonra lansmanı bloke eden bir kırmızı olarak çıkar.")
+        print("When a crate is renamed the compiler catches the uses in code,")
+        print("not the ones in doc examples -- `cargo test --doc` runs in the heavy suite. An old")
+        print("name left there turns up weeks later as a red that blocks the launch.")
         return 1
 
     print(f"{len(pairs)} renamed crates; no source file names an upstream original")

@@ -167,9 +167,9 @@ def main():
 
     if dupes or missing or backlog_cleared():
         print()
-        print("Bir pallet'e üç ağırlık kaynağı olabilir ve kullanılan, ölçülmemiş olan çıkabilir.")
-        print("2026-08-31'de welati'de tam olarak bu oldu: her çağrı, dokunduğu deponun bedeli")
-        print("hiç yazılmadan fiyatlanıyordu.")
+        print("A pallet can have three sources of weights, and the one in use can be the unmeasured one.")
+        print("On 2026-08-31 that is exactly what welati did: every call was priced without the")
+        print("cost of the storage it touches ever being written down.")
         return 1
 
     print(f"one WeightInfo per pallet; every generated weights file is declared "

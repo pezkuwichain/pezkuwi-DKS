@@ -40,7 +40,7 @@ PEZ_SUPPLY = (REPO / "pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwicha
 HALVING = REPO / "pezcumulus/teyrchains/pezpallets/pez-treasury/src/lib.rs"
 
 # The claim, in the shapes it has actually been written in this tree.
-CLAIM = re.compile(r"supply is fixed|fixed and halving|fixed supply|arz(ı)? sabit", re.I)
+CLAIM = re.compile(r"supply is fixed|fixed and halving|fixed supply|arz(ı)? sabit", re.I)  # tr-ok
 
 # What makes a claim qualified: the token it is true of, named close enough to read together.
 NAMES_PEZ = re.compile(r"\bPEZ\b|PEZ_TOTAL_SUPPLY|PEZ_REWARDS_POOL")
@@ -119,10 +119,10 @@ def main():
 
     if bad:
         print()
-        print("Sabit arz ve halving PEZ'in özelliği; HEZ enflasyonlu ve tavanı %10. Jetonu")
-        print("adlandırmayan bir cümle ikisini birbirine karıştırır -- bu satırlar tam olarak")
-        print("öyle doğdu ve on bir yere yayıldı. İddiayı ya PEZ'e bağla ya da HEZ için doğru")
-        print("gerekçeyi yaz: enflasyonlu bir jetonu yakmak, müsadereyi elinde tutanlara dağıtır.")
+        print("A fixed supply and halving belong to PEZ; HEZ inflates, capped at 10%. A sentence that")
+        print("does not name its token confuses the two -- these lines were born exactly that")
+        print("way and spread to eleven places. Either tie the claim to PEZ or write the right")
+        print("reason for HEZ: burning an inflating token hands the confiscation to its holders.")
         return 1
 
     print(f"no unqualified supply claim; {qualified} name the token they are true of")

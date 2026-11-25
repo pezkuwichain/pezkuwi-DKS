@@ -90,8 +90,8 @@ def main():
     if bad:
         print("\n".join(bad))
         print()
-        print("HEZ tek isimdir; TYR onun alt birimidir (1 HEZ = 10^12 TYR). Sembolü TYR yazıp")
-        print("ondalığı 12 bırakmak, bir HEZ'i cüzdanda '1 TYR' diye gösterir.")
+        print("HEZ is the one name; TYR is its subunit (1 HEZ = 10^12 TYR). Writing the symbol as TYR")
+        print("and leaving the decimals at 12 shows one HEZ in a wallet as '1 TYR'.")
         return 1
 
     print(f"one symbol everywhere: {WANT_SYMBOL}/{WANT_DECIMALS} across {checked} declarations")

@@ -217,9 +217,9 @@ def main():
 
     if new or grown or gone:
         print()
-        print("OSV, GHSA ile RustSec'i birleştirir; `cargo-deny` yalnız RustSec'e bakar ve")
-        print("2026-09-01'de gördüğü açıkları da raporlamıyordu. Taban listesi yalnız küçülür:")
-        print("yeni bir açık da, artık geçerli olmayan bir kayıt da kırmızı verir.")
+        print("OSV merges GHSA and RustSec; `cargo-deny` reads RustSec alone, and on 2026-09-01")
+        print("it was not reporting even the advisories it saw. The baseline only shrinks:")
+        print("a new advisory is red, and so is an entry that no longer applies.")
         return 1
 
     total = sum(len(v) for v in hits.values())

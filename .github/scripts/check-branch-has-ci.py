@@ -115,8 +115,8 @@ def main():
     print(f"  '{branch}' is not a push target and has no open pull request.")
     print("  Nothing will build this push. Open a pull request, or push to a branch CI watches.")
     print()
-    print("Bu iki kez oldu ve ikisinde de sessizdi: PR merge edildi, dal açık kaldı, sonraki")
-    print("commit'ler hiç derlenmeden gitti. Kırmızı yok, çünkü koşu yok.")
+    print("This happened twice, silently both times: the PR was merged, the branch stayed open, and")
+    print("later commits went out without ever being built. No red, because no run.")
     if verbose:
         print(f"  push hedefleri: {sorted(targets)}")
     return 1

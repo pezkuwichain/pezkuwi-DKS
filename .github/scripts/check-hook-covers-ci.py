@@ -152,8 +152,8 @@ def main():
 
     if missing:
         print()
-        print("Yerel kapı, yerine geçtiği kapıdan dar. İki günde iki kez oldu ve iki seferinde")
-        print("de eksik olan kapı, commit'i yakalayacak olan kapıydı.")
+        print("The local gate is narrower than the gate it stands in for. It happened twice in two days,")
+        print("and both times the missing gate was the one that would have caught the commit.")
         print(f"Hook: {hook}")
         return 1
 

@@ -99,8 +99,8 @@ def main():
 
     if bad:
         print()
-        print("Aynı indekste iki pallet: `construct_runtime!` genişleyemez ve ürettiği HER tip")
-        print("birden kaybolur, yani CI beş işte artçıyı raporlar, altındaki tek satırı değil.")
+        print("Two pallets at the same index: `construct_runtime!` cannot expand, and EVERY type it")
+        print("generates vanishes at once, so CI reports the aftershocks in five jobs, not the one line under them.")
         return 1
 
     total = sum(len(v) for v in runtimes.values())
