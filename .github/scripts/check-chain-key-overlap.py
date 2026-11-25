@@ -107,9 +107,9 @@ def main():
 
     if bad:
         print()
-        print("Aynı adres iki zincirde: testnette sızan anahtar mainnet fonunun anahtarıdır,")
-        print("ve validatörleri mainnet'in olan bir testnet sıfırdan yeniden başlatılamaz.")
-        print("Zagros'un kendi cüzdan seti var; oradan bir adres kullan.")
+        print("The same address on two chains: a key leaked on the testnet is the key to a mainnet fund,")
+        print("and a testnet whose validators are mainnet's cannot be restarted from scratch.")
+        print("Zagros has its own set of wallets; use an address from there.")
         return 1
 
     print(f"{len(zagros)} Zagros genesis literals, none shared with Pezkuwichain "

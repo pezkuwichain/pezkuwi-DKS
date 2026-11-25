@@ -83,9 +83,9 @@ def main():
         return 1
     if failed:
         print()
-        print("Bir iş `runtime-benchmarks` ile derliyor ama solc kurmuyor. Atlamak")
-        print("(`SKIP_PALLET_REVIVE_FIXTURES=1`) çözüm değil: derlemediği kodun üstüne")
-        print("yeşil bildiren bir iş bırakır.")
+        print("A job builds with `runtime-benchmarks` but does not install solc. Skipping")
+        print("(`SKIP_PALLET_REVIVE_FIXTURES=1`) is not a fix: it leaves a job reporting green")
+        print("over code it did not build.")
         return 1
     print(f"{checked} benchmark-building jobs, all install solc first")
     return 0

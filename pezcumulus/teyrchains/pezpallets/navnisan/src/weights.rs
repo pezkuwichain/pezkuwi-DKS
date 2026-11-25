@@ -1,8 +1,9 @@
 //! Weights for `pezpallet_navnisan`.
 //!
-//! PROVISIONAL: written by hand, upper bounds, until the weights run replaces this file with
-//! measured values (`.github/workflows` weights job). Every call is bounded by `d` (ancestors
-//! read, at most `MAX_DEPTH`) and `t` (text records cleared, at most `MAX_TEXTS`).
+//! The reference host's measurement of `people-zagros` (2026-11-08, `vmi3628515`), carried here as
+//! the pallet's fallback. The runtimes use their own measured files. Every call is bounded
+//! by `d` (ancestors read, at most `MAX_DEPTH`) and `t` (text records cleared, at most
+//! `MAX_TEXTS`).
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -49,385 +50,1266 @@ pub trait WeightInfo {
 
 pub struct BizinikiwiWeight<T>(PhantomData<T>);
 impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
+	/// Storage: `Navnisan::Commitments` (r:1 w:1)
+	/// Proof: `Navnisan::Commitments` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	fn commit() -> Weight {
-		Weight::from_parts(40_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `352`
+		//  Estimated: `3802`
+		// Minimum execution time: 77_043_000 picoseconds.
+		Weight::from_parts(126_484_000, 0)
+			.saturating_add(Weight::from_parts(0, 3802))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
-	fn register(t: u32) -> Weight {
-		Weight::from_parts(120_000_000, 8_000)
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().reads(9_u64))
-			.saturating_add(T::DbWeight::get().writes(7_u64))
+	/// Storage: `Navnisan::Commitments` (r:1 w:1)
+	/// Proof: `Navnisan::Commitments` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Locked` (r:1 w:0)
+	/// Proof: `Navnisan::Locked` (`max_values`: None, `max_size`: Some(33), added: 2508, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::PendingRevocations` (r:1 w:0)
+	/// Proof: `Navnisan::PendingRevocations` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:3 w:3)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:2 w:2)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Prices` (r:1 w:0)
+	/// Proof: `Navnisan::Prices` (`max_values`: Some(1), `max_size`: Some(48), added: 543, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::NextRegistration` (r:1 w:1)
+	/// Proof: `Navnisan::NextRegistration` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// The range of component `t` is `[0, 8]`.
+	fn register(t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `2018 + t * (337 ±0)`
+		//  Estimated: `7641 + t * (2846 ±33)`
+		// Minimum execution time: 145_305_000 picoseconds.
+		Weight::from_parts(229_949_452, 0)
+			.saturating_add(Weight::from_parts(0, 7641))
+			// Standard Error: 222_229
+			.saturating_add(Weight::from_parts(71_028_612, 0).saturating_mul(t.into()))
+			.saturating_add(T::DbWeight::get().reads(12))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(T::DbWeight::get().writes(8))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Prices` (r:1 w:0)
+	/// Proof: `Navnisan::Prices` (`max_values`: Some(1), `max_size`: Some(48), added: 543, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:2 w:2)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn renew() -> Weight {
-		Weight::from_parts(70_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `1125`
+		//  Estimated: `6196`
+		// Minimum execution time: 79_913_000 picoseconds.
+		Weight::from_parts(127_445_000, 0)
+			.saturating_add(Weight::from_parts(0, 6196))
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
-	fn transfer(d: u32) -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn transfer(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `665 + d * (213 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 36_061_000 picoseconds.
+		Weight::from_parts(44_421_277, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 83_490
+			.saturating_add(Weight::from_parts(14_825_843, 0).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn set_account(d: u32) -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn set_account(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `665 + d * (213 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 35_211_000 picoseconds.
+		Weight::from_parts(44_810_619, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 86_122
+			.saturating_add(Weight::from_parts(14_792_553, 0).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn set_content(d: u32) -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::PendingChanges` (r:0 w:1)
+	/// Proof: `Navnisan::PendingChanges` (`max_values`: None, `max_size`: Some(198), added: 2673, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn set_content(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `642 + d * (224 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 37_261_000 picoseconds.
+		Weight::from_parts(44_445_324, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 91_389
+			.saturating_add(Weight::from_parts(18_285_150, 0).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn anchor(d: u32) -> Weight {
-		Weight::from_parts(50_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn anchor(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `777 + d * (213 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 35_742_000 picoseconds.
+		Weight::from_parts(45_702_928, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 84_543
+			.saturating_add(Weight::from_parts(15_579_576, 0).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn set_text(d: u32) -> Weight {
-		Weight::from_parts(80_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(4_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:1 w:1)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn set_text(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1181 + d * (223 ±0)`
+		//  Estimated: `3836 + d * (2885 ±0)`
+		// Minimum execution time: 140_685_000 picoseconds.
+		Weight::from_parts(209_585_129, 0)
+			.saturating_add(Weight::from_parts(0, 3836))
+			// Standard Error: 241_832
+			.saturating_add(Weight::from_parts(13_338_866, 0).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().writes(3))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn set_subname(d: u32, t: u32) -> Weight {
-		Weight::from_parts(120_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().reads(6_u64))
-			.saturating_add(T::DbWeight::get().writes(5_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:3 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::NextRegistration` (r:1 w:1)
+	/// Proof: `Navnisan::NextRegistration` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 3]`.
+	/// The range of component `t` is `[0, 8]`.
+	fn set_subname(d: u32, t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1634 + d * (216 ±0) + t * (337 ±0)`
+		//  Estimated: `3875 + d * (2885 ±0) + t * (2846 ±0)`
+		// Minimum execution time: 185_707_000 picoseconds.
+		Weight::from_parts(216_979_661, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			// Standard Error: 1_172_525
+			.saturating_add(Weight::from_parts(30_382_058, 0).saturating_mul(d.into()))
+			// Standard Error: 347_955
+			.saturating_add(Weight::from_parts(68_556_349, 0).saturating_mul(t.into()))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(T::DbWeight::get().writes(5))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
-	fn remove_subname(t: u32) -> Weight {
-		Weight::from_parts(80_000_000, 8_000)
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().reads(3_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+	/// Storage: `Navnisan::Names` (r:2 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyUsed` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyUsed` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:0 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
+	/// The range of component `t` is `[0, 8]`.
+	fn remove_subname(t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1822 + t * (337 ±0)`
+		//  Estimated: `6760 + t * (2846 ±0)`
+		// Minimum execution time: 99_223_000 picoseconds.
+		Weight::from_parts(161_351_118, 0)
+			.saturating_add(Weight::from_parts(0, 6760))
+			// Standard Error: 166_597
+			.saturating_add(Weight::from_parts(71_074_541, 0).saturating_mul(t.into()))
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(T::DbWeight::get().writes(7))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
-	fn set_primary(d: u32) -> Weight {
-		Weight::from_parts(50_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Primary` (r:0 w:1)
+	/// Proof: `Navnisan::Primary` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn set_primary(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `665 + d * (213 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 35_291_000 picoseconds.
+		Weight::from_parts(43_907_645, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 78_090
+			.saturating_add(Weight::from_parts(15_131_210, 0).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
+	/// Storage: `Navnisan::Primary` (r:1 w:1)
+	/// Proof: `Navnisan::Primary` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
 	fn clear_primary() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `315`
+		//  Estimated: `3545`
+		// Minimum execution time: 18_421_000 picoseconds.
+		Weight::from_parts(34_261_000, 0)
+			.saturating_add(Weight::from_parts(0, 3545))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	fn grant(d: u32) -> Weight {
-		Weight::from_parts(90_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::NextRegistration` (r:1 w:1)
+	/// Proof: `Navnisan::NextRegistration` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn grant(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `373 + d * (255 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 28_491_000 picoseconds.
+		Weight::from_parts(32_744_631, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 108_867
+			.saturating_add(Weight::from_parts(19_753_667, 0).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().writes(2))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn revoke(t: u32) -> Weight {
-		Weight::from_parts(80_000_000, 8_000)
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().reads(3_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyUsed` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyUsed` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:0 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
+	/// The range of component `t` is `[0, 8]`.
+	fn revoke(t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1576 + t * (337 ±0)`
+		//  Estimated: `3875 + t * (2846 ±0)`
+		// Minimum execution time: 47_602_000 picoseconds.
+		Weight::from_parts(87_672_462, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			// Standard Error: 148_295
+			.saturating_add(Weight::from_parts(72_689_774, 0).saturating_mul(t.into()))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(T::DbWeight::get().writes(6))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::PendingChanges` (r:0 w:1)
+	/// Proof: `Navnisan::PendingChanges` (`max_values`: None, `max_size`: Some(198), added: 2673, mode: `MaxEncodedLen`)
 	fn force_change() -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `830`
+		//  Estimated: `3875`
+		// Minimum execution time: 31_371_000 picoseconds.
+		Weight::from_parts(54_242_000, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
+	/// Storage: `Navnisan::PendingChanges` (r:1 w:1)
+	/// Proof: `Navnisan::PendingChanges` (`max_values`: None, `max_size`: Some(198), added: 2673, mode: `MaxEncodedLen`)
 	fn cancel_change() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `335`
+		//  Estimated: `3663`
+		// Minimum execution time: 19_511_000 picoseconds.
+		Weight::from_parts(34_831_000, 0)
+			.saturating_add(Weight::from_parts(0, 3663))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::PendingChanges` (r:1 w:1)
+	/// Proof: `Navnisan::PendingChanges` (`max_values`: None, `max_size`: Some(198), added: 2673, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
 	fn enact_change() -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `988`
+		//  Estimated: `3875`
+		// Minimum execution time: 41_041_000 picoseconds.
+		Weight::from_parts(68_092_000, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
+	/// Storage: `Navnisan::Names` (r:1 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::PendingRevocations` (r:1 w:1)
+	/// Proof: `Navnisan::PendingRevocations` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	fn schedule_revocation() -> Weight {
-		Weight::from_parts(50_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `845`
+		//  Estimated: `3875`
+		// Minimum execution time: 34_371_000 picoseconds.
+		Weight::from_parts(57_532_000, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::PendingRevocations` (r:1 w:1)
+	/// Proof: `Navnisan::PendingRevocations` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
 	fn cancel_revocation() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `316`
+		//  Estimated: `3545`
+		// Minimum execution time: 18_600_000 picoseconds.
+		Weight::from_parts(31_961_000, 0)
+			.saturating_add(Weight::from_parts(0, 3545))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	fn enact_revocation(t: u32) -> Weight {
-		Weight::from_parts(80_000_000, 8_000)
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().reads(3_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+	/// Storage: `Navnisan::PendingRevocations` (r:1 w:1)
+	/// Proof: `Navnisan::PendingRevocations` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyUsed` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyUsed` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:0 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Locked` (r:0 w:1)
+	/// Proof: `Navnisan::Locked` (`max_values`: None, `max_size`: Some(33), added: 2508, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
+	/// The range of component `t` is `[0, 8]`.
+	fn enact_revocation(t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1694 + t * (337 ±0)`
+		//  Estimated: `3875 + t * (2846 ±0)`
+		// Minimum execution time: 73_702_000 picoseconds.
+		Weight::from_parts(118_092_622, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			// Standard Error: 213_034
+			.saturating_add(Weight::from_parts(74_939_542, 0).saturating_mul(t.into()))
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(T::DbWeight::get().writes(8))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
+	/// Storage: `Navnisan::Locked` (r:0 w:1)
+	/// Proof: `Navnisan::Locked` (`max_values`: None, `max_size`: Some(33), added: 2508, mode: `MaxEncodedLen`)
 	fn lock() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(0_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 13_490_000 picoseconds.
+		Weight::from_parts(24_581_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::Locked` (r:1 w:1)
+	/// Proof: `Navnisan::Locked` (`max_values`: None, `max_size`: Some(33), added: 2508, mode: `MaxEncodedLen`)
 	fn unlock() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `771`
+		//  Estimated: `3498`
+		// Minimum execution time: 22_621_000 picoseconds.
+		Weight::from_parts(39_261_000, 0)
+			.saturating_add(Weight::from_parts(0, 3498))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::Prices` (r:0 w:1)
+	/// Proof: `Navnisan::Prices` (`max_values`: Some(1), `max_size`: Some(48), added: 543, mode: `MaxEncodedLen`)
 	fn set_prices() -> Weight {
-		Weight::from_parts(25_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(0_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 9_140_000 picoseconds.
+		Weight::from_parts(17_871_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	fn reap(d: u32, t: u32) -> Weight {
-		Weight::from_parts(100_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(T::DbWeight::get().reads(5_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyUsed` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyUsed` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:0 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	/// The range of component `t` is `[0, 8]`.
+	fn reap(d: u32, t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1400 + d * (223 ±0) + t * (337 ±0)`
+		//  Estimated: `3836 + d * (2885 ±0) + t * (2846 ±0)`
+		// Minimum execution time: 120_864_000 picoseconds.
+		Weight::from_parts(87_734_241, 0)
+			.saturating_add(Weight::from_parts(0, 3836))
+			// Standard Error: 724_972
+			.saturating_add(Weight::from_parts(25_062_495, 0).saturating_mul(d.into()))
+			// Standard Error: 300_396
+			.saturating_add(Weight::from_parts(71_181_116, 0).saturating_mul(t.into()))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(T::DbWeight::get().writes(7))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
-	fn reap_primary(d: u32) -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(T::DbWeight::get().reads(5_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+	/// Storage: `Navnisan::Primary` (r:1 w:1)
+	/// Proof: `Navnisan::Primary` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Names` (r:4 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn reap_primary(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `870 + d * (213 ±0)`
+		//  Estimated: `3545 + d * (2885 ±0)`
+		// Minimum execution time: 42_642_000 picoseconds.
+		Weight::from_parts(56_533_115, 0)
+			.saturating_add(Weight::from_parts(0, 3545))
+			// Standard Error: 105_522
+			.saturating_add(Weight::from_parts(15_374_030, 0).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
+	/// Storage: `Navnisan::Commitments` (r:1 w:1)
+	/// Proof: `Navnisan::Commitments` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
 	fn remove_commitment() -> Weight {
-		Weight::from_parts(50_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `518`
+		//  Estimated: `3802`
+		// Minimum execution time: 69_422_000 picoseconds.
+		Weight::from_parts(111_244_000, 0)
+			.saturating_add(Weight::from_parts(0, 3802))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
+	/// Storage: `Navnisan::Names` (r:1 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:0 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
 	fn suspend() -> Weight {
-		Weight::from_parts(50_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(1_u64.saturating_mul(crate::label::MAX_DEPTH as u64)))
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `845`
+		//  Estimated: `3875`
+		// Minimum execution time: 34_851_000 picoseconds.
+		Weight::from_parts(56_802_000, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
+	/// Storage: `Navnisan::Suspensions` (r:1 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
 	fn lift_suspension() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `347`
+		//  Estimated: `3546`
+		// Minimum execution time: 22_201_000 picoseconds.
+		Weight::from_parts(37_591_000, 0)
+			.saturating_add(Weight::from_parts(0, 3546))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::EmergencyCouncil` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCouncil` (`max_values`: Some(1), `max_size`: Some(289), added: 784, mode: `MaxEncodedLen`)
 	fn set_emergency_council() -> Weight {
-		Weight::from_parts(40_000_000, 4_000)
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 10_090_000 picoseconds.
+		Weight::from_parts(18_731_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::EmergencyCouncil` (r:1 w:0)
+	/// Proof: `Navnisan::EmergencyCouncil` (`max_values`: Some(1), `max_size`: Some(289), added: 784, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Names` (r:1 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyUsed` (r:1 w:1)
+	/// Proof: `Navnisan::EmergencyUsed` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:1 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:1 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
 	fn emergency_suspend() -> Weight {
-		Weight::from_parts(80_000_000, 8_000)
-			.saturating_add(T::DbWeight::get().reads(2_u64.saturating_mul(crate::label::MAX_DEPTH as u64)))
-			.saturating_add(T::DbWeight::get().reads(5_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `1202`
+		//  Estimated: `3875`
+		// Minimum execution time: 57_722_000 picoseconds.
+		Weight::from_parts(91_003_000, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
 }
 
+// For backwards compatibility and tests.
 impl WeightInfo for () {
+	/// Storage: `Navnisan::Commitments` (r:1 w:1)
+	/// Proof: `Navnisan::Commitments` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	fn commit() -> Weight {
-		Weight::from_parts(40_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `352`
+		//  Estimated: `3802`
+		// Minimum execution time: 77_043_000 picoseconds.
+		Weight::from_parts(126_484_000, 0)
+			.saturating_add(Weight::from_parts(0, 3802))
+			.saturating_add(RocksDbWeight::get().reads(4))
+			.saturating_add(RocksDbWeight::get().writes(3))
 	}
-	fn register(t: u32) -> Weight {
-		Weight::from_parts(120_000_000, 8_000)
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().reads(9_u64))
-			.saturating_add(RocksDbWeight::get().writes(7_u64))
+	/// Storage: `Navnisan::Commitments` (r:1 w:1)
+	/// Proof: `Navnisan::Commitments` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Locked` (r:1 w:0)
+	/// Proof: `Navnisan::Locked` (`max_values`: None, `max_size`: Some(33), added: 2508, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::PendingRevocations` (r:1 w:0)
+	/// Proof: `Navnisan::PendingRevocations` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:3 w:3)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:2 w:2)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Prices` (r:1 w:0)
+	/// Proof: `Navnisan::Prices` (`max_values`: Some(1), `max_size`: Some(48), added: 543, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::NextRegistration` (r:1 w:1)
+	/// Proof: `Navnisan::NextRegistration` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// The range of component `t` is `[0, 8]`.
+	fn register(t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `2018 + t * (337 ±0)`
+		//  Estimated: `7641 + t * (2846 ±33)`
+		// Minimum execution time: 145_305_000 picoseconds.
+		Weight::from_parts(229_949_452, 0)
+			.saturating_add(Weight::from_parts(0, 7641))
+			// Standard Error: 222_229
+			.saturating_add(Weight::from_parts(71_028_612, 0).saturating_mul(t.into()))
+			.saturating_add(RocksDbWeight::get().reads(12))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(RocksDbWeight::get().writes(8))
+			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Prices` (r:1 w:0)
+	/// Proof: `Navnisan::Prices` (`max_values`: Some(1), `max_size`: Some(48), added: 543, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:2 w:2)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn renew() -> Weight {
-		Weight::from_parts(70_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(4_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `1125`
+		//  Estimated: `6196`
+		// Minimum execution time: 79_913_000 picoseconds.
+		Weight::from_parts(127_445_000, 0)
+			.saturating_add(Weight::from_parts(0, 6196))
+			.saturating_add(RocksDbWeight::get().reads(5))
+			.saturating_add(RocksDbWeight::get().writes(3))
 	}
-	fn transfer(d: u32) -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn transfer(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `665 + d * (213 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 36_061_000 picoseconds.
+		Weight::from_parts(44_421_277, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 83_490
+			.saturating_add(Weight::from_parts(14_825_843, 0).saturating_mul(d.into()))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(RocksDbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn set_account(d: u32) -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(RocksDbWeight::get().reads(2_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn set_account(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `665 + d * (213 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 35_211_000 picoseconds.
+		Weight::from_parts(44_810_619, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 86_122
+			.saturating_add(Weight::from_parts(14_792_553, 0).saturating_mul(d.into()))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(RocksDbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn set_content(d: u32) -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(RocksDbWeight::get().reads(2_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::PendingChanges` (r:0 w:1)
+	/// Proof: `Navnisan::PendingChanges` (`max_values`: None, `max_size`: Some(198), added: 2673, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn set_content(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `642 + d * (224 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 37_261_000 picoseconds.
+		Weight::from_parts(44_445_324, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 91_389
+			.saturating_add(Weight::from_parts(18_285_150, 0).saturating_mul(d.into()))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(RocksDbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn anchor(d: u32) -> Weight {
-		Weight::from_parts(50_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn anchor(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `777 + d * (213 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 35_742_000 picoseconds.
+		Weight::from_parts(45_702_928, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 84_543
+			.saturating_add(Weight::from_parts(15_579_576, 0).saturating_mul(d.into()))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(RocksDbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn set_text(d: u32) -> Weight {
-		Weight::from_parts(80_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(RocksDbWeight::get().reads(4_u64))
-			.saturating_add(RocksDbWeight::get().writes(4_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:1 w:1)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn set_text(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1181 + d * (223 ±0)`
+		//  Estimated: `3836 + d * (2885 ±0)`
+		// Minimum execution time: 140_685_000 picoseconds.
+		Weight::from_parts(209_585_129, 0)
+			.saturating_add(Weight::from_parts(0, 3836))
+			// Standard Error: 241_832
+			.saturating_add(Weight::from_parts(13_338_866, 0).saturating_mul(d.into()))
+			.saturating_add(RocksDbWeight::get().reads(4))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(RocksDbWeight::get().writes(3))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn set_subname(d: u32, t: u32) -> Weight {
-		Weight::from_parts(120_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().reads(6_u64))
-			.saturating_add(RocksDbWeight::get().writes(5_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:3 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::NextRegistration` (r:1 w:1)
+	/// Proof: `Navnisan::NextRegistration` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 3]`.
+	/// The range of component `t` is `[0, 8]`.
+	fn set_subname(d: u32, t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1634 + d * (216 ±0) + t * (337 ±0)`
+		//  Estimated: `3875 + d * (2885 ±0) + t * (2846 ±0)`
+		// Minimum execution time: 185_707_000 picoseconds.
+		Weight::from_parts(216_979_661, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			// Standard Error: 1_172_525
+			.saturating_add(Weight::from_parts(30_382_058, 0).saturating_mul(d.into()))
+			// Standard Error: 347_955
+			.saturating_add(Weight::from_parts(68_556_349, 0).saturating_mul(t.into()))
+			.saturating_add(RocksDbWeight::get().reads(6))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(RocksDbWeight::get().writes(5))
+			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
-	fn remove_subname(t: u32) -> Weight {
-		Weight::from_parts(80_000_000, 8_000)
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().reads(3_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	/// Storage: `Navnisan::Names` (r:2 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyUsed` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyUsed` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:0 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
+	/// The range of component `t` is `[0, 8]`.
+	fn remove_subname(t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1822 + t * (337 ±0)`
+		//  Estimated: `6760 + t * (2846 ±0)`
+		// Minimum execution time: 99_223_000 picoseconds.
+		Weight::from_parts(161_351_118, 0)
+			.saturating_add(Weight::from_parts(0, 6760))
+			// Standard Error: 166_597
+			.saturating_add(Weight::from_parts(71_074_541, 0).saturating_mul(t.into()))
+			.saturating_add(RocksDbWeight::get().reads(5))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(RocksDbWeight::get().writes(7))
+			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
-	fn set_primary(d: u32) -> Weight {
-		Weight::from_parts(50_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Primary` (r:0 w:1)
+	/// Proof: `Navnisan::Primary` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn set_primary(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `665 + d * (213 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 35_291_000 picoseconds.
+		Weight::from_parts(43_907_645, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 78_090
+			.saturating_add(Weight::from_parts(15_131_210, 0).saturating_mul(d.into()))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(RocksDbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
+	/// Storage: `Navnisan::Primary` (r:1 w:1)
+	/// Proof: `Navnisan::Primary` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
 	fn clear_primary() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `315`
+		//  Estimated: `3545`
+		// Minimum execution time: 18_421_000 picoseconds.
+		Weight::from_parts(34_261_000, 0)
+			.saturating_add(Weight::from_parts(0, 3545))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
-	fn grant(d: u32) -> Weight {
-		Weight::from_parts(90_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(RocksDbWeight::get().reads(4_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::NextRegistration` (r:1 w:1)
+	/// Proof: `Navnisan::NextRegistration` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn grant(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `373 + d * (255 ±0)`
+		//  Estimated: `1493 + d * (2885 ±0)`
+		// Minimum execution time: 28_491_000 picoseconds.
+		Weight::from_parts(32_744_631, 0)
+			.saturating_add(Weight::from_parts(0, 1493))
+			// Standard Error: 108_867
+			.saturating_add(Weight::from_parts(19_753_667, 0).saturating_mul(d.into()))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(d.into())))
+			.saturating_add(RocksDbWeight::get().writes(2))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
-	fn revoke(t: u32) -> Weight {
-		Weight::from_parts(80_000_000, 8_000)
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().reads(3_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyUsed` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyUsed` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:0 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
+	/// The range of component `t` is `[0, 8]`.
+	fn revoke(t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1576 + t * (337 ±0)`
+		//  Estimated: `3875 + t * (2846 ±0)`
+		// Minimum execution time: 47_602_000 picoseconds.
+		Weight::from_parts(87_672_462, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			// Standard Error: 148_295
+			.saturating_add(Weight::from_parts(72_689_774, 0).saturating_mul(t.into()))
+			.saturating_add(RocksDbWeight::get().reads(3))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(RocksDbWeight::get().writes(6))
+			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::PendingChanges` (r:0 w:1)
+	/// Proof: `Navnisan::PendingChanges` (`max_values`: None, `max_size`: Some(198), added: 2673, mode: `MaxEncodedLen`)
 	fn force_change() -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `830`
+		//  Estimated: `3875`
+		// Minimum execution time: 31_371_000 picoseconds.
+		Weight::from_parts(54_242_000, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().writes(2))
 	}
+	/// Storage: `Navnisan::PendingChanges` (r:1 w:1)
+	/// Proof: `Navnisan::PendingChanges` (`max_values`: None, `max_size`: Some(198), added: 2673, mode: `MaxEncodedLen`)
 	fn cancel_change() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `335`
+		//  Estimated: `3663`
+		// Minimum execution time: 19_511_000 picoseconds.
+		Weight::from_parts(34_831_000, 0)
+			.saturating_add(Weight::from_parts(0, 3663))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::PendingChanges` (r:1 w:1)
+	/// Proof: `Navnisan::PendingChanges` (`max_values`: None, `max_size`: Some(198), added: 2673, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
 	fn enact_change() -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(2_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `988`
+		//  Estimated: `3875`
+		// Minimum execution time: 41_041_000 picoseconds.
+		Weight::from_parts(68_092_000, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			.saturating_add(RocksDbWeight::get().reads(3))
+			.saturating_add(RocksDbWeight::get().writes(2))
 	}
+	/// Storage: `Navnisan::Names` (r:1 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::PendingRevocations` (r:1 w:1)
+	/// Proof: `Navnisan::PendingRevocations` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	fn schedule_revocation() -> Weight {
-		Weight::from_parts(50_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(2_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `845`
+		//  Estimated: `3875`
+		// Minimum execution time: 34_371_000 picoseconds.
+		Weight::from_parts(57_532_000, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			.saturating_add(RocksDbWeight::get().reads(3))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::PendingRevocations` (r:1 w:1)
+	/// Proof: `Navnisan::PendingRevocations` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
 	fn cancel_revocation() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `316`
+		//  Estimated: `3545`
+		// Minimum execution time: 18_600_000 picoseconds.
+		Weight::from_parts(31_961_000, 0)
+			.saturating_add(Weight::from_parts(0, 3545))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
-	fn enact_revocation(t: u32) -> Weight {
-		Weight::from_parts(80_000_000, 8_000)
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().reads(3_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	/// Storage: `Navnisan::PendingRevocations` (r:1 w:1)
+	/// Proof: `Navnisan::PendingRevocations` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Names` (r:1 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyUsed` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyUsed` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:0 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Locked` (r:0 w:1)
+	/// Proof: `Navnisan::Locked` (`max_values`: None, `max_size`: Some(33), added: 2508, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
+	/// The range of component `t` is `[0, 8]`.
+	fn enact_revocation(t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1694 + t * (337 ±0)`
+		//  Estimated: `3875 + t * (2846 ±0)`
+		// Minimum execution time: 73_702_000 picoseconds.
+		Weight::from_parts(118_092_622, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			// Standard Error: 213_034
+			.saturating_add(Weight::from_parts(74_939_542, 0).saturating_mul(t.into()))
+			.saturating_add(RocksDbWeight::get().reads(5))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(RocksDbWeight::get().writes(8))
+			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
+	/// Storage: `Navnisan::Locked` (r:0 w:1)
+	/// Proof: `Navnisan::Locked` (`max_values`: None, `max_size`: Some(33), added: 2508, mode: `MaxEncodedLen`)
 	fn lock() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(0_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 13_490_000 picoseconds.
+		Weight::from_parts(24_581_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::Locked` (r:1 w:1)
+	/// Proof: `Navnisan::Locked` (`max_values`: None, `max_size`: Some(33), added: 2508, mode: `MaxEncodedLen`)
 	fn unlock() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `771`
+		//  Estimated: `3498`
+		// Minimum execution time: 22_621_000 picoseconds.
+		Weight::from_parts(39_261_000, 0)
+			.saturating_add(Weight::from_parts(0, 3498))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::Prices` (r:0 w:1)
+	/// Proof: `Navnisan::Prices` (`max_values`: Some(1), `max_size`: Some(48), added: 543, mode: `MaxEncodedLen`)
 	fn set_prices() -> Weight {
-		Weight::from_parts(25_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(0_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 9_140_000 picoseconds.
+		Weight::from_parts(17_871_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
-	fn reap(d: u32, t: u32) -> Weight {
-		Weight::from_parts(100_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(Weight::from_parts(8_000_000, 3_000).saturating_mul(t.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().writes(1_u64.saturating_mul(t.into())))
-			.saturating_add(RocksDbWeight::get().reads(5_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	/// Storage: `Navnisan::Names` (r:4 w:1)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextRecords` (r:9 w:8)
+	/// Proof: `Navnisan::TextRecords` (`max_values`: None, `max_size`: Some(371), added: 2846, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyUsed` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyUsed` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:0 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::TextCount` (r:0 w:1)
+	/// Proof: `Navnisan::TextCount` (`max_values`: None, `max_size`: Some(17), added: 2492, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	/// The range of component `t` is `[0, 8]`.
+	fn reap(d: u32, t: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1400 + d * (223 ±0) + t * (337 ±0)`
+		//  Estimated: `3836 + d * (2885 ±0) + t * (2846 ±0)`
+		// Minimum execution time: 120_864_000 picoseconds.
+		Weight::from_parts(87_734_241, 0)
+			.saturating_add(Weight::from_parts(0, 3836))
+			// Standard Error: 724_972
+			.saturating_add(Weight::from_parts(25_062_495, 0).saturating_mul(d.into()))
+			// Standard Error: 300_396
+			.saturating_add(Weight::from_parts(71_181_116, 0).saturating_mul(t.into()))
+			.saturating_add(RocksDbWeight::get().reads(4))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(d.into())))
+			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(t.into())))
+			.saturating_add(RocksDbWeight::get().writes(7))
+			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(t.into())))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
+			.saturating_add(Weight::from_parts(0, 2846).saturating_mul(t.into()))
 	}
-	fn reap_primary(d: u32) -> Weight {
-		Weight::from_parts(60_000_000, 8_000)
-			.saturating_add(Weight::from_parts(6_000_000, 3_000).saturating_mul(d.into()))
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(d.into())))
-			.saturating_add(RocksDbWeight::get().reads(5_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	/// Storage: `Navnisan::Primary` (r:1 w:1)
+	/// Proof: `Navnisan::Primary` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Names` (r:4 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// The range of component `d` is `[1, 4]`.
+	fn reap_primary(d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `870 + d * (213 ±0)`
+		//  Estimated: `3545 + d * (2885 ±0)`
+		// Minimum execution time: 42_642_000 picoseconds.
+		Weight::from_parts(56_533_115, 0)
+			.saturating_add(Weight::from_parts(0, 3545))
+			// Standard Error: 105_522
+			.saturating_add(Weight::from_parts(15_374_030, 0).saturating_mul(d.into()))
+			.saturating_add(RocksDbWeight::get().reads(2))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(d.into())))
+			.saturating_add(RocksDbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
+	/// Storage: `Navnisan::Commitments` (r:1 w:1)
+	/// Proof: `Navnisan::Commitments` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(337), added: 2812, mode: `MaxEncodedLen`)
 	fn remove_commitment() -> Weight {
-		Weight::from_parts(50_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(2_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `518`
+		//  Estimated: `3802`
+		// Minimum execution time: 69_422_000 picoseconds.
+		Weight::from_parts(111_244_000, 0)
+			.saturating_add(Weight::from_parts(0, 3802))
+			.saturating_add(RocksDbWeight::get().reads(4))
+			.saturating_add(RocksDbWeight::get().writes(3))
 	}
+	/// Storage: `Navnisan::Names` (r:1 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:0 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
 	fn suspend() -> Weight {
-		Weight::from_parts(50_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(1_u64.saturating_mul(crate::label::MAX_DEPTH as u64)))
-			.saturating_add(RocksDbWeight::get().reads(2_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `845`
+		//  Estimated: `3875`
+		// Minimum execution time: 34_851_000 picoseconds.
+		Weight::from_parts(56_802_000, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			.saturating_add(RocksDbWeight::get().reads(2))
+			.saturating_add(RocksDbWeight::get().writes(2))
 	}
+	/// Storage: `Navnisan::Suspensions` (r:1 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
 	fn lift_suspension() -> Weight {
-		Weight::from_parts(30_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `347`
+		//  Estimated: `3546`
+		// Minimum execution time: 22_201_000 picoseconds.
+		Weight::from_parts(37_591_000, 0)
+			.saturating_add(Weight::from_parts(0, 3546))
+			.saturating_add(RocksDbWeight::get().reads(1))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::EmergencyCouncil` (r:0 w:1)
+	/// Proof: `Navnisan::EmergencyCouncil` (`max_values`: Some(1), `max_size`: Some(289), added: 784, mode: `MaxEncodedLen`)
 	fn set_emergency_council() -> Weight {
-		Weight::from_parts(40_000_000, 4_000)
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 10_090_000 picoseconds.
+		Weight::from_parts(18_731_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
+	/// Storage: `Navnisan::EmergencyCouncil` (r:1 w:0)
+	/// Proof: `Navnisan::EmergencyCouncil` (`max_values`: Some(1), `max_size`: Some(289), added: 784, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Names` (r:1 w:0)
+	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyUsed` (r:1 w:1)
+	/// Proof: `Navnisan::EmergencyUsed` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:1 w:1)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::EmergencyCalls` (r:1 w:1)
+	/// Proof: `Navnisan::EmergencyCalls` (`max_values`: None, `max_size`: Some(369), added: 2844, mode: `MaxEncodedLen`)
 	fn emergency_suspend() -> Weight {
-		Weight::from_parts(80_000_000, 8_000)
-			.saturating_add(RocksDbWeight::get().reads(2_u64.saturating_mul(crate::label::MAX_DEPTH as u64)))
-			.saturating_add(RocksDbWeight::get().reads(5_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+		// Proof Size summary in bytes:
+		//  Measured:  `1202`
+		//  Estimated: `3875`
+		// Minimum execution time: 57_722_000 picoseconds.
+		Weight::from_parts(91_003_000, 0)
+			.saturating_add(Weight::from_parts(0, 3875))
+			.saturating_add(RocksDbWeight::get().reads(6))
+			.saturating_add(RocksDbWeight::get().writes(3))
 	}
 }

@@ -582,6 +582,18 @@ filters offices out before summing. Otherwise power would compound: an office wo
 trust, trust would qualify for more offices, and the register would drift toward whoever
 already held it.
 
+**Where the stake figure comes from.** This chain reads a citizen's stake in one of two ways.
+The first, for stake on the Asset Hub, needs nobody's word: anyone may submit a proof that
+reaches the account's bond under a relay block this chain has kept, and the proof either hashes
+to that block or is refused. It is free when it changes what is recorded, so a fall in somebody
+else's stake is as cheap to report as a rise in one's own, and it overrides any figure a notary
+has filed. The second, which also covers direct staking on the relay chain, is a notary's
+report. A notary must first lock 50,000 HEZ as a bond, and a report waits an hour before it
+counts. In that hour any member of the council can freeze it, and the court or the council can
+then hand the bond to the treasury. Either way the twelve-month clock counts only up to
+fourteen days past the newest confirmation. If confirmations stop, the multiplier stops with
+them, rather than climbing on data nobody is checking any more.
+
 ---
 
 ## 7. TNPoS — the validator pool

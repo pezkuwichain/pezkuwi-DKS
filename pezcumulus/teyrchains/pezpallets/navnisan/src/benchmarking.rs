@@ -403,15 +403,31 @@ mod benchmarks {
 		assert!(Names::<T>::get(node).is_none());
 	}
 
+	/// The longest path to "stale": the name still points at `who` and every ancestor is
+	/// valid, so `effective_status` walks the whole chain; only the top-level name is
+	/// suspended, so `is_suspended` walks it again before it finds the reason. Pointing the
+	/// name elsewhere would answer at the first read and measure none of the walk.
 	#[benchmark]
 	fn reap_primary(d: Linear<1, { label::MAX_DEPTH }>) {
 		setup::<T>();
 		let who = funded::<T>("who", 0);
 		let node = chain::<T>(&who, d);
+		Names::<T>::mutate(node, |r| r.as_mut().unwrap().account = Some(who.clone()));
+		let root = child_node(&kurd_node(), b"chainroot");
+		let reg = Names::<T>::get(root).unwrap().reg;
+		Suspensions::<T>::insert(
+			root,
+			Suspension { until: START + 1, reg, reason: H256::zero(), by: SuspendedBy::Court },
+		);
 		Primary::<T>::insert(&who, node);
-		Names::<T>::mutate(node, |r| r.as_mut().unwrap().account = None);
+		assert!(Pezpallet::<T>::effective_status(
+			&Names::<T>::get(node).unwrap(),
+			Pezpallet::<T>::now()
+		)
+		.is_some());
 		#[extrinsic_call]
 		_(RawOrigin::Signed(who.clone()), who.clone());
+		assert!(!Primary::<T>::contains_key(&who));
 	}
 
 	#[benchmark]

@@ -99,8 +99,8 @@ def main():
     if bad:
         print("\n".join(bad))
         print()
-        print("İki belge de yayında ve ikisi de elle bakımlı. Birinde düzelen bir başlık")
-        print("ötekinde eskisiyle kalırsa iki sitemiz aynı kurumu iki adla anlatır.")
+        print("Both documents are published and both are maintained by hand. A heading fixed in one")
+        print("and left as it was in the other means our two sites describe one institution by two names.")
         return 1
 
     print(f"whitepaper.md and whitepaper.html agree on all "

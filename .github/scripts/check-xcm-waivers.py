@@ -188,10 +188,10 @@ def main():
 
     if failed:
         print()
-        print("Bir ikiz diğerinin waive etmediği bir yeri waive ediyor. Bariyerdeki bir eksik")
-        print("mesajı hiç çalıştırmadan geri çevirir ve iki uçta da hiçbir belirti bırakmaz --")
-        print("`bridge-hub-zagros` Asset Hub'ı bariyerden düşürmüştü, ücretini waive etmeye")
-        print("devam ediyordu, ve Snowbridge ihracat yolu Zagros'ta ölüydü.")
+        print("One twin waives a location the other does not. A gap in the barrier turns a message")
+        print("away without running it and leaves no trace at either end --")
+        print("`bridge-hub-zagros` had dropped the Asset Hub from its barrier, kept waiving its fee,")
+        print("and the Snowbridge export path was dead on Zagros.")
         return 1
     print(f"{len(TWINS)} twin pairs agree on both lists ({len(RECORDED)} recorded differences)")
     return 0

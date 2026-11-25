@@ -87,9 +87,9 @@ def main():
 
     if bad:
         print()
-        print("Sıfır ağırlık iki şekilde zarar verir ve ikisi de sessizdir: çağrı bedava olur,")
-        print("ya da `try_consume` ile okunan bir bütçe koruması hiç reddedemez. İkisi de")
-        print("2026-08-30'da canlıydı -- `pezpallet_tnpos` ve `pezpallet_accumulate_and_forward`.")
+        print("A zero weight does harm in two ways and both are silent: the call becomes free,")
+        print("or a budget guard read through `try_consume` can never refuse. Both were")
+        print("live on 2026-08-30 -- `pezpallet_tnpos` and `pezpallet_accumulate_and_forward`.")
         return 1
 
     print(f"{checked} runtime bindings of `()`, none with a zero fallback "
