@@ -205,7 +205,15 @@
 # neighbouring calls; this branch adds identity-kyc `expire_application` and gives
 # `restore_citizenship` a benchmark of its own (it was charged as `revoke_citizenship`), and
 # welati's `submit_proposal` and `finalize_proposal` now keep a per-member count. Both twins.
+# Measured in #145 (run 45327811355) and wired in `93e816309`.
+#   - runtime: people-pezkuwichain people-zagros
+#     pallet: pezpallet_tnpos pezpallet_tiki pezpallet_identity_kyc pezpallet_welati
+#     why: PROVISIONAL weights from #144 and this branch, and two welati calls that now write one more record
+# 2026-11-25: navnisan's `reap_primary` benchmark measured the shortest path -- the name no
+# longer pointing at the account answers at the first read -- so the walk up the ancestors
+# that `effective_status` and `is_suspended` make on the longest path was never charged. The
+# benchmark now builds that path.
 runs:
   - runtime: people-pezkuwichain people-zagros
-    pallet: pezpallet_tnpos pezpallet_tiki pezpallet_identity_kyc pezpallet_welati
-    why: PROVISIONAL weights from #144 and this branch, and two welati calls that now write one more record
+    pallet: pezpallet_navnisan
+    why: reap_primary benchmark rebuilt on its longest path
