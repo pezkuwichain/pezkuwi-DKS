@@ -577,20 +577,26 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	}
 	/// Storage: `Navnisan::Primary` (r:1 w:1)
 	/// Proof: `Navnisan::Primary` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
-	/// Storage: `Navnisan::Names` (r:1 w:0)
+	/// Storage: `Navnisan::Names` (r:4 w:0)
 	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
 	/// The range of component `d` is `[1, 4]`.
 	fn reap_primary(d: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `860 + d * (51 ±0)`
-		//  Estimated: `3875`
-		// Minimum execution time: 32_081_000 picoseconds.
-		Weight::from_parts(54_961_917, 0)
-			.saturating_add(Weight::from_parts(0, 3875))
-			// Standard Error: 69_416
-			.saturating_add(Weight::from_parts(158_290, 0).saturating_mul(d.into()))
+		//  Measured:  `870 + d * (213 ±0)`
+		//  Estimated: `3545 + d * (2885 ±0)`
+		// Minimum execution time: 42_642_000 picoseconds.
+		Weight::from_parts(56_533_115, 0)
+			.saturating_add(Weight::from_parts(0, 3545))
+			// Standard Error: 105_522
+			.saturating_add(Weight::from_parts(15_374_030, 0).saturating_mul(d.into()))
 			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(d.into())))
 			.saturating_add(T::DbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
 	/// Storage: `Navnisan::Commitments` (r:1 w:1)
 	/// Proof: `Navnisan::Commitments` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
@@ -1204,20 +1210,26 @@ impl WeightInfo for () {
 	}
 	/// Storage: `Navnisan::Primary` (r:1 w:1)
 	/// Proof: `Navnisan::Primary` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
-	/// Storage: `Navnisan::Names` (r:1 w:0)
+	/// Storage: `Navnisan::Names` (r:4 w:0)
 	/// Proof: `Navnisan::Names` (`max_values`: None, `max_size`: Some(410), added: 2885, mode: `MaxEncodedLen`)
+	/// Storage: `Timestamp::Now` (r:1 w:0)
+	/// Proof: `Timestamp::Now` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
+	/// Storage: `Navnisan::Suspensions` (r:4 w:0)
+	/// Proof: `Navnisan::Suspensions` (`max_values`: None, `max_size`: Some(81), added: 2556, mode: `MaxEncodedLen`)
 	/// The range of component `d` is `[1, 4]`.
 	fn reap_primary(d: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `860 + d * (51 ±0)`
-		//  Estimated: `3875`
-		// Minimum execution time: 32_081_000 picoseconds.
-		Weight::from_parts(54_961_917, 0)
-			.saturating_add(Weight::from_parts(0, 3875))
-			// Standard Error: 69_416
-			.saturating_add(Weight::from_parts(158_290, 0).saturating_mul(d.into()))
+		//  Measured:  `870 + d * (213 ±0)`
+		//  Estimated: `3545 + d * (2885 ±0)`
+		// Minimum execution time: 42_642_000 picoseconds.
+		Weight::from_parts(56_533_115, 0)
+			.saturating_add(Weight::from_parts(0, 3545))
+			// Standard Error: 105_522
+			.saturating_add(Weight::from_parts(15_374_030, 0).saturating_mul(d.into()))
 			.saturating_add(RocksDbWeight::get().reads(2))
+			.saturating_add(RocksDbWeight::get().reads((2_u64).saturating_mul(d.into())))
 			.saturating_add(RocksDbWeight::get().writes(1))
+			.saturating_add(Weight::from_parts(0, 2885).saturating_mul(d.into()))
 	}
 	/// Storage: `Navnisan::Commitments` (r:1 w:1)
 	/// Proof: `Navnisan::Commitments` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
