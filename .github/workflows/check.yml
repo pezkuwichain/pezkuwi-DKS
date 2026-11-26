@@ -53,7 +53,7 @@ jobs:
       - name: No foreign network named, no foreign host dialled
         run: .github/scripts/check-chain-identity.sh
 
-  # Mainnet is to be relaunched as a mirror of a validated Zagros, so a change that lands on
+  # The production mainnet launches as a mirror of a validated Zagros, so a change that lands on
   # one twin and not the other does not stay on a testnet -- it reaches mainnet as an absence.
   # Cheap, and it catches what neither compiler sees: each runtime builds fine on its own.
   twin-runtimes:

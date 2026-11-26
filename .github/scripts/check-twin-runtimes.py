@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Hold the Zagros and Pezkuwichain runtimes to the same pallet index map.
 
-Mainnet is to be relaunched as a mirror of a Zagros that has been validated live. A change
+The production mainnet launches as a mirror of a Zagros that has been validated live. A change
 that lands on one twin and is forgotten on the other therefore does not stay on a testnet:
 it reaches mainnet as an absence. And an index is not a name -- it is the address a call is
 sent to, so the same pallet sitting at two numbers means one encoded call reaches different
