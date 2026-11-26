@@ -542,6 +542,49 @@ strike it. It is not given on dismissal, which is not a retirement, nor when an 
 seat, which is a term ending. It carries no trust standing until governance decides it should,
 because standing divides every reward and a figure there would be a pension.
 
+### 5.7 The `.kurd` names — an address no foreign court can rewrite
+
+A state's sites are what an attacker most wants to replace, and an ordinary domain answers to
+whoever runs its registry. The People chain keeps its own register, **Navnisan**. A `.kurd`
+name resolves to an account and to content: a site on IPFS. A wallet reads the name straight
+from chain storage, so opening `dks.kurd` does not depend on a DNS server that a court can
+order to lie. Every origin that can change the register is on the People chain; nothing in it
+is writable from another chain.
+
+**There are two kinds of name.**
+
+- **Leased** names are open to anyone. A lease runs for one to five years at a time, and a
+  renewal can reach at most ten years ahead. Yearly rent depends on length: 500 HEZ for three
+  letters, 100 for four, and 10 for five or more. The Parliament can change these prices. The
+  rent goes to the treasury and is never burnt. A buyer first commits to a name without
+  revealing it, then reveals it between one minute and one day later, so nobody watching the
+  chain can buy it out from under them. A lapsed lease has thirty days' grace, in which only
+  its last owner may renew it.
+- **Granted** names are given by the Parliament, free, and never expire. They cannot be sold
+  or transferred, and neither can any name beneath them. Six zone roots (`gov`, `edu`, `mil`,
+  `int`, `org`, `net`) and eighteen names under `gov.kurd` exist from genesis. Fifty-nine
+  top-level labels can be bought by nobody: the offices, so that nobody passes for the
+  President with `serok.kurd`; the nation and its four parts; ten cities, for their
+  municipalities; the state's own services; the names a phishing page would want; and the
+  founder's two. Only the Parliament can grant them.
+
+Every name may carry subnames, up to four levels deep. A subname dies with its parent.
+
+**An institution's name changes slowly.** Its own manager may propose a new account, content
+or owner, but the change waits one day before it takes effect, and the Parliament can cancel it
+in between. A news feed's daily anchor is the one exception: it can only move the same feed
+forward.
+
+**The court stops an abused name.** The Dîwan, by two thirds, suspends a bought name for up to
+thirty days at a time. To take it back for good, the court schedules a revocation, which waits
+seven days. A revoked label is then locked, so the same hands cannot buy it again; the
+Parliament may unlock it. Because the court can take days to sit, an emergency council of five
+people appointed by the President can suspend a name at once when three of them agree. Such a
+suspension ends by itself after three days and can be used only once on each registration. The
+court may lift it or replace it with its own at any time: the council buys time, the court
+decides. A suspended name resolves to nothing. Institutional names are outside all of this;
+they answer to the Parliament.
+
 ---
 
 ## 6. Trust
@@ -1162,6 +1205,7 @@ a solicitation, or investment advice.
 | **Wezîrê Darayiyê** | Minister of Finance |
 | **Xezinedar** | Treasurer |
 | **Xanenişîn** | Retired: the record given to an appointee whose office passed to a successor |
+| **Navnisan** | The `.kurd` name register on the People chain |
 | **perwerde** | Education |
 | **qeyd** | The register, and the rules governing it |
 | **teyrchain** | A system chain secured by the relay |
@@ -1215,4 +1259,6 @@ a solicitation, or investment advice.
 | Geographic regions | 6 — Başûr, Bakur, Rojava, Rojhilat, diaspora, Caucasus |
 | Geographic mark — referrals to apply | 25 settled |
 | Airdrop — one payment / a month's payments | 1,000,000 HEZ / 3,000,000 HEZ before the Treasurer signs |
+| `.kurd` yearly rent — 3 / 4 / 5+ letters | 500 / 100 / 10 HEZ |
+| `.kurd` emergency suspension | 3 of 5 appointed by the President; 3 days, then the court |
 | Chains specified / running at genesis | 5 / 2 |

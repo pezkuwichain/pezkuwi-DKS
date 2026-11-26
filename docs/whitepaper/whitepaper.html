@@ -143,6 +143,7 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
         <li><a href="#diwan">5.4. D&#238;wan &#8212; the Constitutional Court</a></li>
         <li><a href="#pm">5.5. Serokwez&#238;ran and the Cabinet</a></li>
         <li><a href="#civil">5.6. The Civil Service</a></li>
+        <li><a href="#names">5.7. The .kurd Names &#8212; an Address No Foreign Court Can Rewrite</a></li>
       </ul>
     </li>
     <li><a href="#trust">6. Trust</a></li>
@@ -691,6 +692,17 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
 <p>A proposal lapses if its author leaves the presidency, and dies with the holding it was aimed at, so it cannot be kept for a later appointment. Root still removes any of them.</p>
 <p><strong>An appointee leaves when a successor is appointed, and leaves retired.</strong> A single-holder office &#8212; the Prime Minister, a named ministry, the ambassador &#8212; moves to the new appointee, and the holder it is taken from is given <strong>Xanenişîn</strong>, the record of retirement. It grants nothing: no vote, no origin and no qualification reads it, and no admin can grant or strike it. It is not given on dismissal, which is not a retirement, nor when an election ends a seat, which is a term ending. It carries no trust standing until governance decides it should, because standing divides every reward and a figure there would be a pension.</p>
 
+<h3 id="names">5.7. The .kurd Names &#8212; an Address No Foreign Court Can Rewrite</h3>
+<p>A state&#8217;s sites are what an attacker most wants to replace, and an ordinary domain answers to whoever runs its registry. The People chain keeps its own register, <strong>Navnisan</strong>. A <code>.kurd</code> name resolves to an account and to content: a site on IPFS. A wallet reads the name straight from chain storage, so opening <code>dks.kurd</code> does not depend on a DNS server that a court can order to lie. Every origin that can change the register is on the People chain; nothing in it is writable from another chain.</p>
+<p><strong>There are two kinds of name.</strong></p>
+<ul>
+  <li><strong>Leased</strong> names are open to anyone. A lease runs for one to five years at a time, and a renewal can reach at most ten years ahead. Yearly rent depends on length: 500 HEZ for three letters, 100 for four, and 10 for five or more. The Parliament can change these prices. The rent goes to the treasury and is never burnt. A buyer first commits to a name without revealing it, then reveals it between one minute and one day later, so nobody watching the chain can buy it out from under them. A lapsed lease has thirty days&#8217; grace, in which only its last owner may renew it.</li>
+  <li><strong>Granted</strong> names are given by the Parliament, free, and never expire. They cannot be sold or transferred, and neither can any name beneath them. Six zone roots (<code>gov</code>, <code>edu</code>, <code>mil</code>, <code>int</code>, <code>org</code>, <code>net</code>) and eighteen names under <code>gov.kurd</code> exist from genesis. Fifty-nine top-level labels can be bought by nobody: the offices, so that nobody passes for the President with <code>serok.kurd</code>; the nation and its four parts; ten cities, for their municipalities; the state&#8217;s own services; the names a phishing page would want; and the founder&#8217;s two. Only the Parliament can grant them.</li>
+</ul>
+<p>Every name may carry subnames, up to four levels deep. A subname dies with its parent.</p>
+<p><strong>An institution&#8217;s name changes slowly.</strong> Its own manager may propose a new account, content or owner, but the change waits one day before it takes effect, and the Parliament can cancel it in between. A news feed&#8217;s daily anchor is the one exception: it can only move the same feed forward.</p>
+<p><strong>The court stops an abused name.</strong> The D&#238;wan, by two thirds, suspends a bought name for up to thirty days at a time. To take it back for good, the court schedules a revocation, which waits seven days. A revoked label is then locked, so the same hands cannot buy it again; the Parliament may unlock it. Because the court can take days to sit, an emergency council of five people appointed by the President can suspend a name at once when three of them agree. Such a suspension ends by itself after three days and can be used only once on each registration. The court may lift it or replace it with its own at any time: the council buys time, the court decides. A suspended name resolves to nothing. Institutional names are outside all of this; they answer to the Parliament.</p>
+
 <h2 id="trust">6. Trust</h2>
 <p>Trust is a single number between zero and a thousand, recomputed per citizen, and it is the currency of standing &#8212; for candidacy, for endorsement, for the validator pool, and for the citizens&#8217; share of the reward pool. It is composed of four measured parts, each normalised against its own maximum and weighted:</p>
 <table>
@@ -1001,6 +1013,7 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
     <tr><td><strong>Wez&#238;r</strong> / <strong>Wez&#238;r&#234; Darayiy&#234;</strong></td><td>Minister / Minister of Finance</td></tr>
     <tr><td><strong>Xezinedar</strong></td><td>Treasurer</td></tr>
     <tr><td><strong>Xanenişîn</strong></td><td>Retired: the record given to an appointee whose office passed to a successor</td></tr>
+    <tr><td><strong>Navnisan</strong></td><td>The <code>.kurd</code> name register on the People chain</td></tr>
     <tr><td><strong>perwerde</strong></td><td>Education</td></tr>
     <tr><td><strong>qeyd</strong></td><td>The register, and the rules governing it</td></tr>
     <tr><td><strong>teyrchain</strong></td><td>A system chain secured by the relay</td></tr>
@@ -1051,6 +1064,8 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
     <tr><td>Geographic regions</td><td>6 &#8212; Ba&#351;&#251;r, Bakur, Rojava, Rojhilat, diaspora, Caucasus</td></tr>
     <tr><td>Geographic mark &#8212; referrals to apply</td><td>25 settled</td></tr>
     <tr><td>Airdrop &#8212; one payment / a month&#8217;s payments</td><td>1,000,000 HEZ / 3,000,000 HEZ before the Treasurer signs</td></tr>
+    <tr><td><code>.kurd</code> yearly rent &#8212; 3 / 4 / 5+ letters</td><td>500 / 100 / 10 HEZ</td></tr>
+    <tr><td><code>.kurd</code> emergency suspension</td><td>3 of 5 appointed by the President; 3 days, then the court</td></tr>
     <tr><td>Chains specified / running at genesis</td><td>5 / 2</td></tr>
   </tbody>
 </table>
