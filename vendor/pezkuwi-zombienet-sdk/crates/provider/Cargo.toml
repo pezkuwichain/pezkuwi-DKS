@@ -18,7 +18,7 @@ async-trait = { workspace = true }
 erased-serde = { workspace = true }
 flate2 = { workspace = true }
 futures = { workspace = true }
-hex = { workspace = true }
+hex = { workspace = true, features = ["alloc"] }
 k8s-openapi = { workspace = true, features = ["v1_32"] }
 kube = { workspace = true, features = ["runtime", "ws"] }
 nix = { workspace = true, features = ["signal"] }
