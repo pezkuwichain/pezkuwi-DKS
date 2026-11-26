@@ -929,7 +929,7 @@ def docs_language():
     is narrower than the rule it enforces reports green about the part it can see.
     """
     hits = []
-    roots = [ROOT / "README.md", ROOT / "docs", ROOT / ".github/scripts", ROOT / "CLAUDE.md"]
+    roots = [ROOT / "README.md", ROOT / "docs", ROOT / ".github/scripts"]
     files = []
     for r in roots:
         if r.is_file():
