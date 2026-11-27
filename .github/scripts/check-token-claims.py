@@ -5,7 +5,7 @@ PEZ is an asset on the Asset Hub: five billion, fixed, its rewards pool released
 schedule. HEZ is the native token of the relay, the Asset Hub and People alike, and it
 inflates -- `MAX_INFLATION_RATE` caps it at ten per cent a year.
 
-`CLAUDE.md` used to state the rule without naming a token -- "the supply is fixed and halving"
+A project note once stated the rule without naming a token -- "the supply is fixed and halving"
 -- and that sentence travelled into eleven comments as the stated reason for not burning HEZ.
 The behaviour those comments guard is right; the reason written next to it was false, and a
 rule whose reason is false is a rule somebody later measures and discards.
@@ -47,7 +47,7 @@ NAMES_PEZ = re.compile(r"\bPEZ\b|PEZ_TOTAL_SUPPLY|PEZ_REWARDS_POOL")
 
 # Ours only. `bizinikiwi` is upstream and says "fixed supply" about assets in general,
 # which is not a claim about either of our tokens and is not ours to edit.
-SEARCH = ["CLAUDE.md", "docs", "pezkuwi", "pezcumulus", "pezbridges"]
+SEARCH = ["docs", "pezkuwi", "pezcumulus", "pezbridges"]
 SKIP = ("/target/", "/.git/")
 
 # How many lines around the claim may carry the token's name. A doc comment often names the

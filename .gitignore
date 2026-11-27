@@ -27,3 +27,7 @@ secrets/
 # Running the cmd.py tests locally leaves these behind.
 __pycache__/
 *.pyc
+
+# Local, per-developer tool configuration
+/CLAUDE.md
+/.claude/

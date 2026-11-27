@@ -27,6 +27,21 @@ monorepo**: the framework, runtimes, and pallets all live here and build from so
 dependency on any external package registry. That independence is deliberate — the chain must
 remain buildable and verifiable no matter what happens to any third-party platform.
 
+### Start here
+
+| If you want | Read |
+| --- | --- |
+| The whole design — citizenship, governance, economy, chains | [Whitepaper](./docs/whitepaper/whitepaper.md) |
+| The state's architecture in one page | [State architecture](#state-architecture), below |
+| What runs on which chain, and the two tokens | [Tokens and networks](./docs/TOKENS_AND_NETWORKS.md) |
+| Validator selection (TNPoS) | [TNPoS design](./docs/TNPOS_DESIGN.md) |
+| How to build and verify a runtime | [Building](#building) |
+| Where the code came from, and its licences | [License & Attribution](#license--attribution) · [NOTICE](./NOTICE) |
+
+**Status.** Zagros, the test network, is live with its relay and system chains. The network that
+runs today under the PezkuwiChain name is a test bed for testers. The production mainnet will
+launch from a validated Zagros, which is why the two runtimes are kept as twins.
+
 ---
 
 ## State architecture
@@ -253,8 +268,10 @@ transaction and means nothing. Rights do not divide by membership; local adminis
 
 PezkuwiChain's sovereign logic — with no upstream equivalent — lives in
 `pezcumulus/teyrchains/pezpallets/`: `tiki` (citizenship), `welati` (governance),
-`perwerde` (education), `pez-treasury`, `pez-rewards`, `trust`, `identity-kyc`,
-`presale`, `referral`, `staking-score`, `token-wrapper`, `messaging`.
+`perwerde` (education), `komite` (the validator committee, as the Asset Hub sees it),
+`navnisan` (the `.kurd` name register), `pez-treasury`, `pez-rewards`, `trust`,
+`identity-kyc`, `referral`, `staking-score`, `token-wrapper`, `messaging`,
+`collective-content`.
 
 ---
 

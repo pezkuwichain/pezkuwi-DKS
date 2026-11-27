@@ -33,7 +33,7 @@ jobs:
           test -f LICENSE-APACHE
           test -f LICENSE-GPL3
           echo "compliance files present"
-      # DMCA #4389053: a file that names Parity Technologies must keep naming it. Compared
+      # Licence attribution: a file that names Parity Technologies must keep naming it. Compared
       # against the PR's base, or the previous main on a push.
       - name: Parity attribution kept
         env:
@@ -53,7 +53,7 @@ jobs:
       - name: No foreign network named, no foreign host dialled
         run: .github/scripts/check-chain-identity.sh
 
-  # Mainnet is to be relaunched as a mirror of a validated Zagros, so a change that lands on
+  # The production mainnet launches as a mirror of a validated Zagros, so a change that lands on
   # one twin and not the other does not stay on a testnet -- it reaches mainnet as an absence.
   # Cheap, and it catches what neither compiler sees: each runtime builds fine on its own.
   twin-runtimes:
@@ -77,7 +77,7 @@ jobs:
       # sat unrun for ten days. Three identical fixes is where a habit becomes a check.
       - name: Benchmark builds install solc before they build
         run: python3 .github/scripts/check-workflow-solc.py
-      # PEZ is fixed and halving; HEZ inflates. `CLAUDE.md` used to state the rule without
+      # PEZ is fixed and halving; HEZ inflates. A project note once stated the rule without
       # naming either, and the sentence travelled into eleven comments as the reason for not
       # burning HEZ -- a right rule with a false reason, which is a rule somebody later
       # measures and discards.

@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
 # Parity attribution guard.
 #
-# GitHub reviewed this tree's license attribution under DMCA ticket #4389053: Parity
-# Technologies' copyright notices are retained in the work derived from polkadot-sdk.
-# The defect in the notice was a copyright line replaced by ours instead of ours being
-# added beside it. pezkuwi-sdk runs the same script on every sync from here, so a change
-# that would fail there fails here first.
+# Parity Technologies' copyright notices are retained in the work derived from
+# polkadot-sdk, as the Apache-2.0 and GPL-3.0 licences require. The defect this guards
+# against is a copyright line replaced by ours instead of ours being added beside it.
+# pezkuwi-sdk runs the same script on every sync from here, so a change that would fail
+# there fails here first.
 #
 # Usage: check-attribution.sh <base-rev> [<head-rev>]
 #
 # Fails when:
 #   - a file that names Parity Technologies at <base-rev> still exists at <head-rev>
-#     but no longer names it (the shape of the defect in the notice: a copyright
-#     line replaced, not added to);
+#     but no longer names it (a copyright line replaced, not added to);
 #   - NOTICE does not credit Parity Technologies and polkadot-sdk;
 #   - the workspace authors, which the vendored subxt crates inherit, do not
 #     include Parity Technologies.
