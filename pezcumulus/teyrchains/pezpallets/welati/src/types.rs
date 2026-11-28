@@ -519,7 +519,7 @@ pub struct DiwanMember<T: pezframe_system::Config> {
 	pub account: T::AccountId,
 	/// Appointment date
 	pub appointed_at: BlockNumberFor<T>,
-	/// Term length (9 years)
+	/// Term length (17 years)
 	pub term_ends_at: BlockNumberFor<T>,
 	/// Appointing authority (Parliament/Serok)
 	pub appointed_by: AppointmentAuthority<T>,
@@ -1555,7 +1555,7 @@ impl GovernmentPositionInfo for GovernmentPosition {
 			GovernmentPosition::Serok => 4 * 365 * 24 * 60 * 10, // 4 years
 			GovernmentPosition::Parlementer => 4 * 365 * 24 * 60 * 10, // 4 years
 			GovernmentPosition::SerokiMeclise => 2 * 365 * 24 * 60 * 10, // 2 years
-			GovernmentPosition::EndameDiwane => 9 * 365 * 24 * 60 * 10, // 9 years
+			GovernmentPosition::EndameDiwane => 17 * 365 * 24 * 60 * 10, // 17 years
 		}
 	}
 }

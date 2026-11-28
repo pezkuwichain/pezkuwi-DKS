@@ -3978,7 +3978,7 @@ fn a_revoked_citizen_leaves_the_court() {
 /// The President fills an appointed vacancy the moment one opens; the elected six have no such
 /// route. Without this arm the vacancy rule in §5.4 would restore the court's ability to decide
 /// -- two thirds counts over the members who sit -- while quietly leaving it smaller for the
-/// rest of a nine-year term.
+/// rest of a seventeen-year term.
 #[test]
 fn an_elected_court_seat_short_opens_an_election() {
 	ExtBuilder::default().build().execute_with(|| {
@@ -4688,7 +4688,7 @@ mod a_silent_court_seat {
 	// The court is the one body with no dismissal call, which is what makes it a court -- and
 	// which is exactly why a seat that stops signing had to be given its own way out. Four
 	// unreachable seats out of eleven put a two-thirds decision beyond the remaining nine for
-	// the rest of a nine-year term, and every authority the court carries stops with it.
+	// the rest of a seventeen-year term, and every authority the court carries stops with it.
 
 	fn a_seated_judge() -> u64 {
 		seat_president(1);

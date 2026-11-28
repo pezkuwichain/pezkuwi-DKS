@@ -416,7 +416,7 @@ by-election and the acting presidency above then follow on their own.
 
 ### 5.4 Dîwan — the Constitutional Court
 
-Eleven seats, nine years — the longest term in the system, and longer than any body that
+Eleven seats, seventeen years — the longest term in the system, and longer than any body that
 appoints to it.
 
 **Six are elected by the Parliament and five are appointed by the President.** Neither can
@@ -435,11 +435,11 @@ names the competence a seat needs rather than putting it beyond the President's 
 **The founding court is interim on the house's side only.** Genesis may seat both halves. The
 elected half it seats sits until the first elected house holds the court's election, which opens
 on its own as soon as such a house sits; that election replaces the whole half, as every court
-election does. The President's half is seated as any appointed seat is, qualification and nine
-years included.
+election does. The President's half is seated as any appointed seat is, qualification and
+seventeen years included.
 
 **There is no call to dismiss a member of the court.** The absence is the point: a court
-that can be removed by the powers it rules on is not a court, and nine years is longer than
+that can be removed by the powers it rules on is not a court, and seventeen years is longer than
 any body that appoints to it precisely so that no single alignment outlives it.
 
 **The seats are not staggered, and that is a choice rather than an omission.** A staggered
@@ -449,8 +449,8 @@ in front of the body that will next fill them. This court is meant to be eleven 
 nation already follows, seated once, irremovable, owing nothing to whoever seated them; a
 rolling appointment would let the calendar back in exactly what the missing dismissal call
 keeps out. The capture worry is answered by arithmetic instead: taking all eleven needs the
-house *and* the presidency in one moment, and both run for four years against the court's nine
-— so the alignment that seated it faces the electorate twice before a single seat turns over.
+house *and* the presidency in one moment, and both run for four years against the court's
+seventeen — so the alignment that seated it faces the electorate four times before a single seat turns over.
 
 **Dismissal and vacancy are different questions, and only the first is closed.** Death, a lost
 key, and permanent silence are not misconduct, but they subtract from the same two-thirds a
@@ -1241,7 +1241,7 @@ a solicitation, or investment advice.
 | Founder allocation | HEZ liquid at genesis, undertaken as launch capital for validator security; PEZ bound to the population gate in code |
 | Presidential term | 4 years, maximum 2 consecutive |
 | Parliamentary seats / term | 201 / 4 years (first term halved) |
-| Constitutional Court | 11 seats — 6 elected, 5 appointed — 9 years |
+| Constitutional Court | 11 seats — 6 elected, 5 appointed — 17 years |
 | Register-rules referendum | 90-day decision period |
 | Support denominator | The active roll, or 100,000, whichever is larger |
 | Dormancy — leaves the denominator after | 2 years with no participation; one vote returns |
