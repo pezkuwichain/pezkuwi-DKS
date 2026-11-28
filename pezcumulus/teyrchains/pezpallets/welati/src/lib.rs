@@ -831,7 +831,7 @@ pub mod pezpallet {
 		/// something else and permanent: a seat that cannot act at all. Death, a lost key and
 		/// an abandoned account are indistinguishable from outside and identical in effect --
 		/// they subtract from the same two thirds every court decision needs, and four of
-		/// eleven put that threshold out of reach for the remaining nine years.
+		/// eleven put that threshold out of reach for the remaining seventeen years.
 		///
 		/// Signing is the signal because reachability is what is being measured. The court
 		/// votes through a collective this pallet cannot observe per member, and a vote-based
@@ -2273,7 +2273,7 @@ pub mod pezpallet {
 				ElectionType::ConstitutionalCourt => {
 					// The elected half short of its seats. The appointed five are the President's
 					// to fill the moment one opens; the elected six have no such route, so without
-					// this a seat vacated for silence would stay empty for the rest of a nine-year
+					// this a seat vacated for silence would stay empty for the rest of a seventeen-year
 					// term -- and the vacancy rule in §5.4 would repair the court's ability to
 					// decide while quietly shrinking it for a decade.
 					//
@@ -3625,7 +3625,7 @@ pub mod pezpallet {
 		/// Unlike the elected six, the appointee has to be qualified -- see
 		/// `qualifies_for_an_appointed_seat`. There is no matching dismissal call, and that is
 		/// the point: a court the President can empty is not a check on the President. A seat
-		/// ends when its nine years run out, when the Diwan itself removes the holder, or
+		/// ends when its seventeen years run out, when the Diwan itself removes the holder, or
 		/// when the holder stops being a citizen.
 		#[pezpallet::call_index(35)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::appoint_diwan_member())]
@@ -5023,7 +5023,7 @@ pub mod pezpallet {
 						let term_end = Self::begin_term(election_type);
 
 						// Only the elected half turns over. The President's five sit out
-						// their own nine years -- a court that emptied every time the house
+						// their own seventeen years -- a court that emptied every time the house
 						// voted would be a committee of the house, which is the one thing a
 						// constitutional court must not be.
 						let mut bench: BoundedVec<DiwanMember<T>, T::DiwanSize> =
@@ -5357,7 +5357,7 @@ pub mod pezpallet {
 		/// shortened term is what staggers the calendar: from then on the house is elected at
 		/// the midpoint of a presidency and every one after it, so no single vote hands one
 		/// side both the government and the legislature on the same day. It is the same
-		/// reasoning that gave the Diwan nine years against the President's four -- an
+		/// reasoning that gave the Diwan seventeen years against the President's four -- an
 		/// institution that arrives and leaves with a President has trouble checking one.
 		///
 		/// Derived from `TermLength` rather than configured separately: whatever the term

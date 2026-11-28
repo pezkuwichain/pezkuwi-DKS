@@ -1383,7 +1383,7 @@ parameter_types! {
 	/// An elected mandate: four years.
 	pub const WelatiTermLength: BlockNumber = 4 * 365 * DAYS;
 
-	/// A seat on the Diwan: nine years, and the whole of it at once.
+	/// A seat on the Diwan: seventeen years, and the whole of it at once.
 	///
 	/// The exception, and deliberately. The Diwan judges the President and the government; a
 	/// court seated on the same cycle as the people it judges leaves with them, and a court
@@ -1403,9 +1403,9 @@ parameter_types! {
 	/// The capture worry is answered by arithmetic rather than by rotation. Taking all eleven
 	/// needs the house *and* the presidency in one moment -- six elected, five appointed,
 	/// neither able to seat a majority alone -- and both of those bodies run for four years
-	/// against this nine. The alignment that seated the court faces the electorate twice before
+	/// against this seventeen. The alignment that seated the court faces the electorate four times before
 	/// a single seat turns over, and by then it is not the alignment any more.
-	pub const WelatiCourtTermLength: BlockNumber = 9 * 365 * DAYS;
+	pub const WelatiCourtTermLength: BlockNumber = 17 * 365 * DAYS;
 
 	/// How long a court seat may stay silent before anyone may vacate it: one hundred and
 	/// eighty days.
@@ -3086,8 +3086,8 @@ mod tests {
 	/// which is what the running chain answers `AuraApi_slot_duration` with.
 	///
 	/// Importing `DAYS` from the first while running on the second halves every period derived
-	/// from it, and nothing complains: a four-year term becomes two, a nine-year court term
-	/// four and a half, and every governance track decides in half the time its name promises.
+	/// from it, and nothing complains: a four-year term becomes two, a seventeen-year court term
+	/// eight and a half, and every governance track decides in half the time its name promises.
 	/// That is what was happening here until 2026-09-18, across eighty-one periods in three
 	/// files per twin.
 	///
@@ -3109,7 +3109,7 @@ mod tests {
 
 	/// The three terms Serok named, in years and days rather than in blocks.
 	///
-	/// A mandate of four years, a court of nine, and a hundred and twenty days from the call of
+	/// A mandate of four years, a court of seventeen, and a hundred and twenty days from the call of
 	/// an election to its close. They were two, four and a half, and sixty until 2026-09-18,
 	/// because this file counted in a day borrowed from a crate with a different block time --
 	/// and a term of office cannot report that it is short. These are not derived numbers that
@@ -3133,8 +3133,8 @@ mod tests {
 		);
 		assert_eq!(
 			secs(WelatiCourtTermLength::get()) / YEAR,
-			9,
-			"a court term is {} years; the state decided on nine",
+			17,
+			"a court term is {} years; the state decided on seventeen",
 			secs(WelatiCourtTermLength::get()) / YEAR
 		);
 		assert_eq!(
